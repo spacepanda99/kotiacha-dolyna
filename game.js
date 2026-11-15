@@ -1135,10 +1135,10 @@ const DECOR = {
   // on the bookshelf: books on the middle shelf, a small plant on the top shelf, the mantel clock on top
   knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 },
   // middle of the room: rug, table, and the chair tucked in behind it
-  kylym: { x: 0.44, y: 0.85, s: 0.62, z: 0 },
+  kylym: { x: 0.82, y: 0.625, s: 1.25, z: 0, hw: 0.98, flat: true },
   stilets: { x: 0.41, y: 0.775, s: 0.29, z: 1.5, hw: 0.7 }, stil: { x: 0.44, y: 0.81, s: 0.4, z: 2, hw: 1.0 },
   // cat bed and toys on the floor near the cat tree
-  lezhanka: { x: 0.79, y: 0.87, s: 0.3, z: 3 }, miachyk: { x: 0.68, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
+  lezhanka: { x: 0.79, y: 0.755, s: 0.3, z: 3 }, miachyk: { x: 0.68, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
   // walls: mirror between stove and window, painting centred between shelf and lamp, the рушник dressing the window
   dzerkalo: { x: 0.2, y: 0.37, s: 0.15, z: 0, wall: true, hw: 0.7 }, kartyna: { x: 0.528, y: 0.42, s: 0.2, z: 0, wall: true, hw: 0.95 },
   rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true, fit: true },
@@ -1162,8 +1162,9 @@ function decorRect(id) {
   // On the bookshelf: shelf boards stand at these fractions of its height.
   if (d.shelf !== undefined) { const b = DECOR.polytsia; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - d.shelf * b.s * u; }
   if (d.on) { const b = DECOR[d.on]; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - 0.54 * b.s * u + 1; }
-  const hw = sz * (d.hw || 1.1);
-  return { x: x - hw / 2, y: y - sz * 1.05, w: hw, h: sz * 1.1, cx: x, by: y, sz };
+  const hw = sz * (d.hw || 1.1), hh = d.hh || 1.05;
+  if (d.flat) return { x: x - hw / 2, y: y - sz * 0.02, w: hw, h: sz * 0.3, cx: x, by: y, sz };   // the rug lies flat, below its line
+  return { x: x - hw / 2, y: y - sz * hh, w: hw, h: sz * (hh + 0.05), cx: x, by: y, sz };
 }
 function enterHome() {
   closeSheet(); mode = 'home';
@@ -1309,7 +1310,7 @@ function drawHome(t) {
     const r = decorRect(id);
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
-    if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.55); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
+    if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.75); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
     else drawIcon(c, W[id].ic, r.cx, r.by, r.sz);
   }
   D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
