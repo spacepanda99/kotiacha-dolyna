@@ -1522,7 +1522,7 @@ function talkOlia(npc, n, steps) {
   if (carrying.length) {
     // Hand them over now, so closing the chat early never loses the delivery.
     for (const x of carrying) { S.bag[x]--; S.recipe.got.push(x); useWord(x, true); }
-    S.coins += 2 * carrying.length; hud(); save();
+    hud(); save();   // no pay: Grandma's help is a favour, money comes only from selling
     const hand = mine('os');
     const thanks = line(npc, 'thanks');
     thanks.hint = recipeList(R);
@@ -1615,12 +1615,12 @@ function tutEvent(ev) {
   if (!s || s.ev !== ev) return;
   S.tutN++;
   if (S.tutN >= (s.need || 1)) {
-    S.tut++; S.tutN = 0; S.coins += 3;
+    S.tut++; S.tutN = 0;
     while (TUT[S.tut].ev && !TUT[S.tut].need && S.did[TUT[S.tut].ev]) S.tut++;
     if (TUT[S.tut].p === 'i_decor' && !S.gift) { S.gift = 1; S.home.vazon = (S.home.vazon || 0) + 1; }
     hud();
     const next = TUT[S.tut].p;
-    setTimeout(() => { toast(`${PH.molodets.uk} +3 💰`); setGuide(); if (!sheetOpen()) say('p_molodets', 'p_' + next); }, 1700);
+    setTimeout(() => { toast(PH.molodets.uk); setGuide(); if (!sheetOpen()) say('p_molodets', 'p_' + next); }, 1700);
   }
   setGuide(); save();
 }
@@ -2408,7 +2408,7 @@ const A = {
   hand(v) {
     const h = help; if (!h) return;
     if (v === h.target) {
-      useWord(v, h.tries === 0); S.coins += 2; hud(); blip(990, 0.12); toast(`${PH.diakuiu.uk} +2 💰`);
+      useWord(v, h.tries === 0); hud(); blip(990, 0.12); toast(PH.diakuiu.uk);
       if (h.n >= 4) { shopTab = 'food'; say('v_oksana_thanks'); setTimeout(shop, 1600); } else { say('p_diakuiu'); setTimeout(() => { if (help === h) helpRound(h.n + 1); }, 1100); }
     } else {
       // No scolding: she just says what that one is, and you try again.
