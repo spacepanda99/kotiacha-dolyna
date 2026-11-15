@@ -895,19 +895,32 @@ function wordsSheet() {
 let mode = 'world';
 // x, y: bottom-centre as a fraction of the screen; s: size as a fraction of the room; z: drawing order.
 const DECOR = {
-  kylym: { x: 0.5, y: 0.86, s: 0.5, z: 0 },
-  pich: { x: 0.16, y: 0.7, s: 0.34, z: 1 }, lizhko: { x: 0.82, y: 0.71, s: 0.36, z: 1 }, lampa: { x: 0.62, y: 0.64, s: 0.22, z: 1 },
-  stil: { x: 0.5, y: 0.79, s: 0.28, z: 2 }, stilets: { x: 0.29, y: 0.81, s: 0.21, z: 2 },
-  hlechyk: { x: 0.11, y: 0.86, s: 0.2, z: 3 }, knyha: { x: 0.7, y: 0.84, s: 0.16, z: 3 }, vazon: { x: 0.87, y: 0.87, s: 0.27, z: 3 },
-  kartyna: { x: 0.14, y: 0.43, s: 0.2, z: 0, wall: true }, dzerkalo: { x: 0.31, y: 0.43, s: 0.18, z: 0, wall: true },
-  hodynnyk: { x: 0.85, y: 0.43, s: 0.18, z: 0, wall: true }, rushnyk: { x: 0.5, y: 0.37, s: 0.26, z: 1, wall: true },
-  kvity: { x: 0.5, y: 0.462, s: 0.14, z: 2, wall: true }, chashka: { x: 0.4, y: 0.462, s: 0.1, z: 2, wall: true }, svichka: { x: 0.6, y: 0.462, s: 0.12, z: 2, wall: true },
+  // Against the back wall (the wall meets the floor at 0.56): stove in the left corner, bed along the right,
+  // a clay jug on the floor under the window.
+  pich: { x: 0.17, y: 0.615, s: 0.46, z: 1 }, lizhko: { x: 0.79, y: 0.625, s: 0.52, z: 1 }, hlechyk: { x: 0.4, y: 0.62, s: 0.13, z: 1 },
+  // In the middle of the room: the rug, the table on it, and the chair pulled up beside the table.
+  kylym: { x: 0.47, y: 0.85, s: 0.6, z: 0 },
+  stil: { x: 0.5, y: 0.81, s: 0.4, z: 2 }, stilets: { x: 0.25, y: 0.81, s: 0.3, z: 2 },
+  // On the table top.
+  lampa: { on: 'stil', dx: 0.24, s: 0.15, z: 3 }, knyha: { on: 'stil', dx: -0.22, s: 0.1, z: 3 },
+  // In the front corner by the foot of the bed.
+  vazon: { x: 0.92, y: 0.8, s: 0.26, z: 3 },
+  // On the walls, where the stove and bed leave room; the towel drapes over the window.
+  dzerkalo: { x: 0.28, y: 0.39, s: 0.14, z: 0, wall: true }, kartyna: { x: 0.74, y: 0.41, s: 0.17, z: 0, wall: true },
+  hodynnyk: { x: 0.93, y: 0.41, s: 0.13, z: 0, wall: true }, rushnyk: { x: 0.5, y: 0.37, s: 0.24, z: 1, wall: true },
+  // On the windowsill.
+  kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
 };
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
 const BASICS = Object.keys(D.shop.furnished);          // always in the room
 const inRoom = () => [...BASICS, ...Object.keys(S.decor).filter(id => DECOR[id] && !BASICS.includes(id))];
 function decorRect(id) {
-  const d = DECOR[id], u = roomU(), sz = d.s * u, x = d.x * cv.width, y = d.y * cv.height;
+  const d = DECOR[id], u = roomU(), sz = d.s * u;
+  let x = d.x * cv.width, y = d.y * cv.height;
+  // Things "on" a piece of furniture stand on its top (the table's top board is 0.54 of its height up).
+  // Windowsill things are placed relative to the window, which is sized by the room, not the screen width.
+  if (d.sill !== undefined) { x = cv.width * 0.5 + d.sill * u; y = cv.height * 0.462; }
+  if (d.on) { const b = DECOR[d.on]; x = b.x * cv.width + d.dx * b.s * u; y = b.y * cv.height - 0.54 * b.s * u + 1; }
   return { x: x - sz * 0.55, y: y - sz * 1.05, w: sz * 1.1, h: sz * 1.1, cx: x, by: y, sz };
 }
 function enterHome() { closeSheet(); mode = 'home'; $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#homebar').style.display = 'flex'; blip(520); }
@@ -922,7 +935,7 @@ function homeTap(px, py) {
     if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return wordCard(id, BASICS.includes(id) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] });
   }
 }
-function catSpot(i) { const xs = [0.22, 0.66, 0.44, 0.88, 0.08, 0.56]; return { x: xs[i % 6] * cv.width, y: cv.height * 0.885, s: roomU() * 0.25 }; }
+function catSpot(i) { const xs = [0.68, 0.12, 0.84, 0.36, 0.52, 0.96]; return { x: xs[i % 6] * cv.width, y: cv.height * 0.885, s: roomU() * 0.25 }; }
 function decorSheet() {
   const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && (S.decor[id] || S.home[id] > 0));
   const st = stage();
@@ -941,7 +954,7 @@ function drawHome(t) {
   c.fillStyle = '#8a5a2b'; c.fillRect(0, y0 - k * 0.9, w, k * 0.5);
   for (let x = 0; x < w + k; x += k * 2) { c.fillStyle = '#d43a3a'; poly(c, [[x, y0], [x + k * 0.8, y0 + k * 0.8], [x, y0 + k * 1.6], [x - k * 0.8, y0 + k * 0.8]]); c.fillStyle = '#2d2d2d'; circ(c, x + k, y0 + k * 0.8, k * 0.22); }
   // the window, with the valley outside
-  const wx = w * 0.5, ww = u * 0.36, wt = h * 0.27, wb = h * 0.45;
+  const wx = w * 0.5, ww = u * 0.3, wt = h * 0.27, wb = h * 0.45;
   c.save(); c.beginPath(); c.rect(wx - ww / 2, wt, ww, wb - wt); c.clip();
   let g = c.createLinearGradient(0, wt, 0, wb); g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e8f7ff'); c.fillStyle = g; c.fillRect(wx - ww / 2, wt, ww, wb - wt);
   c.fillStyle = '#a6dc7c'; ell(c, wx - ww * 0.2, wb, ww * 0.5, (wb - wt) * 0.32); c.fillStyle = '#8fcf6a'; ell(c, wx + ww * 0.3, wb, ww * 0.5, (wb - wt) * 0.26);
@@ -970,8 +983,8 @@ function drawHome(t) {
   // your cat friends
   D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
   if (ids.length === BASICS.length && stage() < 3) {
-    c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.04)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('Make it yours: tap 🪑 Прикрасити below.', w / 2, h * 0.515);
+    c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('Make it yours: tap 🪑 Прикрасити below.', w / 2, h * 0.665);
   }
 }
 
