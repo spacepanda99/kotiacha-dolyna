@@ -643,7 +643,7 @@ function add(e) {
   for (const [x, y] of [[12, 8], [26, 15.5], [8, 16.5]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x });
   // Villagers.
   add({ w: 'khata', k: 'n_olia', x: 24.5, y: 12.7, kind: 'npc', npc: 'olia', s: 1.3 });
-  add({ w: 'khata', k: 'n_oksana', x: 22.4, y: 17.5, kind: 'npc', npc: 'oksana', s: 1.3 });
+  add({ w: 'khata', k: 'n_oksana', x: 19.5, y: 18.1, kind: 'npc', npc: 'oksana', s: 1.3 });
   add({ w: 'khata', k: 'n_taras', x: 25.2, y: 20.9, kind: 'npc', npc: 'taras', s: 1.3 });
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
   add({ w: 'sobaka', x: 15.7, y: 21.3, kind: 'animal', r: 1.0 });
@@ -829,8 +829,8 @@ function catSheet(e) {
     note: `<b>${ct.line}</b>${st < 2 ? `<br>${ct.lineEn}` : ''}${st < 3 && !has ? `<br><small>${sourceHint(ct.wants)}</small>` : ''}`,
     clips: ['c_' + ct.id],
     acts: has ? [{ k: 'give', fn: () => {
-      S.bag[ct.wants]--; S.cats[ct.id] = 1; S.hearts += 2; S.coins += 3; learn(ct.wants); useWord(ct.wants, true);
-      hud(); save(); closeSheet(); toast(`❤️ ${ct.name}!  +2 ❤️  +3 💰`); say('p_mur'); blip(990, 0.15);
+      S.bag[ct.wants]--; S.cats[ct.id] = 1; S.hearts += 2; learn(ct.wants); useWord(ct.wants, true);
+      hud(); save(); closeSheet(); toast(`❤️ ${ct.name}!  +2 ❤️`); say('p_mur'); blip(990, 0.15);
     } }] : [],
   });
 }
