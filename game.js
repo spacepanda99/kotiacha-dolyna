@@ -255,6 +255,16 @@ const DRAW = {
       c.fillStyle = '#e2574c'; poly(c, [[x + 10, -50], [x + 16, -42], [x + 10, -34], [x + 4, -42]]);
     }
   },
+  // A floor lamp: wooden base and pole, a cream fabric shade with an embroidered band, and a soft glow.
+  floorlamp(c) {
+    c.fillStyle = '#6b4a2a'; ell(c, 0, -3, 15, 4.5);
+    c.fillStyle = '#8a6a44'; rr(c, -2.2, -78, 4.4, 76, 2);
+    c.fillStyle = 'rgba(255,214,120,.35)'; ell(c, 0, -72, 26, 9);
+    c.fillStyle = '#fff3d6'; poly(c, [[-14, -99], [14, -99], [23, -74], [-23, -74]]);
+    c.fillStyle = '#d43a3a'; poly(c, [[-20.5, -81], [20.5, -81], [22, -77], [-22, -77]]);
+    c.fillStyle = '#fff3d6'; for (let x = -16; x <= 16; x += 8) poly(c, [[x, -81], [x + 2, -79], [x, -77], [x - 2, -79]]);
+    c.fillStyle = '#ffe9a8'; ell(c, 0, -74, 19, 3.5);
+  },
   // A carpeted cat tree: sisal posts, three platforms, a little cube house and a dangling pompom.
   cattree(c) {
     const carpet = '#e3cfae', edge = '#c9b08a', sisal = '#cfae78', rope = '#a8864f';
@@ -974,14 +984,14 @@ const DECOR = {
   // middle of the room: rug, table, and the chair tucked in behind it
   kylym: { x: 0.45, y: 0.85, s: 0.62, z: 0 },
   stilets: { x: 0.415, y: 0.775, s: 0.29, z: 1.5 }, stil: { x: 0.45, y: 0.81, s: 0.4, z: 2 },
-  lampa: { on: 'stil', dx: 0.24, s: 0.15, z: 3 }, knyha: { on: 'stil', dx: -0.24, s: 0.1, z: 3 },
+  lampa: { x: 0.615, y: 0.63, s: 0.56, z: 1 }, knyha: { on: 'stil', dx: -0.24, s: 0.1, z: 3 },
   // front corner by the foot of the bed
   vazon: { x: 0.6, y: 0.79, s: 0.24, z: 3 },
   // the cat corner, past the foot of the bed: cat tree against the wall, cat bed and toys on the floor
   kihtetochka: { x: 0.905, y: 0.625, s: 0.52, z: 1 }, lezhanka: { x: 0.85, y: 0.87, s: 0.3, z: 3 },
   miachyk: { x: 0.7, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
   // walls: mirror between stove and window, painting centred on the wall between window and bed, clock over the bed
-  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.545, y: 0.42, s: 0.22, z: 0, wall: true },
+  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.515, y: 0.42, s: 0.22, z: 0, wall: true },
   hodynnyk: { x: 0.735, y: 0.4, s: 0.14, z: 0, wall: true }, rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
@@ -1074,7 +1084,7 @@ function drawHome(t) {
   c.fillStyle = '#4a90d9'; c.fillRect(0, wallB - h * 0.012, RW, h * 0.014);
   g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(0, wallB, RW, h * 0.05);
   // a warm glow around the lamp or candle
-  for (const id of ['lampa', 'svichka']) if (S.decor[id]) { const r = decorRect(id); g = c.createRadialGradient(r.cx, r.by - r.sz * 0.6, 0, r.cx, r.by - r.sz * 0.6, u * 0.7); g.addColorStop(0, 'rgba(255,214,120,.2)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, RW, h); }
+  for (const id of ['lampa', 'svichka']) if (S.decor[id]) { const r = decorRect(id), gy = r.by - r.sz * (id === 'lampa' ? 0.82 : 0.6); g = c.createRadialGradient(r.cx, gy, 0, r.cx, gy, u * 0.7); g.addColorStop(0, 'rgba(255,214,120,.2)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, RW, h); }
   // everything in the room: wall things first, then floor things back to front
   const ids = inRoom().sort((a, b) => (DECOR[a].wall ? 0 : 10) + DECOR[a].z - (DECOR[b].wall ? 0 : 10) - DECOR[b].z);
   for (const id of ids) {
