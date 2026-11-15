@@ -2496,7 +2496,9 @@ const A = {
   // Exit: the installed app closes completely; in a browser tab it leaves full screen and goes back to the title.
   quit() {
     save(); closeSheet(); sayToken++; try { speechSynthesis.cancel(); } catch (e) {}
-    const inApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)').matches || navigator.standalone;
+    // A browser tab in full screen also reports display-mode "fullscreen", so that alone does not mean an installed app.
+    const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const inApp = matchMedia('(display-mode: standalone), (display-mode: minimal-ui)').matches || navigator.standalone || (!inFs && matchMedia('(display-mode: fullscreen)').matches);
     const toTitle = () => { running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
     if (inApp) {
       toTitle();
