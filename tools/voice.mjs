@@ -26,7 +26,8 @@ export function clips() {
     for (const [k, l] of Object.entries(n.lines)) list.push({ id: `v_${n.id}_${k}`, text: l.uk, voice: n.voice, style: n.style });
     for (const item of n.wants) {
       const w = D.words.find(x => x.id === item);
-      list.push({ id: `q_${n.id}_${item}`, text: D.questLine.uk.replace('%s', w.acc || w.uk), voice: n.voice, style: n.style });
+      if (n.id === 'olia') list.push({ id: `q_${n.id}_${item}`, text: D.questLine.uk.replace('%s', w.acc || w.uk), voice: n.voice, style: n.style });
+      list.push({ id: `qp_${n.id}_${item}`, text: D.payLine.uk.replace('%s', w.acc || w.uk), voice: n.voice, style: n.style });
     }
   }
   for (const ct of D.cats || []) list.push({ id: 'c_' + ct.id, text: ct.line, ...TEACHER });

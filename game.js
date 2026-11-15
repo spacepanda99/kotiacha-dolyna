@@ -61,6 +61,7 @@ function textOf(id) {
   if (k === 'c') { const ct = (D.cats || []).find(x => x.id === id.slice(2)); return ct ? ct.line : ''; }
   if (k === 's') return D.story && D.story[+a] ? D.story[+a].uk : '';
   if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].uk : '';
+  if (k === 'qp') return W[b] ? D.payLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
   if (k === 'q') return W[b] ? D.questLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
   return '';
 }
@@ -417,6 +418,34 @@ const DRAW = {
     c.strokeStyle = 'rgba(80,80,80,.8)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(30, -92); c.quadraticCurveTo(38, -50, 36, -24); c.stroke();
     c.fillStyle = '#e2392f'; circ(c, 36, -22, 4); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(36, -22, 4, 0, Math.PI); c.fill();
   },
+  // A whole frog, side-on and facing right: folded back legs, speckled back, pale belly, bulging eyes.
+  // With o.hop the legs stretch out behind, mid-jump.
+  frog(c, o) {
+    const g = '#5fae4a', dark = '#3f8a3a', belly = '#cfe9a5', hop = o && o.hop;
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    c.save(); if (hop) { c.translate(0, -6); c.rotate(-0.28); }
+    if (hop) {
+      c.strokeStyle = dark; c.lineWidth = 7; c.beginPath(); c.moveTo(-12, -16); c.lineTo(-30, -10); c.lineTo(-46, -4); c.stroke();
+      c.fillStyle = dark; ell(c, -48, -3, 6, 2.5);
+    } else {
+      c.fillStyle = dark; ell(c, -12, -12, 15, 10);
+      c.fillStyle = g; ell(c, -13, -13, 12, 8);
+      c.fillStyle = dark; c.beginPath(); c.moveTo(-22, -3); c.lineTo(2, -4); c.lineTo(4, 0); c.lineTo(-22, 0); c.closePath(); c.fill();
+    }
+    c.fillStyle = g; c.save(); c.translate(0, -20); c.rotate(-0.22); ell(c, 0, 0, 23, 14); c.restore();
+    c.fillStyle = belly; c.save(); c.translate(7, -13); c.rotate(-0.22); ell(c, 0, 0, 14, 6.5); c.restore();
+    c.fillStyle = dark; for (const [x, y, r] of [[-8, -28, 2.6], [-1, -31, 2], [-14, -22, 2.2], [3, -24, 1.6]]) circ(c, x, y, r);
+    // front leg
+    c.strokeStyle = g; c.lineWidth = 5; c.beginPath(); c.moveTo(13, -14); c.lineTo(17, hop ? -6 : -2); c.stroke();
+    c.fillStyle = dark; ell(c, 19, hop ? -5 : -1, 4.5, 2);
+    // head
+    c.fillStyle = g; circ(c, 17, -28, 11);
+    c.fillStyle = g; circ(c, 15, -38, 7); c.fillStyle = '#fffdf5'; circ(c, 15.5, -38.5, 5); c.fillStyle = '#1d191c'; circ(c, 17, -38.5, 2.6); c.fillStyle = '#ffffff'; circ(c, 17.8, -39.5, 0.9);
+    c.strokeStyle = dark; c.lineWidth = 1.4; c.beginPath(); c.moveTo(14, -23); c.quadraticCurveTo(21, -20, 27, -25); c.stroke();
+    c.fillStyle = 'rgba(240,120,120,.4)'; circ(c, 21, -27, 2.4);
+    c.fillStyle = dark; circ(c, 26.5, -31, 0.9);
+    c.restore();
+  },
   // A floor lamp: wooden base and pole, a cream fabric shade with an embroidered band, and a soft glow.
   floorlamp(c) {
     c.fillStyle = '#6b4a2a'; ell(c, 0, -3, 15, 4.5);
@@ -553,9 +582,9 @@ const inPond = (x, y, g = 0) => ((x - POND.x) / (POND.rx + g)) ** 2 + ((y - POND
 const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (x === 18 && y >= 6 && y <= 23) || (x === 7 && y >= 11 && y <= 13) || (x === 25 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
-const ANIMAL_OF = { kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
-const ASIZE = { horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.85, cat: 0.65, hen: 0.6, rooster: 0.72, duck: 0.55 };
-const SPEED = { horse: 0.6, cow: 0.3, goat: 0.45, pig: 0.35, dog: 0.7, cat: 0.55, hen: 0.4, rooster: 0.45, duck: 0.3 };
+const ANIMAL_OF = { zhaba: 'frog', kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
+const ASIZE = { frog: 0.62, horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.85, cat: 0.65, hen: 0.6, rooster: 0.72, duck: 0.55 };
+const SPEED = { frog: 0.75, horse: 0.6, cow: 0.3, goat: 0.45, pig: 0.35, dog: 0.7, cat: 0.55, hen: 0.4, rooster: 0.45, duck: 0.3 };
 function add(e) {
   e.k = e.k || (e.w + ents.length);
   e.s = e.s || 1; e.ic = e.ic || W[e.w].ic;
@@ -777,6 +806,15 @@ function drawDuck(c, x, y, t, e) {
   c.restore();
 }
 function drawAnimal(c, x, y, e, t) {
+  if (e.an === 'frog') {
+    // hops in little arcs while moving; sits with a slow throat-puff otherwise
+    const ph = e.walk ? ((e.step || 0) * 2.4) % 1 : 0, lift = e.walk ? Math.sin(Math.PI * ph) * 16 : 0, dir = e.face === -1 ? 1 : -1;
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y, 13 - lift * 0.3, 3.5);
+    c.save(); c.translate(x, y - lift); c.scale(dir, 1);
+    const k = e.s * T / 100, puff = e.walk ? 1 : 1 + Math.max(0, Math.sin(t * 2.2 + e.hx)) * 0.04;
+    c.scale(k, k * puff); DRAW.frog(c, { hop: e.walk && ph > 0.12 && ph < 0.88 }); c.restore();
+    return;
+  }
   if (e.an === 'duck') return drawDuck(c, x, y, t, e);
   if (BIRD[e.an]) return bird(c, x, y, BIRD[e.an], t, e);
   if (e.an === 'cat') return quad(c, x, y, e.q || (e.q = catQuad(e.v)), t, e);
@@ -1141,7 +1179,7 @@ function talk(npc) {
   if (npc.id === 'olia') tutEvent('olia');
   if (npc.id === 'olia' && D.recipes[S.recipe.i]) return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
-  const quest = id => ({ uk: D.questLine.uk.replace('%s', W[id].acc || W[id].uk), en: D.questLine.en.replace('%s', 'a ' + W[id].en).replace('a a', 'an a'), clip: `q_${npc.id}_${id}`, hint: (stage() < 2 ? `<img src="${iconURL(id)}" style="width:34px;height:34px;vertical-align:middle" alt=""> ` : '') + sourceHint(id) });
+  const quest = id => ({ uk: D.payLine.uk.replace('%s', W[id].acc || W[id].uk), en: D.payLine.en.replace('%s', (MASS.includes(id) ? 'some ' : 'a ') + W[id].en).replace('a a', 'an a').replace('a o', 'an o').replace('a e', 'an e'), clip: `qp_${npc.id}_${id}`, hint: (stage() < 2 ? `<img src="${iconURL(id)}" style="width:34px;height:34px;vertical-align:middle" alt=""> ` : '') + sourceHint(id) });
   if (n.q) {
     if ((S.bag[n.q] || 0) > 0) {
       const item = n.q;
@@ -1209,8 +1247,8 @@ function setGuide() {
     const n = active[0], q = S.npc[n.id].q;
     const R = n.id === 'olia' ? D.recipes[S.recipe.i] : null;
     uk = R ? `${W[R.dish].uk} ${S.recipe.got.length}/${R.needs.length}: ${W[q].acc || W[q].uk}` : `${n.name}: ${W[q].acc || W[q].uk}${st < 2 && W[q].ic[0] !== '@' ? ' ' + W[q].ic : ''}`;
-    full = R ? `Grandma Olia is making ${W[R.dish].en}. She needs ${W[q].en}.` : `${n.nameEn} would like ${W[q].en}.`; en = st < 2 ? full : '';
-    guideClip = `q_${n.id}_${q}`;
+    full = R ? `Grandma Olia is making ${W[R.dish].en}. She needs ${W[q].en}.` : `${n.nameEn} will pay 6 ₴ for ${W[q].en}.`; en = st < 2 ? full : '';
+    guideClip = R ? `q_${n.id}_${q}` : `qp_${n.id}_${q}`;
   } else {
     uk = PH.i_free.uk; full = PH.i_free.en; en = st < 3 ? full : ''; guideClip = 'p_i_free';
   }

@@ -37,7 +37,7 @@ window.DATA = {
     { id: "svynia", uk: "свиня", tr: "svy-NIA", en: "pig", ic: "🐖" },
     { id: "bdzhola", uk: "бджола", tr: "bdzho-LA", en: "bee", ic: "🐝" },
     { id: "metelyk", uk: "метелик", tr: "me-TE-lyk", en: "butterfly", ic: "🦋" },
-    { id: "zhaba", uk: "жаба", tr: "ZHA-ba", en: "frog", ic: "🐸" },
+    { id: "zhaba", uk: "жаба", tr: "ZHA-ba", en: "frog", ic: "@frog" },
     { id: "ryba", uk: "риба", tr: "RY-ba", en: "fish", ic: "🐟", acc: "рибу" },
     // --- the cats of the valley (colour words; "кішка" is a female cat)
     { id: "rudyi_kit", uk: "рудий кіт", tr: "ru-DYI kit", en: "ginger cat", ic: "@cat_rudyi" },
@@ -247,6 +247,8 @@ window.DATA = {
 
   // "Bring me, please, ..." — the item goes on the end in its acc form.
   questLine: { uk: "Принеси мені, будь ласка, %s.", en: "Bring me, please, %s." },
+  // Villagers' errands: they offer to pay (6 ₴, the errand reward).
+  payLine: { uk: "Я з радістю заплачу тобі шість гривень за %s.", en: "I'll gladly pay you 6 ₴ for %s." },
 
   // Prices are spoken by Oksana. Ukrainian counts money in three ways: 2-4 гривні, 5+ гривень.
   prices: {
