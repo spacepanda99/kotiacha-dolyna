@@ -30,6 +30,11 @@ if (S.placed && Object.keys(S.placed).length) {
   for (const id of Object.values(S.placed)) { if (!S.decor[id]) S.decor[id] = 1; else S.home[id] = (S.home[id] || 0) + 1; }
   S.placed = {};
 }
+for (const [id, price] of Object.entries(D.shop.furnished)) {
+  const n = (S.home[id] || 0) + (S.decor[id] ? 1 : 0);
+  if (n) { S.coins += n * price; S.refunded = (S.refunded || 0) + n * price; }
+  delete S.home[id]; delete S.decor[id];
+}
 let saveT = 0;
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
 
@@ -891,14 +896,16 @@ let mode = 'world';
 // x, y: bottom-centre as a fraction of the screen; s: size as a fraction of the room; z: drawing order.
 const DECOR = {
   kylym: { x: 0.5, y: 0.86, s: 0.5, z: 0 },
-  pich: { x: 0.16, y: 0.7, s: 0.32, z: 1 }, lizhko: { x: 0.84, y: 0.71, s: 0.32, z: 1 }, lampa: { x: 0.68, y: 0.66, s: 0.17, z: 1 },
-  stil: { x: 0.5, y: 0.79, s: 0.26, z: 2 }, stilets: { x: 0.3, y: 0.81, s: 0.18, z: 2 },
-  hlechyk: { x: 0.08, y: 0.87, s: 0.13, z: 3 }, knyha: { x: 0.74, y: 0.87, s: 0.12, z: 3 }, vazon: { x: 0.93, y: 0.87, s: 0.16, z: 3 },
-  kartyna: { x: 0.15, y: 0.42, s: 0.18, z: 0, wall: true }, dzerkalo: { x: 0.33, y: 0.42, s: 0.16, z: 0, wall: true },
-  hodynnyk: { x: 0.85, y: 0.42, s: 0.16, z: 0, wall: true }, rushnyk: { x: 0.5, y: 0.37, s: 0.26, z: 1, wall: true },
-  kvity: { x: 0.5, y: 0.462, s: 0.1, z: 2, wall: true }, chashka: { x: 0.43, y: 0.462, s: 0.075, z: 2, wall: true }, svichka: { x: 0.57, y: 0.462, s: 0.085, z: 2, wall: true },
+  pich: { x: 0.16, y: 0.7, s: 0.34, z: 1 }, lizhko: { x: 0.82, y: 0.71, s: 0.36, z: 1 }, lampa: { x: 0.62, y: 0.64, s: 0.22, z: 1 },
+  stil: { x: 0.5, y: 0.79, s: 0.28, z: 2 }, stilets: { x: 0.29, y: 0.81, s: 0.21, z: 2 },
+  hlechyk: { x: 0.11, y: 0.86, s: 0.2, z: 3 }, knyha: { x: 0.7, y: 0.84, s: 0.16, z: 3 }, vazon: { x: 0.87, y: 0.87, s: 0.27, z: 3 },
+  kartyna: { x: 0.14, y: 0.43, s: 0.2, z: 0, wall: true }, dzerkalo: { x: 0.31, y: 0.43, s: 0.18, z: 0, wall: true },
+  hodynnyk: { x: 0.85, y: 0.43, s: 0.18, z: 0, wall: true }, rushnyk: { x: 0.5, y: 0.37, s: 0.26, z: 1, wall: true },
+  kvity: { x: 0.5, y: 0.462, s: 0.14, z: 2, wall: true }, chashka: { x: 0.4, y: 0.462, s: 0.1, z: 2, wall: true }, svichka: { x: 0.6, y: 0.462, s: 0.12, z: 2, wall: true },
 };
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
+const BASICS = Object.keys(D.shop.furnished);          // always in the room
+const inRoom = () => [...BASICS, ...Object.keys(S.decor).filter(id => DECOR[id] && !BASICS.includes(id))];
 function decorRect(id) {
   const d = DECOR[id], u = roomU(), sz = d.s * u, x = d.x * cv.width, y = d.y * cv.height;
   return { x: x - sz * 0.55, y: y - sz * 1.05, w: sz * 1.1, h: sz * 1.1, cx: x, by: y, sz };
@@ -909,16 +916,15 @@ function homeTap(px, py) {
   // Friend cats first (they sit in front), then the frontmost item under the finger.
   const friends = D.cats.filter(ct => S.cats[ct.id]);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
-  const ids = Object.keys(S.decor).filter(id => DECOR[id]).sort((a, b) => (DECOR[b].wall ? 0 : 10) + DECOR[b].z - (DECOR[a].wall ? 0 : 10) - DECOR[a].z);
+  const ids = inRoom().sort((a, b) => (DECOR[b].wall ? 0 : 10) + DECOR[b].z - (DECOR[a].wall ? 0 : 10) - DECOR[a].z);
   for (const id of ids) {
     const r = decorRect(id);
-    if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return wordCard(id, { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] });
+    if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return wordCard(id, BASICS.includes(id) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] });
   }
-  if (!ids.length) decorSheet();
 }
-function catSpot(i) { const xs = [0.24, 0.62, 0.4, 0.78, 0.5, 0.88]; return { x: xs[i % 6] * cv.width, y: cv.height * 0.885, s: roomU() * 0.14 }; }
+function catSpot(i) { const xs = [0.22, 0.66, 0.44, 0.88, 0.08, 0.56]; return { x: xs[i % 6] * cv.width, y: cv.height * 0.885, s: roomU() * 0.25 }; }
 function decorSheet() {
-  const ids = Object.keys(DECOR).filter(id => S.decor[id] || S.home[id] > 0);
+  const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && (S.decor[id] || S.home[id] > 0));
   const st = stage();
   openSheet(`<h3><span><span class="uk">${D.ui.decor[0]}</span> ${st < 3 ? `<small>${D.ui.decor[1]}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>` +
     (ids.length
@@ -954,7 +960,7 @@ function drawHome(t) {
   // a warm glow when the lamp or candle is in
   if (S.decor.lampa || S.decor.svichka) { g = c.createRadialGradient(w * 0.6, h * 0.5, 0, w * 0.6, h * 0.5, u * 0.8); g.addColorStop(0, 'rgba(255,214,120,.18)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }
   // everything you've put in, wall things first, then back to front
-  const ids = Object.keys(S.decor).filter(id => DECOR[id]).sort((a, b) => (DECOR[a].wall ? 0 : 10) + DECOR[a].z - (DECOR[b].wall ? 0 : 10) - DECOR[b].z);
+  const ids = inRoom().sort((a, b) => (DECOR[a].wall ? 0 : 10) + DECOR[a].z - (DECOR[b].wall ? 0 : 10) - DECOR[b].z);
   for (const id of ids) {
     const r = decorRect(id);
     if (!DECOR[id].wall && id !== 'kylym') { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
@@ -963,9 +969,9 @@ function drawHome(t) {
   }
   // your cat friends
   D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
-  if (!ids.length) {
-    c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.045)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText(stage() < 3 ? 'Порожньо. Tap 🪑 Прикрасити below.' : 'Порожньо… 🪑', w / 2, h * 0.7);
+  if (ids.length === BASICS.length && stage() < 3) {
+    c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.04)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('Make it yours: tap 🪑 Прикрасити below.', w / 2, h * 0.515);
   }
 }
 
@@ -1342,7 +1348,8 @@ const A = {
       const inApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
       if (req && !inApp && !(document.fullscreenElement || document.webkitFullscreenElement)) { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); }
     } catch (e) {}
-    $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip); },
+    $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
+    if (S.refunded && !S.refundTold) { S.refundTold = 1; save(); setTimeout(() => toast(`🛏️ Меблі вже в хаті! +${S.refunded} ₴`), 1500); } },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
     musicBtn(); if (musicOn) { musicVol = 0; music.play().catch(() => {}); } toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
@@ -1388,6 +1395,7 @@ const A = {
   },
   decorate() { decorSheet(); },
   decor(v) {
+    if (BASICS.includes(v)) return;
     if (S.decor[v]) { delete S.decor[v]; S.home[v] = (S.home[v] || 0) + 1; blip(440); }
     else if (S.home[v] > 0) { S.home[v]--; S.decor[v] = 1; learn(v); say('w_' + v); blip(700); tutEvent('place'); }
     save(); if (sheetOpen() && sheet.querySelector('[data-a="decor"]')) decorSheet();

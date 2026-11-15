@@ -235,7 +235,9 @@ window.DATA = {
   shop: {
     food: { khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6 },
     seeds: { morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
-    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, stilets: 10, kartyna: 10, dzerkalo: 10, hodynnyk: 10, stil: 15, kylym: 15, lizhko: 20, pich: 20 }
+    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
+    // Furniture the cottage comes with. Not for sale; tap it in the room to learn its name.
+    furnished: { pich: 20, lizhko: 20, stil: 15, stilets: 10 }
   },
 
   // Which cottage items hang on the wall (the rest stand on the floor).
