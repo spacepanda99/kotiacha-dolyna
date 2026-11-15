@@ -291,10 +291,10 @@ window.DATA = {
   shop: {
     food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6, deruny: 6, holubtsi: 7, syrnyky: 6, rys: 3, korovai: 10, paska: 10 },
     seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
-    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, pysanka: 6, motanka: 8, tarilka: 10, vinok: 8, didukh: 10, vyshyvanka: 12, bandura: 20, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
+    home: { vazon: 12, chashka: 8, svichka: 8, knyha: 10, kvity: 10, lampa: 16, hlechyk: 16, rushnyk: 16, pysanka: 12, motanka: 16, tarilka: 20, vinok: 16, didukh: 20, vyshyvanka: 24, bandura: 40, kartyna: 20, dzerkalo: 20, hodynnyk: 20, kylym: 30 },
     // Toys and furniture for the cat friends (they use them).
     tools: { vudka: 6 },
-    cats: { kihtetochka: 15, lezhanka: 8, miachyk: 3, myshka: 3 },
+    cats: { kihtetochka: 30, lezhanka: 16, miachyk: 6, myshka: 6 },
     // Furniture the cottage comes with. Not for sale; tap it in the room to learn its name.
     furnished: { pich: 20, lizhko: 20, stil: 15, stilets: 10, polytsia: 0 }
   },
