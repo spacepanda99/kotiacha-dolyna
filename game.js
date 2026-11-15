@@ -45,6 +45,7 @@ function textOf(id) {
   if (k === 'w') return W[id.slice(2)] ? W[id.slice(2)].uk : '';
   if (k === 'p') return PH[id.slice(2)] ? PH[id.slice(2)].uk : '';
   if (k === 'n') return D.prices[a] || '';
+  if (k === 's') return D.story && D.story[+a] ? D.story[+a].uk : '';
   if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].uk : '';
   if (k === 'q') return W[b] ? D.questLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
   return '';
@@ -883,7 +884,38 @@ cv.addEventListener('pointerup', ev => {
   if (e) walkTo(e.x, e.kind === 'pond' ? wy : e.y, e); else walkTo(wx, wy, null);
 });
 
+// ------------------------------------------------------------------ Grandma Olia's letter
+let storyPage = 0;
+function storyShow(i) {
+  const pages = D.story, st = pages[i], box = $('#story');
+  storyPage = i;
+  const pic = p => p.startsWith('face:') ? `<img class="face" src="${faceURL(NPC[p.slice(5)].look)}" alt="">`
+    : p.startsWith('w:') ? `<img src="${iconURL(p.slice(2))}" alt="">` : `<span class="em">${p}</span>`;
+  const last = i === pages.length - 1;
+  box.querySelector('.paper').innerHTML = `
+    <button class="x" data-a="storyClose" aria-label="Закрити / Close">✕</button>
+    <div class="pics">${st.pics.map(pic).join('')}</div>
+    <div class="ukl">${st.uk}</div>
+    <div class="tr">${translit(st.uk)}</div>
+    <div class="enl">${st.en}</div>
+    <div class="dots">${pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="nav">
+      ${i > 0 ? btn('storyGo', i - 1, '←', 'ghost round') : ''}
+      ${btn('hear', 's_' + i, '🔊', 'round blue')}
+      ${last ? btn('storyStart', '', 'Почати<small>Start</small>') : btn('storyGo', i + 1, 'Далі<small>Next</small>')}
+    </div>`;
+  box.classList.add('show');
+  box.querySelector('.paper').scrollTop = 0;
+  say('s_' + i);
+}
+function storyClose() { $('#story').classList.remove('show'); sayToken++; for (const k in clipCache) { try { clipCache[k].pause(); } catch (e) {} } }
+
 const A = {
+  story() { storyShow(0); },
+  storyGo(v) { storyShow(+v); },
+  storyClose,
+  storyBg() {},
+  storyStart() { storyClose(); A.start(); },
   start() {
     // Full screen right away. This runs inside the tap, which browsers require. The installed app is already full screen.
     try {
@@ -938,6 +970,7 @@ const A = {
   place(v) { if (!(S.home[v] > 0)) return; S.home[v]--; S.placed[cur.slot] = v; closeSheet(); learn(v); say('w_' + v); blip(700); tutEvent('place'); save(); },
 };
 document.addEventListener('click', ev => {
+  if (ev.target.id === 'story') return storyClose();
   const el = ev.target.closest('[data-a]'); if (!el) return;
   const f = A[el.dataset.a]; if (f) f(el.dataset.v);
 });

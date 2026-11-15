@@ -98,6 +98,27 @@
   #start h1 { margin:0; font-size:44px; letter-spacing:.5px; color:#3b2f2a; text-shadow:0 3px 0 rgba(255,255,255,.6); }
   #start p { margin:0; font-size:18px; max-width:340px; color:#4b3d36; }
   #start .b { font-size:24px; padding:16px 44px; margin-top:14px; }
+  #start .letter { font-size:17px; padding:10px 20px; margin-top:4px; }
+
+  #story { position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(60,45,30,.45); }
+  #story.show { display:flex; }
+  #story .paper { position:relative; width:min(100%, 460px); max-height:100%; overflow:auto; touch-action:pan-y; background:#fffaf0; border-radius:22px; padding:22px 20px 18px; box-shadow:0 10px 40px rgba(40,30,20,.35); text-align:center; background-image:repeating-linear-gradient(transparent 0 31px, rgba(90,169,230,.12) 31px 32px); }
+  #story .paper::before { content:""; position:absolute; left:0; right:0; top:0; height:10px; border-radius:22px 22px 0 0; background:repeating-linear-gradient(90deg, #d43a3a 0 14px, #fffaf0 14px 20px, #2d2d2d 20px 24px, #fffaf0 24px 30px); }
+  #story .pics { display:flex; justify-content:center; align-items:flex-end; gap:8px; min-height:104px; margin:6px 0 4px; }
+  #story .pics img { width:92px; height:92px; animation:pop .35s ease-out backwards; }
+  #story .pics img.face { border-radius:22px; background:#e8f4d9; }
+  #story .pics .em { font-size:64px; line-height:92px; font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; animation:pop .35s ease-out backwards; }
+  #story .pics > :nth-child(2) { animation-delay:.08s; } #story .pics > :nth-child(3) { animation-delay:.16s; }
+  @keyframes pop { from { transform:scale(.6); opacity:0; } }
+  @media (prefers-reduced-motion: reduce) { #story .pics img, #story .pics .em { animation:none; } }
+  #story .ukl { font-size:25px; font-weight:800; line-height:1.2; margin-top:6px; font-family:Georgia, "Times New Roman", serif; color:#3b2f2a; }
+  #story .tr { font-size:14px; color:var(--soft); margin-top:3px; }
+  #story .enl { font-size:17px; line-height:1.45; margin-top:12px; color:#4b3d36; text-align:left; }
+  #story .dots { display:flex; gap:7px; justify-content:center; margin-top:14px; }
+  #story .dots i { width:9px; height:9px; border-radius:50%; background:#e3d6bf; }
+  #story .dots i.on { background:var(--rose); }
+  #story .nav { display:flex; gap:10px; justify-content:center; align-items:center; margin-top:14px; flex-wrap:wrap; }
+  #story .x { position:absolute; right:10px; top:14px; background:none; font-size:22px; color:var(--soft); padding:6px 8px; }
   #start .ver { position:absolute; left:14px; bottom:calc(10px + env(safe-area-inset-bottom)); font-size:12px; color:#4b3d36; opacity:.7; }
   #start .reset { position:absolute; right:14px; bottom:calc(10px + env(safe-area-inset-bottom)); font-size:12px; background:none; color:#4b3d36; opacity:.7; text-decoration:underline; }
 </style>
@@ -119,6 +140,7 @@
 <div id="veil" data-a="close"></div>
 <div id="sheet"></div>
 <div id="toast"></div>
+<div id="story" data-a="storyBg"><div class="paper"></div></div>
 
 <div id="start">
   <div class="sun">🐈</div>
@@ -126,7 +148,8 @@
   <div class="latin">Kotiacha Dolyna</div>
   <p><b>Cat Valley</b><br>Wander a cozy Ukrainian village. Tap anything to hear its name.</p>
   <button class="b" data-a="start">Почати<small>Start</small></button>
-  <div class="ver">v0.4</div>
+  <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
+  <div class="ver">v0.5</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 

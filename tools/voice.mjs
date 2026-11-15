@@ -29,6 +29,8 @@ export function clips() {
       list.push({ id: `q_${n.id}_${item}`, text: D.questLine.uk.replace('%s', w.acc || w.uk), voice: n.voice, style: n.style });
     }
   }
+  const olia = D.npcs.find(n => n.id === 'olia');
+  (D.story || []).forEach((st, i) => list.push({ id: 's_' + i, text: st.uk, voice: olia.voice, style: olia.style }));
   const ok = D.npcs.find(n => n.id === 'oksana');
   for (const [num, text] of Object.entries(D.prices)) list.push({ id: 'n_' + num, text, voice: ok.voice, style: ok.style });
   return list;

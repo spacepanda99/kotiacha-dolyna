@@ -184,6 +184,25 @@ window.DATA = {
     }
   ],
 
+  // Grandma Olia's letter on the title screen: the valley's story, and how to play.
+  // pics: "face:<npc>", "w:<word id>" or a plain emoji.
+  story: [
+    { uk: "Привіт, сонечко! Це баба Оля.", pics: ["face:olia", "📜"],
+      en: "Hello, sunshine! It's Grandma Olia. The little cottage at the end of the road is yours now. Come and live with us in Котяча Долина, Kotiacha Dolyna: Cat Valley." },
+    { uk: "У нас багато котів!", pics: ["w:kit", "w:khata", "w:kit"],
+      en: "Our valley has more cats than people, sunflowers everywhere, and a stork on the pole by the road. Everyone here speaks Ukrainian. Don't worry: you'll pick it up just by living here." },
+    { uk: "Торкнись — і почуєш слово.", pics: ["👆", "w:yablunia", "✨"],
+      en: "Tap anything to walk over and hear its name. Things that sparkle ✨ are new to you, or a word that's due for a refresher. Tap the 🔊 to hear any word again." },
+    { uk: "Сусіди попросять про допомогу.", pics: ["face:andriiko", "w:morkva", "w:yabluko"],
+      en: "The neighbours will ask you for things. Grow vegetables in your garden, pick apples, draw water from the well, or buy from Oksana's market stall. Bring them what they ask for, and they'll thank you with coins and hearts." },
+    { uk: "Прикрась свою хату.", pics: ["w:khata", "w:kartyna", "w:vazon"],
+      en: "Spend your coins on lovely things at the market, then step inside your cottage and tap the + spots to make it home." },
+    { uk: "Спершу з перекладом, а потім — українською.", pics: ["📖", "👁️", "❤️"],
+      en: "At first everything has English with it. As you learn, the English quietly fades away. Tap 👁 to peek whenever you need to. Your word book 📖 shows how far you've come." },
+    { uk: "Чекаю на тебе! Обіймаю, баба Оля.", pics: ["face:olia", "❤️", "w:borshch"],
+      en: "I'll be waiting for you, with borscht on the stove. Hugs, Grandma Olia." }
+  ],
+
   // "Bring me, please, ..." — the item goes on the end in its acc form.
   questLine: { uk: "Принеси мені, будь ласка, %s.", en: "Bring me, please, %s." },
 
