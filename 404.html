@@ -22,12 +22,12 @@
   button { font:inherit; color:inherit; border:0; cursor:pointer; touch-action:manipulation; }
 
   #hud { position:fixed; top:calc(8px + env(safe-area-inset-top)); left:calc(8px + env(safe-area-inset-left)); right:calc(8px + env(safe-area-inset-right)); display:flex; gap:8px; align-items:center; pointer-events:none; z-index:5; }
-  .pill { pointer-events:auto; background:var(--cream); border-radius:999px; padding:7px 12px; font-weight:700; font-size:16px; box-shadow:0 3px 0 rgba(60,40,20,.18); display:flex; align-items:center; gap:5px; white-space:nowrap; }
+  .pill { pointer-events:auto; background:linear-gradient(#fffdf6, #fbf0da); border-radius:999px; padding:7px 12px; font-weight:700; font-size:16px; box-shadow:0 3px 0 rgba(60,40,20,.18), 0 7px 16px rgba(60,40,20,.12); transition:transform .09s ease-out, box-shadow .09s ease-out; display:flex; align-items:center; gap:5px; white-space:nowrap; }
   .pill.btn { padding:7px 11px; font-size:20px; }
   .pill.btn:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(60,40,20,.18); }
   #hud .grow { flex:1; }
-  #water.bump { animation:bump .5s ease-out; }
-  @keyframes bump { 40% { transform:scale(1.25); } }
+  .pill.bump { animation:bump .5s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes bump { 35% { transform:scale(1.28); } }
   @media (max-width: 420px) { .pill { padding:6px 9px; font-size:15px; } .pill.btn { padding:6px 8px; font-size:18px; } #hud { gap:6px; } }
   #guide { position:fixed; top:calc(56px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(94vw, 560px); background:rgba(255,248,234,.95); border-radius:16px; padding:6px 12px; box-shadow:0 3px 0 rgba(60,40,20,.18); z-index:5; text-align:center; display:flex; gap:10px; align-items:center; }
   #guide .t { flex:1; min-width:0; }
@@ -41,11 +41,20 @@
 
   #veil { position:fixed; inset:0; background:rgba(40,30,20,.28); z-index:9; display:none; }
   #sheet { position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:min(100vw, 560px); max-height:78vh; overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; background:var(--cream); border-radius:26px 26px 0 0; padding:16px 16px calc(18px + env(safe-area-inset-bottom)); z-index:10; display:none; box-shadow:0 -6px 24px rgba(40,30,20,.25); }
-  #sheet.show, #veil.show { display:block; }
+  #sheet.show, #veil.show, #sheet.closing, #veil.closing { display:block; }
+  #veil.show { animation:veilIn .22s ease-out; }
+  #veil.closing { animation:veilOut .19s ease-in forwards; pointer-events:none; }
+  #sheet.closing { animation:fall .19s ease-in forwards; pointer-events:none; }
+  @keyframes veilIn { from { opacity:0; } }
+  @keyframes veilOut { to { opacity:0; } }
+  @keyframes fall { to { transform:translate(-50%, 70px); opacity:0; } }
+  #light { position:fixed; inset:0; z-index:1; pointer-events:none; background:radial-gradient(130% 95% at 10% 2%, rgba(255,238,170,.26), rgba(255,238,170,0) 70%), radial-gradient(ellipse at center, rgba(24,48,40,0) 55%, rgba(24,48,40,.2) 100%); }
+  #fade { position:fixed; inset:0; z-index:25; background:#fff3d6; opacity:0; pointer-events:none; transition:opacity .2s ease; }
+  #fade.on { opacity:1; }
   #sheet.fixed { height:min(78vh, 760px); }
-  #sheet.show { animation:rise .22s ease-out; }
-  @keyframes rise { from { transform:translate(-50%, 40px); opacity:.4; } to { transform:translate(-50%, 0); opacity:1; } }
-  @media (prefers-reduced-motion: reduce) { #sheet.show { animation:none; } }
+  #sheet.show { animation:rise .3s cubic-bezier(.2,1.25,.4,1); }
+  @keyframes rise { from { transform:translate(-50%, 70px); opacity:.3; } to { transform:translate(-50%, 0); opacity:1; } }
+  @media (prefers-reduced-motion: reduce) { #sheet.show, #sheet.closing, #veil.show, #veil.closing, .pill.bump { animation:none; } #sheet.closing, #veil.closing { display:none; } }
 
   .card { text-align:center; }
   .card img.big { width:112px; height:112px; display:block; margin:0 auto 2px; }
@@ -55,7 +64,7 @@
   .en { font-size:19px; color:var(--soft); margin-top:4px; }
   .tag { display:inline-block; background:var(--sun); border-radius:999px; padding:2px 10px; font-size:13px; font-weight:700; margin-bottom:6px; }
   .row { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
-  .b { background:var(--sun); border-radius:16px; padding:12px 18px; font-weight:800; font-size:18px; box-shadow:0 4px 0 var(--sun2); min-height:50px; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.15; }
+  .b { background:var(--sun); border-radius:16px; padding:12px 18px; font-weight:800; font-size:18px; box-shadow:0 4px 0 var(--sun2); min-height:50px; transition:transform .08s ease-out, box-shadow .08s ease-out; display:inline-flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.15; }
   .b small { font-weight:600; font-size:12px; opacity:.75; }
   .b:active { transform:translateY(3px); box-shadow:0 1px 0 var(--sun2); }
   .b.blue { background:var(--sky); color:#fff; box-shadow:0 4px 0 #3d86bf; }
@@ -82,7 +91,7 @@
   .tab small { display:block; font-weight:600; font-size:11px; opacity:.7; }
   .tab.on { background:var(--sky); color:#fff; }
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); gap:8px; }
-  .it { background:#fff; border-radius:16px; padding:8px 4px 8px; text-align:center; position:relative; box-shadow:0 3px 0 #eadfc9; min-height:104px; }
+  .it { background:#fff; border-radius:16px; padding:8px 4px 8px; text-align:center; position:relative; box-shadow:0 3px 0 #eadfc9; min-height:104px; transition:transform .08s ease-out; }
   .it:active { transform:translateY(2px); }
   .it.sel { outline:3px solid var(--sky); }
   .it.owned { opacity:.5; filter:grayscale(.7); box-shadow:none; }
@@ -97,8 +106,8 @@
   .buyrow .what { font-weight:800; font-size:18px; line-height:1.15; }
   .muted { color:var(--soft); font-size:15px; text-align:center; padding:14px 6px; }
 
-  #toast { position:fixed; left:50%; top:22%; transform:translateX(-50%); background:var(--ink); color:#fff; border-radius:999px; padding:10px 18px; font-weight:800; font-size:17px; z-index:20; opacity:0; transition:opacity .25s, top .25s; pointer-events:none; width:max-content; max-width:92vw; text-align:center; }
-  #toast.show { opacity:1; top:19%; }
+  #toast { position:fixed; left:50%; top:22%; transform:translateX(-50%); background:var(--ink); color:#fff; border-radius:999px; padding:10px 18px; font-weight:800; font-size:17px; z-index:20; opacity:0; transform:translateX(-50%) scale(.8); transition:opacity .22s, top .3s cubic-bezier(.3,1.5,.5,1), transform .3s cubic-bezier(.3,1.5,.5,1); box-shadow:0 6px 18px rgba(40,30,20,.25); pointer-events:none; width:max-content; max-width:92vw; text-align:center; }
+  #toast.show { opacity:1; top:19%; transform:translateX(-50%) scale(1); }
 
   #start { position:fixed; inset:0; z-index:30; background:#bfe7fb; overflow:hidden; }
   #start #tc { position:absolute; inset:0; width:100%; height:100%; display:block; }
@@ -138,6 +147,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="light"></div>
 
 <div id="hud">
   <div class="pill" id="coins">💰 0</div>
@@ -154,6 +164,7 @@
 <div id="veil" data-a="close"></div>
 <div id="sheet"></div>
 <div id="toast"></div>
+<div id="fade"></div>
 <button id="update" data-a="update">🔄 Нова версія · <small>New version, tap to update</small></button>
 <div id="story" data-a="storyBg"><div class="paper"></div></div>
 
@@ -165,12 +176,12 @@
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v42</div>
+  <div class="ver">v43</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '42';</script>
-<script src="data.js?v=42"></script>
-<script src="game.js?v=42"></script>
+<script>window.APP_VERSION = '43';</script>
+<script src="data.js?v=43"></script>
+<script src="game.js?v=43"></script>
 </body>
 </html>
