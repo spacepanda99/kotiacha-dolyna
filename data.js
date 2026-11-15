@@ -249,6 +249,6 @@ window.DATA = {
     food: ["Їжа", "Food"], seeds: ["Насіння", "Seeds"], home: ["Для хати", "For the cottage"], help: ["Допомогти", "Help out"],
     bag: ["Кошик", "Basket"], words: ["Словник", "Word book"], show: ["Показати", "Show English"],
     empty: ["Порожньо", "Empty"], growing: ["Росте...", "Growing..."], thirsty: ["Хоче пити", "Needs water"],
-    start: ["Почати", "Start"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
+    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
   }
 };

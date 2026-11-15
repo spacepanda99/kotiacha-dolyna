@@ -22,10 +22,14 @@ const SAVE = 'kotiacha-dolyna-v1';
 const fresh = () => ({
   coins: 10, hearts: 0, words: {}, bag: {}, seeds: { morkva: 3 }, home: {}, placed: {},
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
-  npc: {}, cats: {}, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
+  npc: {}, cats: {}, decor: {}, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
 let S;
 try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { S = fresh(); }
+if (S.placed && Object.keys(S.placed).length) {
+  for (const id of Object.values(S.placed)) { if (!S.decor[id]) S.decor[id] = 1; else S.home[id] = (S.home[id] || 0) + 1; }
+  S.placed = {};
+}
 let saveT = 0;
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
 
@@ -818,7 +822,7 @@ const TUT = [
   { p: 'i_water', ev: 'water', en: 'Tap the bed again.' },
   { p: 'i_harvest', ev: 'harvest', en: 'Give it a moment, then tap the bed.' },
   { p: 'i_market', ev: 'buy', en: 'Find the striped stall on the square and buy something.' },
-  { p: 'i_decor', ev: 'place', en: 'Go into your cottage and put something in it.' },
+  { p: 'i_decor', ev: 'place', en: 'Go into your cottage and tap 🪑 Прикрасити (Decorate).' },
   { p: 'i_free', en: '' },
 ];
 function tutEvent(ev) {
@@ -881,51 +885,88 @@ function wordsSheet() {
 }
 
 // ------------------------------------------------------------------ inside the cottage
+// A drawn room. Everything you own has its own natural spot (bed by the wall, table on the rug,
+// painting on the wall, cup on the windowsill), so decorating is just: open Прикрасити, tap an item.
 let mode = 'world';
-function homeSlots() {
-  const w = cv.width, h = cv.height, out = [];
-  for (let i = 0; i < 4; i++) out.push({ k: 'w' + i, x: w * (0.17 + i * 0.22), y: h * 0.33, r: Math.min(w * 0.1, h * 0.065), wall: true });
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) out.push({ k: 'f' + (r * 4 + c), x: w * (0.17 + c * 0.22), y: h * (0.57 + r * 0.105), r: Math.min(w * 0.1, h * 0.052), wall: false });
-  return out;
+// x, y: bottom-centre as a fraction of the screen; s: size as a fraction of the room; z: drawing order.
+const DECOR = {
+  kylym: { x: 0.5, y: 0.86, s: 0.5, z: 0 },
+  pich: { x: 0.16, y: 0.7, s: 0.32, z: 1 }, lizhko: { x: 0.84, y: 0.71, s: 0.32, z: 1 }, lampa: { x: 0.68, y: 0.66, s: 0.17, z: 1 },
+  stil: { x: 0.5, y: 0.79, s: 0.26, z: 2 }, stilets: { x: 0.3, y: 0.81, s: 0.18, z: 2 },
+  hlechyk: { x: 0.08, y: 0.87, s: 0.13, z: 3 }, knyha: { x: 0.74, y: 0.87, s: 0.12, z: 3 }, vazon: { x: 0.93, y: 0.87, s: 0.16, z: 3 },
+  kartyna: { x: 0.15, y: 0.42, s: 0.18, z: 0, wall: true }, dzerkalo: { x: 0.33, y: 0.42, s: 0.16, z: 0, wall: true },
+  hodynnyk: { x: 0.85, y: 0.42, s: 0.16, z: 0, wall: true }, rushnyk: { x: 0.5, y: 0.37, s: 0.26, z: 1, wall: true },
+  kvity: { x: 0.5, y: 0.462, s: 0.1, z: 2, wall: true }, chashka: { x: 0.43, y: 0.462, s: 0.075, z: 2, wall: true }, svichka: { x: 0.57, y: 0.462, s: 0.085, z: 2, wall: true },
+};
+const roomU = () => Math.min(cv.width, cv.height * 0.72);
+function decorRect(id) {
+  const d = DECOR[id], u = roomU(), sz = d.s * u, x = d.x * cv.width, y = d.y * cv.height;
+  return { x: x - sz * 0.55, y: y - sz * 1.05, w: sz * 1.1, h: sz * 1.1, cx: x, by: y, sz };
 }
-function enterHome() { closeSheet(); mode = 'home'; const e = $('#exit'); e.innerHTML = lab('exit'); e.style.display = 'inline-flex'; blip(520); }
-function exitHome() { mode = 'world'; $('#exit').style.display = 'none'; blip(440); }
+function enterHome() { closeSheet(); mode = 'home'; $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#homebar').style.display = 'flex'; blip(520); }
+function exitHome() { mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
 function homeTap(px, py) {
-  const w = cv.width, h = cv.height;
-  if (Math.hypot(px - w * 0.14, py - h * 0.9) < h * 0.06) return wordCard('kit');
-  let best = null, bd = 1e9;
-  for (const s of homeSlots()) { const d = Math.hypot(px - s.x, py - (s.y - s.r * 0.6)); if (d < s.r * 1.25 && d < bd) { bd = d; best = s; } }
-  if (!best) return;
-  const id = S.placed[best.k];
-  if (id) return wordCard(id, { acts: [{ k: 'putaway', fn: () => { delete S.placed[best.k]; S.home[id] = (S.home[id] || 0) + 1; save(); closeSheet(); } }] });
-  const fits = Object.keys(S.home).filter(k => S.home[k] > 0 && D.wallItems.includes(k) === best.wall);
-  cur = { slot: best.k };
-  openSheet(`<h3><span class="uk">${D.ui.place[0]}${stage() < 3 ? ` <small>${D.ui.place[1]} ${best.wall ? 'on the wall' : 'on the floor'}</small>` : ''}</span></h3>` +
-    (fits.length ? `<div class="grid">${fits.map(k => `<button class="it" data-a="place" data-v="${k}"><span class="q">${S.home[k]}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}</button>`).join('')}</div>`
-      : `<div class="muted">${D.ui.empty[0]}.<br>${stage() < 3 ? `Oksana sells things for the ${best.wall ? 'wall' : 'floor'} at the market.` : 'Купи щось на ринку.'}</div>`));
+  // Friend cats first (they sit in front), then the frontmost item under the finger.
+  const friends = D.cats.filter(ct => S.cats[ct.id]);
+  for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
+  const ids = Object.keys(S.decor).filter(id => DECOR[id]).sort((a, b) => (DECOR[b].wall ? 0 : 10) + DECOR[b].z - (DECOR[a].wall ? 0 : 10) - DECOR[a].z);
+  for (const id of ids) {
+    const r = decorRect(id);
+    if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return wordCard(id, { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] });
+  }
+  if (!ids.length) decorSheet();
+}
+function catSpot(i) { const xs = [0.24, 0.62, 0.4, 0.78, 0.5, 0.88]; return { x: xs[i % 6] * cv.width, y: cv.height * 0.885, s: roomU() * 0.14 }; }
+function decorSheet() {
+  const ids = Object.keys(DECOR).filter(id => S.decor[id] || S.home[id] > 0);
+  const st = stage();
+  openSheet(`<h3><span><span class="uk">${D.ui.decor[0]}</span> ${st < 3 ? `<small>${D.ui.decor[1]}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>` +
+    (ids.length
+      ? `${st < 3 ? '<div class="muted" style="padding:0 0 10px">Tap something to put it in your cottage. Tap again to put it away.</div>' : ''}<div class="grid">${ids.map(id => `<button class="it ${S.decor[id] ? 'sel' : ''}" data-a="decor" data-v="${id}">${S.decor[id] ? '<span class="q">✓</span>' : (S.home[id] > 1 ? `<span class="q">${S.home[id]}</span>` : '')}<img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}</button>`).join('')}</div>`
+      : `<div class="muted">🏠 ${D.ui.empty[0]}.<br>${st < 3 ? 'Buy lovely things at the market, in the «Для хати» (For the cottage) tab.' : 'Купи щось на ринку: «Для хати».'}</div>`) +
+    `<div class="row">${btn('close', '', lab('close'), 'ghost')}</div>`);
 }
 function drawHome(t) {
-  const w = cv.width, h = cv.height, c = ctx;
-  c.fillStyle = '#fdf6e3'; c.fillRect(0, 0, w, h * 0.5);
-  c.fillStyle = '#c99a63'; c.fillRect(0, h * 0.5, w, h * 0.5);
-  c.strokeStyle = 'rgba(120,80,40,.25)'; c.lineWidth = Math.max(2, h * 0.003);
-  for (let i = 1; i < 9; i++) { c.beginPath(); c.moveTo(0, h * (0.5 + i * 0.055)); c.lineTo(w, h * (0.5 + i * 0.055)); c.stroke(); }
-  // Embroidery-style border along the top of the wall, and a blue skirting line.
-  const u = Math.max(10, w / 36), y0 = h * 0.17;
-  for (let x = 0; x < w + u; x += u * 2) { c.fillStyle = '#d43a3a'; poly(c, [[x, y0], [x + u * 0.8, y0 + u * 0.8], [x, y0 + u * 1.6], [x - u * 0.8, y0 + u * 0.8]]); c.fillStyle = '#2d2d2d'; circ(c, x + u, y0 + u * 0.8, u * 0.22); }
-  c.fillStyle = '#4a90d9'; c.fillRect(0, h * 0.485, w, h * 0.015);
-  const slots = homeSlots();
-  for (const s of slots) {
-    const id = S.placed[s.k];
-    if (id) drawIcon(c, W[id].ic, s.x, s.y + (s.wall ? s.r * 0.3 : s.r * 0.5), s.r * 2.1);
-    else {
-      c.strokeStyle = 'rgba(90,60,30,.28)'; c.lineWidth = Math.max(2, h * 0.003); c.setLineDash([h * 0.012, h * 0.01]);
-      c.beginPath(); c.arc(s.x, s.y - s.r * 0.6, s.r * 0.75, 0, 7); c.stroke(); c.setLineDash([]);
-      c.fillStyle = 'rgba(90,60,30,.3)'; c.font = `${s.r}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('+', s.x, s.y - s.r * 0.6);
-    }
+  const w = cv.width, h = cv.height, c = ctx, u = roomU(), wallB = h * 0.56;
+  // back wall, with an embroidered border and wooden beams
+  c.fillStyle = '#fbf1dc'; c.fillRect(0, 0, w, wallB);
+  c.fillStyle = 'rgba(160,110,60,.10)'; for (let x = 0; x < w; x += u * 0.11) c.fillRect(x, 0, u * 0.004 + 1, wallB);
+  const k = Math.max(10, w / 36), y0 = h * 0.17;
+  c.fillStyle = '#8a5a2b'; c.fillRect(0, y0 - k * 0.9, w, k * 0.5);
+  for (let x = 0; x < w + k; x += k * 2) { c.fillStyle = '#d43a3a'; poly(c, [[x, y0], [x + k * 0.8, y0 + k * 0.8], [x, y0 + k * 1.6], [x - k * 0.8, y0 + k * 0.8]]); c.fillStyle = '#2d2d2d'; circ(c, x + k, y0 + k * 0.8, k * 0.22); }
+  // the window, with the valley outside
+  const wx = w * 0.5, ww = u * 0.36, wt = h * 0.27, wb = h * 0.45;
+  c.save(); c.beginPath(); c.rect(wx - ww / 2, wt, ww, wb - wt); c.clip();
+  let g = c.createLinearGradient(0, wt, 0, wb); g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e8f7ff'); c.fillStyle = g; c.fillRect(wx - ww / 2, wt, ww, wb - wt);
+  c.fillStyle = '#a6dc7c'; ell(c, wx - ww * 0.2, wb, ww * 0.5, (wb - wt) * 0.32); c.fillStyle = '#8fcf6a'; ell(c, wx + ww * 0.3, wb, ww * 0.5, (wb - wt) * 0.26);
+  c.fillStyle = '#fff'; ell(c, wx + ww * 0.15 + Math.sin(t * 0.2) * ww * 0.1, wt + (wb - wt) * 0.25, ww * 0.14, (wb - wt) * 0.07);
+  for (let i = 0; i < 4; i++) sunflower(c, wx - ww * 0.36 + i * ww * 0.24, wb + 2, (wb - wt) * 0.38, t, i);
+  c.restore();
+  c.strokeStyle = '#3d7cc2'; c.lineWidth = u * 0.022; c.strokeRect(wx - ww / 2, wt, ww, wb - wt);
+  c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(wx, wt); c.lineTo(wx, wb); c.moveTo(wx - ww / 2, (wt + wb) / 2); c.lineTo(wx + ww / 2, (wt + wb) / 2); c.stroke();
+  c.fillStyle = '#c08a55'; rr(c, wx - ww / 2 - u * 0.03, wb, ww + u * 0.06, u * 0.025, 4);
+  // floor: warm boards, skirting, and a soft shadow where wall meets floor
+  c.fillStyle = '#c99a63'; c.fillRect(0, wallB, w, h - wallB);
+  c.strokeStyle = 'rgba(120,80,40,.28)'; c.lineWidth = Math.max(2, h * 0.003);
+  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+  c.fillStyle = '#4a90d9'; c.fillRect(0, wallB - h * 0.012, w, h * 0.014);
+  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(0, wallB, w, h * 0.05);
+  // a warm glow when the lamp or candle is in
+  if (S.decor.lampa || S.decor.svichka) { g = c.createRadialGradient(w * 0.6, h * 0.5, 0, w * 0.6, h * 0.5, u * 0.8); g.addColorStop(0, 'rgba(255,214,120,.18)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }
+  // everything you've put in, wall things first, then back to front
+  const ids = Object.keys(S.decor).filter(id => DECOR[id]).sort((a, b) => (DECOR[a].wall ? 0 : 10) + DECOR[a].z - (DECOR[b].wall ? 0 : 10) - DECOR[b].z);
+  for (const id of ids) {
+    const r = decorRect(id);
+    if (!DECOR[id].wall && id !== 'kylym') { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
+    if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.55); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
+    else drawIcon(c, W[id].ic, r.cx, r.by, r.sz);
   }
-  drawIcon(c, '🐈', w * 0.14, h * 0.93 + Math.sin(t * 2) * h * 0.003, h * 0.09);
-  D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => cat(c, w * (0.3 + i * 0.118), h * 0.885, h * 0.07, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1));
+  // your cat friends
+  D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
+  if (!ids.length) {
+    c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.045)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(stage() < 3 ? 'Порожньо. Tap 🪑 Прикрасити below.' : 'Порожньо… 🪑', w / 2, h * 0.7);
+  }
 }
 
 // ------------------------------------------------------------------ the world, drawn
@@ -1345,7 +1386,12 @@ const A = {
       h.tries++; useWord(h.target, false); toast(`${PH.ni.uk} ${W[v].uk}.`); say('p_ni', 'w_' + v);
     }
   },
-  place(v) { if (!(S.home[v] > 0)) return; S.home[v]--; S.placed[cur.slot] = v; closeSheet(); learn(v); say('w_' + v); blip(700); tutEvent('place'); save(); },
+  decorate() { decorSheet(); },
+  decor(v) {
+    if (S.decor[v]) { delete S.decor[v]; S.home[v] = (S.home[v] || 0) + 1; blip(440); }
+    else if (S.home[v] > 0) { S.home[v]--; S.decor[v] = 1; learn(v); say('w_' + v); blip(700); tutEvent('place'); }
+    save(); if (sheetOpen() && sheet.querySelector('[data-a="decor"]')) decorSheet();
+  },
 };
 document.addEventListener('click', ev => {
   if (ev.target.id === 'story') return storyClose();
