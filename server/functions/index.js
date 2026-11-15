@@ -18,6 +18,15 @@ const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const okOrigin = o => ORIGINS.includes(o) || LOCAL.test(o || '');
 const clean = (s, n) => String(s || '').replace(/[^\p{L}\p{N} '’ʼ().,-]/gu, '').slice(0, n);
 
+// Compare words the way a beginner should be judged: ignore apostrophes, the soft sign, and i/y mix-ups.
+const norm = x => String(x || '').toLowerCase().replace(/[^\p{L}]/gu, '').replace(/ь/g, '').replace(/ґ/g, 'г').replace(/[иї]/g, 'і');
+function lev(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[a.length][b.length];
+}
+
 async function underCap(ip) {
   const day = new Date().toISOString().slice(0, 10);
   const db = admin.firestore();
@@ -40,8 +49,8 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   if (req.method === 'OPTIONS') return res.status(204).send('');
   if (req.method !== 'POST' || !okOrigin(origin)) return res.status(403).json({ error: 'not allowed' });
 
-  const { word, tr, en, wav } = req.body || {};
-  const w = clean(word, 40), t = clean(tr, 40), e = clean(en, 40);
+  const { word, wav } = req.body || {};
+  const w = clean(word, 40);
   if (!w || typeof wav !== 'string' || wav.length < 200 || wav.length > MAX_WAV_BYTES * 1.4) return res.status(400).json({ error: 'bad request' });
   if (Buffer.from(wav.slice(0, 8), 'base64').slice(0, 4).toString() !== 'RIFF') return res.status(400).json({ error: 'bad audio' });
 
@@ -49,14 +58,15 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   try { if (!(await underCap(ip))) return res.status(429).json({ error: 'limit', message: 'Enough practice for today. Come back tomorrow!' }); }
   catch (err) { console.error('cap check failed'); return res.status(500).json({ error: 'server' }); }
 
-  const prompt = `You are a kind Ukrainian pronunciation coach for an adult beginner. They were asked to say the Ukrainian word "${w}" (sounds like ${t}, meaning "${e}"). Listen to the recording and judge it.
-Reply as JSON with: heard (the Ukrainian word you actually heard, in Cyrillic, or "" if there was no speech), score (integer 0-100), tip (one short, warm English sentence of at most 14 words; if the score is under 80 give one concrete tip about the sound that was off).
-Be generous: 85-100 means it is clearly the right word even with a foreign accent; 60-84 means recognisable but one sound is off; 30-59 means partly right; 0-29 means a different word, silence or only noise. Do not mark down an accent, speed, or soft versus hard consonants that a beginner cannot hear yet.`;
+  // Gemini is NOT told the target word. It only writes down what it hears and how clearly it was spoken, so
+  // mumbling cannot pass; the score is worked out here by comparing what it heard with the target.
+  const prompt = `Listen to this short recording of a language learner saying one Ukrainian word. Do not guess what they meant to say.
+Reply as JSON with: heard (exactly the Ukrainian word you can make out, in Cyrillic, or "" if you cannot make out a real word; if it is unclear, write the nearest sounds rather than a word you expect), clarity (integer 0-100: how clearly and distinctly it was spoken; whispering, mumbling, trailing off, heavy noise or cut-off sounds are under 50; a clear attempt with a foreign accent is 80 or more).`;
   const body = {
     contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: wav } }] }],
     generationConfig: {
-      temperature: 0, maxOutputTokens: 200, responseMimeType: 'application/json',
-      responseSchema: { type: 'OBJECT', properties: { heard: { type: 'STRING' }, score: { type: 'INTEGER' }, tip: { type: 'STRING' } }, required: ['heard', 'score', 'tip'] },
+      temperature: 0, maxOutputTokens: 120, responseMimeType: 'application/json',
+      responseSchema: { type: 'OBJECT', properties: { heard: { type: 'STRING' }, clarity: { type: 'INTEGER' } }, required: ['heard', 'clarity'] },
     },
   };
   try {
@@ -68,8 +78,18 @@ Be generous: 85-100 means it is clearly the right word even with a foreign accen
     const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
     const txt = (parts.find(x => typeof x.text === 'string') || {}).text;
     const out = JSON.parse(txt);
-    const score = Math.max(0, Math.min(100, Math.round(Number(out.score) || 0)));
-    return res.json({ heard: clean(out.heard, 40), score, tip: clean(out.tip, 120) });
+    const heard = clean(out.heard, 40), clarity = Math.max(0, Math.min(100, Math.round(Number(out.clarity) || 0)));
+    const a = norm(w), b = norm(heard);
+    const sim = !b ? 0 : 1 - lev(a, b) / Math.max(a.length, b.length, 1);
+    const factor = clarity >= 70 ? 1 : 0.4 + 0.6 * clarity / 70;
+    const score = Math.round(Math.max(0, Math.min(100, sim * 100 * factor)));
+    let tip;
+    if (!heard) tip = 'I could not make out a word. Speak up and say it slowly.';
+    else if (score >= 90) tip = 'Wonderful, that was clear!';
+    else if (sim >= 0.9 && clarity < 70) tip = 'Right word! Speak up a little and say each sound clearly.';
+    else if (score >= 70) tip = `Very close. I heard "${heard}". Say it once more, slowly.`;
+    else tip = `I heard "${heard}". Tap the speaker, then copy the sounds slowly.`;
+    return res.json({ heard, score, tip });
   } catch (err) {
     console.error('score failed', String(err && err.message).slice(0, 120));
     return res.status(500).json({ error: 'server' });

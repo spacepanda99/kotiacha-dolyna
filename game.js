@@ -1754,7 +1754,7 @@ async function toWav16k(dec) {
 }
 async function scoreWord(id, wav) {
   const w = W[id];
-  const r = await fetch(SPEECH_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ word: w.uk, tr: w.tr, en: w.en, wav }) });
+  const r = await fetch(SPEECH_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ word: w.uk, wav }) });
   const j = await r.json().catch(() => ({}));
   if (r.status === 429) return { limit: true, message: j.message || 'Enough practice for today. Come back tomorrow!' };
   if (!r.ok) throw new Error('score ' + r.status);
@@ -1776,6 +1776,11 @@ function spRender() {
       <div class="row">${btn('spGo', '', `${PH.duzhe_smachno ? 'Смачного!' : 'OK'}<small>Dinner time</small>`)}</div></div>`;
   } else {
     const off = !micOk();
+    // No hints to start with: the picture and the speaker button only. Two eyes reveal the written word and how to say it.
+    const done = sp.view === 'result';
+    const showUk = done || sp.showUk, showTr = done || sp.showTr;
+    const hints = `${showUk ? `<div class="word">${w.uk}</div>` : ''}${showTr ? `<div class="tr">${w.tr}</div><div class="en">${w.en}</div>` : ''}
+      ${showUk && showTr ? '' : `<div class="sp-eyes">${showUk ? '' : btn('spEyeUk', '', '👁 Абв', 'ghost')}${showTr ? '' : btn('spEyeTr', '', '👁 abc', 'ghost')}</div>`}`;
     let mid = '', row = '';
     const hear = btn('hear', 'w_' + id, '🔊', 'round blue'), skip = btn('spSkip', '', lab('skip'), 'ghost');
     if (sp.view === 'listening') {
@@ -1796,13 +1801,12 @@ function spRender() {
       row = `${hear}<button class="b${off ? ' off' : ''}" data-a="spSay">🎤 ${lab('say')}</button>${skip}`;
     }
     html = `<div class="card"><div class="sp-top">🎤 Скажи слово${st < 3 ? ' · Say the word' : ''}</div>${dots}
-      <img class="big" src="${iconURL(id)}" alt=""><div class="word">${w.uk}</div>${st < 4 ? `<div class="tr">${w.tr}</div>` : ''}${st < 3 ? `<div class="en">${w.en}</div>` : ''}
+      <img class="big" src="${iconURL(id)}" alt="">${hints}
       ${mid}<div class="row">${row}</div></div>`;
   }
   sp.rendering = true;
   openSheet(html, () => { if (sp && !sp.rendering) { sp.stop = true; sp.run++; sp = null; } });
   sp.rendering = false;
-  if (sp.view === 'ready' && !sp.heardIntro) { sp.heardIntro = 1; say('w_' + id); }
 }
 async function spAttempt() {
   if (!sp || !micOk()) return;
@@ -1829,7 +1833,7 @@ async function spAttempt() {
   if (out.score >= 85) { blip(990, 0.15); }
   my.view = 'result'; spRender();
 }
-function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R.needs.length ? 'summary' : 'ready'; sp.last = null; sp.tries = 0; sp.heardIntro = 0; spRender(); }
+function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R.needs.length ? 'summary' : 'ready'; sp.last = null; sp.tries = 0; sp.showUk = sp.showTr = false; spRender(); }
 
 function talk(npc) {
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
@@ -2668,6 +2672,8 @@ const A = {
     micRefresh();
   },
   spSay() { spAttempt(); },
+  spEyeUk() { if (sp) { sp.showUk = true; spRender(); } },
+  spEyeTr() { if (sp) { sp.showTr = true; spRender(); } },
   spStop() { if (sp) sp.stop = true; },
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
