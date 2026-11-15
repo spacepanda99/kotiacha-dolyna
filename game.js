@@ -216,13 +216,51 @@ const DRAW = {
     c.fillStyle = '#8a5a2b'; poly(c, [[-30, -52], [0, -70], [30, -52]]);
     c.fillStyle = '#3b2f2a'; ell(c, 0, -14, 7, 4);
   },
+  // The market stall: carved РИНОК sign with painted flowers, a scalloped striped awning, blue-and-yellow
+  // bunting, a garlic braid and a string of red peppers, a counter with an embroidered trim piled with
+  // produce, bread and honey, and crates on the ground in front.
   stall(c) {
-    c.fillStyle = '#8a5a2b'; c.fillRect(-45, -86, 5, 54); c.fillRect(40, -86, 5, 54);
-    c.fillStyle = '#c08a55'; rr(c, -48, -36, 96, 36, 4);
-    c.fillStyle = '#a8713f'; c.fillRect(-48, -36, 96, 6);
-    for (let i = 0; i < 6; i++) { c.fillStyle = i % 2 ? '#fffdf5' : '#e2574c'; c.fillRect(-48 + i * 16, -98, 16, 18); circ(c, -40 + i * 16, -80, 8); }
-    const g = ['#e2392f', '#f2c230', '#5fb760', '#f08a2b', '#b05cc9'];
-    g.forEach((col, i) => { c.fillStyle = col; circ(c, -32 + i * 16, -42, 7); });
+    const wood = '#9a6634', dark = '#6b4422', red = '#d43a3a', cream = '#fffaf0';
+    // posts
+    c.fillStyle = dark; c.fillRect(-46, -84, 4, 84); c.fillRect(42, -84, 4, 84);
+    // awning: striped, with a scalloped edge
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? cream : red; c.fillRect(-50 + i * 12.5, -90, 12.5, 12); }
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? cream : red; c.beginPath(); c.arc(-43.75 + i * 12.5, -78, 6.25, 0, Math.PI); c.fill(); }
+    c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-50, -79, 100, 1.5);
+    // carved sign board above the awning
+    c.fillStyle = dark; rr(c, -30, -104, 60, 15, 3);
+    c.fillStyle = wood; rr(c, -28.5, -102.5, 57, 12, 2.5);
+    c.beginPath(); c.moveTo(-12, -104); c.quadraticCurveTo(0, -112, 12, -104); c.closePath(); c.fill();
+    c.fillStyle = cream; c.font = '900 9px "Cozy", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('РИНОК', 0, -96);
+    const fl = (x, y) => { c.fillStyle = red; for (let k = 0; k < 5; k++) { const ang = k * 1.2566; circ(c, x + Math.cos(ang) * 1.6, y + Math.sin(ang) * 1.6, 1.1); } c.fillStyle = '#f2c230'; circ(c, x, y, 0.9); };
+    fl(-23, -96); fl(23, -96); fl(0, -106.5);
+    // bunting in blue and yellow
+    c.strokeStyle = '#6b4422'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(-42, -70); c.quadraticCurveTo(0, -62, 42, -70); c.stroke();
+    for (let i = 0; i < 9; i++) { const x = -38 + i * 9.5, y = -69 + Math.sin((i / 8) * Math.PI) * 3.8; c.fillStyle = i % 2 ? '#f2c230' : '#2c6ed5'; poly(c, [[x - 3, y], [x + 3, y], [x, y + 6]]); }
+    // garlic braid (left) and red peppers (right)
+    c.strokeStyle = '#c8b27a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-36, -76); c.lineTo(-36, -50); c.stroke();
+    c.fillStyle = '#f3ece0'; for (let i = 0; i < 5; i++) circ(c, -36 + (i % 2 ? 2 : -2), -72 + i * 5, 2.6);
+    c.strokeStyle = '#4f7a3a'; c.beginPath(); c.moveTo(36, -76); c.lineTo(36, -52); c.stroke();
+    c.fillStyle = '#c8322b'; for (let i = 0; i < 6; i++) { c.save(); c.translate(36 + (i % 2 ? 2 : -2), -72 + i * 4); c.rotate(i % 2 ? 0.5 : -0.5); ell(c, 0, 0, 1.4, 3); c.restore(); }
+    // counter with planks and an embroidered trim
+    c.fillStyle = wood; c.fillRect(-46, -38, 92, 36);
+    c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = 0.7; for (let x = -38; x < 46; x += 9) { c.beginPath(); c.moveTo(x, -34); c.lineTo(x, -2); c.stroke(); }
+    c.fillStyle = dark; c.fillRect(-48, -40, 96, 4);
+    c.fillStyle = cream; c.fillRect(-46, -34, 92, 6);
+    c.fillStyle = red; for (let x = -42; x < 44; x += 6) poly(c, [[x, -33.5], [x + 2, -31], [x, -28.5], [x - 2, -31]]);
+    // produce on the counter
+    c.fillStyle = '#a8713f'; rr(c, -44, -48, 18, 8, 2);
+    c.fillStyle = '#e2392f'; for (const [x, y] of [[-40, -49], [-35, -50], [-30, -49], [-37.5, -53], [-32.5, -53]]) circ(c, x, y, 2.6);
+    c.fillStyle = '#6fbf5a'; circ(c, -18, -45, 5); c.fillStyle = '#9ad683'; circ(c, -18, -45, 3); c.strokeStyle = '#4f8a3a'; c.lineWidth = 0.6; c.beginPath(); c.arc(-18, -45, 4, 0.6, 2.4); c.stroke();
+    c.fillStyle = '#6fbf5a'; circ(c, -9, -44, 4.2); c.fillStyle = '#9ad683'; circ(c, -9, -44, 2.4);
+    c.fillStyle = '#d9963a'; ell(c, 2, -44, 7, 4.5); c.fillStyle = '#efb758'; ell(c, 1, -45.5, 4, 2);
+    c.fillStyle = '#ec8a24'; ell(c, 14, -45, 5.5, 4.5); c.fillStyle = '#d9741a'; ell(c, 14, -45, 2, 4.5); c.fillStyle = '#5b7a2a'; c.fillRect(13.5, -51, 1.4, 2.6);
+    c.fillStyle = '#f08a2b'; for (let i = 0; i < 4; i++) { c.save(); c.translate(24 + i * 2, -43); c.rotate(-0.3 + i * 0.15); poly(c, [[-1.3, -6], [1.3, -6], [0, 4]]); c.restore(); }
+    c.fillStyle = '#4fae55'; for (let i = 0; i < 4; i++) ell(c, 24 + i * 2, -50, 1, 2.2);
+    for (const x of [35, 41]) { c.fillStyle = '#f2b31a'; rr(c, x - 2.6, -48, 5.2, 7, 1.5); c.fillStyle = '#fffaf0'; c.fillRect(x - 2.6, -48.5, 5.2, 1.6); c.fillStyle = '#d43a3a'; c.fillRect(x - 2.6, -48.8, 5.2, 0.8); }
+    // crates on the ground in front
+    const crate = (x, col) => { c.fillStyle = '#b5824e'; c.fillRect(x - 9, -9, 18, 9); c.strokeStyle = '#8a5a2b'; c.lineWidth = 0.8; c.strokeRect(x - 9, -9, 18, 9); c.beginPath(); c.moveTo(x - 9, -4.5); c.lineTo(x + 9, -4.5); c.stroke(); c.fillStyle = col; for (let i = 0; i < 4; i++) circ(c, x - 6 + i * 4, -10, 2.4); };
+    crate(-33, '#c9a05a'); crate(33, '#e2392f');
   },
   plot(c) {
     c.fillStyle = '#8a5a3c'; rr(c, -46, -72, 92, 64, 10);
@@ -541,7 +579,7 @@ function add(e) {
   add({ w: 'leleka', x: 21.5, y: 7, s: 2.6, solid: true });
   rect(10, 2, 12, 4); add({ w: 'mlyn', x: 11.5, y: 5, s: 3.8, spin: true });
   // Market square.
-  rect(18, 16, 20, 16); add({ w: 'rynok', x: 19.5, y: 17, s: 2.8, kind: 'shop' });
+  rect(17, 16, 21, 16); add({ w: 'rynok', x: 19.5, y: 17, s: 4.3, kind: 'shop' });
   add({ w: 'lavka', x: 16.5, y: 18.9, s: 1.3, solid: true });
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
@@ -567,7 +605,7 @@ function add(e) {
   for (const [x, y] of [[12, 8], [26, 15.5], [8, 16.5]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x });
   // Villagers.
   add({ w: 'khata', k: 'n_olia', x: 24.5, y: 12.7, kind: 'npc', npc: 'olia', s: 1.3 });
-  add({ w: 'khata', k: 'n_oksana', x: 21.6, y: 17.4, kind: 'npc', npc: 'oksana', s: 1.3 });
+  add({ w: 'khata', k: 'n_oksana', x: 22.4, y: 17.5, kind: 'npc', npc: 'oksana', s: 1.3 });
   add({ w: 'khata', k: 'n_taras', x: 25.2, y: 20.9, kind: 'npc', npc: 'taras', s: 1.3 });
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
   add({ w: 'sobaka', x: 15.7, y: 21.3, kind: 'animal', r: 1.0 });
