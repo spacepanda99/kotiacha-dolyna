@@ -60,6 +60,8 @@ window.DATA = {
     { id: "kavun", uk: "кавун", tr: "ka-VUN", en: "watermelon", ic: "🍉" },
     { id: "kartoplia", uk: "картопля", tr: "kar-TOP-lia", en: "potato", ic: "🥔", acc: "картоплю" },
     { id: "morkva", uk: "морква", tr: "MORK-va", en: "carrot", ic: "🥕", acc: "моркву" },
+    { id: "buriak", uk: "буряк", tr: "bu-RIAK", en: "beetroot", ic: "@beet" },
+    { id: "boroshno", uk: "борошно", tr: "BO-rosh-no", en: "flour", ic: "@flour" },
     { id: "kapusta", uk: "капуста", tr: "ka-PUS-ta", en: "cabbage", ic: "🥬", acc: "капусту" },
     { id: "tsybulia", uk: "цибуля", tr: "tsy-BU-lia", en: "onion", ic: "🧅", acc: "цибулю" },
     { id: "chasnyk", uk: "часник", tr: "chas-NYK", en: "garlic", ic: "🧄" },
@@ -67,8 +69,8 @@ window.DATA = {
     { id: "ohirok", uk: "огірок", tr: "o-hi-ROK", en: "cucumber", ic: "🥒" },
     { id: "harbuz", uk: "гарбуз", tr: "har-BUZ", en: "pumpkin", ic: "@pumpkin" },
     { id: "kukurudza", uk: "кукурудза", tr: "ku-ku-RU-dza", en: "corn", ic: "🌽", acc: "кукурудзу" },
-    { id: "borshch", uk: "борщ", tr: "borshch", en: "borscht", ic: "🍲" },
-    { id: "varenyky", uk: "вареники", tr: "va-RE-ny-ky", en: "dumplings", ic: "🥟" },
+    { id: "borshch", uk: "борщ", tr: "borshch", en: "borscht", ic: "@borshch" },
+    { id: "varenyky", uk: "вареники", tr: "va-RE-ny-ky", en: "varenyky (dumplings)", ic: "@varenyky" },
     { id: "pyrih", uk: "пиріг", tr: "py-RIH", en: "pie", ic: "🥧" },
     { id: "chai", uk: "чай", tr: "chai", en: "tea", ic: "🍵" },
     { id: "voda", uk: "вода", tr: "vo-DA", en: "water", ic: "💧", acc: "воду" },
@@ -121,6 +123,7 @@ window.DATA = {
     { id: "molodets", uk: "Молодець!", en: "Well done!" },
     { id: "nove_slovo", uk: "Нове слово!", en: "A new word!" },
     { id: "mur", uk: "Мур-мур! Тепер ми друзі.", en: "Purr! Now we are friends." },
+    { id: "duzhe_smachno", uk: "Дуже смачно! Дякую!", en: "Very tasty! Thank you!" },
     { id: "moia_khata", uk: "Моя хата.", en: "My cottage." },
     { id: "no_water", uk: "Немає води. Іди до криниці.", en: "No water. Go to the well." },
     { id: "i_explore", uk: "Оглянь село.", en: "Look around the village." },
@@ -144,9 +147,13 @@ window.DATA = {
         intro: { uk: "Я — баба Оля. Я варю борщ.", en: "I'm Grandma Olia. I'm cooking borscht." },
         how: { uk: "Як справи?", en: "How are you?" },
         good: { uk: "Це добре!", en: "That's good!" },
-        thanks: { uk: "Дякую, сонечко! Ти молодець!", en: "Thank you, sunshine! Well done!" }
+        thanks: { uk: "Дякую, сонечко! Ти молодець!", en: "Thank you, sunshine! Well done!" },
+        recipe_borshch: { uk: "Я варю борщ! Допоможеш мені?", en: "I'm making borscht! Will you help me?" },
+        ready_borshch: { uk: "Борщ готовий! Сідай, їж, сонечко!", en: "The borscht is ready! Sit down and eat, sunshine!" },
+        recipe_varenyky: { uk: "А тепер — вареники! Допоможеш?", en: "And now, varenyky! Will you help?" },
+        ready_varenyky: { uk: "Вареники готові! Смачного!", en: "The varenyky are ready! Enjoy your meal!" }
       },
-      wants: ["kapusta", "kartoplia", "morkva", "tsybulia", "chasnyk", "pomidor", "sil", "yaitse", "maslo"]
+      wants: ["kapusta", "kartoplia", "morkva", "tsybulia", "chasnyk", "pomidor", "sil", "yaitse", "maslo", "buriak", "boroshno", "syr"]
     },
     {
       id: "taras", name: "Тарас", nameEn: "Taras", voice: "orus",
@@ -200,6 +207,12 @@ window.DATA = {
     }
   ],
 
+  // Grandma Olia's cooking. She asks for each ingredient in turn, then cooks the dish and you eat together.
+  recipes: [
+    { id: "borshch", dish: "borshch", needs: ["buriak", "kapusta", "kartoplia", "morkva", "tsybulia", "pomidor"] },
+    { id: "varenyky", dish: "varenyky", needs: ["boroshno", "kartoplia", "tsybulia", "syr", "maslo"] }
+  ],
+
   // The valley's cats. Bring each one the treat it wants and it becomes your friend
   // (and comes to sit in your cottage). v = colouring, x/y = where it wanders.
   cats: [
@@ -240,8 +253,8 @@ window.DATA = {
   },
 
   shop: {
-    food: { khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6 },
-    seeds: { morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
+    food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6 },
+    seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
     home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
     // Toys and furniture for the cat friends (they use them).
     cats: { kihtetochka: 15, lezhanka: 8, miachyk: 3, myshka: 3 },
