@@ -76,8 +76,22 @@ function playClip(id) {
 function say(...ids) {
   const my = ++sayToken;
   for (const k in clipCache) { try { clipCache[k].pause(); } catch (e) {} }
-  (async () => { for (const id of ids) { if (my !== sayToken) return; await playClip(id); } })();
+  duck = 0.3;
+  (async () => { for (const id of ids) { if (my !== sayToken) return; await playClip(id); } if (my === sayToken) duck = 1; })();
 }
+// Theme music: starts on the first tap, softens while someone is speaking, remembers on/off.
+const music = new Audio('music/theme.mp3');
+music.loop = true; music.preload = 'auto';
+let musicOn = true, duck = 1, musicVol = 0;
+try { musicOn = localStorage.getItem('kd-music') !== 'off'; } catch (e) {}
+function musicBtn() { const b = $('#musicBtn'); if (b) b.textContent = musicOn ? '🎵' : '🔇'; }
+function musicTick(dt) {
+  const target = musicOn ? 0.55 * duck : 0;
+  musicVol += (target - musicVol) * Math.min(1, dt * 3);
+  try { music.volume = Math.max(0, Math.min(1, musicVol)); } catch (e) {}
+  if (!musicOn && musicVol < 0.01 && !music.paused) music.pause();
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden) music.pause(); else if (musicOn && running) music.play().catch(() => {}); });
 let actx = null;
 function blip(f = 660, d = 0.08) {
   try {
@@ -836,6 +850,7 @@ function drawWorld(t) {
 let last = 0, running = false;
 function frame(ms) {
   const t = ms / 1000, dt = Math.min(0.05, t - last || 0.016); last = t;
+  musicTick(dt);
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else { if (running && !sheetOpen()) update(dt, t); else update(0, t); drawWorld(t); }
   requestAnimationFrame(frame);
@@ -869,7 +884,11 @@ cv.addEventListener('pointerup', ev => {
 });
 
 const A = {
-  start() { $('#start').style.display = 'none'; running = true; hud(); setGuide(); say('p_pryvit', guideClip); },
+  start() { $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); if (musicOn) music.play().catch(() => {}); say('p_pryvit', guideClip); },
+  music() {
+    musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
+    musicBtn(); if (musicOn) music.play().catch(() => {}); toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
+  },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
   close: closeSheet,
   words: wordsSheet, bag: bagSheet,
