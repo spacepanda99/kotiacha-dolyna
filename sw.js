@@ -1,7 +1,7 @@
 // Lets Chrome install the game and keeps it playable offline.
 // Pages and scripts: network first, so updates arrive straight away; the cached copy is the offline fallback.
 // Voice clips, music and icons: cache first, since they never change under the same name.
-const CACHE = 'kotiacha-dolyna-v5';
+const CACHE = 'kotiacha-dolyna-v6';
 const CORE = ['./', 'index.html', 'game.js', 'data.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {

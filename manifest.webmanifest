@@ -3,7 +3,7 @@
   "short_name": "Котяча Долина",
   "description": "Cat Valley: a cozy Ukrainian village for learning Ukrainian by wandering and tapping.",
   "lang": "uk",
-  "id": "./",
+  "id": "/kotiacha-dolyna/",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
