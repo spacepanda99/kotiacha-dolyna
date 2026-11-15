@@ -1,0 +1,5 @@
+{
+  "functions": [
+    { "source": "functions", "codebase": "kotiacha", "ignore": ["node_modules", ".git"] }
+  ]
+}

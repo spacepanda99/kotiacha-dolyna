@@ -1,0 +1,12 @@
+{
+  "name": "kotiacha-functions",
+  "description": "Scores a learner's spoken Ukrainian word for the Kotiacha Dolyna game",
+  "engines": { "node": "22" },
+  "main": "index.js",
+  "type": "commonjs",
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "private": true
+}

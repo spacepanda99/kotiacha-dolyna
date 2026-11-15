@@ -22,7 +22,7 @@ const SAVE = 'kotiacha-dolyna-v1';
 const fresh = () => ({
   coins: 10, hearts: 0, words: {}, bag: { voda: 3 }, waterInit: 1, seeds: { morkva: 3 }, home: {}, placed: {},
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
-  npc: {}, cats: {}, decor: {}, gear: {}, recipe: { i: 0, got: [], started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
+  npc: {}, cats: {}, decor: {}, gear: {}, recipe: { i: 0, have: {}, started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
 let S;
 try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { S = fresh(); }
@@ -37,11 +37,18 @@ for (const [id, price] of Object.entries(D.shop.furnished)) {
 }
 if (!S.waterInit) { S.waterInit = 1; S.bag.voda = Math.max(S.bag.voda || 0, 3); }
 const WATER_MAX = 10, WELL_GIVES = 5;   // each trip to the well: +5 water, the can holds 10
-if (!S.recipe) S.recipe = { i: 0, got: [], started: -1 };
+if (!S.recipe) S.recipe = { i: 0, have: {}, started: -1 };
+// Older saves counted each ingredient once; those that were already handed over count as complete.
+if (!S.recipe.have) { S.recipe.have = {}; for (const id of S.recipe.got || []) S.recipe.have[id] = 6; delete S.recipe.got; }
+if (!S.say) S.say = {};
 if (!S.gear) S.gear = {};
 let saveT = 0;
 // Grandma cooks one dish after another and starts over from the first once she has made them all.
 const curRecipe = () => D.recipes[S.recipe.i % D.recipes.length];
+// She needs six of every ingredient, so you hear and say each word over and over.
+const NEED = 6;
+const recipeHave = id => Math.min(NEED, S.recipe.have[id] || 0);
+const recipeTotal = R => R.needs.reduce((a, id) => a + recipeHave(id), 0);
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
 
 // How far along the learner is. English fades out as this rises.
@@ -1631,26 +1638,28 @@ const mine = id => ({ uk: PH[id].uk, en: PH[id].en, clip: 'p_' + id, me: true })
 // and when she has everything she cooks the dish and you eat it together.
 const MASS = ['boroshno', 'syr', 'maslo', 'sil', 'kapusta', 'kartoplia', 'morkva', 'tsybulia'];
 function recipeList(R) {
-  return `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:6px">${R.needs.map(id => { const got = S.recipe.got.includes(id); return `<span style="position:relative;opacity:${got ? 1 : 0.4}"><img src="${iconURL(id)}" style="width:34px;height:34px" alt="">${got ? '<b style="position:absolute;right:-3px;bottom:-4px;color:#3f8a3a">✓</b>' : ''}</span>`; }).join('')}</div>`;
+  return `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">${R.needs.map(id => { const n = recipeHave(id), full = n >= NEED; return `<span style="position:relative;text-align:center;opacity:${n ? 1 : 0.45}"><img src="${iconURL(id)}" style="width:34px;height:34px;display:block;margin:0 auto" alt=""><span style="font-size:12px;font-weight:800;color:${full ? '#3f8a3a' : '#8a7566'}">${full ? '✓' : n + '/' + NEED}</span></span>`; }).join('')}</div>`;
 }
 function talkOlia(npc, n, steps) {
   const R = curRecipe(), st = stage();
   if (S.recipe.started !== S.recipe.i) { steps.push(line(npc, 'recipe_' + R.id)); S.recipe.started = S.recipe.i; learn(R.dish); }
-  const missing = () => R.needs.filter(x => !S.recipe.got.includes(x));
-  const carrying = missing().filter(x => (S.bag[x] || 0) > 0);
-  if (carrying.length) {
-    // Hand them over now, so closing the chat early never loses the delivery.
-    for (const x of carrying) { S.bag[x]--; S.recipe.got.push(x); useWord(x, true); }
+  const missing = () => R.needs.filter(x => recipeHave(x) < NEED);
+  let handed = 0;
+  for (const x of R.needs) {   // hand them over now, so closing the chat early never loses the delivery
+    const give = Math.min(S.bag[x] || 0, NEED - recipeHave(x));
+    if (give > 0) { S.bag[x] -= give; S.recipe.have[x] = recipeHave(x) + give; handed += give; useWord(x, true); }
+  }
+  if (handed) {
     hud(); save();   // no pay: Grandma's help is a favour, money comes only from selling
     const hand = mine('os');
     const thanks = line(npc, 'thanks');
     thanks.hint = recipeList(R);
     steps.push(hand, thanks);
   }
-  const left = missing().filter(x => !carrying.includes(x));
+  const left = missing();
   if (!left.length) {
     n.q = null;
-    steps[steps.length - 1].after = (f => () => { if (f) f(); setTimeout(() => mealScene(R), 250); })(steps[steps.length - 1].after);
+    steps[steps.length - 1].after = (f => () => { if (f) f(); setTimeout(() => speakRound(R), 250); })(steps[steps.length - 1].after);
   } else {
     const next = left[0];
     n.q = next;
@@ -1658,7 +1667,7 @@ function talkOlia(npc, n, steps) {
       uk: D.questLine.uk.replace('%s', W[next].acc || W[next].uk),
       en: D.questLine.en.replace('%s', (MASS.includes(next) ? 'some ' : 'a ') + W[next].en),
       clip: `q_${npc.id}_${next}`,
-      hint: `${st < 3 ? `<b>${W[R.dish].uk}</b>${st < 2 ? ' · ' + W[R.dish].en : ''}: ` : ''}${S.recipe.got.length}/${R.needs.length}${recipeList(R)}<div style="margin-top:6px">${(S.seeds[next] || 0) > 0 ? `🌱 <b>${D.ui.plantit[0]}</b>${st < 3 ? `<br>${D.ui.plantit[1].replace('%s', W[next].en)}` : ''}` : sourceHint(next)}</div>`,
+      hint: `${st < 3 ? `<b>${W[R.dish].uk}</b>${st < 2 ? ' · ' + W[R.dish].en : ''}: ` : ''}${recipeTotal(R)}/${R.needs.length * NEED}${recipeList(R)}<div style="margin-top:6px">${(S.seeds[next] || 0) > 0 ? `🌱 <b>${D.ui.plantit[0]}</b>${st < 3 ? `<br>${D.ui.plantit[1].replace('%s', W[next].en)}` : ''}` : sourceHint(next)}</div>`,
     });
   }
   save(); setGuide();
@@ -1680,6 +1689,148 @@ function mealScene(R) {
     <div class="row">${btn('hear', 'v_olia_ready_' + R.id, '🔊', 'round blue')}${btn('eatMeal', '', `${PH.duzhe_smachno.uk}${st < 3 ? `<small>${PH.duzhe_smachno.en}</small>` : ''}`)}</div></div>`);
   say('v_olia_ready_' + R.id);
 }
+
+// ------------------------------------------------------------------ speaking
+// Say a word, and Gemini (through a small server that holds the key) gives a generous score. Chrome on Android.
+const SPEECH_URL = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/kdScoreSpeech';
+const MIC = { supported: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder && (window.AudioContext || window.webkitAudioContext)), state: 'prompt' };
+function micRefresh() {
+  const b = $('#micBtn'); if (!b) return;
+  let top, sub, off = false;
+  if (!MIC.supported) { top = '🎤 Мікрофон недоступний'; sub = 'Microphone not available here'; off = true; }
+  else if (MIC.state === 'granted') { top = '🎤 Мікрофон увімкнено ✓'; sub = 'Microphone is on'; }
+  else if (MIC.state === 'denied') { top = '🎤 Мікрофон заблоковано'; sub = 'Blocked: tap for how to allow it'; }
+  else { top = '🎤 Увімкнути мікрофон'; sub = 'Enable microphone'; }
+  b.innerHTML = `${top}<small>${sub}</small>`; b.classList.toggle('off', off);
+}
+if (MIC.supported && navigator.permissions && navigator.permissions.query) {
+  navigator.permissions.query({ name: 'microphone' }).then(p => { MIC.state = p.state; micRefresh(); p.onchange = () => { MIC.state = p.state; micRefresh(); }; }).catch(() => {});
+}
+micRefresh();
+const micOk = () => MIC.supported && MIC.state !== 'denied';
+function stopSay() { sayToken++; for (const k in clipCache) { try { clipCache[k].pause(); } catch (e) {} } try { speechSynthesis.cancel(); } catch (e) {} }
+
+// Listens until the person has spoken and then gone quiet (or 4.5 s), and returns a 16 kHz WAV as base64.
+async function recordOnce(ctl, onLevel) {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+  const AC = window.AudioContext || window.webkitAudioContext, ac = new AC();
+  try {
+    const src = ac.createMediaStreamSource(stream), an = ac.createAnalyser(); an.fftSize = 1024; src.connect(an);
+    const rec = new MediaRecorder(stream), chunks = [], stopped = new Promise(r => (rec.onstop = r));
+    rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.start(100);
+    const buf = new Float32Array(an.fftSize), t0 = performance.now();
+    let floor = 0, voiced = false, lastVoice = 0;
+    await new Promise(done => {
+      const iv = setInterval(() => {
+        an.getFloatTimeDomainData(buf); let sum = 0; for (const v of buf) sum += v * v;
+        const rms = Math.sqrt(sum / buf.length), t = performance.now() - t0;
+        if (t < 350) floor = Math.max(floor, rms);
+        else if (rms > Math.max(0.02, floor * 2.5)) { voiced = true; lastVoice = t; }
+        if (onLevel) onLevel(rms);
+        if ((voiced && t - lastVoice > 800) || t > 4500 || ctl.stop) { clearInterval(iv); done(); }
+      }, 50);
+    });
+    rec.stop(); await stopped;
+    if (!voiced) return { quiet: true };
+    const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' });
+    const ab = await blob.arrayBuffer();
+    const dec = await new Promise((res, rej) => ac.decodeAudioData(ab, res, rej));
+    return { wav: await toWav16k(dec) };
+  } finally { stream.getTracks().forEach(t => t.stop()); try { ac.close(); } catch (e) {} }
+}
+
+async function toWav16k(dec) {
+  const len = Math.max(1, Math.min(Math.ceil(dec.duration * 16000), 16000 * 6));
+  const oc = new OfflineAudioContext(1, len, 16000), s = oc.createBufferSource(); s.buffer = dec; s.connect(oc.destination); s.start();
+  const pcm = (await oc.startRendering()).getChannelData(0);
+  const out = new DataView(new ArrayBuffer(44 + pcm.length * 2)), w = (o, t) => { for (let i = 0; i < t.length; i++) out.setUint8(o + i, t.charCodeAt(i)); };
+  w(0, 'RIFF'); out.setUint32(4, 36 + pcm.length * 2, true); w(8, 'WAVEfmt '); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, 16000, true); out.setUint32(28, 32000, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true); w(36, 'data'); out.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) out.setInt16(44 + i * 2, Math.max(-1, Math.min(1, pcm[i])) * 32767, true);
+  const bytes = new Uint8Array(out.buffer); let bin = '';
+  for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+  return btoa(bin);
+}
+async function scoreWord(id, wav) {
+  const w = W[id];
+  const r = await fetch(SPEECH_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ word: w.uk, tr: w.tr, en: w.en, wav }) });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 429) return { limit: true, message: j.message || 'Enough practice for today. Come back tomorrow!' };
+  if (!r.ok) throw new Error('score ' + r.status);
+  return j;
+}
+
+// The round after a dish: each ingredient in turn. Say it, get a score, try again or move on. Always skippable.
+let sp = null;
+const starsFor = n => n >= 85 ? 3 : n >= 60 ? 2 : n >= 30 ? 1 : 0;
+const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+function speakRound(R) { sp = { R, i: 0, view: 'ready', last: null, tries: 0, stop: false, run: 0, rendering: false, err: '' }; spRender(); }
+function spRender() {
+  const R = sp.R, id = R.needs[sp.i], w = W[id], st = stage();
+  const dots = `<div class="sp-dots">${R.needs.map((_, k) => `<i class="${k < sp.i ? 'done' : k === sp.i ? 'on' : ''}"></i>`).join('')}</div>`;
+  let html;
+  if (sp.view === 'summary') {
+    const rows = R.needs.map(x => { const b = sp.best && sp.best[x]; return `<div><img src="${iconURL(x)}" alt=""><b>${W[x].uk}</b><span>${b === undefined ? '–' : starStr(starsFor(b))}</span></div>`; }).join('');
+    html = `<div class="card"><div class="sp-top">🎤 ${W[R.dish].uk}</div><div class="word" style="font-size:30px;margin-top:6px">${PH.molodets.uk}</div><div class="sp-sum">${rows}</div>
+      <div class="row">${btn('spGo', '', `${PH.duzhe_smachno ? 'Смачного!' : 'OK'}<small>Dinner time</small>`)}</div></div>`;
+  } else {
+    const off = !micOk();
+    let mid = '', row = '';
+    const hear = btn('hear', 'w_' + id, '🔊', 'round blue'), skip = btn('spSkip', '', lab('skip'), 'ghost');
+    if (sp.view === 'listening') {
+      mid = `<div class="sp-mic">🎤<i id="splevel"></i></div><div class="muted" style="padding:0">Слухаю…${st < 3 ? ' · Listening…' : ''}</div>`;
+      row = btn('spStop', '', '⏹', 'round');
+    } else if (sp.view === 'checking') {
+      mid = `<div class="sp-spin"></div><div class="muted" style="padding:0">Перевіряю…${st < 3 ? ' · Checking…' : ''}</div>`;
+    } else if (sp.view === 'result' && sp.last) {
+      const sc = sp.last.score, ns = starsFor(sc), col = ns === 3 ? '#3f8a3a' : ns === 2 ? '#c98a1a' : '#e2574c';
+      mid = `<div class="sp-score" style="color:${col}">${sc}</div><div class="sp-stars" style="color:${col}">${starStr(ns)}</div>
+        ${sp.last.heard ? `<div class="muted" style="padding:6px 0 0">${st < 3 ? 'I heard' : 'Чую'}: <b>${sp.last.heard}</b></div>` : ''}<div class="hint">${sp.last.tip || ''}</div>`;
+      row = `${hear}${sp.tries < 6 ? btn('spSay', '', `🎤 ${lab('retry')}`, 'blue') : ''}${btn('spNext', '', lab(sp.i === R.needs.length - 1 ? 'finish' : 'next'))}`;
+    } else if (sp.view === 'quiet' || sp.view === 'error' || sp.view === 'limit') {
+      mid = `<div class="hint">${sp.view === 'quiet' ? 'I didn’t hear anything. Tap the microphone and say the word.' : sp.err}</div>`;
+      row = `${hear}${sp.view !== 'limit' && micOk() ? btn('spSay', '', `🎤 ${lab('retry')}`, 'blue') : ''}${skip}`;
+    } else {
+      mid = off ? `<div class="hint">${MIC.supported ? 'The microphone is blocked. Allow it in Chrome’s site settings, or skip.' : 'The microphone is not available here. You can skip.'}</div>` : '';
+      row = `${hear}<button class="b${off ? ' off' : ''}" data-a="spSay">🎤 ${lab('say')}</button>${skip}`;
+    }
+    html = `<div class="card"><div class="sp-top">🎤 Скажи слово${st < 3 ? ' · Say the word' : ''}</div>${dots}
+      <img class="big" src="${iconURL(id)}" alt=""><div class="word">${w.uk}</div>${st < 4 ? `<div class="tr">${w.tr}</div>` : ''}${st < 3 ? `<div class="en">${w.en}</div>` : ''}
+      ${mid}<div class="row">${row}</div></div>`;
+  }
+  sp.rendering = true;
+  openSheet(html, () => { if (sp && !sp.rendering) { sp.stop = true; sp.run++; sp = null; } });
+  sp.rendering = false;
+  if (sp.view === 'ready' && !sp.heardIntro) { sp.heardIntro = 1; say('w_' + id); }
+}
+async function spAttempt() {
+  if (!sp || !micOk()) return;
+  const my = sp, run = ++my.run, id = my.R.needs[my.i];
+  stopSay(); my.stop = false; my.view = 'listening'; spRender();
+  const alive = () => sp === my && my.run === run;
+  let rec;
+  try {
+    rec = await recordOnce(my, rms => { const el = $('#splevel'); if (el && alive()) el.style.transform = `scale(${1 + Math.min(0.9, rms * 9)})`; });
+  } catch (e) {
+    if (!alive()) return;
+    if (e && e.name === 'NotAllowedError') MIC.state = 'denied';
+    micRefresh(); my.view = 'error'; my.err = e && e.name === 'NotAllowedError' ? 'The microphone is blocked. Allow it in Chrome’s site settings, or skip.' : 'I couldn’t use the microphone. Try again, or skip.'; return spRender();
+  }
+  if (!alive()) return;
+  if (rec.quiet) { my.view = 'quiet'; return spRender(); }
+  my.view = 'checking'; spRender(); my.tries++;
+  let out;
+  try { out = await scoreWord(id, rec.wav); } catch (e) { if (!alive()) return; my.view = 'error'; my.err = 'I couldn’t check that right now. Try again, or skip.'; return spRender(); }
+  if (!alive()) return;
+  if (out.limit) { my.view = 'limit'; my.err = out.message; return spRender(); }
+  my.last = out; my.best = my.best || {}; my.best[id] = Math.max(my.best[id] || 0, out.score);
+  S.say[id] = Math.max(S.say[id] || 0, out.score); save();
+  if (out.score >= 85) { blip(990, 0.15); }
+  my.view = 'result'; spRender();
+}
+function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R.needs.length ? 'summary' : 'ready'; sp.last = null; sp.tries = 0; sp.heardIntro = 0; spRender(); }
+
 function talk(npc) {
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
@@ -1755,7 +1906,7 @@ function setGuide() {
   } else if (active.length) {
     const n = active[0], q = S.npc[n.id].q;
     const R = n.id === 'olia' ? curRecipe() : null;
-    uk = R ? `${W[R.dish].uk} ${S.recipe.got.length}/${R.needs.length}: ${W[q].acc || W[q].uk}` : `${n.name}: ${W[q].acc || W[q].uk}${st < 2 && W[q].ic[0] !== '@' ? ' ' + W[q].ic : ''}`;
+    uk = R ? `${W[R.dish].uk} ${recipeTotal(R)}/${R.needs.length * NEED}: ${W[q].acc || W[q].uk}` : `${n.name}: ${W[q].acc || W[q].uk}${st < 2 && W[q].ic[0] !== '@' ? ' ' + W[q].ic : ''}`;
     full = R ? `Grandma Olia is making ${W[R.dish].en}. She needs ${W[q].en}.` : `${n.nameEn} will pay 6 ₴ for ${W[q].en}.`; en = st < 2 ? full : '';
     guideClip = R ? `q_${n.id}_${q}` : `qp_${n.id}_${q}`;
   } else {
@@ -2471,7 +2622,7 @@ const A = {
   eatMeal() {
     const R = curRecipe(); if (!R) return closeSheet();
     say('p_duzhe_smachno'); learn(R.dish); give(R.dish); S.hearts += 3;   // a meal from Grandma earns love, not money
-    S.recipe = { i: S.recipe.i + 1, got: [], started: -1 };
+    S.recipe = { i: S.recipe.i + 1, have: {}, started: -1 };
     hud(); save(); setGuide(); blip(990, 0.2);
     setTimeout(() => { closeSheet(); toast(`❤️ +3  ${W[R.dish].uk}`); }, 1800);
   },
@@ -2509,6 +2660,18 @@ const A = {
     try { const ex = document.exitFullscreen || document.webkitExitFullscreen; if ((document.fullscreenElement || document.webkitFullscreenElement) && ex) { const p = ex.call(document); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
     toTitle();
   },
+  async mic() {
+    if (!MIC.supported) return toast('Microphone not available here');
+    if (MIC.state === 'denied') return toast('Chrome: tap the lock beside the address, then Permissions, then Microphone');
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach(t => t.stop()); MIC.state = 'granted'; toast('🎤 Мікрофон увімкнено · Microphone is on'); }
+    catch (e) { MIC.state = e && e.name === 'NotAllowedError' ? 'denied' : MIC.state; toast('🎤 Мікрофон не увімкнено · Not enabled'); }
+    micRefresh();
+  },
+  spSay() { spAttempt(); },
+  spStop() { if (sp) sp.stop = true; },
+  spNext() { spAdvance(); },
+  spSkip() { spAdvance(); },
+  spGo() { const R = sp && sp.R; sp = null; if (R) mealScene(R); },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
   close: closeSheet,
   words: wordsSheet, bag: bagSheet,
@@ -2600,5 +2763,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
