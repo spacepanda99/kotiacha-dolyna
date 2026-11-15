@@ -127,6 +127,8 @@ window.DATA = {
     { id: "duzhe_smachno", uk: "Дуже смачно! Дякую!", en: "Very tasty! Thank you!" },
     { id: "moia_khata", uk: "Моя хата.", en: "My cottage." },
     { id: "no_water", uk: "Немає води. Іди до криниці.", en: "No water. Go to the well." },
+    { id: "ne_budu", uk: "Вибачте, не буду.", en: "Sorry, I won't." },
+    { id: "vizmu", uk: "Візьму все одно.", en: "I'll take it anyway." },
     { id: "need_rod", uk: "Потрібна вудка.", en: "You need a fishing rod." },
     { id: "i_explore", uk: "Оглянь село.", en: "Look around the village." },
     { id: "i_talk", uk: "Поговори з бабою Олею.", en: "Talk to Grandma Olia." },
@@ -192,7 +194,10 @@ window.DATA = {
         intro: { uk: "Я — пан Богдан. Це мої бджоли.", en: "I'm Mr. Bohdan. These are my bees." },
         how: { uk: "Як справи?", en: "How are you?" },
         good: { uk: "Це добре!", en: "That's good!" },
-        thanks: { uk: "Щиро дякую!", en: "Thank you kindly!" }
+        thanks: { uk: "Щиро дякую!", en: "Thank you kindly!" },
+        mine: { uk: "Гей! Це мої соняшники!", en: "Hey! Those are my sunflowers!" },
+        ok: { uk: "Дякую. Насіння соняшнику є на ринку.", en: "Thank you. Sunflower seeds are sold at the market." },
+        angry: { uk: "Я з тобою більше не торгую.", en: "I don't do business with you any more." }
       },
       wants: ["kvitka", "soniashnyk", "voda", "harbuz", "kukurudza", "hryb"]
     },

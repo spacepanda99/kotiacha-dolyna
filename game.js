@@ -633,7 +633,7 @@ function add(e) {
   // Beehives and the sunflower field.
   for (let i = 0; i < 3; i++) add({ w: 'vulyk', x: 4.5 + i * 1.5, y: 19.9, s: 1.3, solid: true });
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
-  for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true });
+  for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
   for (const [x, y] of [[2.5, 6.9], [14.5, 6.9], [20.5, 3.9], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [34.5, 17.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [21.5, 11.9], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
@@ -944,8 +944,21 @@ function wordCard(id, o = {}) {
   say('w_' + id, ...(o.clips || []));
 }
 
+// Picking someone else's flowers: the owner calls out, and you choose to leave them or take one anyway.
+// Taking it anyway means the owner won't do business with you any more.
+function caught(e) {
+  const npc = NPC[e.owner], n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
+  const ask = line(npc, 'mine');
+  ask.choices = [
+    { uk: PH.ne_budu.uk, en: PH.ne_budu.en, clip: 'p_ne_budu', then: [line(npc, 'ok')] },
+    { uk: PH.vizmu.uk, en: PH.vizmu.en, clip: 'p_vizmu', fn: () => { n.mad = true; n.q = null; e.stealOk = true; take(e); setGuide(); save(); toast(`😠 ${npc.name}`); } },
+  ];
+  dialog(npc, [ask]);
+}
 function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; hud(); save(); }
 function take(e) {
+  if (e.owner && !e.stealOk) return caught(e);
+  e.stealOk = false;
   S.cd[e.k] = now() + e.cd * 1000;
   give(e.give); blip(880);
   toast(`+1 ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
@@ -1176,6 +1189,7 @@ function talk(npc) {
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
   if (!n.met) { steps.push(line(npc, 'intro')); n.met = true; }
+  if (n.mad) return dialog(npc, [line(npc, 'angry')]);
   if (npc.id === 'olia') tutEvent('olia');
   if (npc.id === 'olia' && D.recipes[S.recipe.i]) return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
@@ -1238,7 +1252,7 @@ let guideClip = '', guideEnOn = false, guideKey = '';
 function setGuide() {
   const g = $('#guide'), s = TUT[S.tut], st = stage();
   let uk, en, full;
-  const active = D.npcs.filter(n => S.npc[n.id] && S.npc[n.id].q);
+  const active = D.npcs.filter(n => S.npc[n.id] && S.npc[n.id].q && !S.npc[n.id].mad);
   if (s.ev) {
     uk = PH[s.p].uk + (s.need ? ` ${S.tutN}/${s.need}` : '');
     full = `${PH[s.p].en} ${s.en}`; en = st < 3 ? full : '';
@@ -1615,7 +1629,7 @@ function drawWorld(t) {
     if (e.kind === 'npc') {
       const n = S.npc[e.npc], top = y - T * 1.45;
       if (near && n && n.met) label(c, NPC[e.npc].name, x, y + 16);
-      const bub = e.npc === 'oksana' ? '🧺' : n && n.q ? (stage() < 2 && W[n.q].ic[0] !== '@' ? W[n.q].ic : '❔') : '💬';
+      const bub = n && n.mad ? '😠' : e.npc === 'oksana' ? '🧺' : n && n.q ? (stage() < 2 && W[n.q].ic[0] !== '@' ? W[n.q].ic : '❔') : '💬';
       c.fillStyle = 'rgba(255,248,234,.95)'; circ(c, x, top + Math.sin(t * 2.5 + e.x) * 3, 19);
       drawIcon(c, bub, x, top + 12 + Math.sin(t * 2.5 + e.x) * 3, 27);
       continue;
@@ -1940,7 +1954,7 @@ const A = {
   peekLine() { $('#en').innerHTML = `<div class="en">${cur.en}</div>`; },
   act(v) { const a = acts[+v]; if (a) a.fn(); },
   next() { const d = dlg; if (!d) return closeSheet(); const st = d.steps[d.i]; dialog(d.npc, d.steps, d.i + 1); if (st.after) st.after(); },
-  choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg === d) dialog(d.npc, d.steps, d.i + 1); }, 1500); },
+  choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg !== d) return; if (c.fn) { closeSheet(); c.fn(); } else if (c.then) dialog(d.npc, [...d.steps.slice(0, d.i + 1), ...c.then], d.i + 1); else dialog(d.npc, d.steps, d.i + 1); }, 1500); },
   plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0)) return; S.seeds[v]--; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); closeSheet(); say('w_' + v); blip(600); tutEvent('plant'); save(); },
   water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
   harvest() { const p = S.plots[cur.plot], c = p.c; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].uk}`); tutEvent('harvest'); wordCard(c); save(); },
@@ -2016,5 +2030,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
