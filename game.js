@@ -848,10 +848,185 @@ function drawWorld(t) {
   c.setTransform(1, 0, 0, 1, 0, 0);
 }
 
+// ------------------------------------------------------------------ the title screen, drawn
+const tcv = $('#tc'), tctx = tcv.getContext('2d');
+let fontReady = false;
+try { document.fonts.load('900 40px Cozy', 'Котяча Долина Kotiacha Dolyna Cat Valley').then(() => { fontReady = true; }).catch(() => { fontReady = true; }); } catch (e) { fontReady = true; }
+function sizeTitle() { const dpr = Math.min(2, window.devicePixelRatio || 1); tcv.width = Math.round(innerWidth * dpr); tcv.height = Math.round(innerHeight * dpr); }
+addEventListener('resize', sizeTitle); sizeTitle();
+let seedT = 11; const rT = () => (seedT = (seedT * 16807) % 2147483647) / 2147483647;
+const DOTS = Array.from({ length: 70 }, () => [rT(), rT(), rT()]);
+const INK = '#4a2c1a';
+const cozyFont = sz => `900 ${sz}px ${fontReady ? '"Cozy", system-ui, sans-serif' : 'system-ui, sans-serif'}`;
+
+function sunflower(c, x, y, h, t, ph) {
+  const sway = Math.sin(t * 1.3 + ph) * h * 0.05, hx = x + sway, hy = y - h, r = h * 0.17;
+  c.strokeStyle = '#3f8f3f'; c.lineWidth = h * 0.045; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + sway * 0.2, y - h * 0.5, hx, hy); c.stroke();
+  c.fillStyle = '#4fae55';
+  for (const [k, dir] of [[0.45, -1], [0.62, 1]]) { c.save(); c.translate(x + sway * k * 0.5, y - h * k); c.rotate(dir * 0.7); ell(c, dir * h * 0.09, 0, h * 0.11, h * 0.045); c.restore(); }
+  c.save(); c.translate(hx, hy); c.rotate(Math.sin(t * 1.3 + ph) * 0.08);
+  c.lineWidth = Math.max(1, h * 0.012); c.strokeStyle = '#c98a1a';
+  for (let i = 0; i < 16; i++) { c.save(); c.rotate(i * Math.PI / 8); c.fillStyle = i % 2 ? '#ffd23f' : '#ffc21a'; c.beginPath(); c.ellipse(0, -r * 1.25, r * 0.36, r * 0.62, 0, 0, 7); c.fill(); c.stroke(); c.restore(); }
+  c.fillStyle = '#6b3d1e'; circ(c, 0, 0, r * 0.82); c.fillStyle = '#4a2a14';
+  for (let i = 0; i < 9; i++) { const a = i * 2.4, d = r * 0.45 * ((i % 3) / 3 + 0.3); circ(c, Math.cos(a) * d, Math.sin(a) * d, r * 0.09); }
+  c.restore();
+}
+
+// A sitting cat, outlined like a storybook drawing. (x, y) is the bottom centre; s is its height.
+// Coloured after the three real cats: Cleo, Cece and Baby.
+const CATS = [
+  { body: '#fdf8f0', a: '#f6c27a', b: '#f0b264', eye: '#8fc28c', chub: 1, fluffy: true, bib: true, tail: '#f6c27a', earR: 'body', pb: [[-6, -40, 12, 'a'], [10, -22, 9, 'a']], ph: [[-9, -78, 9, 'a'], [9, -78, 9, 'a']] },
+  { body: '#8f8277', a: '#f0a24c', b: '#4d4440', eye: '#e6b43a', chub: 1.28, fluffy: true, bib: true, tail: '#8f8277', earR: 'b', pb: [[-14, -36, 11, 'a'], [12, -44, 8, 'b'], [-18, -18, 7, 'b']], ph: [[-11, -70, 8, 'a'], [10, -76, 8, 'b']] },
+  { body: '#a9a6ab', a: '#f3c4a2', b: '#8e8a90', eye: '#c9c26a', chub: 0.92, fluffy: false, bib: false, tail: '#a9a6ab', earR: 'body', pb: [[-8, -34, 8, 'a'], [10, -26, 6, 'a']], ph: [[0, -80, 5, 'a'], [-12, -66, 6, 'a'], [12, -66, 6, 'a']] },
+];
+function cat(c, x, y, s, C, t, ph, face) {
+  const k = s / 100, ch = C.chub;
+  c.save(); c.translate(x, y); c.scale(k * (face || 1), k);
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  c.fillStyle = 'rgba(40,30,20,.16)'; ell(c, 0, 0, 34 * ch, 6);
+  // tail, swishing
+  const sw = Math.sin(t * 2.1 + ph) * 10;
+  c.beginPath(); c.moveTo(18 * ch, -10); c.bezierCurveTo(48 * ch, -6, 52 * ch + sw * 0.4, -40, 34 * ch + sw, -58);
+  c.lineWidth = C.fluffy ? 15 : 10; c.strokeStyle = INK; c.stroke();
+  c.lineWidth = C.fluffy ? 10 : 5.5; c.strokeStyle = C.tail; c.stroke();
+  c.lineWidth = 3.2; c.strokeStyle = INK;
+  // body with its patches
+  c.fillStyle = C.body; c.beginPath(); c.ellipse(0, -28, 27 * ch, 29, 0, 0, 7); c.fill();
+  c.save(); c.clip(); for (const [dx, dy, r, col] of C.pb) { c.fillStyle = C[col]; circ(c, dx * ch, dy, r); } c.restore();
+  c.beginPath(); c.ellipse(0, -28, 27 * ch, 29, 0, 0, 7); c.stroke();
+  if (C.bib) { c.fillStyle = '#ffffff'; ell(c, 0, -30, 13 * ch, 18); if (C.fluffy) for (let i = -2; i <= 2; i++) circ(c, i * 5 * ch, -14 - Math.abs(i) * 2, 6); }
+  c.fillStyle = '#ffffff'; for (const px of [-11, 11]) { c.beginPath(); c.ellipse(px * ch, -4, 8, 6, 0, 0, 7); c.fill(); c.stroke(); }
+  // ears
+  for (const dir of [-1, 1]) {
+    c.fillStyle = dir > 0 && C.earR !== 'body' ? C[C.earR] : C.body;
+    c.beginPath(); c.moveTo(dir * 8, -84); c.lineTo(dir * 21, -103); c.lineTo(dir * 25, -76); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#f4a6b4'; c.beginPath(); c.moveTo(dir * 12, -84); c.lineTo(dir * 20, -97); c.lineTo(dir * 22, -80); c.closePath(); c.fill();
+  }
+  // head
+  c.fillStyle = C.body; c.beginPath(); c.arc(0, -70, 24, 0, 7); c.fill();
+  c.save(); c.clip(); for (const [dx, dy, r, col] of C.ph) { c.fillStyle = C[col]; circ(c, dx, dy, r); } if (C.bib) { c.fillStyle = '#ffffff'; ell(c, 0, -58, 11, 9); } c.restore();
+  c.beginPath(); c.arc(0, -70, 24, 0, 7); c.stroke();
+  if (C.fluffy) { c.fillStyle = C.bib ? '#ffffff' : C.body; for (const dir of [-1, 1]) { c.beginPath(); c.moveTo(dir * 19, -64); c.lineTo(dir * 30, -58); c.lineTo(dir * 20, -54); c.closePath(); c.fill(); c.stroke(); } }
+  // face: eyes blink now and then
+  const blink = Math.sin(t * 0.8 + ph * 3) > 0.985;
+  for (const ex of [-9, 9]) {
+    if (blink) { c.lineWidth = 2.6; c.beginPath(); c.arc(ex, -72, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); c.lineWidth = 3.2; }
+    else { c.fillStyle = C.eye; ell(c, ex, -72, 5.2, 6.4); c.fillStyle = '#2a1a10'; ell(c, ex, -71.5, 2.6, 5.4); c.fillStyle = '#fff'; circ(c, ex + 1.6, -74.5, 1.6); }
+  }
+  c.fillStyle = '#f08aa0'; circ(c, -14, -63, 3.4); circ(c, 14, -63, 3.4);
+  c.fillStyle = '#e8708a'; poly(c, [[-3, -65], [3, -65], [0, -62]]);
+  c.lineWidth = 2; c.beginPath(); c.arc(-2.5, -61.5, 2.5, 0, Math.PI); c.moveTo(5, -61.5); c.arc(2.5, -61.5, 2.5, 0, Math.PI); c.stroke();
+  c.strokeStyle = 'rgba(74,44,26,.6)'; c.lineWidth = 1.2;
+  for (const dir of [-1, 1]) for (const dy of [-1.5, 2]) { c.beginPath(); c.moveTo(dir * 13, -63 + dy); c.lineTo(dir * 32, -65 + dy * 2.5); c.stroke(); }
+  c.restore();
+}
+
+// Chunky, outlined, gently bouncing letters, one colour each, like a cozy game's logo.
+const LOGO = ['#ffd23f', '#ff9f43', '#ff6b6b', '#7bd389', '#5aa9e6', '#b98cf0'];
+function fancyText(c, text, cx, cy, maxW, size, t, o = {}) {
+  const chars = [...text], gapK = o.gap ?? 0.02;
+  const width = sz => { c.font = cozyFont(sz); return chars.reduce((a, ch) => a + c.measureText(ch).width + sz * gapK, -sz * gapK); };
+  let w = width(size);
+  if (w > maxW) { size *= maxW / w; w = width(size); }
+  let x = cx - w / 2;
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
+  chars.forEach((ch, i) => {
+    const cw = c.measureText(ch).width;
+    if (ch !== ' ') {
+      const bob = Math.sin(t * 1.8 + i * 0.7) * size * (o.bob ?? 0.035);
+      const rot = (i % 2 ? 1 : -1) * (o.tilt ?? 0.05) + Math.sin(t * 1.1 + i) * 0.015;
+      c.save(); c.translate(x + cw / 2, cy + bob); c.rotate(rot);
+      const col = o.fill || LOGO[(i + (o.shift || 0)) % LOGO.length];
+      c.fillStyle = 'rgba(74,44,26,.35)'; c.fillText(ch, -cw / 2, size * 0.09);
+      c.strokeStyle = INK; c.lineWidth = size * (o.thick ?? 0.2); c.strokeText(ch, -cw / 2, 0);
+      const g = c.createLinearGradient(0, -size * 0.75, 0, size * 0.05);
+      g.addColorStop(0, '#ffffff'); g.addColorStop(0.2, col); g.addColorStop(1, col);
+      c.fillStyle = g; c.fillText(ch, -cw / 2, 0);
+      c.restore();
+    }
+    x += cw + size * gapK;
+  });
+  return size;
+}
+function ribbon(c, text, cx, cy, size) {
+  c.font = cozyFont(size);
+  const tw = c.measureText(text).width, w = tw + size * 1.6, h = size * 1.5, x0 = cx - w / 2, y0 = cy - h / 2;
+  c.lineJoin = 'round'; c.strokeStyle = INK; c.lineWidth = size * 0.12;
+  c.fillStyle = '#a82a2a';
+  for (const dir of [-1, 1]) {
+    const ex = dir < 0 ? x0 - size * 0.9 : x0 + w + size * 0.9, bx = dir < 0 ? x0 + size * 0.4 : x0 + w - size * 0.4;
+    c.beginPath(); c.moveTo(bx, y0 + h * 0.3); c.lineTo(ex, y0 + h * 0.3); c.lineTo(ex - dir * size * 0.45, y0 + h * 0.8); c.lineTo(ex, y0 + h * 1.3); c.lineTo(bx, y0 + h * 1.3); c.closePath(); c.fill(); c.stroke();
+  }
+  c.fillStyle = '#d43a3a'; c.beginPath(); if (c.roundRect) c.roundRect(x0, y0, w, h, size * 0.25); else c.rect(x0, y0, w, h); c.fill(); c.stroke();
+  c.fillStyle = '#fff8ea'; const n = Math.floor((w - size * 0.5) / (size * 0.7));
+  for (let i = 0; i < n; i++) { const px = x0 + size * 0.35 + i * size * 0.7; c.fillRect(px, y0 + size * 0.14, size * 0.18, size * 0.1); c.fillRect(px, y0 + h - size * 0.24, size * 0.18, size * 0.1); }
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, cx, cy + size * 0.06);
+}
+
+function drawTitle(t) {
+  const c = tctx, W = tcv.width, H = tcv.height, land = W > H * 1.15, S = Math.min(W, H);
+  const gy = H * (land ? 0.68 : 0.6);
+  // sky, sun, clouds
+  let g = c.createLinearGradient(0, 0, 0, gy);
+  g.addColorStop(0, '#8fd3f4'); g.addColorStop(0.75, '#cfeefc'); g.addColorStop(1, '#fff3cf');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const sx = W * (land ? 0.88 : 0.84), sy = gy - H * (land ? 0.3 : 0.2), sr = S * 0.07;
+  c.save(); c.translate(sx, sy); c.rotate(t * 0.15); c.fillStyle = 'rgba(255,214,77,.45)';
+  for (let i = 0; i < 12; i++) { c.rotate(Math.PI / 6); poly(c, [[-sr * 0.25, -sr * 1.15], [0, -sr * 1.75], [sr * 0.25, -sr * 1.15]]); }
+  c.restore(); c.fillStyle = '#ffd34d'; circ(c, sx, sy, sr); c.fillStyle = '#ffe58a'; circ(c, sx - sr * 0.25, sy - sr * 0.25, sr * 0.45);
+  for (let i = 0; i < 4; i++) {
+    const cw = S * (0.16 + i * 0.03), cx = ((t * (12 + i * 5) * (W / 900) + i * W * 0.37) % (W + cw * 2)) - cw, cy = gy * (0.12 + (i % 3) * 0.17);
+    c.fillStyle = 'rgba(255,255,255,.92)'; circ(c, cx, cy, cw * 0.28); circ(c, cx + cw * 0.3, cy + cw * 0.05, cw * 0.22); circ(c, cx - cw * 0.3, cy + cw * 0.06, cw * 0.2); ell(c, cx, cy + cw * 0.14, cw * 0.55, cw * 0.12);
+  }
+  // hills and meadow
+  const hill = (col, base, amp, f, ph) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W + 1; x += W / 40) c.lineTo(x, base - Math.sin(x / W * f + ph) * amp - amp); c.lineTo(W, H); c.closePath(); c.fill(); };
+  hill('#bfe59a', gy - S * 0.02, S * 0.05, 5, 0.6);
+  hill('#a6dc7c', gy + S * 0.02, S * 0.035, 7, 2.1);
+  g = c.createLinearGradient(0, gy, 0, H); g.addColorStop(0, '#9bd772'); g.addColorStop(1, '#6fb84f');
+  c.fillStyle = g; c.fillRect(0, gy + S * 0.02, W, H);
+  for (const [a, b, k] of DOTS) { c.fillStyle = k < 0.33 ? '#ffffff' : k < 0.66 ? '#ffe36e' : '#ffb3c7'; circ(c, a * W, gy + S * 0.05 + b * (H - gy), S * 0.006); }
+  // cottage, path, fence, apple tree, stork
+  const hs = Math.min(W * (land ? 0.3 : 0.6), H * (land ? 0.27 : 0.3)), hx = W / 2, hy = gy + S * 0.03;
+  c.fillStyle = '#ecd9a6'; c.beginPath(); c.moveTo(hx - hs * 0.09, hy - hs * 0.02); c.lineTo(hx + hs * 0.09, hy - hs * 0.02); c.lineTo(hx + hs * 0.5, H); c.lineTo(hx - hs * 0.5, H); c.closePath(); c.fill();
+  drawIcon(c, '@appletree', hx - hs * (land ? 1.6 : 0.62), hy - hs * 0.02, hs * 0.85, { fruit: true });
+  drawIcon(c, '@stork', hx + hs * (land ? 1.7 : 0.66), hy - hs * 0.01, hs * 0.8);
+  for (const dir of [-1, 1]) for (let i = 0; i < (land ? 12 : 6); i++) drawIcon(c, '@parkan', hx + dir * (hs * 0.62 + i * hs * 0.28), hy + hs * 0.02, hs * 0.3);
+  drawIcon(c, '@khata', hx, hy, hs);
+  for (let i = 0; i < (land ? 16 : 10); i++) { const side = i % 2 ? 1 : -1, n = Math.floor(i / 2); sunflower(c, hx + side * (hs * 0.62 + n * hs * 0.3), hy + hs * 0.01, hs * (0.42 + (n % 2) * 0.08), t, i); }
+  // the cats: Cleo, Cece (biggest by far) and Baby (smallest)
+  const cs = hs * 0.33, cy = hy + hs * (land ? 0.18 : 0.2);
+  cat(c, hx - hs * 0.4, cy, cs, CATS[0], t, 0, 1);
+  cat(c, hx + hs * 0.42, cy + hs * 0.02, cs * 1.3, CATS[1], t, 1.7, -1);
+  cat(c, hx + hs * 0.02, cy + hs * 0.06, cs * 0.7, CATS[2], t, 3.1, 1);
+  // big sunflowers in the corners
+  sunflower(c, W * 0.06, H, hs * (land ? 0.55 : 0.78), t, 9);
+  sunflower(c, W * 0.17, H, hs * (land ? 0.42 : 0.6), t, 10);
+  sunflower(c, W * 0.94, H, hs * (land ? 0.55 : 0.8), t, 11);
+  sunflower(c, W * 0.83, H, hs * (land ? 0.4 : 0.58), t, 12);
+  // butterflies
+  for (let i = 0; i < 2; i++) { const bx = W * (0.3 + 0.4 * i) + Math.sin(t * 0.6 + i * 2) * W * 0.1, by = gy - S * 0.08 + Math.cos(t * 0.9 + i) * S * 0.04; c.save(); c.translate(bx, by); c.scale(1, Math.abs(Math.sin(t * 9 + i)) * 0.6 + 0.4); c.fillStyle = i ? '#ff8fb1' : '#ffd23f'; ell(c, -S * 0.012, 0, S * 0.012, S * 0.016); ell(c, S * 0.012, 0, S * 0.012, S * 0.016); c.restore(); }
+  // the logo
+  const top = H * 0.05;
+  if (land) {
+    const s1 = fancyText(c, 'Котяча Долина', W / 2, top + H * 0.13, W * 0.6, H * 0.135, t);
+    fancyText(c, 'Kotiacha Dolyna', W / 2, top + H * 0.13 + s1 * 0.74, W * 0.36, s1 * 0.4, t, { fill: '#fff8ea', thick: 0.22, bob: 0.02, tilt: 0.02 });
+    ribbon(c, 'Cat Valley', W / 2, top + H * 0.13 + s1 * 1.24, s1 * 0.24);
+  } else {
+    const big = Math.min(W * 0.2, H * 0.1);
+    const s1 = fancyText(c, 'Котяча', W / 2, top + big * 1.05, W * 0.84, big, t);
+    fancyText(c, 'Долина', W / 2, top + big * 1.05 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
+    const y3 = top + big * 1.05 + s1 * 1.66;
+    fancyText(c, 'Kotiacha Dolyna', W / 2, y3, W * 0.72, s1 * 0.38, t, { fill: '#fff8ea', thick: 0.22, bob: 0.02, tilt: 0.02 });
+    ribbon(c, 'Cat Valley', W / 2, y3 + s1 * 0.56, s1 * 0.25);
+  }
+}
+
 let last = 0, running = false;
 function frame(ms) {
   const t = ms / 1000, dt = Math.min(0.05, t - last || 0.016); last = t;
   musicTick(dt);
+  if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else { if (running && !sheetOpen()) update(dt, t); else update(0, t); drawWorld(t); }
   requestAnimationFrame(frame);
