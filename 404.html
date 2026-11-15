@@ -84,6 +84,7 @@
   .it { background:#fff; border-radius:16px; padding:8px 4px 8px; text-align:center; position:relative; box-shadow:0 3px 0 #eadfc9; min-height:104px; }
   .it:active { transform:translateY(2px); }
   .it.sel { outline:3px solid var(--sky); }
+  .it.owned { opacity:.5; filter:grayscale(.7); box-shadow:none; }
   .it img { width:48px; height:48px; }
   .it .n { font-weight:800; font-size:15px; line-height:1.1; }
   .it .e { font-size:12px; color:var(--soft); line-height:1.1; }
@@ -163,12 +164,12 @@
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v2.3</div>
+  <div class="ver">v2.4</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '2.3';</script>
-<script src="data.js?v=2.3"></script>
-<script src="game.js?v=2.3"></script>
+<script>window.APP_VERSION = '2.4';</script>
+<script src="data.js?v=2.4"></script>
+<script src="game.js?v=2.4"></script>
 </body>
 </html>

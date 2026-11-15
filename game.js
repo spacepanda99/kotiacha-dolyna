@@ -847,6 +847,8 @@ function plotSheet(i) {
 
 // ------------------------------------------------------------------ market
 let shopTab = 'food', shopSel = null;
+// Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
+const owned = k => (shopTab === 'home' || shopTab === 'cats') && ((S.home[k] || 0) > 0 || !!S.decor[k]);
 const sellPrice = id => { for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 3; };
 function shop() {
   const tabs = ['food', 'seeds', 'home', 'cats', 'sell', 'help'];
@@ -858,8 +860,8 @@ function shop() {
     body = items.length ? `<div class="grid">${items.map(k => `<button class="it" data-a="sell" data-v="${k}"><span class="q">${S.bag[k]}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">+${sellPrice(k)} ₴</div></button>`).join('')}</div>` : `<div class="muted">🧺 ${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`;
   } else {
     const list = D.shop[shopTab];
-    body = `<div class="grid">${Object.keys(list).map(k => `<button class="it ${shopSel === k ? 'sel' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}<div class="e"><b>${list[k]} ₴</b></div></button>`).join('')}</div>`;
-    if (shopSel && list[shopSel]) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
+    body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
+    if (shopSel && list[shopSel] && !owned(shopSel)) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
   }
   openSheet(`<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>${body}`);
 }
@@ -1092,12 +1094,15 @@ function catSpot(i) {
   const xs = [0.55, 0.25, 0.64, 0.12, 0.86, 0.36]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
 }
 function decorSheet() {
-  const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && (S.decor[id] || S.home[id] > 0));
+  const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && !S.decor[id] && S.home[id] > 0);
+  const placedAny = Object.keys(S.decor).some(id => DECOR[id] && !BASICS.includes(id));
   const st = stage();
   openSheet(`<h3><span><span class="uk">${D.ui.decor[0]}</span> ${st < 3 ? `<small>${D.ui.decor[1]}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>` +
     (ids.length
-      ? `${st < 3 ? '<div class="muted" style="padding:0 0 10px">Tap something to put it in your cottage. Tap again to put it away.</div>' : ''}<div class="grid">${ids.map(id => `<button class="it ${S.decor[id] ? 'sel' : ''}" data-a="decor" data-v="${id}">${S.decor[id] ? '<span class="q">✓</span>' : (S.home[id] > 1 ? `<span class="q">${S.home[id]}</span>` : '')}<img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}</button>`).join('')}</div>`
-      : `<div class="muted">🏠 ${D.ui.empty[0]}.<br>${st < 3 ? 'Buy lovely things at the market, in the «Для хати» (For the cottage) tab.' : 'Купи щось на ринку: «Для хати».'}</div>`) +
+      ? `${st < 3 ? '<div class="muted" style="padding:0 0 10px">Tap something to put it in your cottage. To put something away, tap it in the room.</div>' : ''}<div class="grid">${ids.map(id => `<button class="it" data-a="decor" data-v="${id}">${S.home[id] > 1 ? `<span class="q">${S.home[id]}</span>` : ''}<img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}</button>`).join('')}</div>`
+      : placedAny
+        ? `<div class="muted">✨ ${D.ui.allin[0]}${st < 3 ? `<br>${D.ui.allin[1]}` : ''}</div>`
+        : `<div class="muted">🏠 ${D.ui.empty[0]}.<br>${st < 3 ? 'Buy lovely things at the market, in the «Для хати» (For the cottage) and «Для котів» (For the cats) tabs.' : 'Купи щось на ринку: «Для хати», «Для котів».'}</div>`) +
     `<div class="row">${btn('close', '', lab('close'), 'ghost')}</div>`);
 }
 // The embroidered рушник dressed over the window like a curtain: a rod a little wider than the window,
@@ -1604,8 +1609,9 @@ const A = {
   water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
   harvest() { const p = S.plots[cur.plot], c = p.c; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].uk}`); tutEvent('harvest'); wordCard(c); save(); },
   tab(v) { shopTab = v; shopSel = null; shop(); },
-  pick(v) { shopSel = v; learn(v); shop(); say('w_' + v); },
+  pick(v) { shopSel = owned(v) ? null : v; learn(v); shop(); say('w_' + v); if (owned(v)) toast(`✓ ${D.ui.have[0]}${stage() < 3 ? ' · ' + D.ui.have[1] : ''}`); },
   buy(v) {
+    if (owned(v)) return;
     const price = D.shop[shopTab][v];
     if (S.coins < price) { toast(`${D.ui.notenough[0]}${stage() < 3 ? ' · ' + D.ui.notenough[1] : ''}`); return; }
     S.coins -= price;
