@@ -97,7 +97,7 @@
   .buyrow .what { font-weight:800; font-size:18px; line-height:1.15; }
   .muted { color:var(--soft); font-size:15px; text-align:center; padding:14px 6px; }
 
-  #toast { position:fixed; left:50%; top:22%; transform:translateX(-50%); background:var(--ink); color:#fff; border-radius:999px; padding:10px 18px; font-weight:800; font-size:17px; z-index:20; opacity:0; transition:opacity .25s, top .25s; pointer-events:none; white-space:nowrap; }
+  #toast { position:fixed; left:50%; top:22%; transform:translateX(-50%); background:var(--ink); color:#fff; border-radius:999px; padding:10px 18px; font-weight:800; font-size:17px; z-index:20; opacity:0; transition:opacity .25s, top .25s; pointer-events:none; width:max-content; max-width:92vw; text-align:center; }
   #toast.show { opacity:1; top:19%; }
 
   #start { position:fixed; inset:0; z-index:30; background:#bfe7fb; overflow:hidden; }
@@ -165,12 +165,12 @@
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v3.4</div>
+  <div class="ver">v3.5</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '3.4';</script>
-<script src="data.js?v=3.4"></script>
-<script src="game.js?v=3.4"></script>
+<script>window.APP_VERSION = '3.5';</script>
+<script src="data.js?v=3.5"></script>
+<script src="game.js?v=3.5"></script>
 </body>
 </html>

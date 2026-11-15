@@ -1029,7 +1029,7 @@ function shop() {
     body = items.length ? `<div class="grid">${items.map(k => `<button class="it" data-a="sell" data-v="${k}"><span class="q">${S.bag[k]}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">+${sellPrice(k)} ₴</div></button>`).join('')}</div>` : `<div class="muted">🧺 ${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`;
   } else {
     const list = D.shop[shopTab];
-    body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
+    body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}${shopTab === 'seeds' ? `<div class="e">🌱 ${W.nasinnia.uk}${stage() < 3 ? ' · seeds' : ''}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
     if (shopSel && list[shopSel] && !owned(shopSel)) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
   }
   setTimeout(() => sheet.classList.add('fixed'), 0);   // the market keeps one height, however few items a tab has
@@ -1093,8 +1093,10 @@ function talkOlia(npc, n, steps) {
   const missing = () => R.needs.filter(x => !S.recipe.got.includes(x));
   const carrying = missing().filter(x => (S.bag[x] || 0) > 0);
   if (carrying.length) {
+    // Hand them over now, so closing the chat early never loses the delivery.
+    for (const x of carrying) { S.bag[x]--; S.recipe.got.push(x); useWord(x, true); }
+    S.coins += 2 * carrying.length; hud(); save();
     const hand = mine('os');
-    hand.after = () => { for (const x of carrying) { S.bag[x]--; S.recipe.got.push(x); useWord(x, true); } S.coins += 2 * carrying.length; hud(); save(); setGuide(); };
     const thanks = line(npc, 'thanks');
     thanks.hint = recipeList(R);
     steps.push(hand, thanks);
@@ -1110,7 +1112,7 @@ function talkOlia(npc, n, steps) {
       uk: D.questLine.uk.replace('%s', W[next].acc || W[next].uk),
       en: D.questLine.en.replace('%s', (MASS.includes(next) ? 'some ' : 'a ') + W[next].en),
       clip: `q_${npc.id}_${next}`,
-      hint: `${st < 3 ? `<b>${W[R.dish].uk}</b>${st < 2 ? ' · ' + W[R.dish].en : ''}: ` : ''}${S.recipe.got.length + carrying.length}/${R.needs.length}${recipeList(R)}<div style="margin-top:6px">${sourceHint(next)}</div>`,
+      hint: `${st < 3 ? `<b>${W[R.dish].uk}</b>${st < 2 ? ' · ' + W[R.dish].en : ''}: ` : ''}${S.recipe.got.length}/${R.needs.length}${recipeList(R)}<div style="margin-top:6px">${(S.seeds[next] || 0) > 0 ? `🌱 <b>${D.ui.plantit[0]}</b>${st < 3 ? `<br>${D.ui.plantit[1].replace('%s', W[next].en)}` : ''}` : sourceHint(next)}</div>`,
     });
   }
   save(); setGuide();
@@ -1145,8 +1147,8 @@ function talk(npc) {
       const item = n.q;
       const thanks = line(npc, 'thanks');
       thanks.after = () => { toast('+6 💰  +1 ❤️'); blip(990, 0.15); };
+      S.bag[item]--; S.coins += 6; S.hearts++; n.q = null; useWord(item, true); hud(); setGuide(); save();
       const hand = mine('os');
-      hand.after = () => { S.bag[item]--; S.coins += 6; S.hearts++; n.q = null; useWord(item, true); hud(); setGuide(); save(); };
       steps.push(hand, thanks);
     } else steps.push(quest(n.q));
   } else {
@@ -1915,7 +1917,8 @@ const A = {
     else if (shopTab === 'home' || shopTab === 'cats') S.home[v] = (S.home[v] || 0) + 1;
     else if (shopTab === 'tools') S.gear[v] = 1;
     else give(v);
-    hud(); blip(880, 0.1); say('n_' + price, 'p_diakuiu'); toast(`−${price} ₴  ${W[v].uk}`); tutEvent('buy'); save(); shop();
+    hud(); blip(880, 0.1); say('n_' + price, 'p_diakuiu');
+    toast(shopTab === 'seeds' ? `−${price} ₴  🌱 ${W.nasinnia.uk}: ${W[v].uk}${stage() < 3 ? ' · seeds to plant in your garden' : ''}` : `−${price} ₴  ${W[v].uk}`); tutEvent('buy'); save(); shop();
   },
   sell(v) { if (!(S.bag[v] > 0)) return; S.bag[v]--; S.coins += sellPrice(v); hud(); blip(820); say('w_' + v); save(); shop(); },
   hand(v) {

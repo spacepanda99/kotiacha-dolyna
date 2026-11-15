@@ -276,6 +276,6 @@ window.DATA = {
     food: ["Їжа", "Food"], seeds: ["Насіння", "Seeds"], home: ["Для хати", "For the cottage"], help: ["Допомогти", "Help out"],
     bag: ["Кошик", "Basket"], words: ["Словник", "Word book"], show: ["Показати", "Show English"],
     empty: ["Порожньо", "Empty"], growing: ["Росте...", "Growing..."], thirsty: ["Хоче пити", "Needs water"],
-    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], tools: ["Знаряддя", "Tools"], fish: ["Ловити рибу", "Go fishing"], have: ["Є", "You have it"], allin: ["Усе вже в хаті!", "Everything you own is in your cottage. Buy more at the market, or tap something in the room to put it away."], cats: ["Для котів", "For the cats"], fill: ["Набрати води", "Draw water"], towell: ["До криниці", "To the well"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
+    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], plantit: ["У тебе є насіння. Посади його на городі!", "You have %s seeds: plant them in your garden, water them, and harvest."], tools: ["Знаряддя", "Tools"], fish: ["Ловити рибу", "Go fishing"], have: ["Є", "You have it"], allin: ["Усе вже в хаті!", "Everything you own is in your cottage. Buy more at the market, or tap something in the room to put it away."], cats: ["Для котів", "For the cats"], fill: ["Набрати води", "Draw water"], towell: ["До криниці", "To the well"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
   }
 };
