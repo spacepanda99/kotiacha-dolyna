@@ -255,6 +255,43 @@ const DRAW = {
       c.fillStyle = '#e2574c'; poly(c, [[x + 10, -50], [x + 16, -42], [x + 10, -34], [x + 4, -42]]);
     }
   },
+  // A carpeted cat tree: sisal posts, three platforms, a little cube house and a dangling pompom.
+  cattree(c) {
+    const carpet = '#e3cfae', edge = '#c9b08a', sisal = '#cfae78', rope = '#a8864f';
+    const post = (x, y0, y1) => { c.fillStyle = sisal; c.fillRect(x - 5, y1, 10, y0 - y1); c.strokeStyle = rope; c.lineWidth = 1; for (let y = y1 + 3; y < y0; y += 4) { c.beginPath(); c.moveTo(x - 5, y); c.lineTo(x + 5, y - 1.5); c.stroke(); } };
+    const plat = (x0, x1, y) => { c.fillStyle = edge; rr(c, x0, y - 1, x1 - x0, 7, 3); c.fillStyle = carpet; rr(c, x0, y - 5, x1 - x0, 6, 3); };
+    post(-16, -6, -50); post(-12, -50, -88); post(24, -6, -32);
+    c.fillStyle = carpet; rr(c, 2, -32, 36, 27, 4);
+    c.fillStyle = '#5a4630'; circ(c, 20, -17, 8);
+    plat(-42, 44, -2); plat(0, 42, -32); plat(-40, 4, -50); plat(-32, 12, -88);
+    c.strokeStyle = '#8a7566'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(8, -84); c.lineTo(8, -66); c.stroke();
+    c.fillStyle = '#ff7aa8'; circ(c, 8, -63, 4.5);
+  },
+  // A round cushioned cat bed.
+  catbed(c) {
+    c.fillStyle = '#c4637f'; ell(c, 0, -14, 46, 17);
+    c.fillStyle = '#fff1dc'; ell(c, 0, -17, 34, 10);
+    c.fillStyle = '#ffe3c2'; ell(c, -6, -19, 18, 5);
+    c.fillStyle = '#d77a96'; c.beginPath(); c.ellipse(0, -10, 46, 11, 0, 0, Math.PI); c.fill();
+    c.fillStyle = 'rgba(255,255,255,.55)'; for (const [x, y] of [[-20, -5], [-14, -2], [-26, -2], [-20, 0]]) circ(c, x, y, x === -20 && y === 0 ? 3 : 1.8);
+  },
+  // A striped cat ball with a little bell.
+  ball(c) {
+    c.fillStyle = '#f25c7a'; circ(c, 0, -24, 22);
+    c.strokeStyle = '#ffd23f'; c.lineWidth = 5;
+    c.beginPath(); c.arc(0, -24, 22, -0.35 * Math.PI, 0.35 * Math.PI); c.stroke();
+    c.beginPath(); c.arc(-6, -24, 15, 0.6 * Math.PI, 1.4 * Math.PI); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, -8, -34, 6, 4);
+    c.fillStyle = '#e8b830'; circ(c, 0, -2, 4.5);
+  },
+  // A grey felt toy mouse.
+  toymouse(c) {
+    c.strokeStyle = '#f08aa0'; c.lineWidth = 2.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-20, -11); c.bezierCurveTo(-34, -6, -38, -22, -48, -16); c.stroke();
+    c.fillStyle = '#9b9ba3'; c.beginPath(); c.moveTo(-22, -12); c.quadraticCurveTo(-18, -30, 6, -26); c.quadraticCurveTo(24, -20, 26, -10); c.quadraticCurveTo(10, -2, -22, -4); c.closePath(); c.fill();
+    c.fillStyle = '#b8b8c0'; circ(c, 6, -27, 8); c.fillStyle = '#f4a6b4'; circ(c, 6, -27, 4.5);
+    c.fillStyle = '#2a1a10'; circ(c, 15, -17, 1.8); c.fillStyle = '#f08aa0'; circ(c, 26, -11, 2.4);
+  },
   pumpkin(c) {
     c.strokeStyle = '#4f8a2a'; c.lineWidth = 2.5; c.lineCap = 'round';
     c.beginPath(); c.moveTo(4, -60); c.bezierCurveTo(16, -74, 26, -60, 20, -54); c.bezierCurveTo(15, -50, 13, -58, 18, -60); c.stroke();
@@ -360,7 +397,7 @@ function add(e) {
   rect(5, 8, 8, 10);
   add({ w: 'khata', x: 7, y: 11, s: 3.7, kind: 'home' });
   for (let i = 0; i < 6; i++) add({ w: 'horod', k: 'plot' + i, x: 10.1 + (i % 3) * 1.6, y: 8.6 + Math.floor(i / 3) * 1.6, s: 1.5, kind: 'plot', i, flat: true });
-  for (let i = 0; i < 4; i++) add({ w: 'parkan', x: 9.5 + i, y: 11.95, s: 1, solid: true });   // the gap at the end is the garden gate
+  for (let i = 0; i < 4; i++) add({ w: 'parkan', x: 9.5 + i, y: 11.95, s: 1, solid: true, quiet: i !== 1, labelX: 11 });   // one label for the whole fence   // the gap at the end is the garden gate
   add({ w: 'yablunia', x: 3.5, y: 10.8, s: 2.3, solid: true, give: 'yabluko', cd: 60 });
   add({ w: 'krynytsia', x: 14.5, y: 12.9, s: 1.5, solid: true, give: 'voda', cd: 8 });
   // Grandma Olia's corner.
@@ -754,7 +791,7 @@ function plotSheet(i) {
 let shopTab = 'food', shopSel = null;
 const sellPrice = id => { for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 3; };
 function shop() {
-  const tabs = ['food', 'seeds', 'home', 'sell', 'help'];
+  const tabs = ['food', 'seeds', 'home', 'cats', 'sell', 'help'];
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
   let body = '';
   if (shopTab === 'help') return helpRound(0);
@@ -933,22 +970,25 @@ let mode = 'world', roomX = 0, tour = null;
 const DECOR = {
   // against the back wall
   pich: { x: 0.09, y: 0.615, s: 0.46, z: 1 }, hlechyk: { x: 0.215, y: 0.625, s: 0.21, z: 1 },
-  lizhko: { x: 0.79, y: 0.625, s: 0.52, z: 1 },
+  lizhko: { x: 0.735, y: 0.625, s: 0.52, z: 1 },
   // middle of the room: rug, table, and the chair tucked in behind it
   kylym: { x: 0.45, y: 0.85, s: 0.62, z: 0 },
   stilets: { x: 0.415, y: 0.775, s: 0.29, z: 1.5 }, stil: { x: 0.45, y: 0.81, s: 0.4, z: 2 },
   lampa: { on: 'stil', dx: 0.24, s: 0.15, z: 3 }, knyha: { on: 'stil', dx: -0.24, s: 0.1, z: 3 },
   // front corner by the foot of the bed
-  vazon: { x: 0.95, y: 0.8, s: 0.26, z: 3 },
+  vazon: { x: 0.6, y: 0.79, s: 0.24, z: 3 },
+  // the cat corner, past the foot of the bed: cat tree against the wall, cat bed and toys on the floor
+  kihtetochka: { x: 0.905, y: 0.625, s: 0.52, z: 1 }, lezhanka: { x: 0.85, y: 0.87, s: 0.3, z: 3 },
+  miachyk: { x: 0.7, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
   // walls: mirror between stove and window, painting centred on the wall between window and bed, clock over the bed
-  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.575, y: 0.42, s: 0.22, z: 0, wall: true },
-  hodynnyk: { x: 0.79, y: 0.4, s: 0.14, z: 0, wall: true }, rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true },
+  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.545, y: 0.42, s: 0.22, z: 0, wall: true },
+  hodynnyk: { x: 0.735, y: 0.4, s: 0.14, z: 0, wall: true }, rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
 };
 const WIN_X = 0.37;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
-const roomW = () => Math.max(cv.width, roomU() * 2.2); // a phone in portrait sees under half the room at once
+const roomW = () => Math.max(cv.width, roomU() * 2.7); // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
 const BASICS = Object.keys(D.shop.furnished);          // always in the room
@@ -983,7 +1023,12 @@ function homeTap(sx, py) {
     if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return wordCard(id, BASICS.includes(id) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] });
   }
 }
-function catSpot(i) { const xs = [0.6, 0.27, 0.85, 0.12, 0.69, 0.33]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 }; }
+function catSpot(i) {
+  // The first friend curls up in the cat bed, the second sits on top of the cat tree, if they're in the room.
+  if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx, y: r.by - r.sz * 0.12, s: roomU() * 0.22 }; }
+  if (i === 1 && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: roomU() * 0.16 }; }
+  const xs = [0.54, 0.27, 0.63, 0.12, 0.78, 0.4]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
+}
 function decorSheet() {
   const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && (S.decor[id] || S.home[id] > 0));
   const st = stage();
@@ -1160,7 +1205,7 @@ function drawWorld(t) {
   if (waterFx) { const pe = ents.find(x => x.k === 'plot' + waterFx.i); if (pe) { c.save(); c.translate(pe.x * T, pe.y * T); c.scale(pe.s, pe.s); drawWatering(c, t - waterFx.t0); c.restore(); } }
   // Names of things you have met, when you stand near them. New or due things sparkle.
   for (const e of list) {
-    if (e.me || e.kind === 'plot') continue;
+    if (e.me || e.kind === 'plot' || e.quiet) continue;
     const x = e.x * T, y = e.y * T, near = Math.hypot(e.x - P.x, e.y - P.y) < 3.2;
     if (e.kind === 'npc') {
       const n = S.npc[e.npc], top = y - T * 1.45;
@@ -1181,7 +1226,7 @@ function drawWorld(t) {
     const wd = S.words[e.w];
     if (e.kind === 'home') { homeSign(c, x, y - e.s * T * 0.62, t); }
     else if (e.k === 'oliaHome') { if (near) label(c, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''), x, y + 16); }
-    else if (wd && near && e.w !== 'soniashnyk') label(c, W[e.w].uk, x, y + 16);
+    else if (wd && near && e.w !== 'soniashnyk') label(c, W[e.w].uk, e.labelX ? e.labelX * T : x, y + 16);
     else if (wd && near && e.w === 'soniashnyk' && Math.hypot(e.x - P.x, e.y - P.y) < 1) label(c, W[e.w].uk, x, y + 16);
     if (isFresh(e.w) && (e.w !== 'soniashnyk' || (Math.floor(e.x) + Math.floor(e.y)) % 5 === 0)) {
       const a = 0.55 + 0.45 * Math.sin(t * 4 + e.x * 3);
@@ -1481,7 +1526,7 @@ const A = {
     if (S.coins < price) { toast(`${D.ui.notenough[0]}${stage() < 3 ? ' · ' + D.ui.notenough[1] : ''}`); return; }
     S.coins -= price;
     if (shopTab === 'seeds') { S.seeds[v] = (S.seeds[v] || 0) + 1; learn('nasinnia'); }
-    else if (shopTab === 'home') S.home[v] = (S.home[v] || 0) + 1;
+    else if (shopTab === 'home' || shopTab === 'cats') S.home[v] = (S.home[v] || 0) + 1;
     else give(v);
     hud(); blip(880, 0.1); say('n_' + price, 'p_diakuiu'); toast(`−${price} ₴  ${W[v].uk}`); tutEvent('buy'); save(); shop();
   },

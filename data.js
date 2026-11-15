@@ -90,6 +90,11 @@ window.DATA = {
     { id: "rushnyk", uk: "рушник", tr: "rush-NYK", en: "embroidered towel", ic: "@rushnyk" },
     { id: "chashka", uk: "чашка", tr: "CHASH-ka", en: "cup", ic: "☕", acc: "чашку" },
     { id: "kvity", uk: "квіти", tr: "KVI-ty", en: "flowers", ic: "💐" },
+    // --- for the cats
+    { id: "kihtetochka", uk: "кігтеточка", tr: "kih-te-TOCH-ka", en: "cat tree", ic: "@cattree", acc: "кігтеточку" },
+    { id: "lezhanka", uk: "лежанка", tr: "le-ZHAN-ka", en: "cat bed", ic: "@catbed", acc: "лежанку" },
+    { id: "miachyk", uk: "м'ячик", tr: "MIA-chyk", en: "little ball", ic: "@ball" },
+    { id: "myshka", uk: "мишка", tr: "MYSH-ka", en: "toy mouse", ic: "@toymouse", acc: "мишку" },
     // --- tools and things you carry
     { id: "nasinnia", uk: "насіння", tr: "na-SIN-nia", en: "seeds", ic: "🌱" },
     { id: "liika", uk: "лійка", tr: "LIY-ka", en: "watering can", ic: "@can", acc: "лійку" },
@@ -237,6 +242,8 @@ window.DATA = {
     food: { khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6 },
     seeds: { morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
     home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
+    // Toys and furniture for the cat friends (they use them).
+    cats: { kihtetochka: 15, lezhanka: 8, miachyk: 3, myshka: 3 },
     // Furniture the cottage comes with. Not for sale; tap it in the room to learn its name.
     furnished: { pich: 20, lizhko: 20, stil: 15, stilets: 10 }
   },
@@ -252,6 +259,6 @@ window.DATA = {
     food: ["Їжа", "Food"], seeds: ["Насіння", "Seeds"], home: ["Для хати", "For the cottage"], help: ["Допомогти", "Help out"],
     bag: ["Кошик", "Basket"], words: ["Словник", "Word book"], show: ["Показати", "Show English"],
     empty: ["Порожньо", "Empty"], growing: ["Росте...", "Growing..."], thirsty: ["Хоче пити", "Needs water"],
-    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], fill: ["Набрати води", "Draw water"], towell: ["До криниці", "To the well"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
+    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], cats: ["Для котів", "For the cats"], fill: ["Набрати води", "Draw water"], towell: ["До криниці", "To the well"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
   }
 };
