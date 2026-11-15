@@ -334,8 +334,8 @@ function add(e) {
   // Your cottage, garden and fence.
   rect(5, 8, 8, 10);
   add({ w: 'khata', x: 7, y: 11, s: 3.7, kind: 'home' });
-  for (let i = 0; i < 6; i++) add({ w: 'horod', k: 'plot' + i, x: 10.5 + (i % 3), y: 9.5 + Math.floor(i / 3), s: 1, kind: 'plot', i, flat: true });
-  for (let i = 0; i < 4; i++) add({ w: 'parkan', x: 9.5 + i, y: 11.95, s: 1, solid: true });
+  for (let i = 0; i < 6; i++) add({ w: 'horod', k: 'plot' + i, x: 10.1 + (i % 3) * 1.6, y: 8.6 + Math.floor(i / 3) * 1.6, s: 1.5, kind: 'plot', i, flat: true });
+  for (let i = 0; i < 4; i++) add({ w: 'parkan', x: 9.5 + i, y: 11.95, s: 1, solid: true });   // the gap at the end is the garden gate
   add({ w: 'yablunia', x: 3.5, y: 10.8, s: 2.3, solid: true, give: 'yabluko', cd: 60 });
   add({ w: 'krynytsia', x: 14.5, y: 12.9, s: 1.5, solid: true, give: 'voda', cd: 8 });
   // Grandma Olia's corner.
@@ -375,7 +375,7 @@ function add(e) {
   for (const [x, y] of [[2.5, 6.9], [14.5, 6.9], [20.5, 3.9], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [34.5, 17.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [21.5, 11.9], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 6.9], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
-  for (const [x, y] of [[13.5, 7.6], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
+  for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
   for (const [x, y] of [[3.4, 7.5], [15.3, 7.4], [26.4, 5.4], [13.3, 26.3], [32.8, 26.3]]) add({ w: 'hryb', x, y, s: 0.7, give: 'hryb', cd: 120, hide: true });
   for (const [x, y] of [[12, 8], [26, 15.5], [8, 16.5]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x });
   // Villagers.
@@ -685,7 +685,7 @@ function interact(e) {
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); return shop(); }
-  if (e.kind === 'home') return wordCard('khata', { acts: [{ k: 'enter', fn: enterHome }] });
+  if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${stage() < 3 ? ' · This is your cottage.' : ''}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
   if (e.give) return wordCard(e.w, { acts: ready(e) ? [{ k: 'take', fn: () => take(e) }] : [] });
   wordCard(e.w);
 }
@@ -968,6 +968,21 @@ function label(c, text, x, y) {
   c.fillStyle = 'rgba(255,248,234,.92)'; rr(c, x - w / 2, y - 12, w, 24, 12);
   c.fillStyle = '#3b2f2a'; c.fillText(text, x, y + 1);
 }
+// "My cottage" on a little red-and-cream banner above the roof, with a heart.
+function homeSign(c, x, y, t) {
+  const top = stage() < 3 ? 'Моя хата' : 'Моя хата', sub = stage() < 3 ? 'My cottage' : '';
+  c.save(); c.translate(x, y + Math.sin(t * 1.6) * 2);
+  c.font = '900 22px "Cozy", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  const w = Math.max(c.measureText('❤ ' + top).width, sub ? 90 : 0) + 30, h = sub ? 50 : 34;
+  c.fillStyle = 'rgba(74,44,26,.25)'; rr(c, -w / 2 + 2, -h / 2 + 4, w, h, 12);
+  c.fillStyle = '#4a2c1a'; rr(c, -w / 2 - 3, -h / 2 - 3, w + 6, h + 6, 14);
+  c.fillStyle = '#fff8ea'; rr(c, -w / 2, -h / 2, w, h, 12);
+  c.fillStyle = '#d43a3a'; c.fillRect(-w / 2 + 8, -h / 2 + 4, w - 16, 3); c.fillRect(-w / 2 + 8, h / 2 - 5, w - 16, 2.5);
+  c.fillStyle = '#e2574c'; c.fillText('❤', -c.measureText(' ' + top).width / 2 - 2, sub ? -8 : 1);
+  c.fillStyle = '#3b2f2a'; c.fillText(top, 12, sub ? -8 : 1);
+  if (sub) { c.font = '700 13px system-ui, sans-serif'; c.fillStyle = '#8a7566'; c.fillText(sub, 0, 11); }
+  c.restore();
+}
 function drawWorld(t) {
   const c = ctx;
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
@@ -982,13 +997,16 @@ function drawWorld(t) {
     if (e.kind === 'npc') { person(c, x, y, NPC[e.npc].look, t + e.x, false, 1); continue; }
     if (e.kind === 'pond') continue;
     if (e.kind === 'plot') {
-      drawIcon(c, '@plot', x, y + T * 0.5, T);
+      // Everything in a bed is drawn at bed scale, so bigger beds get bigger crops too.
+      c.save(); c.translate(x, y); c.scale(e.s, e.s);
+      drawIcon(c, '@plot', 0, T * 0.5, T);
       const p = S.plots[e.i];
       if (p.c) {
-        if (!p.wet) { drawIcon(c, '🌱', x, y + T * 0.2, T * 0.5); drawIcon(c, '💧', x + T * 0.28, y - T * 0.15 + Math.sin(t * 4) * 3, T * 0.4); }
-        else if (now() < p.ready) { const g = 1 - (p.ready - now()) / 50e3; drawIcon(c, '🌱', x, y + T * 0.25, T * (0.45 + 0.4 * Math.max(0, g))); }
-        else drawIcon(c, W[p.c].ic, x, y + T * 0.3 + Math.sin(t * 3 + e.i) * 3, T * 0.85);
+        if (!p.wet) { drawIcon(c, '🌱', 0, T * 0.2, T * 0.5); drawIcon(c, '💧', T * 0.28, -T * 0.15 + Math.sin(t * 4) * 3, T * 0.4); }
+        else if (now() < p.ready) { const g = 1 - (p.ready - now()) / 50e3; drawIcon(c, '🌱', 0, T * 0.25, T * (0.45 + 0.4 * Math.max(0, g))); }
+        else drawIcon(c, W[p.c].ic, 0, T * 0.3 + Math.sin(t * 3 + e.i) * 3, T * 0.85);
       }
+      c.restore();
       continue;
     }
     if (e.an) { drawAnimal(c, x, y, e, t); continue; }
@@ -1019,7 +1037,9 @@ function drawWorld(t) {
       continue;
     }
     const wd = S.words[e.w];
-    if (wd && near && e.w !== 'soniashnyk') label(c, W[e.w].uk, x, y + 16);
+    if (e.kind === 'home') { homeSign(c, x, y - e.s * T * 0.62, t); }
+    else if (e.k === 'oliaHome') { if (near) label(c, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''), x, y + 16); }
+    else if (wd && near && e.w !== 'soniashnyk') label(c, W[e.w].uk, x, y + 16);
     else if (wd && near && e.w === 'soniashnyk' && Math.hypot(e.x - P.x, e.y - P.y) < 1) label(c, W[e.w].uk, x, y + 16);
     if (isFresh(e.w) && (e.w !== 'soniashnyk' || (Math.floor(e.x) + Math.floor(e.y)) % 5 === 0)) {
       const a = 0.55 + 0.45 * Math.sin(t * 4 + e.x * 3);

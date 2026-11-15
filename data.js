@@ -115,6 +115,7 @@ window.DATA = {
     { id: "molodets", uk: "Молодець!", en: "Well done!" },
     { id: "nove_slovo", uk: "Нове слово!", en: "A new word!" },
     { id: "mur", uk: "Мур-мур! Тепер ми друзі.", en: "Purr! Now we are friends." },
+    { id: "moia_khata", uk: "Моя хата.", en: "My cottage." },
     { id: "i_explore", uk: "Оглянь село.", en: "Look around the village." },
     { id: "i_talk", uk: "Поговори з бабою Олею.", en: "Talk to Grandma Olia." },
     { id: "i_plant", uk: "Посади насіння.", en: "Plant the seeds." },
