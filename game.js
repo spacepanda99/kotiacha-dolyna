@@ -566,6 +566,69 @@ const DRAW = {
     for (let i = 0; i < 7; i++) c.fillRect(-27 + i * 9, -12, 5, 2);
     c.fillStyle = '#ffffff'; for (let i = 0; i < 5; i++) c.fillRect(-52 + i * 5.2, -64 + i * 5.4, 2, 2);
   },
+  // A wreath of flowers with ribbons trailing from it.
+  vinok(c) {
+    c.fillStyle = 'rgba(0,0,0,.1)'; ell(c, 0, -2, 30, 4);
+    for (const [x, col] of [[-12, '#d43a3a'], [0, '#ffd23f'], [12, '#2f6fb5']]) { c.fillStyle = col; poly(c, [[x - 3, -22], [x + 3, -22], [x + 6 + x * 0.1, -2], [x + 1, -5], [x - 4, -2]]); }
+    c.fillStyle = '#3d8a45'; for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283; ell(c, Math.cos(a) * 33, -52 + Math.sin(a) * 31, 8, 4.5); }
+    const cols = ['#ff8fb3', '#ffffff', '#ffd23f', '#e2574c', '#b98cf0', '#5aa9e6'];
+    for (let i = 0; i < 14; i++) { const a = i / 14 * 6.283 + 0.2, x = Math.cos(a) * 33, y = -52 + Math.sin(a) * 31; c.fillStyle = cols[i % 6]; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257) * 4.2, y + Math.sin(k * 1.257) * 4.2, 3.4); c.fillStyle = '#ffd23f'; circ(c, x, y, 2.2); }
+  },
+  // Poppies on slim stalks.
+  mak(c, o) {
+    c.save(); c.rotate(((o && o.sway) || 0) * 1.2);
+    for (const [x, h, r] of [[-18, 52, 12], [4, 78, 15], [24, 60, 12]]) {
+      c.strokeStyle = '#4aa352'; c.lineWidth = 3; c.beginPath(); c.moveTo(x * 0.4, 0); c.quadraticCurveTo(x * 0.7, -h * 0.5, x, -h); c.stroke();
+      c.fillStyle = '#e2392f'; for (let k = 0; k < 4; k++) { const a = k * 1.571 + 0.4; circ(c, x + Math.cos(a) * r * 0.5, -h + Math.sin(a) * r * 0.5, r * 0.6); }
+      c.fillStyle = '#ff6a5c'; circ(c, x - 2, -h - 2, r * 0.35); c.fillStyle = '#2d2d2d'; circ(c, x, -h, r * 0.22);
+    }
+    c.fillStyle = '#3d8a45'; ell(c, -8, -14, 10, 4); ell(c, 12, -22, 10, 4);
+    c.restore();
+  },
+  // A tuft of wheat: golden ears on bending stalks.
+  pshenytsia(c, o) {
+    const sw = ((o && o.sway) || 0) * 40;
+    for (let i = -4; i <= 4; i++) {
+      const x = i * 8, tx = x + sw * (0.6 + (i & 1) * 0.3) + i * 1.5, h = 70 + ((i * 7) % 4) * 6;
+      c.strokeStyle = '#c9a23f'; c.lineWidth = 2.6; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, 0); c.quadraticCurveTo(x, -h * 0.55, tx, -h); c.stroke();
+      c.save(); c.translate(tx, -h); c.rotate((tx - x) * 0.012);
+      for (let k = 0; k < 5; k++) { c.fillStyle = k % 2 ? '#e8bf4f' : '#d9a93f'; ell(c, (k % 2 ? 2.6 : -2.6), -k * 5.2 - 4, 2.8, 4.6); }
+      c.restore();
+    }
+  },
+  // A painted plate: Petrykivka-style red and pink flower, leaves and berries on white.
+  tarilka(c) {
+    c.fillStyle = '#2f6fb5'; circ(c, 0, -50, 44); c.fillStyle = '#fffdf5'; circ(c, 0, -50, 39);
+    c.fillStyle = '#2f6fb5'; for (let i = 0; i < 24; i++) { const a = i / 24 * 6.283; circ(c, Math.cos(a) * 34, -50 + Math.sin(a) * 34, 1.8); }
+    c.fillStyle = '#3d8a45'; for (const a of [0.3, 2.0, 3.6, 5.3]) { c.save(); c.translate(0, -50); c.rotate(a); ell(c, 21, 0, 13, 5); c.restore(); }
+    c.fillStyle = '#d43a3a'; for (let k = 0; k < 6; k++) { const a = k * 1.047; circ(c, Math.cos(a) * 9, -50 + Math.sin(a) * 9, 8); }
+    c.fillStyle = '#ff8fb3'; circ(c, 0, -50, 8); c.fillStyle = '#ffd23f'; circ(c, 0, -50, 3.6);
+    c.fillStyle = '#2d2d2d'; for (const [x, y] of [[-24, -66], [22, -30], [-14, -26], [26, -64]]) circ(c, x, y, 2.6);
+  },
+  // Paska: a tall round Easter loaf with white icing and a dough cross.
+  paska(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -2, 34, 5);
+    c.fillStyle = '#b8701e'; rr(c, -27, -52, 54, 48, 6);
+    c.fillStyle = '#d99a3a'; rr(c, -25, -52, 50, 46, 6);
+    c.fillStyle = '#e8b957'; rr(c, -21, -50, 12, 42, 5);
+    c.fillStyle = '#c47f2a'; c.fillRect(-25, -22, 50, 3); c.fillRect(-25, -34, 50, 2);
+    c.fillStyle = '#d99a3a'; ell(c, 0, -54, 27, 14); c.fillStyle = '#fffdf5'; ell(c, 0, -57, 25, 11);
+    c.fillStyle = '#fffdf5'; for (const x of [-18, -6, 8, 20]) rr(c, x - 3, -57, 6, 11 + (x % 7), 3);
+    c.fillStyle = '#c47f2a'; c.fillRect(-1.5, -66, 3, 12); c.fillRect(-7, -61, 14, 3);
+  },
+  // A motanka: the faceless rag doll, a cross of thread on her face, a scarf, a red skirt and an apron.
+  motanka(c) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -2, 22, 4);
+    c.fillStyle = '#d43a3a'; poly(c, [[-14, -52], [14, -52], [24, -6], [-24, -6]]);
+    c.fillStyle = '#fffdf5'; poly(c, [[-9, -50], [9, -50], [14, -10], [-14, -10]]);
+    c.fillStyle = '#2f6fb5'; c.fillRect(-14, -34, 28, 3); c.fillStyle = '#d43a3a'; c.fillRect(-9, -22, 18, 2.5);
+    c.fillStyle = '#f3e2c0'; rr(c, -30, -50, 16, 7, 3.5); rr(c, 14, -50, 16, 7, 3.5);
+    c.fillStyle = '#f3e2c0'; circ(c, 0, -66, 13);
+    c.fillStyle = '#2f6fb5'; c.beginPath(); c.arc(0, -68, 14.5, Math.PI, 0); c.fill(); poly(c, [[-14, -68], [-12, -54], [-7, -62]]); poly(c, [[14, -68], [12, -54], [7, -62]]);
+    c.fillStyle = '#ffd23f'; for (let i = -2; i <= 2; i++) circ(c, i * 5, -80 + Math.abs(i) * 1.5, 1.3);
+    c.strokeStyle = '#d43a3a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-4, -69); c.lineTo(4, -61); c.moveTo(4, -69); c.lineTo(-4, -61); c.stroke();
+    c.fillStyle = '#d43a3a'; c.fillRect(-8, -53, 16, 3);
+  },
   // A wooden rowing boat pulled up on the bank, with an oar resting in it.
   canoe(c) {
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -2, 40, 6);
@@ -870,6 +933,9 @@ function add(e) {
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [23.4, 11.15], [26.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
   add({ w: 'pysanka', x: 26.2, y: 12.5, s: 0.6 });
+  for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4]]) add({ w: 'mak', x, y, s: 0.8 });           // poppies beside the sunflowers
+  for (const [x, y] of [[34.3, 21.5], [34.3, 22.9], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0 });   // a strip of wheat
+  add({ w: 'vinok', x: 22.4, y: 18.5, s: 0.7 });
   add({ w: 'bandura', x: 15.5, y: 19.5, s: 0.95 });
   // Beehives and the sunflower field.
   for (let i = 0; i < 3; i++) add({ w: 'vulyk', x: 4.5 + i * 1.5, y: 19.9, s: 1.3, solid: true });
@@ -1707,6 +1773,8 @@ const DECOR = {
   // Ukrainian things: the didukh by the stove, a vyshyvanka and a bandura on the wall, the pysanka on the sill
   didukh: { x: 0.515, y: 0.585, s: 0.36, z: 1, hw: 0.4 },
   vyshyvanka: { x: 0.69, y: 0.39, s: 0.2, z: 0, wall: true, hw: 0.8 }, bandura: { x: 0.855, y: 0.38, s: 0.2, z: 0, wall: true, hw: 0.7 },
+  tarilka: { x: 0.43, y: 0.262, s: 0.105, z: 0, wall: true, hw: 0.7 }, vinok: { x: 0.79, y: 0.37, s: 0.13, z: 0, wall: true, hw: 0.6 },
+  motanka: { x: 0.25, y: 0.8, s: 0.2, z: 4, hw: 0.4 },
   pysanka: { sill: 0.17, s: 0.1, z: 2, wall: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },

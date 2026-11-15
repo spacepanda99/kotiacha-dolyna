@@ -101,6 +101,12 @@ window.DATA = {
     { id: "didukh", uk: "дідух", tr: "di-DUKH", en: "Christmas wheat sheaf", ic: "@didukh", fact: { uk: "Дідух стоїть у хаті на Різдво.", en: "A didukh, a sheaf of wheat, stands in the home at Christmas to honour the ancestors and the harvest." } },
     { id: "malva", uk: "мальва", tr: "MAL-va", en: "hollyhock", ic: "@malva", acc: "мальву", fact: { uk: "Мальви ростуть біля сільських хат.", en: "Hollyhocks grow beside village cottages, and they are painted in folk art." } },
     { id: "vyshyvanka", uk: "вишиванка", tr: "vy-shy-VAN-ka", en: "embroidered shirt", ic: "@vyshyvanka", acc: "вишиванку", fact: { uk: "Кожен край має свою вишивку.", en: "Every region has its own embroidery. Vyshyvanka Day is in May." } },
+    { id: "vinok", uk: "вінок", tr: "vi-NOK", en: "flower wreath", ic: "@vinok", fact: { uk: "Вінок із квітів і стрічок носять на свято.", en: "Wreaths of flowers and ribbons are worn at festivals and weddings." } },
+    { id: "mak", uk: "мак", tr: "mak", en: "poppy", ic: "@mak", fact: { uk: "Мак часто вишивають і малюють.", en: "Poppies are embroidered and painted in folk art, and their seeds go into sweet rolls." } },
+    { id: "pshenytsia", uk: "пшениця", tr: "psheh-NY-tsia", en: "wheat", ic: "@pshenytsia", acc: "пшеницю", fact: { uk: "Золоті поля пшениці — символ України.", en: "Ukraine is famous for its wheat. Golden fields under a blue sky are a symbol of the country." } },
+    { id: "tarilka", uk: "тарілка", tr: "ta-RIL-ka", en: "painted plate", ic: "@tarilka", acc: "тарілку", fact: { uk: "Петриківський розпис — це яскраві квіти.", en: "Petrykivka painting, full of bright flowers, is a folk art that UNESCO listed in 2013." } },
+    { id: "paska", uk: "паска", tr: "PAS-ka", en: "Easter bread", ic: "@paska", acc: "паску", fact: { uk: "Паску печуть на Великдень.", en: "Paska is a tall Easter bread. It is blessed in church in a basket with painted eggs." } },
+    { id: "motanka", uk: "мотанка", tr: "mo-TAN-ka", en: "rag doll", ic: "@motanka", acc: "мотанку", fact: { uk: "Мотанка — лялька без обличчя.", en: "The motanka is a rag doll with no face, made as a lucky charm for children." } },
     // --- for the cats
     { id: "kihtetochka", uk: "кігтеточка", tr: "kih-te-TOCH-ka", en: "cat tree", ic: "@cattree", acc: "кігтеточку" },
     { id: "lezhanka", uk: "лежанка", tr: "le-ZHAN-ka", en: "cat bed", ic: "@catbed", acc: "лежанку" },
@@ -270,9 +276,9 @@ window.DATA = {
   },
 
   shop: {
-    food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6, korovai: 10 },
+    food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6, korovai: 10, paska: 10 },
     seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
-    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, pysanka: 6, didukh: 10, vyshyvanka: 12, bandura: 20, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
+    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, pysanka: 6, motanka: 8, tarilka: 10, vinok: 8, didukh: 10, vyshyvanka: 12, bandura: 20, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
     // Toys and furniture for the cat friends (they use them).
     tools: { vudka: 6 },
     cats: { kihtetochka: 15, lezhanka: 8, miachyk: 3, myshka: 3 },
@@ -281,7 +287,7 @@ window.DATA = {
   },
 
   // Which cottage items hang on the wall (the rest stand on the floor).
-  wallItems: ["kartyna", "dzerkalo", "hodynnyk", "rushnyk", "vyshyvanka", "bandura"],
+  wallItems: ["kartyna", "dzerkalo", "hodynnyk", "rushnyk", "vyshyvanka", "bandura", "tarilka", "vinok"],
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
