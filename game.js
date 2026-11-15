@@ -1864,10 +1864,10 @@ const A = {
   update() { location.reload(); },
   eatMeal() {
     const R = D.recipes[S.recipe.i]; if (!R) return closeSheet();
-    say('p_duzhe_smachno'); learn(R.dish); give(R.dish); S.hearts += 3; S.coins += 10;
+    say('p_duzhe_smachno'); learn(R.dish); give(R.dish); S.hearts += 3;   // a meal from Grandma earns love, not money
     S.recipe = { i: S.recipe.i + 1, got: [], started: -1 };
     hud(); save(); setGuide(); blip(990, 0.2);
-    setTimeout(() => { closeSheet(); toast(`❤️ +3  💰 +10  ${W[R.dish].uk}`); }, 1800);
+    setTimeout(() => { closeSheet(); toast(`❤️ +3  ${W[R.dish].uk}`); }, 1800);
   },
   story() { storyShow(0); },
   storyGo(v) { storyShow(+v); },
