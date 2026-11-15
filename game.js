@@ -965,14 +965,34 @@ function findPath(tx, ty, ent) {
   for (let i = best; i >= 0 && i !== q[0]; i = prev[i]) path.unshift({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 });
   return path;
 }
+// When you go to talk to someone, stand beside them (not on top of them), facing them.
+// Some villagers have a side that is free of their work (Olia's flowers, Bohdan's hives).
+const TALK_SIDE = { olia: 1, bohdan: 1, taras: -1 };
+function talkSpot(e) {
+  const free = (x, y) => x > 0.5 && x < MW - 0.5 && !solid[Math.floor(y)][Math.floor(x)];
+  const pref = TALK_SIDE[e.npc] || (P.x <= e.x ? -1 : 1);
+  for (const side of [pref, -pref]) { const x = e.x + side * 1.05; if (free(x, e.y)) return { x, y: e.y }; }
+  return null;
+}
 function walkTo(wx, wy, ent) {
+  if (ent && ent.kind === 'npc') {
+    const sp = talkSpot(ent);
+    if (sp) {
+      const path = findPath(sp.x, sp.y, null);
+      const end = path.length ? path[path.length - 1] : { x: P.x, y: P.y };
+      if (Math.hypot(end.x - sp.x, end.y - sp.y) < 1.2) {
+        if (path.length && Math.hypot(end.x - sp.x, end.y - sp.y) < 0.75) path[path.length - 1] = sp; else path.push(sp);
+        P.path = path; P.goal = ent; return;
+      }
+    }
+  }
   const path = findPath(wx, wy, ent);
   // If we are tapping bare ground and the end tile is the tapped tile, finish on the exact spot.
   if (!ent && path.length && Math.hypot(path[path.length - 1].x - wx, path[path.length - 1].y - wy) < 0.75 && !solid[Math.floor(wy)][Math.floor(wx)]) path[path.length - 1] = { x: wx, y: wy };
   P.path = path; P.goal = ent || null;
   if (!path.length && ent) arrive();
 }
-function arrive() { const e = P.goal; P.goal = null; if (e) interact(e); }
+function arrive() { const e = P.goal; P.goal = null; if (e && e.kind === 'npc') P.face = e.x >= P.x ? 1 : -1; if (e) interact(e); }
 
 // ------------------------------------------------------------------ learning
 // First meeting teaches the word. After that it comes back "due" at growing intervals.
