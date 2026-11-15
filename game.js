@@ -968,7 +968,7 @@ function add(e) {
 // The ground is painted once into its own canvas.
 const ground = document.createElement('canvas');
 const seeded = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
-(function paintGround() {
+function paintGround() {
   ground.width = MW * T; ground.height = MH * T;
   const c = ground.getContext('2d'), GW = ground.width, GH = ground.height, r = seeded(7);
   const onRoad = (x, y) => isRoad(Math.floor(x / T), Math.floor(y / T));
@@ -1029,7 +1029,16 @@ const seeded = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
     c.restore();
     if (fl) { c.fillStyle = '#ffb3d1'; for (let k = 0; k < 6; k++) ell(c, x * T + Math.cos(k * 1.047) * 5, y * T - 4 + Math.sin(k * 1.047) * 3, 4, 2.6); c.fillStyle = '#ffe36e'; circ(c, x * T, y * T - 4, 2.4); }
   }
-})();
+}
+paintGround();
+// A phone can throw a big canvas's pixels away while the page is in the background or memory is tight; then the
+// ground draws as nothing and the screen smears. Check on return, and paint it again if it went blank.
+function groundOk() { try { const d = ground.getContext('2d').getImageData(ground.width >> 1, ground.height >> 1, 1, 1).data; return d[3] > 0; } catch (e) { return false; } }
+const checkGround = () => { if (!groundOk()) paintGround(); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkGround(); });
+addEventListener('pageshow', checkGround); addEventListener('focus', checkGround);
+ground.addEventListener('contextlost', e => e.preventDefault()); ground.addEventListener('contextrestored', paintGround);
+cv.addEventListener('contextlost', e => e.preventDefault()); cv.addEventListener('contextrestored', () => { paintGround(); });
 
 // A soft cloud shadow, painted once, that drifts across the village. (The sunlight itself is the #light
 // layer in the page, which costs nothing per frame.)
@@ -2061,6 +2070,7 @@ function homeSign(c, x, y, t) {
 }
 function drawWorld(t) {
   const c = ctx;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#8fd169'; c.fillRect(0, 0, cv.width, cv.height);   // never leave an old frame showing
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
   c.drawImage(ground, 0, 0);
   if (GFX.water) drawWater(c, t);
@@ -2530,5 +2540,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
