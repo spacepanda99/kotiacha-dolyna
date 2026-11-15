@@ -39,6 +39,13 @@ window.DATA = {
     { id: "metelyk", uk: "метелик", tr: "me-TE-lyk", en: "butterfly", ic: "🦋" },
     { id: "zhaba", uk: "жаба", tr: "ZHA-ba", en: "frog", ic: "🐸" },
     { id: "ryba", uk: "риба", tr: "RY-ba", en: "fish", ic: "🐟", acc: "рибу" },
+    // --- the cats of the valley (colour words; "кішка" is a female cat)
+    { id: "rudyi_kit", uk: "рудий кіт", tr: "ru-DYI kit", en: "ginger cat", ic: "@cat_rudyi" },
+    { id: "chornyi_kit", uk: "чорний кіт", tr: "CHOR-nyi kit", en: "black cat", ic: "@cat_chornyi" },
+    { id: "bilyi_kit", uk: "білий кіт", tr: "BI-lyi kit", en: "white cat", ic: "@cat_bilyi" },
+    { id: "siryi_kit", uk: "сірий кіт", tr: "SI-ryi kit", en: "grey cat", ic: "@cat_siryi" },
+    { id: "smuhastyi_kit", uk: "смугастий кіт", tr: "smu-HAS-tyi kit", en: "striped cat", ic: "@cat_smuhastyi" },
+    { id: "trykolirna_kishka", uk: "триколірна кішка", tr: "try-ko-LIR-na KISH-ka", en: "calico cat", ic: "@cat_trykolirna" },
     // --- food
     { id: "khlib", uk: "хліб", tr: "khlib", en: "bread", ic: "🍞" },
     { id: "moloko", uk: "молоко", tr: "mo-lo-KO", en: "milk", ic: "🥛" },
@@ -107,6 +114,7 @@ window.DATA = {
     { id: "os", uk: "Ось, будь ласка.", en: "Here you go." },
     { id: "molodets", uk: "Молодець!", en: "Well done!" },
     { id: "nove_slovo", uk: "Нове слово!", en: "A new word!" },
+    { id: "mur", uk: "Мур-мур! Тепер ми друзі.", en: "Purr! Now we are friends." },
     { id: "i_explore", uk: "Оглянь село.", en: "Look around the village." },
     { id: "i_talk", uk: "Поговори з бабою Олею.", en: "Talk to Grandma Olia." },
     { id: "i_plant", uk: "Посади насіння.", en: "Plant the seeds." },
@@ -184,6 +192,17 @@ window.DATA = {
     }
   ],
 
+  // The valley's cats. Bring each one the treat it wants and it becomes your friend
+  // (and comes to sit in your cottage). v = colouring, x/y = where it wanders.
+  cats: [
+    { id: "rudko", v: "rudyi", word: "rudyi_kit", name: "Рудько", wants: "ryba", x: 8.6, y: 15.6, line: "Рудий кіт хоче рибу.", lineEn: "The ginger cat wants fish." },
+    { id: "vuhlyk", v: "chornyi", word: "chornyi_kit", name: "Вуглик", wants: "moloko", x: 22.4, y: 12.4, line: "Чорний кіт хоче молоко.", lineEn: "The black cat wants milk." },
+    { id: "snizhok", v: "bilyi", word: "bilyi_kit", name: "Сніжок", wants: "syr", x: 17.2, y: 20.8, line: "Білий кіт хоче сир.", lineEn: "The white cat wants cheese." },
+    { id: "dymok", v: "siryi", word: "siryi_kit", name: "Димок", wants: "voda", x: 26.4, y: 17.6, line: "Сірий кіт хоче воду.", lineEn: "The grey cat wants water." },
+    { id: "smuhastyk", v: "smuhastyi", word: "smuhastyi_kit", name: "Смугастик", wants: "yaitse", x: 10.2, y: 21.4, line: "Смугастий кіт хоче яйце.", lineEn: "The striped cat wants an egg." },
+    { id: "murka", v: "trykolirna", word: "trykolirna_kishka", name: "Мурка", wants: "maslo", x: 27.4, y: 8.2, line: "Триколірна кішка хоче масло.", lineEn: "The calico cat wants butter." }
+  ],
+
   // Grandma Olia's letter on the title screen: the valley's story, and how to play.
   // pics: "face:<npc>", "w:<word id>" or a plain emoji.
   story: [
@@ -194,7 +213,7 @@ window.DATA = {
     { uk: "Торкнись — і почуєш слово.", pics: ["👆", "w:yablunia", "✨"],
       en: "Tap anything to walk over and hear its name. Things that sparkle ✨ are new to you, or a word that's due for a refresher. Tap the 🔊 to hear any word again." },
     { uk: "Сусіди попросять про допомогу.", pics: ["face:andriiko", "w:morkva", "w:yabluko"],
-      en: "The neighbours will ask you for things. Grow vegetables in your garden, pick apples, draw water from the well, or buy from Oksana's market stall. Bring them what they ask for, and they'll thank you with coins and hearts." },
+      en: "The neighbours will ask you for things. Grow vegetables in your garden, pick apples, draw water from the well, or buy from Oksana's market stall. Bring them what they ask for, and they'll thank you with coins and hearts. The cats get hungry too: bring each one its favourite treat and it becomes your friend." },
     { uk: "Прикрась свою хату.", pics: ["w:khata", "w:kartyna", "w:vazon"],
       en: "Spend your coins on lovely things at the market, then step inside your cottage and tap the + spots to make it home." },
     { uk: "Спершу з перекладом, а потім — українською.", pics: ["📖", "👁️", "❤️"],

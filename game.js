@@ -22,7 +22,7 @@ const SAVE = 'kotiacha-dolyna-v1';
 const fresh = () => ({
   coins: 10, hearts: 0, words: {}, bag: {}, seeds: { morkva: 3 }, home: {}, placed: {},
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
-  npc: {}, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
+  npc: {}, cats: {}, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
 let S;
 try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { S = fresh(); }
@@ -45,6 +45,7 @@ function textOf(id) {
   if (k === 'w') return W[id.slice(2)] ? W[id.slice(2)].uk : '';
   if (k === 'p') return PH[id.slice(2)] ? PH[id.slice(2)].uk : '';
   if (k === 'n') return D.prices[a] || '';
+  if (k === 'c') { const ct = (D.cats || []).find(x => x.id === id.slice(2)); return ct ? ct.line : ''; }
   if (k === 's') return D.story && D.story[+a] ? D.story[+a].uk : '';
   if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].uk : '';
   if (k === 'q') return W[b] ? D.questLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
@@ -274,14 +275,18 @@ function person(c, x, y, L, t, moving, sc) {
   const bob = moving ? Math.sin(t * 12) * 2 : Math.sin(t * 2) * 0.8;
   const sw = moving ? Math.sin(t * 12) * 4 : 0;
   c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 0, 17, 6);
+  if (L.long) { c.fillStyle = L.hair; rr(c, -17, -76 + bob, 34, 44, 13); }
   c.fillStyle = '#5b4636'; c.fillRect(-9 + sw, -11, 7, 11); c.fillRect(2 - sw, -11, 7, 11);
-  c.fillStyle = L.skirt; rr(c, -14, -31 + bob, 28, 22, 6);
+  c.fillStyle = L.skirt;
+  if (L.dress) { poly(c, [[-13, -32 + bob], [13, -32 + bob], [19, -8 + bob], [-19, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-18, -12 + bob, 36, 2.5); }
+  else rr(c, -14, -31 + bob, 28, 22, 6);
   c.fillStyle = L.shirt; rr(c, -19, -48 + bob, 7, 18, 3); rr(c, 12, -48 + bob, 7, 18, 3); rr(c, -14, -51 + bob, 28, 26, 8);
   c.fillStyle = L.trim; c.fillRect(-2, -49 + bob, 4, 18); c.fillRect(-14, -30 + bob, 28, 3);
   c.fillRect(-19, -34 + bob, 7, 2.5); c.fillRect(12, -34 + bob, 7, 2.5);
   for (let i = 0; i < 3; i++) { c.fillRect(-6, -46 + i * 6 + bob, 2, 2); c.fillRect(4, -46 + i * 6 + bob, 2, 2); }
   c.fillStyle = L.skin; circ(c, -15.5, -28 + bob, 3.5); circ(c, 15.5, -28 + bob, 3.5); circ(c, 0, -63 + bob, 14);
   c.fillStyle = L.hair; c.beginPath(); c.arc(0, -65 + bob, 14.6, Math.PI, 0); c.fill();
+  if (L.long) { rr(c, -15.5, -66 + bob, 5, 20, 2.5); rr(c, 10.5, -66 + bob, 5, 20, 2.5); c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
   c.fillStyle = '#3b2f2a'; circ(c, -5, -62 + bob, 1.8); circ(c, 5, -62 + bob, 1.8);
   c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.6; c.beginPath(); c.arc(0, -58 + bob, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
   c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, -9, -58 + bob, 2.8); circ(c, 9, -58 + bob, 2.8);
@@ -298,7 +303,7 @@ function person(c, x, y, L, t, moving, sc) {
   }
   c.restore();
 }
-const ME = { skin: '#f5cfae', shirt: '#ffffff', trim: '#d43a3a', skirt: '#2c5fa8', hair: '#7a4a25', hat: 'none' };
+const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true };
 function faceURL(L) {
   const k = document.createElement('canvas'); k.width = k.height = 128;
   const c = k.getContext('2d'); person(c, 64, 152, L, 0, false, L.small ? 2.1 : 1.7);
@@ -314,6 +319,9 @@ const inPond = (x, y, g = 0) => ((x - POND.x) / (POND.rx + g)) ** 2 + ((y - POND
 const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (x === 18 && y >= 6 && y <= 23) || (x === 7 && y >= 11 && y <= 13) || (x === 25 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
+const ANIMAL_OF = { kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
+const ASIZE = { horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.85, cat: 0.65, hen: 0.6, rooster: 0.72, duck: 0.55 };
+const SPEED = { horse: 0.6, cow: 0.3, goat: 0.45, pig: 0.35, dog: 0.7, cat: 0.55, hen: 0.4, rooster: 0.45, duck: 0.3 };
 function add(e) {
   e.k = e.k || (e.w + ents.length);
   e.s = e.s || 1; e.ic = e.ic || W[e.w].ic;
@@ -377,7 +385,14 @@ function add(e) {
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
   add({ w: 'sobaka', x: 15.7, y: 21.3, kind: 'animal', r: 1.0 });
   add({ w: 'khata', k: 'n_bohdan', x: 6.2, y: 21.3, kind: 'npc', npc: 'bohdan', s: 1.3 });
-  for (const e of ents) { e.hx = e.x; e.hy = e.y; e.tw = 0; }
+  for (let i = ents.length - 1; i >= 0; i--) if (ents[i].w === 'kit') ents.splice(i, 1);
+  for (const ct of D.cats) add({ w: ct.word, k: 'cat_' + ct.id, kind: 'animal', an: 'cat', cat: ct.id, v: ct.v, x: ct.x, y: ct.y, r: 1.3 });
+  let ducks = 0;
+  for (const e of ents) {
+    e.hx = e.x; e.hy = e.y; e.tw = 0;
+    if (e.kind === 'animal' && ANIMAL_OF[e.w]) { e.an = ANIMAL_OF[e.w]; if (e.an === 'duck') e.v = ducks++; }
+    if (e.an) e.s = ASIZE[e.an];
+  }
 })();
 
 // The ground is painted once into its own canvas.
@@ -397,6 +412,157 @@ const ground = document.createElement('canvas');
   c.fillStyle = '#8fd4f0'; ell(c, (POND.x - 1) * T, (POND.y - 0.8) * T, 1.4 * T, 0.5 * T);
   c.fillStyle = '#5fb760'; for (const [x, y] of [[27.2, 21.9], [31.6, 19.2], [32.3, 21.3]]) ell(c, x * T, y * T, 14, 8);
 })();
+
+// ------------------------------------------------------------------ animals, drawn and walking
+// Side-view animals with real legs. Sizes are relative to the villagers (a horse stands taller than a
+// person, a hen comes up to the knee). Legs swing with the distance walked, so nothing slides or hops.
+// L body length, B body height, G leg length, neck [forward, up], head [long radius, short radius].
+const QUAD = {
+  horse: { k: 1.3, L: 62, B: 26, G: 34, col: '#9a5b34', far: '#7a4526', dark: '#4a2a14', neck: [14, 28], head: [15, 7.5], hrot: 0.55, tail: 'hair', mane: true, hoof: '#3b2a1e', ear: 'up', graze: true, muzzle: '#c98f6a' },
+  cow: { k: 1.2, L: 64, B: 32, G: 22, col: '#fffaf0', far: '#d8d0c0', dark: '#2d2a2a', neck: [9, 7], head: [14, 10], hrot: 0.3, tail: 'tuft', horns: 'cow', udder: true, hoof: '#3b2a1e', ear: 'side', graze: true, patches: [[-14, -6, 12], [10, 5, 9], [25, -8, 7]], muzzle: '#f4b6b0' },
+  goat: { k: 1, L: 38, B: 20, G: 20, col: '#f3ead7', far: '#d1c5a8', dark: '#a8956e', neck: [8, 13], head: [10, 6.5], hrot: 0.35, tail: 'stub', horns: 'goat', beard: true, hoof: '#5b4636', ear: 'side', graze: true },
+  pig: { k: 1, L: 44, B: 27, G: 11, col: '#f6b0b8', far: '#e39aa6', dark: '#d77f90', neck: [3, -2], head: [12, 11], hrot: 0.1, tail: 'curl', snout: true, ear: 'flop', hoof: '#b8697b' },
+  dog: { k: 1, L: 36, B: 17, G: 16, col: '#c98a4a', far: '#a56c34', dark: '#7a4b22', neck: [6, 8], head: [9.5, 8], hrot: 0.1, tail: 'wag', ear: 'flop', patches: [[-8, -2, 7]], muzzle: '#fff3e0', nose: true },
+};
+// The six cats of the valley. Each also has a sitting portrait (see cat() by the title screen).
+const VAR = {
+  rudyi: { col: '#f0a24c', far: '#d98a36', dark: '#c26f22', eye: '#7bc47f', stripes: true },
+  chornyi: { col: '#3d373c', far: '#2c272b', dark: '#1d191c', eye: '#f2c230' },
+  bilyi: { col: '#fffdf8', far: '#e2dbcf', dark: '#cfc7b8', eye: '#5aa9e6' },
+  siryi: { col: '#9a9aa2', far: '#80808a', dark: '#66666f', eye: '#e6b43a' },
+  smuhastyi: { col: '#b89a74', far: '#9c805c', dark: '#5e4830', eye: '#7bc47f', stripes: true },
+  trykolirna: { col: '#fffdf8', far: '#e2dbcf', dark: '#cfc7b8', eye: '#e6b43a', patches: [[-7, -3, 6, '#f0a24c'], [6, 2, 5, '#3d373c']], headPatch: '#f0a24c' },
+};
+const catQuad = v => Object.assign({ k: 1, L: 30, B: 13, G: 12, neck: [4, 6], head: [8, 7.5], hrot: 0, tail: 'cat', ear: 'point', nose: true, hoof: null }, VAR[v]);
+function sitPal(v) {
+  const V = VAR[v], tri = v === 'trykolirna';
+  return {
+    body: V.col, a: tri ? '#f0a24c' : V.dark, b: tri ? '#3d373c' : V.dark, eye: V.eye, chub: 1, fluffy: false, bib: false, tail: V.col, earR: tri ? 'b' : 'body',
+    pb: tri ? [[-10, -36, 10, 'a'], [10, -22, 8, 'b']] : V.stripes ? [[-16, -40, 5, 'a'], [-4, -48, 5, 'a'], [10, -44, 5, 'a'], [18, -30, 5, 'a']] : [],
+    ph: tri ? [[-10, -78, 8, 'a'], [10, -76, 7, 'b']] : V.stripes ? [[-6, -90, 3.5, 'a'], [0, -92, 3.5, 'a'], [6, -90, 3.5, 'a']] : [],
+  };
+}
+for (const v in VAR) DRAW['cat_' + v] = c => cat(c, 0, -2, 94, sitPal(v), 0, 0, 1);
+
+function quad(c, x, y, Q, t, e) {
+  const walk = !!e.walk, ph = (e.step || 0) * 34 / Q.G;
+  const sw = walk ? Math.sin(ph) : 0, bob = walk ? Math.abs(Math.cos(ph)) * 1.2 : Math.sin(t * 1.5 + e.hx) * 0.4;
+  const dir = e.face === -1 ? 1 : -1;
+  c.save(); c.translate(x, y); c.scale(Q.k * dir, Q.k); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, Q.L * 0.55, 5);
+  const by = -Q.G - Q.B / 2 - bob, lw = Math.max(3.5, Q.B * 0.24), hipF = Q.L * 0.33, hipB = -Q.L * 0.33;
+  const leg = (hx, a, col) => {
+    c.save(); c.translate(hx, -Q.G - bob * 0.5 - 1); c.rotate(a);
+    c.fillStyle = col; rr(c, -lw / 2, -2, lw, Q.G + 2, lw / 2);
+    if (Q.hoof) { c.fillStyle = Q.hoof; rr(c, -lw / 2, Q.G - 5, lw, 5.5, 2); }
+    c.restore();
+  };
+  // far-side legs first
+  leg(hipF - 3, -sw * 0.5, Q.far); leg(hipB - 3, sw * 0.5, Q.far);
+  // tail
+  const tx = -Q.L / 2 + 2, ty = by - Q.B * 0.15;
+  if (Q.tail === 'hair') { c.strokeStyle = Q.dark; c.lineWidth = 7; c.beginPath(); c.moveTo(tx, ty); c.quadraticCurveTo(tx - 14 - sw * 3, ty + 8, tx - 10 + Math.sin(t * 2 + e.hx) * 3, ty + 34); c.stroke(); }
+  else if (Q.tail === 'tuft') { c.strokeStyle = Q.dark; c.lineWidth = 2.2; c.beginPath(); c.moveTo(tx, ty); c.quadraticCurveTo(tx - 9, ty + 10, tx - 6 + Math.sin(t * 2.4 + e.hx) * 4, ty + 26); c.stroke(); c.fillStyle = Q.dark; circ(c, tx - 6 + Math.sin(t * 2.4 + e.hx) * 4, ty + 27, 3.2); }
+  else if (Q.tail === 'stub') { c.fillStyle = Q.col; poly(c, [[tx + 3, ty + 2], [tx - 6, ty - 8], [tx + 5, ty - 4]]); }
+  else if (Q.tail === 'curl') { c.strokeStyle = Q.dark; c.lineWidth = 2.6; c.beginPath(); c.arc(tx - 3, ty - 2, 4, 0.3, 5.2); c.stroke(); }
+  else if (Q.tail === 'wag') { const a = -1.0 + Math.sin(t * 9 + e.hx) * 0.45; c.strokeStyle = Q.col; c.lineWidth = 4.5; c.beginPath(); c.moveTo(tx + 2, ty); c.lineTo(tx + 2 + Math.cos(a) * -14, ty + Math.sin(a) * 14); c.stroke(); }
+  else if (Q.tail === 'cat') { const s2 = Math.sin(t * 2 + e.hx * 2) * 5; c.strokeStyle = Q.col; c.lineWidth = 4; c.beginPath(); c.moveTo(tx + 2, ty + 1); c.bezierCurveTo(tx - 12, ty + 2, tx - 16 + s2, ty - 12, tx - 9 + s2, ty - 21); c.stroke(); }
+  // body
+  c.fillStyle = Q.col; c.beginPath(); c.ellipse(0, by, Q.L / 2, Q.B / 2, 0, 0, 7); c.fill();
+  if (Q.patches || Q.stripes) {
+    c.save(); c.clip();
+    for (const p of Q.patches || []) { c.fillStyle = p[3] || Q.dark; circ(c, p[0], by + p[1], p[2]); }
+    if (Q.stripes) { c.strokeStyle = Q.dark; c.lineWidth = 2; for (let i = -1; i <= 2; i++) { c.beginPath(); c.moveTo(i * 6 - 2, by - Q.B / 2); c.lineTo(i * 6, by - 1); c.stroke(); } }
+    c.restore();
+  }
+  if (Q.udder) { c.fillStyle = '#f4b6b0'; ell(c, -Q.L * 0.16, by + Q.B / 2 - 1, 8, 5); }
+  // near-side legs
+  leg(hipF + 2, sw * 0.5, Q.col); leg(hipB + 2, -sw * 0.5, Q.col);
+  // neck and head; grazers lower their heads now and then when standing
+  const dip = !walk && Q.graze ? Math.max(0, Math.sin(t * 0.45 + e.hx * 3)) : 0;
+  const hx = Q.L / 2 + Q.neck[0] - dip * 2, hy = by - Q.neck[1] + dip * (Q.neck[1] + Q.G * 0.75);
+  c.strokeStyle = Q.col; c.lineWidth = Q.B * 0.5; c.beginPath(); c.moveTo(Q.L / 2 - 7, by - Q.B * 0.1); c.lineTo(hx - 2, hy + 2); c.stroke();
+  if (Q.mane) { c.strokeStyle = Q.dark; c.lineWidth = 5; c.beginPath(); c.moveTo(Q.L / 2 - 12, by - Q.B * 0.42); c.lineTo(hx - 6, hy - 5); c.stroke(); }
+  c.save(); c.translate(hx, hy); c.rotate(Q.hrot + dip * 0.5);
+  const a0 = Q.head[0], b0 = Q.head[1];
+  if (Q.horns === 'cow') { c.strokeStyle = '#e9dcc0'; c.lineWidth = 3; c.beginPath(); c.arc(-a0 * 0.2, -b0 - 2, 5, Math.PI, 1.7 * Math.PI); c.stroke(); }
+  if (Q.horns === 'goat') { c.strokeStyle = '#a8956e'; c.lineWidth = 2.6; c.beginPath(); c.arc(-a0 * 0.75, -b0 - 1, 8, 1.15 * Math.PI, 1.95 * Math.PI); c.stroke(); }
+  if (Q.ear === 'up') { c.fillStyle = Q.col; poly(c, [[-a0 * 0.5, -b0 + 1], [-a0 * 0.35, -b0 - 9], [-a0 * 0.05, -b0 + 1]]); }
+  if (Q.ear === 'point') { c.fillStyle = Q.col; poly(c, [[-a0 * 0.75, -b0 + 3], [-a0 * 0.5, -b0 - 7], [-a0 * 0.05, -b0 + 1]]); poly(c, [[a0 * 0.0, -b0 + 1], [a0 * 0.4, -b0 - 7], [a0 * 0.7, -b0 + 3]]); }
+  c.fillStyle = Q.col; c.beginPath(); c.ellipse(a0 * 0.25, 0, a0, b0, 0, 0, 7); c.fill();
+  if (Q.headPatch) { c.save(); c.clip(); c.fillStyle = Q.headPatch; circ(c, -a0 * 0.3, -b0 * 0.5, a0 * 0.6); c.restore(); }
+  if (Q.muzzle) { c.fillStyle = Q.muzzle; ell(c, a0 * 0.85, b0 * 0.15, a0 * 0.42, b0 * 0.72); }
+  if (Q.snout) { c.fillStyle = Q.dark; ell(c, a0 * 1.1, 1, 4.5, 5.5); c.fillStyle = '#8a4a5a'; circ(c, a0 * 1.12, -1, 0.9); circ(c, a0 * 1.12, 3, 0.9); }
+  if (Q.nose) { c.fillStyle = Q.tail === 'cat' ? '#e8708a' : '#2a1a10'; circ(c, a0 * 1.2, 0.5, Q.tail === 'cat' ? 1.3 : 2); }
+  if (Q.ear === 'side') { c.fillStyle = Q.far; ell(c, -a0 * 0.5, -b0 * 0.55, 5, 2.8); }
+  if (Q.ear === 'flop') { c.fillStyle = Q.dark; c.beginPath(); c.ellipse(-a0 * 0.25, -b0 * 0.1, 4.2, 7, 0.3, 0, 7); c.fill(); }
+  if (Q.beard) { c.fillStyle = Q.dark; poly(c, [[a0 * 0.5, b0 - 1], [a0 * 0.75, b0 + 8], [a0 * 0.9, b0 - 2]]); }
+  c.fillStyle = Q.eye || '#2a1a10'; circ(c, a0 * 0.45, -b0 * 0.25, Q.eye ? 1.9 : 1.6);
+  if (Q.eye) { c.fillStyle = '#1d191c'; ell(c, a0 * 0.45, -b0 * 0.25, 0.7, 1.7); }
+  if (Q.tail === 'cat') { c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 0.7; for (const dy of [-1, 1.5]) { c.beginPath(); c.moveTo(a0 * 0.9, 1.5 + dy); c.lineTo(a0 * 1.7, 0.5 + dy * 2.2); c.stroke(); } }
+  c.restore();
+  c.restore();
+}
+
+const BIRD = {
+  hen: { k: 1, body: '#fff8ec', wing: '#eadfc6', tail: '#eadfc6', comb: 3 },
+  rooster: { k: 1.18, body: '#b5522a', wing: '#7a2f1a', tail: '#1f4d3a', comb: 5, big: true },
+};
+function bird(c, x, y, B, t, e) {
+  const walk = !!e.walk, ph = (e.step || 0) * 34, sw = walk ? Math.sin(ph) : 0;
+  const dir = e.face === -1 ? 1 : -1;
+  const peck = !walk && Math.sin(t * 1.3 + e.hx * 5) > 0.55 ? 1 : 0;
+  c.save(); c.translate(x, y); c.scale(B.k * dir, B.k); c.lineCap = 'round';
+  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, 13, 3.5);
+  c.strokeStyle = '#e09a2a'; c.lineWidth = 2;
+  for (const [lx, s2] of [[-3, sw], [3, -sw]]) { c.beginPath(); c.moveTo(lx, -9); c.lineTo(lx + s2 * 4, -1); c.lineTo(lx + s2 * 4 + 4, -1); c.stroke(); }
+  c.fillStyle = B.tail;
+  if (B.big) { for (let i = 0; i < 3; i++) { c.save(); c.translate(-11, -20); c.rotate(-0.5 - i * 0.35); ell(c, -9, 0, 11, 3.6); c.restore(); } }
+  else poly(c, [[-9, -22], [-21, -30], [-12, -14]]);
+  c.fillStyle = B.body; ell(c, 0, -17, 13, 10.5);
+  c.fillStyle = B.wing; ell(c, -2, -17, 8, 6);
+  const hx = peck ? 15 : 10, hy = peck ? -10 : -30;
+  c.strokeStyle = B.body; c.lineWidth = 7; c.beginPath(); c.moveTo(7, -21); c.lineTo(hx - 1, hy + 2); c.stroke();
+  c.fillStyle = '#e2392f'; for (let i = 0; i < B.comb; i++) circ(c, hx - 3 + i * 2.2, hy - 6.5 - (i % 2), 2.4); ell(c, hx + 4, hy + 5, 1.8, 3);
+  c.fillStyle = B.body; circ(c, hx, hy, 6);
+  c.fillStyle = '#f2a13a'; poly(c, [[hx + 5, hy - 2], [hx + 11, hy + 0.5], [hx + 5, hy + 2.5]]);
+  c.fillStyle = '#2a1a10'; circ(c, hx + 2, hy - 1.5, 1.2);
+  c.restore();
+}
+function drawDuck(c, x, y, t, e) {
+  const dir = e.face === -1 ? 1 : -1, bob = Math.sin(t * 2 + e.hx * 4) * 1.2, drake = e.v === 0;
+  c.save(); c.translate(x, y + bob); c.scale(dir, 1);
+  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5;
+  for (let i = 0; i < 2; i++) { c.beginPath(); c.ellipse(0, -1, 17 + i * 6 + (e.walk ? Math.sin(t * 5) * 2 : 0), 3.5 + i * 1.5, 0, 0.1, Math.PI - 0.1); c.stroke(); }
+  c.fillStyle = drake ? '#cfc8bd' : '#a9794e'; ell(c, 0, -8, 15, 8);
+  c.fillStyle = drake ? '#8a7f72' : '#8a5f3a'; ell(c, -3, -9, 8, 4.5); poly(c, [[-12, -10], [-21, -15], [-13, -4]]);
+  c.fillStyle = drake ? '#2f8f5b' : '#a9794e'; circ(c, 11, -18, 6); c.fillRect(8, -16, 6, 8);
+  if (drake) { c.fillStyle = '#fff'; c.fillRect(8, -11.5, 6.5, 1.8); }
+  c.fillStyle = '#f2c230'; rr(c, 15, -19, 9, 3.6, 1.8);
+  c.fillStyle = '#1d191c'; circ(c, 12.5, -19.5, 1.2);
+  c.restore();
+}
+function drawAnimal(c, x, y, e, t) {
+  if (e.an === 'duck') return drawDuck(c, x, y, t, e);
+  if (BIRD[e.an]) return bird(c, x, y, BIRD[e.an], t, e);
+  if (e.an === 'cat') return quad(c, x, y, e.q || (e.q = catQuad(e.v)), t, e);
+  quad(c, x, y, QUAD[e.an], t, e);
+}
+// Befriending a cat: bring it the treat it wants.
+function catSheet(e) {
+  const ct = D.cats.find(x => x.id === e.cat);
+  if (S.cats[ct.id]) return wordCard(ct.word, { note: `❤️ ${ct.name} · ${PH.mur.uk}`, clips: ['p_mur'] });
+  const has = (S.bag[ct.wants] || 0) > 0, st = stage();
+  wordCard(ct.word, {
+    note: `<b>${ct.line}</b>${st < 2 ? `<br>${ct.lineEn}` : ''}${st < 3 && !has ? `<br><small>${sourceHint(ct.wants)}</small>` : ''}`,
+    clips: ['c_' + ct.id],
+    acts: has ? [{ k: 'give', fn: () => {
+      S.bag[ct.wants]--; S.cats[ct.id] = 1; S.hearts += 2; S.coins += 3; learn(ct.wants); useWord(ct.wants, true);
+      hud(); save(); closeSheet(); toast(`❤️ ${ct.name}!  +2 ❤️  +3 💰`); say('p_mur'); blip(990, 0.15);
+    } }] : [],
+  });
+}
+const catFriends = () => D.cats.filter(ct => S.cats[ct.id]).length;
 
 // ------------------------------------------------------------------ walking
 const P = { x: S.x, y: S.y, path: [], moving: false, face: 1, goal: null };
@@ -502,7 +668,7 @@ function wordCard(id, o = {}) {
     if (!cur.peeked) { st.l = Math.min(5, st.l + 1); st.d = now() + IV[st.l]; } else st.d = now() + IV[1];
     save();
   });
-  say('w_' + id);
+  say('w_' + id, ...(o.clips || []));
 }
 
 function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; save(); }
@@ -515,6 +681,7 @@ function take(e) {
 const ready = e => !(S.cd[e.k] > now());
 
 function interact(e) {
+  if (e.cat) return catSheet(e);
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); return shop(); }
@@ -588,7 +755,7 @@ function sourceHint(id) {
   if (stage() >= 3) return '';
   if (D.shop.seeds[id]) return '🌱 Grow it in your garden. Seeds are at the market.';
   if (D.shop.food[id]) return '🧺 Oksana sells it at the market.';
-  return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.' }[id] || '';
+  return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: '🐟 Catch one in the pond.' }[id] || '';
 }
 let dlg = null;
 function dialog(npc, steps, i = 0) {
@@ -706,7 +873,7 @@ function wordsSheet() {
   const m = mastered(), st = stage();
   const title = ['', 'Гість · Guest', 'Сусід · Neighbour', 'Свій · One of us'][st];
   const next = st === 1 ? 12 : st === 2 ? 40 : D.words.length;
-  openSheet(`<h3><span><span class="uk">${D.ui.words[0]}</span> ${st < 3 ? `<small>${D.ui.words[1]}</small>` : ''}</span><small>${ids.length} / ${D.words.length}</small></h3>
+  openSheet(`<h3><span><span class="uk">${D.ui.words[0]}</span> ${st < 3 ? `<small>${D.ui.words[1]}</small>` : ''}</span><small>🐈 ${catFriends()}/${D.cats.length} · ${ids.length} / ${D.words.length}</small></h3>
     <div style="font-weight:800">${title}</div>
     <div class="bar"><i style="width:${Math.min(100, Math.round(m / next * 100))}%"></i></div>
     ${st < 3 ? `<div class="muted" style="padding:0 0 10px;text-align:left">${m} well-known words. At ${next}, ${st === 1 ? 'the villagers stop translating themselves' : 'the village goes fully Ukrainian'}.</div>` : ''}
@@ -758,6 +925,7 @@ function drawHome(t) {
     }
   }
   drawIcon(c, '🐈', w * 0.14, h * 0.93 + Math.sin(t * 2) * h * 0.003, h * 0.09);
+  D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => cat(c, w * (0.3 + i * 0.118), h * 0.885, h * 0.07, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1));
 }
 
 // ------------------------------------------------------------------ the world, drawn
@@ -783,7 +951,7 @@ function update(dt, t) {
     if (e.kind === 'animal') {
       e.tw -= dt;
       if (e.tw <= 0) { e.tw = rnd(2, 6); const a = rnd(0, 7), r = rnd(0, e.r); const nx = e.hx + Math.cos(a) * r, ny = e.hy + Math.sin(a) * r * 0.6; if (e.water ? inPond(nx, ny, -0.5) : !solid[Math.floor(ny)][Math.floor(nx)]) { e.gx = nx; e.gy = ny; } }
-      if (e.gx !== undefined) { const dx = e.gx - e.x, dy = e.gy - e.y, d = Math.hypot(dx, dy); if (d > 0.03) { e.x += dx / d * 0.5 * dt; e.y += dy / d * 0.5 * dt; e.face = dx > 0 ? -1 : 1; e.walk = true; } else e.walk = false; }
+      if (e.gx !== undefined) { const dx = e.gx - e.x, dy = e.gy - e.y, d = Math.hypot(dx, dy); const sp = SPEED[e.an] || 0.5; if (d > 0.03) { e.x += dx / d * sp * dt; e.y += dy / d * sp * dt; if (Math.abs(dx) > 0.01) e.face = dx > 0 ? -1 : 1; e.walk = true; e.step = (e.step || 0) + sp * dt; } else e.walk = false; }
     } else if (e.kind === 'fly') {
       e.x = e.cx + Math.sin(t * 0.7 + e.ph) * 1.4 + Math.sin(t * 2.3 + e.ph) * 0.2;
       e.y = e.cy + Math.cos(t * 0.5 + e.ph * 2) * 0.8;
@@ -823,6 +991,7 @@ function drawWorld(t) {
       }
       continue;
     }
+    if (e.an) { drawAnimal(c, x, y, e, t); continue; }
     const s = e.s * T;
     if (!e.flat && e.kind !== 'fly') { c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, y, s * (e.ic[0] === '@' ? 0.36 : 0.28), s * 0.09); }
     const hop = e.kind === 'animal' && e.walk ? Math.abs(Math.sin(t * 9 + e.x)) * 3 : e.kind === 'fly' ? Math.sin(t * 9 + e.ph) * 4 : 0;
@@ -842,6 +1011,13 @@ function drawWorld(t) {
       continue;
     }
     if (e.kind === 'fly') { if (isFresh(e.w)) drawIcon(c, '✨', x + 12, y - 14, 18); continue; }
+    if (e.cat) {
+      const ct = D.cats.find(k => k.id === e.cat), top = y - T * 0.85 + Math.sin(t * 2.5 + e.hx) * 2;
+      if (S.cats[e.cat]) drawIcon(c, '❤️', x, top + 8, 18);
+      else { c.fillStyle = 'rgba(255,248,234,.95)'; circ(c, x, top, 15); drawIcon(c, stage() < 2 && W[ct.wants].ic[0] !== '@' ? W[ct.wants].ic : '❔', x, top + 9, 21); }
+      if (near && S.words[e.w]) label(c, S.cats[e.cat] ? ct.name : W[e.w].uk, x, y + 16);
+      continue;
+    }
     const wd = S.words[e.w];
     if (wd && near && e.w !== 'soniashnyk') label(c, W[e.w].uk, x, y + 16);
     else if (wd && near && e.w === 'soniashnyk' && Math.hypot(e.x - P.x, e.y - P.y) < 1) label(c, W[e.w].uk, x, y + 16);
