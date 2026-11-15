@@ -100,6 +100,7 @@ window.DATA = {
     { id: "myshka", uk: "мишка", tr: "MYSH-ka", en: "toy mouse", ic: "@toymouse", acc: "мишку" },
     // --- tools and things you carry
     { id: "nasinnia", uk: "насіння", tr: "na-SIN-nia", en: "seeds", ic: "🌱" },
+    { id: "vudka", uk: "вудка", tr: "VUD-ka", en: "fishing rod", ic: "@rod", acc: "вудку" },
     { id: "liika", uk: "лійка", tr: "LIY-ka", en: "watering can", ic: "@can", acc: "лійку" },
     { id: "koshyk", uk: "кошик", tr: "KO-shyk", en: "basket", ic: "🧺" },
     { id: "hroshi", uk: "гроші", tr: "HRO-shi", en: "money", ic: "💰" }
@@ -126,6 +127,7 @@ window.DATA = {
     { id: "duzhe_smachno", uk: "Дуже смачно! Дякую!", en: "Very tasty! Thank you!" },
     { id: "moia_khata", uk: "Моя хата.", en: "My cottage." },
     { id: "no_water", uk: "Немає води. Іди до криниці.", en: "No water. Go to the well." },
+    { id: "need_rod", uk: "Потрібна вудка.", en: "You need a fishing rod." },
     { id: "i_explore", uk: "Оглянь село.", en: "Look around the village." },
     { id: "i_talk", uk: "Поговори з бабою Олею.", en: "Talk to Grandma Olia." },
     { id: "i_plant", uk: "Посади насіння.", en: "Plant the seeds." },
@@ -257,6 +259,7 @@ window.DATA = {
     seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
     home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
     // Toys and furniture for the cat friends (they use them).
+    tools: { vudka: 6 },
     cats: { kihtetochka: 15, lezhanka: 8, miachyk: 3, myshka: 3 },
     // Furniture the cottage comes with. Not for sale; tap it in the room to learn its name.
     furnished: { pich: 20, lizhko: 20, stil: 15, stilets: 10, polytsia: 0 }
@@ -273,6 +276,6 @@ window.DATA = {
     food: ["Їжа", "Food"], seeds: ["Насіння", "Seeds"], home: ["Для хати", "For the cottage"], help: ["Допомогти", "Help out"],
     bag: ["Кошик", "Basket"], words: ["Словник", "Word book"], show: ["Показати", "Show English"],
     empty: ["Порожньо", "Empty"], growing: ["Росте...", "Growing..."], thirsty: ["Хоче пити", "Needs water"],
-    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], have: ["Є", "You have it"], allin: ["Усе вже в хаті!", "Everything you own is in your cottage. Buy more at the market, or tap something in the room to put it away."], cats: ["Для котів", "For the cats"], fill: ["Набрати води", "Draw water"], towell: ["До криниці", "To the well"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
+    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], tools: ["Знаряддя", "Tools"], fish: ["Ловити рибу", "Go fishing"], have: ["Є", "You have it"], allin: ["Усе вже в хаті!", "Everything you own is in your cottage. Buy more at the market, or tap something in the room to put it away."], cats: ["Для котів", "For the cats"], fill: ["Набрати води", "Draw water"], towell: ["До криниці", "To the well"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
   }
 };

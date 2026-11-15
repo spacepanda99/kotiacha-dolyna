@@ -22,7 +22,7 @@ const SAVE = 'kotiacha-dolyna-v1';
 const fresh = () => ({
   coins: 10, hearts: 0, words: {}, bag: { voda: 3 }, waterInit: 1, seeds: { morkva: 3 }, home: {}, placed: {},
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
-  npc: {}, cats: {}, decor: {}, recipe: { i: 0, got: [], started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
+  npc: {}, cats: {}, decor: {}, gear: {}, recipe: { i: 0, got: [], started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
 let S;
 try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { S = fresh(); }
@@ -38,6 +38,7 @@ for (const [id, price] of Object.entries(D.shop.furnished)) {
 if (!S.waterInit) { S.waterInit = 1; S.bag.voda = Math.max(S.bag.voda || 0, 3); }
 const WATER_MAX = 10, WELL_GIVES = 5;   // each trip to the well: +5 water, the can holds 10
 if (!S.recipe) S.recipe = { i: 0, got: [], started: -1 };
+if (!S.gear) S.gear = {};
 let saveT = 0;
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
 
@@ -408,6 +409,14 @@ const DRAW = {
     c.fillStyle = '#b06a1e'; for (const [x, y] of [[-4, -12], [2, -10], [-14, -9], [6, -16], [-8, -18]]) circ(c, x, y, 1.6);
     c.strokeStyle = '#4f8a2a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(18, -8); c.lineTo(22, -11); c.stroke();
   },
+  // A fishing rod: a bamboo pole with a reel, line and a red-and-white float.
+  rod(c) {
+    c.strokeStyle = '#c8a46a'; c.lineWidth = 3.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(-34, -6); c.lineTo(30, -92); c.stroke();
+    c.strokeStyle = '#a8864f'; c.lineWidth = 1; for (const f of [0.25, 0.5, 0.75]) { const x = -34 + 64 * f, y = -6 - 86 * f; c.beginPath(); c.moveTo(x - 2.5, y - 1); c.lineTo(x + 2.5, y + 1); c.stroke(); }
+    c.fillStyle = '#5b6470'; circ(c, -24, -20, 5); c.fillStyle = '#9aa3ad'; circ(c, -24, -20, 2.5);
+    c.strokeStyle = 'rgba(80,80,80,.8)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(30, -92); c.quadraticCurveTo(38, -50, 36, -24); c.stroke();
+    c.fillStyle = '#e2392f'; circ(c, 36, -22, 4); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(36, -22, 4, 0, Math.PI); c.fill();
+  },
   // A floor lamp: wooden base and pole, a cream fabric shade with an embroidered band, and a soft glow.
   floorlamp(c) {
     c.fillStyle = '#6b4a2a'; ell(c, 0, -3, 15, 4.5);
@@ -583,7 +592,7 @@ function add(e) {
   add({ w: 'lavka', x: 16.5, y: 18.9, s: 1.3, solid: true });
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
-  add({ w: 'choven', x: 30.6, y: 20.9, s: 1.5, flat: true });
+  add({ w: 'choven', x: 31.7, y: 22.75, s: 1.5, flat: true });
   add({ w: 'ryba', x: 28.3, y: 21.6, s: 0.8, kind: 'animal', r: 0.8, water: true, give: 'ryba', cd: 60, hide: true });
   add({ w: 'kachka', x: 30.6, y: 19.4, kind: 'animal', r: 1.0, water: true });
   add({ w: 'kachka', x: 28.6, y: 19.9, kind: 'animal', r: 0.8, water: true });
@@ -905,7 +914,61 @@ function take(e) {
 }
 const ready = e => !(S.cd[e.k] > now());
 
+function fishCard(e) {
+  const has = !!S.gear.vudka, st = stage();
+  wordCard(e.w, has
+    ? { acts: [{ k: 'fish', fn: startFishing }] }
+    : { note: `🎣 <b>${PH.need_rod.uk}</b>${st < 3 ? `<br>${PH.need_rod.en} Buy one at the market («${D.ui.tools[0]}» tab).` : ''}`, clips: ['p_need_rod'] });
+}
+// Fishing: cast the float onto the water, wait for a bite, then reel the fish out in an arc.
+let fishFx = null;
+function startFishing() {
+  closeSheet();
+  if (S.cd.fish > now()) { toast(stage() < 3 ? '🐟 Риба ще не клює · Not biting yet. Try again soon.' : '🐟 Риба ще не клює.'); return; }
+  P.path = []; P.goal = null;
+  const dx = POND.x - P.x, dy = POND.y - P.y, d = Math.hypot(dx, dy) || 1;
+  let bx = P.x + dx / d * 1.6, by = P.y + dy / d * 1.6;
+  if (!inPond(bx, by, -0.3)) { bx = P.x + dx / d * 2.4; by = P.y + dy / d * 2.4; }
+  if (!inPond(bx, by, -0.3)) { bx = POND.x; by = POND.y; }
+  P.face = bx >= P.x ? 1 : -1;
+  fishFx = { t0: nowT, bx, by, done: false };
+  learn('vudka'); blip(520, 0.08);
+}
+function drawFishing(c, t) {
+  const a = t - fishFx.t0, px = P.x * T, py = P.y * T, dir = P.face;
+  const hand = [px + dir * 13, py - 36];
+  const reel = a > 2.5 ? Math.min(1, (a - 2.5) / 0.8) : 0;
+  const tip = [px + dir * (52 - reel * 18), py - 92 - reel * 16];
+  const b = [fishFx.bx * T, fishFx.by * T];
+  // rod
+  c.strokeStyle = '#c8a46a'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(hand[0], hand[1]); c.lineTo(tip[0], tip[1]); c.stroke();
+  c.fillStyle = '#5b6470'; circ(c, hand[0] + dir * 6, hand[1] - 7, 4);
+  // where the float (or the fish) is
+  let fx, fy, dip = 0;
+  if (a < 0.5) { const f = a / 0.5; fx = tip[0] + (b[0] - tip[0]) * f; fy = tip[1] + (b[1] - tip[1]) * f - Math.sin(Math.PI * f) * 50; }
+  else if (a < 2.5) { fx = b[0]; fy = b[1] + Math.sin(a * 4) * 2; if (a > 2.15) dip = 7; }
+  else { fx = b[0] + (hand[0] - b[0]) * reel; fy = b[1] + (hand[1] - b[1]) * reel - Math.sin(Math.PI * reel) * 90; }
+  // line with a little sag
+  c.strokeStyle = 'rgba(70,70,70,.85)'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(tip[0], tip[1]); c.quadraticCurveTo((tip[0] + fx) / 2, Math.max(tip[1], fy) + (a < 2.5 ? 12 : 0), fx, fy + dip); c.stroke();
+  if (a >= 0.5 && a < 2.6) {
+    // ripples round the float
+    c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1.5;
+    for (let i = 0; i < 2; i++) { const r = ((a * 0.8 + i * 0.5) % 1) * 18 + 6; c.globalAlpha = 1 - ((a * 0.8 + i * 0.5) % 1); c.beginPath(); c.ellipse(b[0], b[1] + 3, r, r * 0.35, 0, 0, 7); c.stroke(); }
+    c.globalAlpha = 1;
+    if (a > 2.15) { c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2; c.beginPath(); c.ellipse(b[0], b[1] + 3, 22, 7, 0, 0, 7); c.stroke(); }
+  }
+  if (a < 2.5) { c.fillStyle = '#e2392f'; circ(c, fx, fy + dip, 6); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(fx, fy + dip, 6, 0, Math.PI); c.fill(); }
+  else { c.save(); c.translate(fx, fy); c.rotate(reel * 6); drawIcon(c, '🐟', 0, 20, 44); c.restore(); }
+  // a bite!
+  if (a > 2.15 && a < 2.9) { c.fillStyle = 'rgba(255,248,234,.95)'; circ(c, px, py - 104, 15); c.fillStyle = '#d43a3a'; c.font = '900 22px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('!', px, py - 103); }
+  if (a > 3.35 && !fishFx.done) {
+    fishFx.done = true; fishFx = null;
+    give('ryba'); learn('ryba'); S.cd.fish = now() + 15000; save();
+    toast('+1 🐟 риба'); say('w_ryba'); blip(990, 0.15);
+  }
+}
 function interact(e) {
+  if (e.w === 'ryba' || e.kind === 'pond') return fishCard(e);
   if (e.cat) return catSheet(e);
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
@@ -953,10 +1016,10 @@ function plotSheet(i) {
 // ------------------------------------------------------------------ market
 let shopTab = 'food', shopSel = null;
 // Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
-const owned = k => (shopTab === 'home' || shopTab === 'cats') && ((S.home[k] || 0) > 0 || !!S.decor[k]);
+const owned = k => (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
 const sellPrice = id => { for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 3; };
 function shop() {
-  const tabs = ['food', 'seeds', 'home', 'cats', 'sell', 'help'];
+  const tabs = ['food', 'seeds', 'tools', 'home', 'cats', 'sell', 'help'];
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
   let body = '';
   if (shopTab === 'help') return helpRound(0);
@@ -994,7 +1057,7 @@ function sourceHint(id) {
   if (stage() >= 3) return '';
   if (D.shop.seeds[id]) return '🌱 Grow it in your garden. Seeds are at the market.';
   if (D.shop.food[id]) return '🧺 Oksana sells it at the market.';
-  return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: '🐟 Catch one in the pond.' }[id] || '';
+  return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: S.gear && S.gear.vudka ? '🎣 Catch one in the pond.' : '🎣 Buy a fishing rod (вудка) at the market, then fish in the pond.' }[id] || '';
 }
 let dlg = null;
 function dialog(npc, steps, i = 0) {
@@ -1161,7 +1224,7 @@ function bagSheet() {
   const cell = (k, n, badge) => `<button class="it" data-a="hearItem" data-v="${k}"><span class="q">${badge || ''}${n}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}</button>`;
   const a = Object.keys(S.bag).filter(k => S.bag[k] > 0).map(k => cell(k, S.bag[k]));
   const b = Object.keys(S.seeds).filter(k => S.seeds[k] > 0).map(k => cell(k, S.seeds[k], '🌱'));
-  const c = Object.keys(S.home).filter(k => S.home[k] > 0).map(k => cell(k, S.home[k], '🏠'));
+  const c = [...Object.keys(S.home).filter(k => S.home[k] > 0).map(k => cell(k, S.home[k], '🏠')), ...Object.keys(S.gear).filter(k => S.gear[k]).map(k => cell(k, '', '🎣'))];
   const all = [...a, ...b, ...c];
   learn('koshyk');
   openSheet(`<h3><span><span class="uk">${W.koshyk.uk}</span> ${stage() < 2 ? `<small>${W.koshyk.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>${all.length ? `<div class="grid">${all.join('')}</div>` : `<div class="muted">${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`}`);
@@ -1500,6 +1563,7 @@ function drawWorld(t) {
     else drawIcon(c, e.ic, x, y - hop, s, { t, fruit: e.give === 'yabluko' ? ready(e) : true });
   }
   // The watering can goes on top of everything, so the player never hides it.
+  if (fishFx) drawFishing(c, t);
   if (waterFx) { const pe = ents.find(x => x.k === 'plot' + waterFx.i); if (pe) { c.save(); c.translate(pe.x * T, pe.y * T); c.scale(pe.s, pe.s); drawWatering(c, t - waterFx.t0); c.restore(); } }
   // Names of things you have met, when you stand near them. New or due things sparkle.
   for (const e of list) {
@@ -1753,6 +1817,7 @@ cv.addEventListener('pointermove', ev => {
 cv.addEventListener('pointercancel', () => { peeking = false; down = null; });
 cv.addEventListener('pointerup', ev => {
   peeking = false;
+  if (fishFx) { down = null; return; }   // no walking off mid-cast
   if (!down || !running || sheetOpen()) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
   if (moved > 18) return;
@@ -1845,6 +1910,7 @@ const A = {
     S.coins -= price;
     if (shopTab === 'seeds') { S.seeds[v] = (S.seeds[v] || 0) + 1; learn('nasinnia'); }
     else if (shopTab === 'home' || shopTab === 'cats') S.home[v] = (S.home[v] || 0) + 1;
+    else if (shopTab === 'tools') S.gear[v] = 1;
     else give(v);
     hud(); blip(880, 0.1); say('n_' + price, 'p_diakuiu'); toast(`−${price} ₴  ${W[v].uk}`); tutEvent('buy'); save(); shop();
   },
@@ -1906,5 +1972,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
