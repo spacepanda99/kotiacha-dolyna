@@ -34,6 +34,8 @@
   #guide .uk { font-weight:800; font-size:15px; line-height:1.2; }
   #guide .en { font-size:12px; color:var(--soft); line-height:1.2; }
   #guide .spk { font-size:19px; }
+  #guide .eye { flex:none; width:34px; height:34px; border-radius:50%; background:#f1e6d2; font-size:17px; padding:0; display:flex; align-items:center; justify-content:center; }
+  #guide .eye.on { background:var(--sky); }
 
   #homebar { position:fixed; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:5; display:none; justify-content:center; gap:10px; flex-wrap:wrap; padding:0 12px; }
 
@@ -144,7 +146,7 @@
   <button class="pill btn" data-a="words" aria-label="Словник / Word book">📖</button>
   <button class="pill btn" data-a="bag" aria-label="Кошик / Basket">🧺</button>
 </div>
-<div id="guide" data-a="guide"><div class="t"><div class="uk"></div><div class="en"></div></div><div class="spk">🔊</div></div>
+<div id="guide" data-a="guide"><button class="eye" data-a="guideEye" aria-label="Show English">👁</button><div class="t"><div class="uk"></div><div class="en"></div></div><div class="spk">🔊</div></div>
 <div id="homebar"><button id="decorBtn" class="b" data-a="decorate"></button><button id="exit" class="b blue" data-a="exitHome"></button></div>
 
 <div id="veil" data-a="close"></div>
@@ -161,12 +163,12 @@
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v1.8</div>
+  <div class="ver">v1.9</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '1.8';</script>
-<script src="data.js?v=1.8"></script>
-<script src="game.js?v=1.8"></script>
+<script>window.APP_VERSION = '1.9';</script>
+<script src="data.js?v=1.9"></script>
+<script src="game.js?v=1.9"></script>
 </body>
 </html>

@@ -874,24 +874,29 @@ function tutEvent(ev) {
   }
   setGuide(); save();
 }
-let guideClip = '';
+let guideClip = '', guideEnOn = false, guideKey = '';
 function setGuide() {
   const g = $('#guide'), s = TUT[S.tut], st = stage();
-  let uk, en;
+  let uk, en, full;
   const active = D.npcs.filter(n => S.npc[n.id] && S.npc[n.id].q);
   if (s.ev) {
     uk = PH[s.p].uk + (s.need ? ` ${S.tutN}/${s.need}` : '');
-    en = st < 3 ? `${PH[s.p].en} ${s.en}` : '';
+    full = `${PH[s.p].en} ${s.en}`; en = st < 3 ? full : '';
     guideClip = 'p_' + s.p;
   } else if (active.length) {
     const n = active[0], q = S.npc[n.id].q;
     uk = `${n.name}: ${W[q].acc || W[q].uk}${st < 2 && W[q].ic[0] !== '@' ? ' ' + W[q].ic : ''}`;
-    en = st < 2 ? `${n.nameEn} would like ${W[q].en}.` : '';
+    full = `${n.nameEn} would like ${W[q].en}.`; en = st < 2 ? full : '';
     guideClip = `q_${n.id}_${q}`;
   } else {
-    uk = PH.i_free.uk; en = st < 3 ? PH.i_free.en : ''; guideClip = 'p_i_free';
+    uk = PH.i_free.uk; full = PH.i_free.en; en = st < 3 ? full : ''; guideClip = 'p_i_free';
   }
-  g.querySelector('.uk').textContent = uk; g.querySelector('.en').textContent = en;
+  // The 👁 always shows the English for the current goal; a new goal starts hidden again.
+  const key = guideClip + '|' + uk;
+  if (key !== guideKey) { guideKey = key; guideEnOn = false; }
+  g.querySelector('.uk').textContent = uk;
+  g.querySelector('.en').textContent = guideEnOn ? full : en;
+  g.querySelector('.eye').classList.toggle('on', guideEnOn);
 }
 function hud() { $('#coins').textContent = `💰 ${S.coins}`; $('#hearts').textContent = `❤️ ${S.hearts}`; $('#water').textContent = `💧 ${S.bag.voda || 0}`; }
 function bumpWater() { const w = $('#water'); w.classList.remove('bump'); void w.offsetWidth; w.classList.add('bump'); }
@@ -1454,6 +1459,7 @@ const A = {
   close: closeSheet,
   words: wordsSheet, bag: bagSheet,
   guide() { say(guideClip); },
+  guideEye() { guideEnOn = !guideEnOn; setGuide(); },
   exitHome,
   enterHome,
   hear(v) { say(v); },
