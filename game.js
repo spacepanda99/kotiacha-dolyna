@@ -2449,6 +2449,20 @@ const A = {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
     musicBtn(); if (musicOn) { musicVol = 0; music.play().catch(() => {}); } toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
   },
+  // Exit: the installed app closes completely; in a browser tab it leaves full screen and goes back to the title.
+  quit() {
+    save(); closeSheet(); sayToken++; try { speechSynthesis.cancel(); } catch (e) {}
+    const inApp = matchMedia('(display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui)').matches || navigator.standalone;
+    const toTitle = () => { running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
+    if (inApp) {
+      toTitle();
+      try { window.close(); } catch (e) {}
+      setTimeout(() => { if (!document.hidden) toast('Swipe up to close the app'); }, 500);
+      return;
+    }
+    try { const ex = document.exitFullscreen || document.webkitExitFullscreen; if ((document.fullscreenElement || document.webkitFullscreenElement) && ex) { const p = ex.call(document); if (p && p.catch) p.catch(() => {}); } } catch (e) {}
+    toTitle();
+  },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
   close: closeSheet,
   words: wordsSheet, bag: bagSheet,

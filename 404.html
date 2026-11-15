@@ -21,7 +21,7 @@
   canvas#c { position:fixed; inset:0; width:100%; height:100%; display:block; }
   button { font:inherit; color:inherit; border:0; cursor:pointer; touch-action:manipulation; }
 
-  #hud { position:fixed; top:calc(8px + env(safe-area-inset-top)); left:calc(8px + env(safe-area-inset-left)); right:calc(8px + env(safe-area-inset-right)); display:flex; gap:8px; align-items:center; pointer-events:none; z-index:5; }
+  #hud { position:fixed; top:calc(30px + env(safe-area-inset-top)); left:calc(8px + env(safe-area-inset-left)); right:calc(8px + env(safe-area-inset-right)); display:flex; gap:8px; align-items:center; pointer-events:none; z-index:5; }
   .pill { pointer-events:auto; background:linear-gradient(#fffdf6, #fbf0da); border-radius:999px; padding:7px 12px; font-weight:700; font-size:16px; box-shadow:0 3px 0 rgba(60,40,20,.18), 0 7px 16px rgba(60,40,20,.12); transition:transform .09s ease-out, box-shadow .09s ease-out; display:flex; align-items:center; gap:5px; white-space:nowrap; }
   .pill.btn { padding:7px 11px; font-size:20px; }
   .pill.btn:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(60,40,20,.18); }
@@ -29,7 +29,9 @@
   .pill.bump { animation:bump .5s cubic-bezier(.3,1.6,.5,1); }
   @keyframes bump { 35% { transform:scale(1.28); } }
   @media (max-width: 420px) { .pill { padding:6px 9px; font-size:15px; } .pill.btn { padding:6px 8px; font-size:18px; } #hud { gap:6px; } }
-  #guide { position:fixed; top:calc(56px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(94vw, 560px); background:rgba(255,248,234,.95); border-radius:16px; padding:6px 12px; box-shadow:0 3px 0 rgba(60,40,20,.18); z-index:5; text-align:center; display:flex; gap:10px; align-items:center; }
+  #quit { position:fixed; top:calc(5px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); z-index:6; height:22px; padding:0 10px; border-radius:999px; background:rgba(255,248,234,.82); color:var(--soft); font-size:12px; font-weight:800; letter-spacing:.3px; line-height:22px; box-shadow:0 2px 0 rgba(60,40,20,.14); }
+  #quit:active { transform:translateY(1px); }
+  #guide { position:fixed; top:calc(78px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(94vw, 560px); background:rgba(255,248,234,.95); border-radius:16px; padding:6px 12px; box-shadow:0 3px 0 rgba(60,40,20,.18); z-index:5; text-align:center; display:flex; gap:10px; align-items:center; }
   #guide .t { flex:1; min-width:0; }
   #guide .uk { font-weight:800; font-size:15px; line-height:1.2; }
   #guide .en { font-size:12px; color:var(--soft); line-height:1.2; }
@@ -153,6 +155,7 @@
 <canvas id="c"></canvas>
 <div id="light"></div>
 
+<button id="quit" data-a="quit" aria-label="Вийти / Exit">✕ Вийти</button>
 <div id="hud">
   <div class="pill" id="coins">💰 0</div>
   <div class="pill" id="hearts">❤️ 0</div>
@@ -180,12 +183,12 @@
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v50</div>
+  <div class="ver">v51</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '50';</script>
-<script src="data.js?v=50"></script>
-<script src="game.js?v=50"></script>
+<script>window.APP_VERSION = '51';</script>
+<script src="data.js?v=51"></script>
+<script src="game.js?v=51"></script>
 </body>
 </html>
