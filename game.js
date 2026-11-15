@@ -1029,11 +1029,11 @@ let mode = 'world', roomX = 0, tour = null;
 // s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
   // against the back wall, left to right
-  pich: { x: 0.07, y: 0.615, s: 0.46, z: 1 }, hlechyk: { x: 0.165, y: 0.625, s: 0.21, z: 1 },
-  polytsia: { x: 0.44, y: 0.63, s: 0.55, z: 1 },
-  lampa: { x: 0.64, y: 0.63, s: 0.56, z: 1 },
-  kihtetochka: { x: 0.745, y: 0.625, s: 0.52, z: 1 },
-  lizhko: { x: 0.905, y: 0.625, s: 0.58, z: 1 },
+  pich: { x: 0.07, y: 0.578, s: 0.46, z: 1 }, hlechyk: { x: 0.165, y: 0.582, s: 0.21, z: 1 },
+  polytsia: { x: 0.44, y: 0.582, s: 0.55, z: 1 },
+  lampa: { x: 0.64, y: 0.582, s: 0.56, z: 1 },
+  kihtetochka: { x: 0.745, y: 0.58, s: 0.52, z: 1 },
+  lizhko: { x: 0.905, y: 0.585, s: 0.58, z: 1 },
   // on the bookshelf: books on the middle shelf, a small plant on the top shelf, the mantel clock on top
   knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 },
   // middle of the room: rug, table, and the chair tucked in behind it
