@@ -76,7 +76,7 @@ window.DATA = {
     // --- for the cottage
     { id: "stil", uk: "стіл", tr: "stil", en: "table", ic: "@table" },
     { id: "stilets", uk: "стілець", tr: "sti-LETS", en: "chair", ic: "🪑" },
-    { id: "lizhko", uk: "ліжко", tr: "LIZH-ko", en: "bed", ic: "🛏️" },
+    { id: "lizhko", uk: "ліжко", tr: "LIZH-ko", en: "bed", ic: "@ukbed" },
     { id: "lampa", uk: "лампа", tr: "LAM-pa", en: "lamp", ic: "@floorlamp", acc: "лампу" },
     { id: "kylym", uk: "килим", tr: "KY-lym", en: "rug", ic: "@rug" },
     { id: "kartyna", uk: "картина", tr: "kar-TY-na", en: "painting", ic: "🖼️", acc: "картину" },

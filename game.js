@@ -255,6 +255,31 @@ const DRAW = {
       c.fillStyle = '#e2574c'; poly(c, [[x + 10, -50], [x + 16, -42], [x + 10, -34], [x + 4, -42]]);
     }
   },
+  // A traditional Ukrainian bed: carved wooden frame (headboard on the right), a white bedspread with a red
+  // embroidered border and lace edge, and the customary pyramid of pillows at the head.
+  ukbed(c) {
+    const wood = '#8a5a2b', dark = '#6b4422', linen = '#fffdf5', red = '#d43a3a';
+    c.fillStyle = dark; c.fillRect(-47, -10, 5, 10); c.fillRect(40, -10, 5, 10);
+    c.fillStyle = wood; rr(c, 39, -74, 10, 74, 3);
+    c.beginPath(); c.arc(44, -74, 7, Math.PI, 0); c.fill();
+    c.fillStyle = '#f2c230'; circ(c, 44, -76, 2.2);
+    c.fillStyle = wood; rr(c, -50, -40, 7, 40, 3); c.beginPath(); c.arc(-46.5, -40, 4.5, Math.PI, 0); c.fill();
+    c.fillStyle = wood; c.fillRect(-46, -16, 88, 6);
+    // bedspread hanging over the side, embroidered band and lace
+    c.fillStyle = linen; rr(c, -45, -38, 86, 26, 3);
+    c.fillStyle = red; c.fillRect(-45, -20, 86, 4);
+    c.fillStyle = '#2d2d2d'; for (let x = -41; x < 40; x += 8) c.fillRect(x, -16, 3, 1.2);
+    c.fillStyle = red; for (let x = -39; x < 40; x += 10) poly(c, [[x, -27], [x + 3, -24], [x, -21], [x - 3, -24]]);
+    c.fillStyle = linen; for (let x = -43; x < 41; x += 4) circ(c, x, -12, 2);
+    // the pillow pyramid
+    const pillow = (x0, x1, y0, y1) => {
+      c.fillStyle = linen; rr(c, x0, y0, x1 - x0, y1 - y0, 3);
+      c.fillStyle = 'rgba(212,58,58,.85)'; c.fillRect(x0 + 2, y1 - 3.5, x1 - x0 - 4, 1.6);
+      c.strokeStyle = '#e8dcc6'; c.lineWidth = 0.8; c.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, y1 - y0 - 1);
+    };
+    pillow(10, 38, -52, -37); pillow(14, 36, -63, -51); pillow(18, 34, -72, -62);
+    c.fillStyle = linen; for (let x = 19; x < 34; x += 3) circ(c, x, -72.5, 1.4);
+  },
   // A floor lamp: wooden base and pole, a cream fabric shade with an embroidered band, and a soft glow.
   floorlamp(c) {
     c.fillStyle = '#6b4a2a'; ell(c, 0, -3, 15, 4.5);
@@ -980,19 +1005,19 @@ let mode = 'world', roomX = 0, tour = null;
 const DECOR = {
   // against the back wall
   pich: { x: 0.09, y: 0.615, s: 0.46, z: 1 }, hlechyk: { x: 0.215, y: 0.625, s: 0.21, z: 1 },
-  lizhko: { x: 0.735, y: 0.625, s: 0.52, z: 1 },
+  lizhko: { x: 0.89, y: 0.625, s: 0.58, z: 1 },
   // middle of the room: rug, table, and the chair tucked in behind it
   kylym: { x: 0.45, y: 0.85, s: 0.62, z: 0 },
   stilets: { x: 0.415, y: 0.775, s: 0.29, z: 1.5 }, stil: { x: 0.45, y: 0.81, s: 0.4, z: 2 },
-  lampa: { x: 0.615, y: 0.63, s: 0.56, z: 1 }, knyha: { on: 'stil', dx: -0.24, s: 0.1, z: 3 },
+  lampa: { x: 0.59, y: 0.63, s: 0.56, z: 1 }, knyha: { on: 'stil', dx: -0.24, s: 0.1, z: 3 },
   // front corner by the foot of the bed
   vazon: { x: 0.6, y: 0.79, s: 0.24, z: 3 },
   // the cat corner, past the foot of the bed: cat tree against the wall, cat bed and toys on the floor
-  kihtetochka: { x: 0.905, y: 0.625, s: 0.52, z: 1 }, lezhanka: { x: 0.85, y: 0.87, s: 0.3, z: 3 },
+  kihtetochka: { x: 0.715, y: 0.625, s: 0.52, z: 1 }, lezhanka: { x: 0.76, y: 0.87, s: 0.3, z: 3 },
   miachyk: { x: 0.7, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
   // walls: mirror between stove and window, painting centred on the wall between window and bed, clock over the bed
-  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.515, y: 0.42, s: 0.22, z: 0, wall: true },
-  hodynnyk: { x: 0.735, y: 0.4, s: 0.14, z: 0, wall: true }, rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true },
+  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.505, y: 0.42, s: 0.22, z: 0, wall: true },
+  hodynnyk: { x: 0.87, y: 0.39, s: 0.14, z: 0, wall: true }, rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true, fit: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
 };
@@ -1008,6 +1033,7 @@ function decorRect(id) {
   const d = DECOR[id], u = roomU(), RW = roomW(), sz = d.s * u;
   let x = (d.x ?? WIN_X) * RW, y = d.y * cv.height;
   if (d.win !== undefined) x = WIN_X * RW;
+  if (d.fit) { const ww = u * 0.3, wt = cv.height * 0.27, wb = cv.height * 0.45; return { x: x - ww * 0.65, y: wt - u * 0.05, w: ww * 1.3, h: (wb - wt) * 0.85, cx: x, by: wb, sz: ww }; }
   if (d.sill !== undefined) { x = WIN_X * RW + d.sill * u; y = cv.height * 0.462; }
   if (d.on) { const b = DECOR[d.on]; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - 0.54 * b.s * u + 1; }
   return { x: x - sz * 0.55, y: y - sz * 1.05, w: sz * 1.1, h: sz * 1.1, cx: x, by: y, sz };
@@ -1047,6 +1073,27 @@ function decorSheet() {
       ? `${st < 3 ? '<div class="muted" style="padding:0 0 10px">Tap something to put it in your cottage. Tap again to put it away.</div>' : ''}<div class="grid">${ids.map(id => `<button class="it ${S.decor[id] ? 'sel' : ''}" data-a="decor" data-v="${id}">${S.decor[id] ? '<span class="q">✓</span>' : (S.home[id] > 1 ? `<span class="q">${S.home[id]}</span>` : '')}<img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}</button>`).join('')}</div>`
       : `<div class="muted">🏠 ${D.ui.empty[0]}.<br>${st < 3 ? 'Buy lovely things at the market, in the «Для хати» (For the cottage) tab.' : 'Купи щось на ринку: «Для хати».'}</div>`) +
     `<div class="row">${btn('close', '', lab('close'), 'ghost')}</div>`);
+}
+// The embroidered рушник dressed over the window like a curtain: a rod a little wider than the window,
+// a swag across the top, and an embroidered end hanging down each side to most of the window's height.
+function windowRushnyk(c, wx, ww, wt, wb, u) {
+  const H = wb - wt, half = ww * 0.62, end = ww * 0.16, rodY = wt - u * 0.03, red = '#d43a3a', linen = '#fffdf5';
+  c.fillStyle = '#8a5a2b'; rr(c, wx - half - u * 0.02, rodY - u * 0.008, half * 2 + u * 0.04, u * 0.016, u * 0.008);
+  c.fillStyle = '#6b4422'; circ(c, wx - half - u * 0.02, rodY, u * 0.012); circ(c, wx + half + u * 0.02, rodY, u * 0.012);
+  // swag
+  c.fillStyle = linen; c.beginPath(); c.moveTo(wx - half, rodY); c.lineTo(wx + half, rodY); c.lineTo(wx + half, wt + H * 0.12);
+  c.quadraticCurveTo(wx, wt + H * 0.34, wx - half, wt + H * 0.12); c.closePath(); c.fill();
+  c.strokeStyle = red; c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(wx - half, wt + H * 0.07); c.quadraticCurveTo(wx, wt + H * 0.27, wx + half, wt + H * 0.07); c.stroke();
+  c.strokeStyle = '#2d2d2d'; c.lineWidth = u * 0.004; c.setLineDash([u * 0.01, u * 0.012]); c.beginPath(); c.moveTo(wx - half, wt + H * 0.105); c.quadraticCurveTo(wx, wt + H * 0.305, wx + half, wt + H * 0.105); c.stroke(); c.setLineDash([]);
+  // hanging ends
+  for (const side of [-1, 1]) {
+    const x0 = side < 0 ? wx - half : wx + half - end, y1 = wt + H * 0.82;
+    c.fillStyle = linen; c.fillRect(x0, rodY, end, y1 - rodY);
+    c.fillStyle = red; c.fillRect(x0, y1 - H * 0.2, end, H * 0.045); c.fillRect(x0, y1 - H * 0.08, end, H * 0.03);
+    c.fillStyle = '#2d2d2d'; c.fillRect(x0, y1 - H * 0.135, end, H * 0.012);
+    c.fillStyle = red; const cx = x0 + end / 2, cy = y1 - H * 0.32, d = end * 0.32; poly(c, [[cx, cy - d], [cx + d, cy], [cx, cy + d], [cx - d, cy]]);
+    c.strokeStyle = '#e8dcc6'; c.lineWidth = 1; for (let x = x0 + 2; x < x0 + end; x += 3) { c.beginPath(); c.moveTo(x, y1); c.lineTo(x, y1 + H * 0.05); c.stroke(); }
+  }
 }
 function drawHome(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
@@ -1090,6 +1137,7 @@ function drawHome(t) {
   for (const id of ids) {
     const r = decorRect(id);
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
+    if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.55); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
     else drawIcon(c, W[id].ic, r.cx, r.by, r.sz);
   }
