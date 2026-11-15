@@ -81,7 +81,7 @@ window.DATA = {
     { id: "kylym", uk: "килим", tr: "KY-lym", en: "rug", ic: "@rug" },
     { id: "kartyna", uk: "картина", tr: "kar-TY-na", en: "painting", ic: "🖼️", acc: "картину" },
     { id: "vazon", uk: "вазон", tr: "va-ZON", en: "potted plant", ic: "🪴" },
-    { id: "knyha", uk: "книга", tr: "KNY-ha", en: "book", ic: "📚", acc: "книгу" },
+    { id: "knyha", uk: "книга", tr: "KNY-ha", en: "book", ic: "@books", acc: "книгу" },
     { id: "svichka", uk: "свічка", tr: "SVICH-ka", en: "candle", ic: "🕯️", acc: "свічку" },
     { id: "hlechyk", uk: "глечик", tr: "HLE-chyk", en: "clay jug", ic: "🏺" },
     { id: "dzerkalo", uk: "дзеркало", tr: "DZER-ka-lo", en: "mirror", ic: "🪞" },
@@ -90,6 +90,7 @@ window.DATA = {
     { id: "rushnyk", uk: "рушник", tr: "rush-NYK", en: "embroidered towel", ic: "@rushnyk" },
     { id: "chashka", uk: "чашка", tr: "CHASH-ka", en: "cup", ic: "☕", acc: "чашку" },
     { id: "kvity", uk: "квіти", tr: "KVI-ty", en: "flowers", ic: "💐" },
+    { id: "polytsia", uk: "полиця", tr: "po-LY-tsia", en: "shelf", ic: "@shelf", acc: "полицю" },
     // --- for the cats
     { id: "kihtetochka", uk: "кігтеточка", tr: "kih-te-TOCH-ka", en: "cat tree", ic: "@cattree", acc: "кігтеточку" },
     { id: "lezhanka", uk: "лежанка", tr: "le-ZHAN-ka", en: "cat bed", ic: "@catbed", acc: "лежанку" },
@@ -245,7 +246,7 @@ window.DATA = {
     // Toys and furniture for the cat friends (they use them).
     cats: { kihtetochka: 15, lezhanka: 8, miachyk: 3, myshka: 3 },
     // Furniture the cottage comes with. Not for sale; tap it in the room to learn its name.
-    furnished: { pich: 20, lizhko: 20, stil: 15, stilets: 10 }
+    furnished: { pich: 20, lizhko: 20, stil: 15, stilets: 10, polytsia: 0 }
   },
 
   // Which cottage items hang on the wall (the rest stand on the floor).

@@ -280,6 +280,29 @@ const DRAW = {
     pillow(10, 38, -52, -37); pillow(14, 36, -63, -51); pillow(18, 34, -72, -62);
     c.fillStyle = linen; for (let x = 19; x < 34; x += 3) circ(c, x, -72.5, 1.4);
   },
+  // A built-in wooden bookshelf: open cabinet with three shelves, a carved crest, and Petrykivka-style
+  // painted flowers (the traditional Ukrainian decorative painting) on the crest and sides.
+  shelf(c) {
+    const wood = '#9a6634', dark = '#6b4422', inside = '#7a4e28';
+    c.fillStyle = dark; c.fillRect(-30, -6, 60, 6);
+    c.fillStyle = inside; c.fillRect(-26, -96, 52, 90);
+    c.fillStyle = wood; c.fillRect(-30, -98, 5, 98); c.fillRect(25, -98, 5, 98);
+    for (const y of [-6, -36, -66]) { c.fillStyle = wood; c.fillRect(-26, y - 3, 52, 4); c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-26, y - 31, 52, 3); }
+    c.fillStyle = wood; c.fillRect(-32, -100, 64, 5);
+    c.beginPath(); c.moveTo(-28, -100); c.quadraticCurveTo(-14, -112, 0, -113); c.quadraticCurveTo(14, -112, 28, -100); c.closePath(); c.fill();
+    const flower = (x, y, r) => { c.fillStyle = '#d43a3a'; for (let i = 0; i < 5; i++) { const a = i * 1.2566; ell(c, x + Math.cos(a) * r, y + Math.sin(a) * r, r * 0.7, r * 0.7); } c.fillStyle = '#f2c230'; circ(c, x, y, r * 0.55); };
+    c.strokeStyle = '#4f8a2a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-14, -104); c.quadraticCurveTo(0, -101, 14, -104); c.stroke();
+    flower(0, -105, 2.6); flower(-11, -103.5, 1.7); flower(11, -103.5, 1.7);
+    for (const x of [-27.5, 27.5]) { flower(x, -82, 1.4); flower(x, -52, 1.4); flower(x, -22, 1.4); }
+  },
+  // Books standing upright, spines out, one leaning.
+  books(c) {
+    const cols = ['#c0392b', '#2c5fa8', '#3f8a3a', '#d98a1a', '#7a3b8a'];
+    const hs = [46, 52, 42, 50, 44];
+    let x = -30;
+    hs.forEach((hgt, i) => { const wdt = i === 2 ? 13 : 10; c.fillStyle = cols[i]; c.fillRect(x, -hgt, wdt, hgt); c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(x + 2, -hgt + 6, wdt - 4, 2); c.fillRect(x + 2, -10, wdt - 4, 2); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(x + wdt - 2, -hgt, 2, hgt); x += wdt + 1; });
+    c.save(); c.translate(x + 2, 0); c.rotate(0.32); c.fillStyle = '#b5522a'; c.fillRect(0, -46, 10, 46); c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(2, -40, 6, 2); c.restore();
+  },
   // A floor lamp: wooden base and pole, a cream fabric shade with an embroidered band, and a soft glow.
   floorlamp(c) {
     c.fillStyle = '#6b4a2a'; ell(c, 0, -3, 15, 4.5);
@@ -1003,27 +1026,28 @@ let mode = 'world', roomX = 0, tour = null;
 // x: across the room (0 = left end, 1 = right end); y: down the screen (the wall meets the floor at 0.56);
 // s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
-  // against the back wall
-  pich: { x: 0.09, y: 0.615, s: 0.46, z: 1 }, hlechyk: { x: 0.215, y: 0.625, s: 0.21, z: 1 },
-  lizhko: { x: 0.89, y: 0.625, s: 0.58, z: 1 },
+  // against the back wall, left to right
+  pich: { x: 0.07, y: 0.615, s: 0.46, z: 1 }, hlechyk: { x: 0.165, y: 0.625, s: 0.21, z: 1 },
+  polytsia: { x: 0.44, y: 0.63, s: 0.55, z: 1 },
+  lampa: { x: 0.64, y: 0.63, s: 0.56, z: 1 },
+  kihtetochka: { x: 0.745, y: 0.625, s: 0.52, z: 1 },
+  lizhko: { x: 0.905, y: 0.625, s: 0.58, z: 1 },
+  // on the bookshelf: books on the middle shelf, a small plant on the top shelf, the mantel clock on top
+  knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 },
   // middle of the room: rug, table, and the chair tucked in behind it
-  kylym: { x: 0.45, y: 0.85, s: 0.62, z: 0 },
-  stilets: { x: 0.415, y: 0.775, s: 0.29, z: 1.5 }, stil: { x: 0.45, y: 0.81, s: 0.4, z: 2 },
-  lampa: { x: 0.59, y: 0.63, s: 0.56, z: 1 }, knyha: { on: 'stil', dx: -0.24, s: 0.1, z: 3 },
-  // front corner by the foot of the bed
-  vazon: { x: 0.6, y: 0.79, s: 0.24, z: 3 },
-  // the cat corner, past the foot of the bed: cat tree against the wall, cat bed and toys on the floor
-  kihtetochka: { x: 0.715, y: 0.625, s: 0.52, z: 1 }, lezhanka: { x: 0.76, y: 0.87, s: 0.3, z: 3 },
-  miachyk: { x: 0.7, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
-  // walls: mirror between stove and window, painting centred on the wall between window and bed, clock over the bed
-  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.505, y: 0.42, s: 0.22, z: 0, wall: true },
-  hodynnyk: { x: 0.87, y: 0.39, s: 0.14, z: 0, wall: true }, rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true, fit: true },
+  kylym: { x: 0.44, y: 0.85, s: 0.62, z: 0 },
+  stilets: { x: 0.41, y: 0.775, s: 0.29, z: 1.5 }, stil: { x: 0.44, y: 0.81, s: 0.4, z: 2 },
+  // cat bed and toys on the floor near the cat tree
+  lezhanka: { x: 0.79, y: 0.87, s: 0.3, z: 3 }, miachyk: { x: 0.68, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
+  // walls: mirror between stove and window, painting centred between shelf and lamp, the рушник dressing the window
+  dzerkalo: { x: 0.205, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.548, y: 0.42, s: 0.2, z: 0, wall: true },
+  rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true, fit: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
 };
-const WIN_X = 0.37;                                    // the window, across the room
+const WIN_X = 0.31;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
-const roomW = () => Math.max(cv.width, roomU() * 2.7); // a phone in portrait sees under half the room at once
+const roomW = () => Math.max(cv.width, roomU() * 3.0); // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
 const BASICS = Object.keys(D.shop.furnished);          // always in the room
@@ -1035,6 +1059,8 @@ function decorRect(id) {
   if (d.win !== undefined) x = WIN_X * RW;
   if (d.fit) { const ww = u * 0.3, wt = cv.height * 0.27, wb = cv.height * 0.45; return { x: x - ww * 0.65, y: wt - u * 0.05, w: ww * 1.3, h: (wb - wt) * 0.85, cx: x, by: wb, sz: ww }; }
   if (d.sill !== undefined) { x = WIN_X * RW + d.sill * u; y = cv.height * 0.462; }
+  // On the bookshelf: shelf boards stand at these fractions of its height.
+  if (d.shelf !== undefined) { const b = DECOR.polytsia; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - d.shelf * b.s * u; }
   if (d.on) { const b = DECOR[d.on]; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - 0.54 * b.s * u + 1; }
   return { x: x - sz * 0.55, y: y - sz * 1.05, w: sz * 1.1, h: sz * 1.1, cx: x, by: y, sz };
 }
@@ -1063,7 +1089,7 @@ function catSpot(i) {
   // The first friend curls up in the cat bed, the second sits on top of the cat tree, if they're in the room.
   if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx, y: r.by - r.sz * 0.12, s: roomU() * 0.22 }; }
   if (i === 1 && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: roomU() * 0.16 }; }
-  const xs = [0.54, 0.27, 0.63, 0.12, 0.78, 0.4]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
+  const xs = [0.55, 0.25, 0.64, 0.12, 0.86, 0.36]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
 }
 function decorSheet() {
   const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && (S.decor[id] || S.home[id] > 0));
@@ -1136,7 +1162,7 @@ function drawHome(t) {
   const ids = inRoom().sort((a, b) => (DECOR[a].wall ? 0 : 10) + DECOR[a].z - (DECOR[b].wall ? 0 : 10) - DECOR[b].z);
   for (const id of ids) {
     const r = decorRect(id);
-    if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
+    if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.55); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
     else drawIcon(c, W[id].ic, r.cx, r.by, r.sz);
