@@ -862,6 +862,7 @@ const sheet = $('#sheet'), veil = $('#veil');
 let onClose = null, acts = [], cur = {}, sheetAt = 0;
 function openSheet(html, closer) {
   if (onClose) { const f = onClose; onClose = null; f(); }
+  sheet.classList.remove('fixed');
   sheet.innerHTML = html; sheet.classList.add('show'); veil.classList.add('show'); sheet.scrollTop = 0; sheetAt = Date.now();
   onClose = closer || null;
 }
@@ -1031,12 +1032,14 @@ function shop() {
     body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
     if (shopSel && list[shopSel] && !owned(shopSel)) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
   }
+  setTimeout(() => sheet.classList.add('fixed'), 0);   // the market keeps one height, however few items a tab has
   openSheet(`<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>${body}`);
 }
 // Helping at the stall: Oksana asks for something by name, you hand it over.
 // This is where words that are due for review come back.
 let help = null;
 function helpRound(n) {
+  setTimeout(() => sheet.classList.add('fixed'), 0);
   const pool = [...Object.keys(D.shop.food), ...Object.keys(D.shop.seeds)];
   const due = pool.filter(k => S.words[k] && isFresh(k));
   const target = due.length && Math.random() < 0.75 ? pick(due) : pick(pool);
