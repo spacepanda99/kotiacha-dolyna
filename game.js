@@ -650,10 +650,10 @@ const known = id => S.words[id] ? S.words[id].l : 0;
 
 // ------------------------------------------------------------------ sheets (the pop-up panels)
 const sheet = $('#sheet'), veil = $('#veil');
-let onClose = null, acts = [], cur = {};
+let onClose = null, acts = [], cur = {}, sheetAt = 0;
 function openSheet(html, closer) {
   if (onClose) { const f = onClose; onClose = null; f(); }
-  sheet.innerHTML = html; sheet.classList.add('show'); veil.classList.add('show'); sheet.scrollTop = 0;
+  sheet.innerHTML = html; sheet.classList.add('show'); veil.classList.add('show'); sheet.scrollTop = 0; sheetAt = Date.now();
   onClose = closer || null;
 }
 function closeSheet() {
@@ -919,43 +919,54 @@ function wordsSheet() {
 }
 
 // ------------------------------------------------------------------ inside the cottage
-// A drawn room. Everything you own has its own natural spot (bed by the wall, table on the rug,
-// painting on the wall, cup on the windowsill), so decorating is just: open Прикрасити, tap an item.
-let mode = 'world';
-// x, y: bottom-centre as a fraction of the screen; s: size as a fraction of the room; z: drawing order.
+// A drawn room, wider than a phone screen: swipe left and right to look around. Everything has its own
+// natural spot (stove in the corner, bed along the wall, chair tucked under the table, cup on the
+// windowsill), so decorating is just: open Прикрасити, tap an item.
+let mode = 'world', roomX = 0;
+// x: across the room (0 = left end, 1 = right end); y: down the screen (the wall meets the floor at 0.56);
+// s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
-  // Against the back wall (the wall meets the floor at 0.56): stove in the left corner, bed along the right,
-  // a clay jug on the floor under the window.
-  pich: { x: 0.17, y: 0.615, s: 0.46, z: 1 }, lizhko: { x: 0.79, y: 0.625, s: 0.52, z: 1 }, hlechyk: { x: 0.4, y: 0.62, s: 0.13, z: 1 },
-  // In the middle of the room: the rug, the table on it, and the chair pulled up beside the table.
-  kylym: { x: 0.47, y: 0.85, s: 0.6, z: 0 },
-  stil: { x: 0.5, y: 0.81, s: 0.4, z: 2 }, stilets: { x: 0.25, y: 0.81, s: 0.3, z: 2 },
-  // On the table top.
-  lampa: { on: 'stil', dx: 0.24, s: 0.15, z: 3 }, knyha: { on: 'stil', dx: -0.22, s: 0.1, z: 3 },
-  // In the front corner by the foot of the bed.
-  vazon: { x: 0.92, y: 0.8, s: 0.26, z: 3 },
-  // On the walls, where the stove and bed leave room; the towel drapes over the window.
-  dzerkalo: { x: 0.28, y: 0.39, s: 0.14, z: 0, wall: true }, kartyna: { x: 0.74, y: 0.41, s: 0.17, z: 0, wall: true },
-  hodynnyk: { x: 0.93, y: 0.41, s: 0.13, z: 0, wall: true }, rushnyk: { x: 0.5, y: 0.37, s: 0.24, z: 1, wall: true },
-  // On the windowsill.
+  // against the back wall
+  pich: { x: 0.09, y: 0.615, s: 0.46, z: 1 }, hlechyk: { x: 0.215, y: 0.625, s: 0.21, z: 1 },
+  lizhko: { x: 0.79, y: 0.625, s: 0.52, z: 1 },
+  // middle of the room: rug, table, and the chair tucked in behind it
+  kylym: { x: 0.45, y: 0.85, s: 0.62, z: 0 },
+  stilets: { x: 0.415, y: 0.775, s: 0.29, z: 1.5 }, stil: { x: 0.45, y: 0.81, s: 0.4, z: 2 },
+  lampa: { on: 'stil', dx: 0.24, s: 0.15, z: 3 }, knyha: { on: 'stil', dx: -0.24, s: 0.1, z: 3 },
+  // front corner by the foot of the bed
+  vazon: { x: 0.95, y: 0.8, s: 0.26, z: 3 },
+  // walls: mirror between stove and window, painting centred on the wall between window and bed, clock over the bed
+  dzerkalo: { x: 0.235, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.575, y: 0.42, s: 0.22, z: 0, wall: true },
+  hodynnyk: { x: 0.79, y: 0.4, s: 0.14, z: 0, wall: true }, rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true },
+  // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
 };
+const WIN_X = 0.37;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
+const roomW = () => Math.max(cv.width, roomU() * 2.2); // a phone in portrait sees under half the room at once
+const panMax = () => Math.max(0, roomW() - cv.width);
+const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
 const BASICS = Object.keys(D.shop.furnished);          // always in the room
 const inRoom = () => [...BASICS, ...Object.keys(S.decor).filter(id => DECOR[id] && !BASICS.includes(id))];
+// Where an item stands, in room pixels (bottom-centre) plus its tap box.
 function decorRect(id) {
-  const d = DECOR[id], u = roomU(), sz = d.s * u;
-  let x = d.x * cv.width, y = d.y * cv.height;
-  // Things "on" a piece of furniture stand on its top (the table's top board is 0.54 of its height up).
-  // Windowsill things are placed relative to the window, which is sized by the room, not the screen width.
-  if (d.sill !== undefined) { x = cv.width * 0.5 + d.sill * u; y = cv.height * 0.462; }
-  if (d.on) { const b = DECOR[d.on]; x = b.x * cv.width + d.dx * b.s * u; y = b.y * cv.height - 0.54 * b.s * u + 1; }
+  const d = DECOR[id], u = roomU(), RW = roomW(), sz = d.s * u;
+  let x = (d.x ?? WIN_X) * RW, y = d.y * cv.height;
+  if (d.win !== undefined) x = WIN_X * RW;
+  if (d.sill !== undefined) { x = WIN_X * RW + d.sill * u; y = cv.height * 0.462; }
+  if (d.on) { const b = DECOR[d.on]; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - 0.54 * b.s * u + 1; }
   return { x: x - sz * 0.55, y: y - sz * 1.05, w: sz * 1.1, h: sz * 1.1, cx: x, by: y, sz };
 }
-function enterHome() { closeSheet(); mode = 'home'; $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#homebar').style.display = 'flex'; blip(520); }
+function enterHome() {
+  closeSheet(); mode = 'home';
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#homebar').style.display = 'flex';
+  roomX = DECOR.stil.x * roomW() - cv.width / 2; clampPan();
+  if (panMax() > 10 && !S.panTold) { S.panTold = 1; save(); setTimeout(() => toast('👆 ← → Проведи пальцем · Swipe to look around'), 600); }
+  blip(520);
+}
 function exitHome() { mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
-function homeTap(px, py) {
-  // Friend cats first (they sit in front), then the frontmost item under the finger.
+function homeTap(sx, py) {
+  const px = sx + roomX;
   const friends = D.cats.filter(ct => S.cats[ct.id]);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
   const ids = inRoom().sort((a, b) => (DECOR[b].wall ? 0 : 10) + DECOR[b].z - (DECOR[a].wall ? 0 : 10) - DECOR[a].z);
@@ -964,7 +975,7 @@ function homeTap(px, py) {
     if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return wordCard(id, BASICS.includes(id) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] });
   }
 }
-function catSpot(i) { const xs = [0.68, 0.12, 0.84, 0.36, 0.52, 0.96]; return { x: xs[i % 6] * cv.width, y: cv.height * 0.885, s: roomU() * 0.25 }; }
+function catSpot(i) { const xs = [0.6, 0.27, 0.85, 0.12, 0.69, 0.33]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 }; }
 function decorSheet() {
   const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && (S.decor[id] || S.home[id] > 0));
   const st = stage();
@@ -975,15 +986,17 @@ function decorSheet() {
     `<div class="row">${btn('close', '', lab('close'), 'ghost')}</div>`);
 }
 function drawHome(t) {
-  const w = cv.width, h = cv.height, c = ctx, u = roomU(), wallB = h * 0.56;
-  // back wall, with an embroidered border and wooden beams
-  c.fillStyle = '#fbf1dc'; c.fillRect(0, 0, w, wallB);
-  c.fillStyle = 'rgba(160,110,60,.10)'; for (let x = 0; x < w; x += u * 0.11) c.fillRect(x, 0, u * 0.004 + 1, wallB);
-  const k = Math.max(10, w / 36), y0 = h * 0.17;
-  c.fillStyle = '#8a5a2b'; c.fillRect(0, y0 - k * 0.9, w, k * 0.5);
-  for (let x = 0; x < w + k; x += k * 2) { c.fillStyle = '#d43a3a'; poly(c, [[x, y0], [x + k * 0.8, y0 + k * 0.8], [x, y0 + k * 1.6], [x - k * 0.8, y0 + k * 0.8]]); c.fillStyle = '#2d2d2d'; circ(c, x + k, y0 + k * 0.8, k * 0.22); }
-  // the window, with the valley outside
-  const wx = w * 0.5, ww = u * 0.3, wt = h * 0.27, wb = h * 0.45;
+  const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
+  clampPan();
+  c.save(); c.translate(-roomX, 0);
+  // back wall, beams, embroidered border
+  c.fillStyle = '#fbf1dc'; c.fillRect(0, 0, RW, wallB);
+  c.fillStyle = 'rgba(160,110,60,.10)'; for (let x = 0; x < RW; x += u * 0.11) c.fillRect(x, 0, u * 0.004 + 1, wallB);
+  const k = Math.max(10, u / 36), y0 = h * 0.17;
+  c.fillStyle = '#8a5a2b'; c.fillRect(0, y0 - k * 0.9, RW, k * 0.5);
+  for (let x = 0; x < RW + k; x += k * 2) { c.fillStyle = '#d43a3a'; poly(c, [[x, y0], [x + k * 0.8, y0 + k * 0.8], [x, y0 + k * 1.6], [x - k * 0.8, y0 + k * 0.8]]); c.fillStyle = '#2d2d2d'; circ(c, x + k, y0 + k * 0.8, k * 0.22); }
+  // the window onto the valley
+  const wx = WIN_X * RW, ww = u * 0.3, wt = h * 0.27, wb = h * 0.45;
   c.save(); c.beginPath(); c.rect(wx - ww / 2, wt, ww, wb - wt); c.clip();
   let g = c.createLinearGradient(0, wt, 0, wb); g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e8f7ff'); c.fillStyle = g; c.fillRect(wx - ww / 2, wt, ww, wb - wt);
   c.fillStyle = '#a6dc7c'; ell(c, wx - ww * 0.2, wb, ww * 0.5, (wb - wt) * 0.32); c.fillStyle = '#8fcf6a'; ell(c, wx + ww * 0.3, wb, ww * 0.5, (wb - wt) * 0.26);
@@ -993,28 +1006,33 @@ function drawHome(t) {
   c.strokeStyle = '#3d7cc2'; c.lineWidth = u * 0.022; c.strokeRect(wx - ww / 2, wt, ww, wb - wt);
   c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(wx, wt); c.lineTo(wx, wb); c.moveTo(wx - ww / 2, (wt + wb) / 2); c.lineTo(wx + ww / 2, (wt + wb) / 2); c.stroke();
   c.fillStyle = '#c08a55'; rr(c, wx - ww / 2 - u * 0.03, wb, ww + u * 0.06, u * 0.025, 4);
-  // floor: warm boards, skirting, and a soft shadow where wall meets floor
-  c.fillStyle = '#c99a63'; c.fillRect(0, wallB, w, h - wallB);
+  // floor, skirting, and the shadow where wall meets floor
+  c.fillStyle = '#c99a63'; c.fillRect(0, wallB, RW, h - wallB);
   c.strokeStyle = 'rgba(120,80,40,.28)'; c.lineWidth = Math.max(2, h * 0.003);
-  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
-  c.fillStyle = '#4a90d9'; c.fillRect(0, wallB - h * 0.012, w, h * 0.014);
-  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(0, wallB, w, h * 0.05);
-  // a warm glow when the lamp or candle is in
-  if (S.decor.lampa || S.decor.svichka) { g = c.createRadialGradient(w * 0.6, h * 0.5, 0, w * 0.6, h * 0.5, u * 0.8); g.addColorStop(0, 'rgba(255,214,120,.18)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h); }
-  // everything you've put in, wall things first, then back to front
+  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
+  c.fillStyle = '#4a90d9'; c.fillRect(0, wallB - h * 0.012, RW, h * 0.014);
+  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(0, wallB, RW, h * 0.05);
+  // a warm glow around the lamp or candle
+  for (const id of ['lampa', 'svichka']) if (S.decor[id]) { const r = decorRect(id); g = c.createRadialGradient(r.cx, r.by - r.sz * 0.6, 0, r.cx, r.by - r.sz * 0.6, u * 0.7); g.addColorStop(0, 'rgba(255,214,120,.2)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, RW, h); }
+  // everything in the room: wall things first, then floor things back to front
   const ids = inRoom().sort((a, b) => (DECOR[a].wall ? 0 : 10) + DECOR[a].z - (DECOR[b].wall ? 0 : 10) - DECOR[b].z);
   for (const id of ids) {
     const r = decorRect(id);
-    if (!DECOR[id].wall && id !== 'kylym') { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
+    if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.55); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
     else drawIcon(c, W[id].ic, r.cx, r.by, r.sz);
   }
-  // your cat friends
   D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
   if (ids.length === BASICS.length && stage() < 3) {
     c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('Make it yours: tap 🪑 Прикрасити below.', w / 2, h * 0.665);
+    c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
   }
+  c.restore();
+  // soft arrows at the edges while there's more room to see
+  const pulse = 0.55 + 0.25 * Math.sin(t * 3), ay = h * 0.68, as = u * 0.05;
+  c.fillStyle = `rgba(74,44,26,${pulse})`;
+  if (roomX > 4) poly(c, [[u * 0.025, ay], [u * 0.025 + as, ay - as], [u * 0.025 + as, ay + as]]);
+  if (roomX < panMax() - 4) poly(c, [[w - u * 0.025, ay], [w - u * 0.025 - as, ay - as], [w - u * 0.025 - as, ay + as]]);
 }
 
 // ------------------------------------------------------------------ the world, drawn
@@ -1362,7 +1380,12 @@ function hitEnt(wx, wy) {
   return best;
 }
 let down = null;
-cv.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY, t: now() }; });
+cv.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY, t: now(), rx: roomX }; });
+// Inside the cottage, dragging pans the room.
+cv.addEventListener('pointermove', ev => {
+  if (!down || mode !== 'home' || sheetOpen()) return;
+  roomX = down.rx - (ev.clientX - down.x) * (cv.width / innerWidth); clampPan();
+});
 cv.addEventListener('pointerup', ev => {
   if (!down || !running || sheetOpen()) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
@@ -1472,6 +1495,9 @@ const A = {
 document.addEventListener('click', ev => {
   if (ev.target.id === 'story') return storyClose();
   const el = ev.target.closest('[data-a]'); if (!el) return;
+  // A phone sends a "click" just after the finger lifts. If that same tap has just opened a card, the click
+  // lands on the card's backdrop (closing it) or on one of its buttons. Ignore clicks on a card for a moment.
+  if (Date.now() - sheetAt < 400 && (el.id === 'veil' || sheet.contains(el))) return;
   const f = A[el.dataset.a]; if (f) f(el.dataset.v);
 });
 document.addEventListener('contextmenu', ev => ev.preventDefault());
@@ -1504,5 +1530,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
