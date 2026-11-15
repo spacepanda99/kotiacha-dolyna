@@ -911,6 +911,7 @@ function storyShow(i) {
 function storyClose() { $('#story').classList.remove('show'); sayToken++; for (const k in clipCache) { try { clipCache[k].pause(); } catch (e) {} } }
 
 const A = {
+  update() { location.reload(); },
   story() { storyShow(0); },
   storyGo(v) { storyShow(+v); },
   storyClose,
@@ -978,8 +979,31 @@ document.addEventListener('contextmenu', ev => ev.preventDefault());
 
 hud(); setGuide();
 requestAnimationFrame(frame);
-// Installable app + offline play.
-if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+// ------------------------------------------------------------------ staying up to date
+// Every time the game opens or comes back to the front, it asks the server which version is current.
+// On the title screen it reloads straight into the new one; mid-game it offers a button instead.
+// Progress lives in localStorage, so a reload never loses anything.
+const VERSION = window.APP_VERSION || '0';
+function newerAvailable() {
+  try { if (sessionStorage.getItem('kd-reloaded') === VERSION) { sessionStorage.removeItem('kd-reloaded'); } } catch (e) {}
+  if (running) { $('#update').classList.add('show'); return; }
+  let tried = '';
+  try { tried = sessionStorage.getItem('kd-tried') || ''; sessionStorage.setItem('kd-tried', VERSION); } catch (e) {}
+  if (tried === VERSION) { $('#update').classList.add('show'); return; }   // never loop
+  location.reload();
+}
+function checkVersion() {
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => {
+    if (j && j.v && j.v !== VERSION) newerAvailable();
+    else { try { sessionStorage.removeItem('kd-tried'); } catch (e) {} }
+  }).catch(() => {});
+}
+let swReg = null;
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => { swReg = r; r.update().catch(() => {}); }).catch(() => {}));
+}
+addEventListener('load', checkVersion);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
 window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf };
 })();

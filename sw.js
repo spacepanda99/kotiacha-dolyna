@@ -1,13 +1,15 @@
-// Lets Chrome install the game and keeps it playable offline.
-// Pages and scripts: network first, so updates arrive straight away; the cached copy is the offline fallback.
-// Voice clips, music and icons: cache first, since they never change under the same name.
-const CACHE = 'kotiacha-dolyna-v6';
-const CORE = ['./', 'index.html', 'game.js', 'data.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+// Lets Chrome install the game and keeps it playable offline, while always preferring the newest version.
+// Pages, scripts and settings: straight from the server every time (bypassing the browser's own cache);
+// the saved copy is only used when there's no connection.
+// Voice clips, music and icons: saved after first use. The whole cache is renamed each release
+// (tools/release.mjs), so a new version starts clean.
+const CACHE = 'kotiacha-dolyna-0.7';
+const CORE = ['./', 'index.html', 'game.js', 'data.js', 'manifest.webmanifest', 'version.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   // put() rather than addAll(): addAll fails outright if a second install is filling the same cache.
   e.waitUntil(caches.open(CACHE)
-    .then(c => Promise.all(CORE.map(u => fetch(u, { cache: 'reload' }).then(r => r.ok ? c.put(u, r).catch(() => null) : null).catch(() => null))))
+    .then(c => Promise.all(CORE.map(u => fetch(u, { cache: 'no-store' }).then(r => r.ok ? c.put(u, r).catch(() => null) : null).catch(() => null))))
     .then(() => self.skipWaiting()));
 });
 
@@ -17,19 +19,20 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== location.origin) return;
   // Audio may be requested in ranges; let the browser handle those directly.
   if (req.headers.has('range')) return;
-  const media = /\/(audio|music|icons)\//.test(req.url);
-  if (media) {
-    e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
+  if (/\/(audio|music|icons)\//.test(url.pathname)) {
+    e.respondWith(caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).then(res => {
       if (res.ok && res.status === 200) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {}); }
       return res;
     })));
-  } else {
-    e.respondWith(fetch(req).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {}); }
-      return res;
-    }).catch(() => caches.match(req).then(hit => hit || caches.match('index.html'))));
+    return;
   }
+  // Everything else: always ask the server (no-cache revalidates even if the browser thinks its copy is fresh).
+  e.respondWith(fetch(new Request(req.url, { cache: 'no-cache', credentials: 'same-origin' })).then(res => {
+    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req.url, copy)).catch(() => {}); }
+    return res;
+  }).catch(() => caches.match(req.url, { ignoreSearch: true }).then(hit => hit || caches.match('index.html'))));
 });

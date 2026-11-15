@@ -119,6 +119,9 @@
   #story .dots i.on { background:var(--rose); }
   #story .nav { display:flex; gap:10px; justify-content:center; align-items:center; margin-top:14px; flex-wrap:wrap; }
   #story .x { position:absolute; right:10px; top:14px; background:none; font-size:22px; color:var(--soft); padding:6px 8px; }
+  #update { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(84px + env(safe-area-inset-bottom)); z-index:35; display:none; background:var(--ink); color:#fff; border-radius:999px; padding:10px 16px; font-weight:800; font-size:15px; box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap; }
+  #update small { font-weight:600; opacity:.85; }
+  #update.show { display:block; }
   #start .ver { position:absolute; left:14px; bottom:calc(10px + env(safe-area-inset-bottom)); font-size:12px; color:#4b3d36; opacity:.7; }
   #start .reset { position:absolute; right:14px; bottom:calc(10px + env(safe-area-inset-bottom)); font-size:12px; background:none; color:#4b3d36; opacity:.7; text-decoration:underline; }
 </style>
@@ -140,6 +143,7 @@
 <div id="veil" data-a="close"></div>
 <div id="sheet"></div>
 <div id="toast"></div>
+<button id="update" data-a="update">🔄 Нова версія · <small>New version, tap to update</small></button>
 <div id="story" data-a="storyBg"><div class="paper"></div></div>
 
 <div id="start">
@@ -149,11 +153,12 @@
   <p><b>Cat Valley</b><br>Wander a cozy Ukrainian village. Tap anything to hear its name.</p>
   <button class="b" data-a="start">Почати<small>Start</small></button>
   <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
-  <div class="ver">v0.6</div>
+  <div class="ver">v0.7</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script src="data.js"></script>
-<script src="game.js"></script>
+<script>window.APP_VERSION = '0.7';</script>
+<script src="data.js?v=0.7"></script>
+<script src="game.js?v=0.7"></script>
 </body>
 </html>
