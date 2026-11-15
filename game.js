@@ -1127,27 +1127,27 @@ let mode = 'world', roomX = 0, tour = null;
 // s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
   // against the back wall, left to right
-  pich: { x: 0.082, y: 0.578, s: 0.6, z: 1 }, hlechyk: { x: 0.197, y: 0.585, s: 0.3, z: 1 },
-  polytsia: { x: 0.44, y: 0.582, s: 0.55, z: 1 },
-  lampa: { x: 0.64, y: 0.582, s: 0.56, z: 1 },
-  kihtetochka: { x: 0.745, y: 0.58, s: 0.52, z: 1 },
-  lizhko: { x: 0.905, y: 0.585, s: 0.58, z: 1 },
+  pich: { x: 0.072, y: 0.578, s: 0.6, z: 1, hw: 0.85 }, hlechyk: { x: 0.185, y: 0.585, s: 0.3, z: 1, hw: 0.6 },
+  polytsia: { x: 0.43, y: 0.582, s: 0.55, z: 1, hw: 0.68 },
+  lampa: { x: 0.6, y: 0.582, s: 0.56, z: 1, hw: 0.48 },
+  kihtetochka: { x: 0.725, y: 0.58, s: 0.52, z: 1, hw: 0.9 },
+  lizhko: { x: 0.905, y: 0.585, s: 0.58, z: 1, hw: 1.0 },
   // on the bookshelf: books on the middle shelf, a small plant on the top shelf, the mantel clock on top
   knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 },
   // middle of the room: rug, table, and the chair tucked in behind it
   kylym: { x: 0.44, y: 0.85, s: 0.62, z: 0 },
-  stilets: { x: 0.41, y: 0.775, s: 0.29, z: 1.5 }, stil: { x: 0.44, y: 0.81, s: 0.4, z: 2 },
+  stilets: { x: 0.41, y: 0.775, s: 0.29, z: 1.5, hw: 0.7 }, stil: { x: 0.44, y: 0.81, s: 0.4, z: 2, hw: 1.0 },
   // cat bed and toys on the floor near the cat tree
   lezhanka: { x: 0.79, y: 0.87, s: 0.3, z: 3 }, miachyk: { x: 0.68, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
   // walls: mirror between stove and window, painting centred between shelf and lamp, the рушник dressing the window
-  dzerkalo: { x: 0.215, y: 0.37, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.548, y: 0.42, s: 0.2, z: 0, wall: true },
+  dzerkalo: { x: 0.2, y: 0.37, s: 0.15, z: 0, wall: true, hw: 0.7 }, kartyna: { x: 0.528, y: 0.42, s: 0.2, z: 0, wall: true, hw: 0.95 },
   rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true, fit: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
 };
-const WIN_X = 0.31;                                    // the window, across the room
+const WIN_X = 0.3;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
-const roomW = () => Math.max(cv.width, roomU() * 3.0); // a phone in portrait sees under half the room at once
+const roomW = () => Math.max(cv.width, roomU() * 3.4); // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
 const BASICS = Object.keys(D.shop.furnished);          // always in the room
@@ -1162,7 +1162,8 @@ function decorRect(id) {
   // On the bookshelf: shelf boards stand at these fractions of its height.
   if (d.shelf !== undefined) { const b = DECOR.polytsia; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - d.shelf * b.s * u; }
   if (d.on) { const b = DECOR[d.on]; x = b.x * RW + d.dx * b.s * u; y = b.y * cv.height - 0.54 * b.s * u + 1; }
-  return { x: x - sz * 0.55, y: y - sz * 1.05, w: sz * 1.1, h: sz * 1.1, cx: x, by: y, sz };
+  const hw = sz * (d.hw || 1.1);
+  return { x: x - hw / 2, y: y - sz * 1.05, w: hw, h: sz * 1.1, cx: x, by: y, sz };
 }
 function enterHome() {
   closeSheet(); mode = 'home';
@@ -1180,16 +1181,20 @@ function homeTap(sx, py) {
   const friends = D.cats.filter(ct => S.cats[ct.id]);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
   const ids = inRoom().sort((a, b) => (DECOR[b].wall ? 0 : 10) + DECOR[b].z - (DECOR[a].wall ? 0 : 10) - DECOR[a].z);
+  let best = null, bestScore = -1e9;
   for (const id of ids) {
     const r = decorRect(id);
-    if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return wordCard(id, BASICS.includes(id) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] });
+    if (!(px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h)) continue;
+    const score = ((DECOR[id].wall ? 0 : 10) + DECOR[id].z) * 1e4 - Math.abs(px - r.cx);
+    if (score > bestScore) { bestScore = score; best = id; }
   }
+  if (best) return wordCard(best, BASICS.includes(best) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(best); closeSheet(); } }] });
 }
 function catSpot(i) {
   // The first friend curls up in the cat bed, the second sits on top of the cat tree, if they're in the room.
   if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: roomU() * 0.3, sleep: true }; }
   if (i === 1 && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: roomU() * 0.16 }; }
-  const xs = [0.55, 0.25, 0.64, 0.12, 0.86, 0.36]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
+  const xs = [0.55, 0.25, 0.66, 0.12, 0.84, 0.36]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
 }
 function decorSheet() {
   const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && !S.decor[id] && S.home[id] > 0);
@@ -1840,5 +1845,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
