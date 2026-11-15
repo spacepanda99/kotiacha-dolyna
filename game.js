@@ -235,10 +235,32 @@ const DRAW = {
     c.fillStyle = '#fffdf5'; rr(c, -16, -56, 32, 28, 2);
     c.fillStyle = '#e2574c'; c.fillRect(-16, -34, 32, 3); c.fillRect(-16, -40, 32, 2);
   },
+  // A traditional Ukrainian килим: black border with ochre diamonds, a deep burgundy field, a central
+  // folk medallion with a red rose, stylised roses with leaves either side, cream stars, and fringed ends.
   rug(c) {
-    c.fillStyle = '#c0392b'; rr(c, -48, -46, 96, 38, 4);
-    c.strokeStyle = '#2d2d2d'; c.lineWidth = 2; c.strokeRect(-43, -41, 86, 28);
-    for (let i = -2; i <= 2; i++) { c.fillStyle = i % 2 ? '#fffdf5' : '#f2c230'; poly(c, [[i * 16, -37], [i * 16 + 7, -27], [i * 16, -17], [i * 16 - 7, -27]]); }
+    const black = '#1f1a17', field = '#7a1f22', ochre = '#e0a63a', green = '#4f7a3a', red = '#c8322b', cream = '#f3e6c8';
+    c.strokeStyle = cream; c.lineWidth = 0.8;
+    for (let y = -45; y <= -9; y += 2.4) { c.beginPath(); c.moveTo(-48, y); c.lineTo(-52, y); c.moveTo(48, y); c.lineTo(52, y); c.stroke(); }
+    c.fillStyle = black; c.fillRect(-48, -46, 96, 38);
+    c.fillStyle = ochre; for (let x = -45; x <= 45; x += 6) { poly(c, [[x, -44.6], [x + 1.6, -43], [x, -41.4], [x - 1.6, -43]]); poly(c, [[x, -12.6], [x + 1.6, -11], [x, -9.4], [x - 1.6, -11]]); }
+    c.fillStyle = red; for (let y = -38; y <= -16; y += 5.5) { poly(c, [[-45.5, y], [-44, y + 1.5], [-45.5, y + 3], [-47, y + 1.5]]); poly(c, [[45.5, y], [47, y + 1.5], [45.5, y + 3], [44, y + 1.5]]); }
+    c.fillStyle = ochre; c.fillRect(-42, -40, 84, 26);
+    c.fillStyle = field; c.fillRect(-41, -39, 82, 24);
+    // central medallion
+    c.fillStyle = ochre; poly(c, [[0, -38], [18, -27], [0, -16], [-18, -27]]);
+    c.fillStyle = green; poly(c, [[0, -35], [13, -27], [0, -19], [-13, -27]]);
+    c.fillStyle = black; poly(c, [[0, -32.5], [8.5, -27], [0, -21.5], [-8.5, -27]]);
+    const rose = (x, y, r) => { c.fillStyle = red; circ(c, x, y, r); c.fillStyle = '#9e2620'; circ(c, x, y, r * 0.62); c.fillStyle = red; circ(c, x - r * 0.15, y - r * 0.15, r * 0.34); c.fillStyle = 'rgba(255,230,200,.5)'; circ(c, x - r * 0.4, y - r * 0.4, r * 0.18); };
+    rose(0, -27, 4.2);
+    // side roses with leaves
+    for (const sx of [-27, 27]) {
+      c.fillStyle = green; c.save(); c.translate(sx - 5, -24); c.rotate(-0.6); ell(c, 0, 0, 4.5, 1.8); c.restore(); c.save(); c.translate(sx + 5, -24); c.rotate(0.6); ell(c, 0, 0, 4.5, 1.8); c.restore();
+      c.strokeStyle = green; c.lineWidth = 0.9; c.beginPath(); c.moveTo(sx, -22); c.lineTo(sx, -17); c.stroke();
+      rose(sx, -29, 4);
+      c.fillStyle = ochre; circ(c, sx - 8, -34, 1.1); circ(c, sx + 8, -34, 1.1); circ(c, sx - 8, -19, 1.1); circ(c, sx + 8, -19, 1.1);
+    }
+    // eight-pointed stars near the ends
+    for (const sx of [-37, 37]) { c.fillStyle = cream; poly(c, [[sx, -32], [sx + 1.3, -28.3], [sx + 4, -27], [sx + 1.3, -25.7], [sx, -22], [sx - 1.3, -25.7], [sx - 4, -27], [sx - 1.3, -28.3]]); }
   },
   stove(c) {
     c.fillStyle = '#fffdf5'; rr(c, -12, -100, 24, 20, 3); rr(c, -38, -84, 76, 84, 6);
@@ -1138,7 +1160,7 @@ const DECOR = {
   kylym: { x: 0.82, y: 0.625, s: 1.25, z: 0, hw: 0.98, flat: true },
   stilets: { x: 0.41, y: 0.775, s: 0.29, z: 1.5, hw: 0.7 }, stil: { x: 0.44, y: 0.81, s: 0.4, z: 2, hw: 1.0 },
   // cat bed and toys on the floor near the cat tree
-  lezhanka: { x: 0.79, y: 0.755, s: 0.3, z: 3 }, miachyk: { x: 0.68, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
+  lezhanka: { win: 0, y: 0.61, s: 0.3, z: 1.2 }, miachyk: { x: 0.68, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
   // walls: mirror between stove and window, painting centred between shelf and lamp, the рушник dressing the window
   dzerkalo: { x: 0.2, y: 0.37, s: 0.15, z: 0, wall: true, hw: 0.7 }, kartyna: { x: 0.528, y: 0.42, s: 0.2, z: 0, wall: true, hw: 0.95 },
   rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true, fit: true },
