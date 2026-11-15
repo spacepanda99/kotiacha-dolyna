@@ -884,7 +884,14 @@ cv.addEventListener('pointerup', ev => {
 });
 
 const A = {
-  start() { $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); if (musicOn) music.play().catch(() => {}); say('p_pryvit', guideClip); },
+  start() {
+    // Full screen right away. This runs inside the tap, which browsers require. The installed app is already full screen.
+    try {
+      const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+      const inApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
+      if (req && !inApp && !(document.fullscreenElement || document.webkitFullscreenElement)) { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); }
+    } catch (e) {}
+    $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); if (musicOn) music.play().catch(() => {}); say('p_pryvit', guideClip); },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
     musicBtn(); if (musicOn) music.play().catch(() => {}); toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
@@ -938,6 +945,8 @@ document.addEventListener('contextmenu', ev => ev.preventDefault());
 
 hud(); setGuide();
 requestAnimationFrame(frame);
+// Installable app + offline play.
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 // For automated checks.
 window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf };
 })();
