@@ -1316,7 +1316,7 @@ function drawHome(t) {
 }
 
 // ------------------------------------------------------------------ the world, drawn
-let zoom = 1, camX = 0, camY = 0;
+let zoom = 1, camX = 0, camY = 0, camBX = 0, camBY = 0, peekX = 0, peekY = 0, peekVX = 0, peekVY = 0, peeking = false;
 function resize() {
   const dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
@@ -1345,8 +1345,16 @@ function update(dt, t) {
     }
   }
   const vw = cv.width / zoom, vh = cv.height / zoom;
-  const tx = Math.max(0, Math.min(MW * T - vw, P.x * T - vw / 2)), ty = Math.max(0, Math.min(MH * T - vh, P.y * T - vh * 0.52));
-  camX += (tx - camX) * Math.min(1, dt * 6); camY += (ty - camY) * Math.min(1, dt * 6);
+  // The camera follows the player smoothly; a drag adds a "peek" offset on top, which springs back
+  // (with a little overshoot) once the finger lets go.
+  camBX += (P.x * T - vw / 2 - camBX) * Math.min(1, dt * 6); camBY += (P.y * T - vh * 0.52 - camBY) * Math.min(1, dt * 6);
+  if (!peeking) {
+    peekVX += (-110 * peekX - 13 * peekVX) * dt; peekVY += (-110 * peekY - 13 * peekVY) * dt;
+    peekX += peekVX * dt; peekY += peekVY * dt;
+    if (Math.abs(peekX) < 0.5 && Math.abs(peekVX) < 2) { peekX = 0; peekVX = 0; }
+    if (Math.abs(peekY) < 0.5 && Math.abs(peekVY) < 2) { peekY = 0; peekVY = 0; }
+  }
+  camX = Math.max(0, Math.min(MW * T - vw, camBX + peekX)); camY = Math.max(0, Math.min(MH * T - vh, camBY + peekY));
 }
 
 function label(c, text, x, y) {
@@ -1660,13 +1668,25 @@ function hitEnt(wx, wy) {
   return best;
 }
 let down = null;
-cv.addEventListener('pointerdown', ev => { tour = null; down = { x: ev.clientX, y: ev.clientY, t: now(), rx: roomX }; });
+cv.addEventListener('pointerdown', ev => { tour = null; peeking = false; down = { x: ev.clientX, y: ev.clientY, t: now(), rx: roomX, px: peekX, py: peekY }; });
 // Inside the cottage, dragging pans the room.
 cv.addEventListener('pointermove', ev => {
-  if (!down || mode !== 'home' || sheetOpen()) return;
-  roomX = down.rx - (ev.clientX - down.x) * (cv.width / innerWidth); clampPan();
+  if (!down || sheetOpen()) return;
+  const k = cv.width / innerWidth;
+  if (mode === 'home') { roomX = down.rx - (ev.clientX - down.x) * k; clampPan(); return; }
+  // Outdoors: drag to look around.
+  if (!running) return;
+  if (!peeking && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 12) peeking = true;
+  if (peeking) {
+    const lim = (Math.max(cv.width, cv.height) / zoom) * 0.9;
+    peekX = Math.max(-lim, Math.min(lim, down.px - (ev.clientX - down.x) * k / zoom));
+    peekY = Math.max(-lim, Math.min(lim, down.py - (ev.clientY - down.y) * k / zoom));
+    peekVX = peekVY = 0;
+  }
 });
+cv.addEventListener('pointercancel', () => { peeking = false; down = null; });
 cv.addEventListener('pointerup', ev => {
+  peeking = false;
   if (!down || !running || sheetOpen()) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
   if (moved > 18) return;
@@ -1820,5 +1840,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
