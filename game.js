@@ -253,6 +253,20 @@ const DRAW = {
       c.fillStyle = '#e2574c'; poly(c, [[x + 10, -50], [x + 16, -42], [x + 10, -34], [x + 4, -42]]);
     }
   },
+  pumpkin(c) {
+    c.strokeStyle = '#4f8a2a'; c.lineWidth = 2.5; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(4, -60); c.bezierCurveTo(16, -74, 26, -60, 20, -54); c.bezierCurveTo(15, -50, 13, -58, 18, -60); c.stroke();
+    c.fillStyle = '#5fae4a'; c.save(); c.translate(-14, -62); c.rotate(-0.5); ell(c, 0, 0, 13, 7); c.restore();
+    c.strokeStyle = '#3f8a3a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-24, -58); c.lineTo(-5, -66); c.stroke();
+    const lobe = (x, rx, ry, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, -31, rx, ry, 0, 0, 7); c.fill(); };
+    lobe(-30, 17, 25, '#d9741a'); lobe(30, 17, 25, '#d9741a');
+    lobe(-17, 21, 29, '#ec8a24'); lobe(17, 21, 29, '#ec8a24');
+    lobe(0, 20, 31, '#f59a32');
+    c.strokeStyle = 'rgba(160,80,10,.45)'; c.lineWidth = 1.6;
+    for (const x of [-26, -10, 10, 26]) { c.beginPath(); c.moveTo(x * 0.55, -58); c.quadraticCurveTo(x, -31, x * 0.55, -3); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,.28)'; ell(c, -7, -46, 5, 10);
+    c.fillStyle = '#6b4a22'; c.beginPath(); c.moveTo(-4, -58); c.lineTo(-3, -72); c.quadraticCurveTo(1, -76, 5, -72); c.lineTo(4, -58); c.closePath(); c.fill();
+  },
   can(c) {
     c.fillStyle = '#5aa9e6'; rr(c, -26, -46, 42, 42, 6); poly(c, [[14, -32], [42, -54], [47, -48], [14, -18]]);
     c.strokeStyle = '#3d86bf'; c.lineWidth = 5; c.beginPath(); c.arc(-26, -26, 14, Math.PI * 0.5, Math.PI * 1.5); c.stroke();
@@ -1028,6 +1042,26 @@ function label(c, text, x, y) {
   c.fillStyle = 'rgba(255,248,234,.92)'; rr(c, x - w / 2, y - 12, w, 24, 12);
   c.fillStyle = '#3b2f2a'; c.fillText(text, x, y + 1);
 }
+// The watering can swings in over the bed, tips, pours a stream of drops, then lifts away (about 2 s).
+function drawWatering(c, a) {
+  if (a > 2.1) { waterFx = null; return; }
+  const inn = Math.min(1, a / 0.3), out = a > 1.8 ? (a - 1.8) / 0.3 : 0;
+  const tilt = Math.min(1, Math.max(0, (a - 0.25) / 0.3)) * (1 - out);
+  const cx = T * 0.62, cy = -T * 0.5 - (1 - inn) * T * 0.3 - out * T * 0.3;
+  c.save(); c.globalAlpha = Math.min(inn, 1 - out);
+  c.translate(cx, cy); c.scale(-1, 1); c.rotate(-0.15 + tilt * 0.65);
+  drawIcon(c, '@can', 0, T * 0.32, T * 0.82);
+  c.restore();
+  if (tilt > 0.6 && out === 0) {
+    // spout tip in bed coordinates, then drops falling onto the soil with little splashes
+    const sx = cx - T * 0.4, sy = cy - T * 0.02;
+    for (let k = 0; k < 12; k++) {
+      const ph = ((a * 1.8) + k / 12) % 1, x = sx - ph * T * 0.22 + Math.sin(k * 7.1) * T * 0.04, y = sy + ph * ph * T * 0.6;
+      c.fillStyle = `rgba(90,169,230,${0.9 - ph * 0.3})`; ell(c, x, y, T * 0.022, T * 0.032);
+      if (ph > 0.85) { c.strokeStyle = 'rgba(120,190,240,.7)'; c.lineWidth = 1.5; c.beginPath(); c.ellipse(x, sy + T * 0.6, T * 0.05 * (ph - 0.85) * 7, T * 0.015 * (ph - 0.85) * 7, 0, 0, 7); c.stroke(); }
+    }
+  }
+}
 // "My cottage" on a little red-and-cream banner above the roof, with a heart.
 function homeSign(c, x, y, t) {
   const top = stage() < 3 ? 'Моя хата' : 'Моя хата', sub = stage() < 3 ? 'My cottage' : '';
@@ -1061,11 +1095,14 @@ function drawWorld(t) {
       c.save(); c.translate(x, y); c.scale(e.s, e.s);
       drawIcon(c, '@plot', 0, T * 0.5, T);
       const p = S.plots[e.i];
+      // damp, darker soil while a watered crop grows
+      if (p.c && p.wet && now() < p.ready) { c.fillStyle = 'rgba(55,28,12,.32)'; rr(c, -T * 0.46, -T * 0.22, T * 0.92, T * 0.64, T * 0.1); }
       if (p.c) {
         if (!p.wet) { drawIcon(c, '🌱', 0, T * 0.2, T * 0.5); drawIcon(c, '💧', T * 0.28, -T * 0.15 + Math.sin(t * 4) * 3, T * 0.4); }
         else if (now() < p.ready) { const g = 1 - (p.ready - now()) / 50e3; drawIcon(c, '🌱', 0, T * 0.25, T * (0.45 + 0.4 * Math.max(0, g))); }
         else drawIcon(c, W[p.c].ic, 0, T * 0.3 + Math.sin(t * 3 + e.i) * 3, T * 0.85);
       }
+      if (waterFx && waterFx.i === e.i) drawWatering(c, t - waterFx.t0);
       c.restore();
       continue;
     }
@@ -1285,8 +1322,9 @@ function drawTitle(t) {
 }
 
 let last = 0, running = false;
+let nowT = 0, waterFx = null;
 function frame(ms) {
-  const t = ms / 1000, dt = Math.min(0.05, t - last || 0.016); last = t;
+  const t = ms / 1000, dt = Math.min(0.05, t - last || 0.016); last = t; nowT = t;
   musicTick(dt);
   if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
@@ -1382,7 +1420,7 @@ const A = {
   next() { const d = dlg; if (!d) return closeSheet(); const st = d.steps[d.i]; dialog(d.npc, d.steps, d.i + 1); if (st.after) st.after(); },
   choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg === d) dialog(d.npc, d.steps, d.i + 1); }, 1500); },
   plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0)) return; S.seeds[v]--; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); closeSheet(); say('w_' + v); blip(600); tutEvent('plant'); save(); },
-  water() { const p = S.plots[cur.plot]; p.wet = true; p.ready = now() + 50e3; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
+  water() { const p = S.plots[cur.plot]; p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
   harvest() { const p = S.plots[cur.plot], c = p.c; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].uk}`); tutEvent('harvest'); wordCard(c); save(); },
   tab(v) { shopTab = v; shopSel = null; shop(); },
   pick(v) { shopSel = v; learn(v); shop(); say('w_' + v); },

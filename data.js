@@ -65,7 +65,7 @@ window.DATA = {
     { id: "chasnyk", uk: "часник", tr: "chas-NYK", en: "garlic", ic: "🧄" },
     { id: "pomidor", uk: "помідор", tr: "po-mi-DOR", en: "tomato", ic: "🍅" },
     { id: "ohirok", uk: "огірок", tr: "o-hi-ROK", en: "cucumber", ic: "🥒" },
-    { id: "harbuz", uk: "гарбуз", tr: "har-BUZ", en: "pumpkin", ic: "🎃" },
+    { id: "harbuz", uk: "гарбуз", tr: "har-BUZ", en: "pumpkin", ic: "@pumpkin" },
     { id: "kukurudza", uk: "кукурудза", tr: "ku-ku-RU-dza", en: "corn", ic: "🌽", acc: "кукурудзу" },
     { id: "borshch", uk: "борщ", tr: "borshch", en: "borscht", ic: "🍲" },
     { id: "varenyky", uk: "вареники", tr: "va-RE-ny-ky", en: "dumplings", ic: "🥟" },
