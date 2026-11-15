@@ -14,14 +14,14 @@ window.DATA = {
     { id: "kushch", uk: "кущ", tr: "kushch", en: "bush", ic: "@bush" },
     { id: "kamin", uk: "камінь", tr: "KA-min", en: "stone", ic: "@stone" },
     { id: "kvitka", uk: "квітка", tr: "KVIT-ka", en: "flower", ic: "🌷", acc: "квітку" },
-    { id: "soniashnyk", uk: "соняшник", tr: "SO-niash-nyk", en: "sunflower", ic: "🌻" },
+    { id: "soniashnyk", uk: "соняшник", tr: "SO-niash-nyk", en: "sunflower", ic: "🌻", fact: { uk: "Україна вирощує дуже багато соняшників.", en: "Ukraine is one of the world's biggest sunflower growers." } },
     { id: "hryb", uk: "гриб", tr: "hryb", en: "mushroom", ic: "🍄" },
     { id: "stavok", uk: "ставок", tr: "sta-VOK", en: "pond", ic: "@pond" },
     { id: "choven", uk: "човен", tr: "CHO-ven", en: "boat", ic: "@canoe" },
     { id: "tserkva", uk: "церква", tr: "TSERK-va", en: "church", ic: "@church", acc: "церкву" },
     { id: "mlyn", uk: "млин", tr: "mlyn", en: "windmill", ic: "@mill" },
     { id: "lavka", uk: "лавка", tr: "LAV-ka", en: "bench", ic: "@bench", acc: "лавку" },
-    { id: "leleka", uk: "лелека", tr: "le-LE-ka", en: "stork", ic: "@stork", acc: "лелеку" },
+    { id: "leleka", uk: "лелека", tr: "le-LE-ka", en: "stork", ic: "@stork", acc: "лелеку", fact: { uk: "Лелека на даху приносить щастя.", en: "A stork nesting on the roof is said to bring good luck." } },
     { id: "vulyk", uk: "вулик", tr: "VU-lyk", en: "beehive", ic: "@hive" },
     { id: "rynok", uk: "ринок", tr: "RY-nok", en: "market", ic: "@stall" },
     { id: "horod", uk: "город", tr: "ho-ROD", en: "vegetable garden", ic: "@plot" },
@@ -69,7 +69,7 @@ window.DATA = {
     { id: "ohirok", uk: "огірок", tr: "o-hi-ROK", en: "cucumber", ic: "🥒" },
     { id: "harbuz", uk: "гарбуз", tr: "har-BUZ", en: "pumpkin", ic: "@pumpkin" },
     { id: "kukurudza", uk: "кукурудза", tr: "ku-ku-RU-dza", en: "corn", ic: "🌽", acc: "кукурудзу" },
-    { id: "borshch", uk: "борщ", tr: "borshch", en: "borscht", ic: "@borshch" },
+    { id: "borshch", uk: "борщ", tr: "borshch", en: "borscht", ic: "@borshch", fact: { uk: "Борщ варять у кожній українській родині.", en: "Ukrainian borscht cooking was added to UNESCO's heritage list in 2022." } },
     { id: "varenyky", uk: "вареники", tr: "va-RE-ny-ky", en: "varenyky (dumplings)", ic: "@varenyky" },
     { id: "pyrih", uk: "пиріг", tr: "py-RIH", en: "pie", ic: "🥧" },
     { id: "chai", uk: "чай", tr: "chai", en: "tea", ic: "🍵" },
@@ -85,14 +85,22 @@ window.DATA = {
     { id: "vazon", uk: "вазон", tr: "va-ZON", en: "potted plant", ic: "🪴" },
     { id: "knyha", uk: "книга", tr: "KNY-ha", en: "book", ic: "@books", acc: "книгу" },
     { id: "svichka", uk: "свічка", tr: "SVICH-ka", en: "candle", ic: "🕯️", acc: "свічку" },
-    { id: "hlechyk", uk: "глечик", tr: "HLE-chyk", en: "clay jug", ic: "🏺" },
+    { id: "hlechyk", uk: "глечик", tr: "HLE-chyk", en: "clay jug", ic: "🏺", fact: { uk: "Глечики сушили на тину.", en: "Clay jugs were hung upside down on village fences to dry." } },
     { id: "dzerkalo", uk: "дзеркало", tr: "DZER-ka-lo", en: "mirror", ic: "🪞" },
     { id: "hodynnyk", uk: "годинник", tr: "ho-DYN-nyk", en: "clock", ic: "🕰️" },
     { id: "pich", uk: "піч", tr: "pich", en: "stove", ic: "@stove" },
-    { id: "rushnyk", uk: "рушник", tr: "rush-NYK", en: "embroidered towel", ic: "@rushnyk" },
+    { id: "rushnyk", uk: "рушник", tr: "rush-NYK", en: "embroidered towel", ic: "@rushnyk", fact: { uk: "Хліб і сіль зустрічають гостей на рушнику.", en: "Guests are welcomed with bread and salt held on an embroidered towel." } },
     { id: "chashka", uk: "чашка", tr: "CHASH-ka", en: "cup", ic: "☕", acc: "чашку" },
     { id: "kvity", uk: "квіти", tr: "KVI-ty", en: "flowers", ic: "💐" },
     { id: "polytsia", uk: "полиця", tr: "po-LY-tsia", en: "shelf", ic: "@shelf", acc: "полицю" },
+    // --- Ukrainian culture
+    { id: "pysanka", uk: "писанка", tr: "py-SAN-ka", en: "painted Easter egg", ic: "@pysanka", acc: "писанку", fact: { uk: "Писанки малюють воском і фарбами на Великдень.", en: "Pysanky are eggs painted with wax and dyes at Easter. Every pattern has a meaning." } },
+    { id: "kalyna", uk: "калина", tr: "ka-LY-na", en: "viburnum (red berries)", ic: "@kalyna", acc: "калину", fact: { uk: "Калина — символ України. Про неї співають у піснях.", en: "Kalyna, the red viburnum, is a symbol of Ukraine. It appears in songs and embroidery." } },
+    { id: "bandura", uk: "бандура", tr: "ban-DU-ra", en: "bandura (folk instrument)", ic: "@bandura", acc: "бандуру", fact: { uk: "Кобзарі грали на бандурі й співали давні пісні.", en: "Kobzars, travelling singers, played the bandura and sang old epic songs." } },
+    { id: "korovai", uk: "коровай", tr: "ko-ro-VAI", en: "festive bread", ic: "@korovai", fact: { uk: "Коровай печуть на весілля.", en: "Korovai is a rich round bread baked for weddings, decorated with dough flowers and birds." } },
+    { id: "didukh", uk: "дідух", tr: "di-DUKH", en: "Christmas wheat sheaf", ic: "@didukh", fact: { uk: "Дідух стоїть у хаті на Різдво.", en: "A didukh, a sheaf of wheat, stands in the home at Christmas to honour the ancestors and the harvest." } },
+    { id: "malva", uk: "мальва", tr: "MAL-va", en: "hollyhock", ic: "@malva", acc: "мальву", fact: { uk: "Мальви ростуть біля сільських хат.", en: "Hollyhocks grow beside village cottages, and they are painted in folk art." } },
+    { id: "vyshyvanka", uk: "вишиванка", tr: "vy-shy-VAN-ka", en: "embroidered shirt", ic: "@vyshyvanka", acc: "вишиванку", fact: { uk: "Кожен край має свою вишивку.", en: "Every region has its own embroidery. Vyshyvanka Day is in May." } },
     // --- for the cats
     { id: "kihtetochka", uk: "кігтеточка", tr: "kih-te-TOCH-ka", en: "cat tree", ic: "@cattree", acc: "кігтеточку" },
     { id: "lezhanka", uk: "лежанка", tr: "le-ZHAN-ka", en: "cat bed", ic: "@catbed", acc: "лежанку" },
@@ -262,9 +270,9 @@ window.DATA = {
   },
 
   shop: {
-    food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6 },
+    food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6, korovai: 10 },
     seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
-    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
+    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, pysanka: 6, didukh: 10, vyshyvanka: 12, bandura: 20, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
     // Toys and furniture for the cat friends (they use them).
     tools: { vudka: 6 },
     cats: { kihtetochka: 15, lezhanka: 8, miachyk: 3, myshka: 3 },
@@ -273,7 +281,7 @@ window.DATA = {
   },
 
   // Which cottage items hang on the wall (the rest stand on the floor).
-  wallItems: ["kartyna", "dzerkalo", "hodynnyk", "rushnyk"],
+  wallItems: ["kartyna", "dzerkalo", "hodynnyk", "rushnyk", "vyshyvanka", "bandura"],
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
