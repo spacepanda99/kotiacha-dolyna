@@ -40,6 +40,8 @@ const WATER_MAX = 10, WELL_GIVES = 5;   // each trip to the well: +5 water, the 
 if (!S.recipe) S.recipe = { i: 0, got: [], started: -1 };
 if (!S.gear) S.gear = {};
 let saveT = 0;
+// Grandma cooks one dish after another and starts over from the first once she has made them all.
+const curRecipe = () => D.recipes[S.recipe.i % D.recipes.length];
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
 
 // How far along the learner is. English fades out as this rises.
@@ -629,6 +631,38 @@ const DRAW = {
     c.strokeStyle = '#d43a3a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-4, -69); c.lineTo(4, -61); c.moveTo(4, -69); c.lineTo(-4, -61); c.stroke();
     c.fillStyle = '#d43a3a'; c.fillRect(-8, -53, 16, 3);
   },
+  // Deruny: a plate with a stack of golden potato pancakes, a spoon of sour cream and dill.
+  deruny(c) {
+    c.fillStyle = '#ffffff'; ell(c, 0, -12, 46, 13); c.strokeStyle = '#2c5fa8'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(0, -12, 42, 11, 0, 0, 7); c.stroke();
+    for (const [x, y, r] of [[-8, -12, 24], [10, -16, 23], [-2, -22, 22]]) {
+      c.fillStyle = '#a86a1c'; ell(c, x, y + 2, r, r * 0.34); c.fillStyle = '#d9993a'; ell(c, x, y, r, r * 0.32); c.fillStyle = '#ecb85a'; ell(c, x - 2, y - 1.5, r * 0.8, r * 0.2);
+    }
+    c.fillStyle = '#7a4a14'; for (const [x, y] of [[-12, -23], [2, -26], [10, -20], [-4, -18]]) circ(c, x, y, 1.2);
+    c.fillStyle = '#fffdf5'; ell(c, 0, -31, 9, 4.5); c.fillStyle = '#e9e2cf'; ell(c, 2, -30, 5, 2);
+    c.strokeStyle = '#4f9a3a'; c.lineWidth = 1.4; for (const a of [-0.8, -0.2, 0.5]) { c.beginPath(); c.moveTo(0, -33); c.lineTo(Math.sin(a) * 9, -41); c.stroke(); }
+  },
+  // Holubtsi: three cabbage rolls in tomato sauce.
+  holubtsi(c) {
+    c.fillStyle = '#ffffff'; ell(c, 0, -12, 46, 13); c.strokeStyle = '#2c5fa8'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(0, -12, 42, 11, 0, 0, 7); c.stroke();
+    c.fillStyle = '#c93a22'; ell(c, 0, -13, 34, 8);
+    for (const [x, y, a] of [[-18, -14, -0.12], [2, -10, 0.05], [20, -15, 0.15]]) {
+      c.save(); c.translate(x, y); c.rotate(a);
+      c.fillStyle = '#6fa04a'; rr(c, -15, -13, 30, 19, 9); c.fillStyle = '#8cc060'; rr(c, -13, -12, 26, 9, 5);
+      c.strokeStyle = '#4d7f31'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-10, -2); c.lineTo(10, -2); c.moveTo(-11, -7); c.lineTo(11, -7); c.stroke();
+      c.fillStyle = '#e8d9a8'; ell(c, 15, -3, 3, 7); c.restore();
+    }
+    c.fillStyle = '#4f9a3a'; for (const x of [-4, 3, 9]) ell(c, x, -22, 3, 1.6);
+  },
+  // Syrnyky: little golden cheese pancakes with powdered sugar and a spoon of jam.
+  syrnyky(c) {
+    c.fillStyle = '#ffffff'; ell(c, 0, -12, 46, 13); c.strokeStyle = '#2c5fa8'; c.lineWidth = 2.5; c.beginPath(); c.ellipse(0, -12, 42, 11, 0, 0, 7); c.stroke();
+    for (const [x, y] of [[-20, -12], [0, -9], [20, -13], [-8, -19], [10, -20]]) {
+      c.fillStyle = '#b87a24'; ell(c, x, y + 2, 14, 6); c.fillStyle = '#e0a850'; ell(c, x, y, 14, 5.5);
+      c.fillStyle = 'rgba(255,255,255,.75)'; ell(c, x - 1, y - 1, 9, 2.6);
+    }
+    c.fillStyle = '#9b1f3a'; ell(c, 0, -25, 8, 4); c.fillStyle = '#c93058'; ell(c, -1, -26, 5, 2.4);
+    c.fillStyle = '#fffdf5'; for (const [x, y] of [[-22, -20], [24, -22], [-2, -29]]) circ(c, x, y, 0.9);
+  },
   // A wooden rowing boat pulled up on the bank, with an oar resting in it.
   canoe(c) {
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -2, 40, 6);
@@ -788,6 +822,16 @@ function chore(c, x, y, id, t, layer) {
     }
   } else if (id === 'olia') {
     if (layer === 0) {
+      // her cooking table, to her right: today's dish on it, steaming, with a spoon stirring
+      const R = curRecipe(), tx = 66;
+      c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, tx, 3, 30, 6);
+      c.fillStyle = '#7a4e26'; c.fillRect(tx - 24, -26, 4, 28); c.fillRect(tx + 20, -26, 4, 28);
+      c.fillStyle = '#b57a3e'; rr(c, tx - 30, -32, 60, 8, 3); c.fillStyle = '#d19a58'; rr(c, tx - 30, -33, 60, 4, 2);
+      drawIcon(c, W[R.dish].ic, tx - 2, -30, 54);
+      for (let i = 0; i < 3; i++) { const f = (t * 0.5 + i / 3) % 1; c.fillStyle = `rgba(255,255,255,${0.5 * (1 - f)})`; circ(c, tx + Math.sin(f * 6 + i * 2) * 5, -62 - f * 26, 4 + f * 6); }
+      const st = Math.sin(t * 3.4) * 7;
+      c.strokeStyle = '#9b6b3c'; c.lineWidth = 2.6; c.lineCap = 'round'; c.beginPath(); c.moveTo(tx + 20 + st, -66); c.lineTo(tx - 2 + st * 0.3, -38); c.stroke();
+      c.fillStyle = '#9b6b3c'; ell(c, tx + 21 + st, -67, 4, 2.6);
       // her flower bed, to her left
       c.fillStyle = '#8b6440'; ell(c, -62, 2, 34, 9); c.fillStyle = '#9c7350'; ell(c, -62, 0, 31, 7);
       const fl = [[-86, '#e2574c'], [-76, '#ffd23f'], [-66, '#ff7aa8'], [-56, '#ffffff'], [-46, '#9b6bd6'], [-38, '#e2574c'], [-81, '#ff7aa8'], [-61, '#ffd23f'], [-50, '#5aa9e6']];
@@ -1590,7 +1634,7 @@ function recipeList(R) {
   return `<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:6px">${R.needs.map(id => { const got = S.recipe.got.includes(id); return `<span style="position:relative;opacity:${got ? 1 : 0.4}"><img src="${iconURL(id)}" style="width:34px;height:34px" alt="">${got ? '<b style="position:absolute;right:-3px;bottom:-4px;color:#3f8a3a">✓</b>' : ''}</span>`; }).join('')}</div>`;
 }
 function talkOlia(npc, n, steps) {
-  const R = D.recipes[S.recipe.i], st = stage();
+  const R = curRecipe(), st = stage();
   if (S.recipe.started !== S.recipe.i) { steps.push(line(npc, 'recipe_' + R.id)); S.recipe.started = S.recipe.i; learn(R.dish); }
   const missing = () => R.needs.filter(x => !S.recipe.got.includes(x));
   const carrying = missing().filter(x => (S.bag[x] || 0) > 0);
@@ -1642,7 +1686,7 @@ function talk(npc) {
   if (!n.met) { steps.push(line(npc, 'intro')); n.met = true; }
   if (n.mad) return dialog(npc, [line(npc, 'angry')]);
   if (npc.id === 'olia') tutEvent('olia');
-  if (npc.id === 'olia' && D.recipes[S.recipe.i]) return talkOlia(npc, n, steps);
+  if (npc.id === 'olia') return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
   const quest = id => ({ uk: D.payLine.uk.replace('%s', W[id].acc || W[id].uk), en: D.payLine.en.replace('%s', (MASS.includes(id) ? 'some ' : 'a ') + W[id].en).replace('a a', 'an a').replace('a o', 'an o').replace('a e', 'an e'), clip: `qp_${npc.id}_${id}`, hint: (stage() < 2 ? `<img src="${iconURL(id)}" style="width:34px;height:34px;vertical-align:middle" alt=""> ` : '') + sourceHint(id) });
   if (n.q) {
@@ -1710,7 +1754,7 @@ function setGuide() {
     guideClip = 'p_' + s.p;
   } else if (active.length) {
     const n = active[0], q = S.npc[n.id].q;
-    const R = n.id === 'olia' ? D.recipes[S.recipe.i] : null;
+    const R = n.id === 'olia' ? curRecipe() : null;
     uk = R ? `${W[R.dish].uk} ${S.recipe.got.length}/${R.needs.length}: ${W[q].acc || W[q].uk}` : `${n.name}: ${W[q].acc || W[q].uk}${st < 2 && W[q].ic[0] !== '@' ? ' ' + W[q].ic : ''}`;
     full = R ? `Grandma Olia is making ${W[R.dish].en}. She needs ${W[q].en}.` : `${n.nameEn} will pay 6 ₴ for ${W[q].en}.`; en = st < 2 ? full : '';
     guideClip = R ? `q_${n.id}_${q}` : `qp_${n.id}_${q}`;
@@ -2425,7 +2469,7 @@ function storyClose() { $('#story').classList.remove('show'); sayToken++; for (c
 const A = {
   update() { location.reload(); },
   eatMeal() {
-    const R = D.recipes[S.recipe.i]; if (!R) return closeSheet();
+    const R = curRecipe(); if (!R) return closeSheet();
     say('p_duzhe_smachno'); learn(R.dish); give(R.dish); S.hearts += 3;   // a meal from Grandma earns love, not money
     S.recipe = { i: S.recipe.i + 1, got: [], started: -1 };
     hud(); save(); setGuide(); blip(990, 0.2);

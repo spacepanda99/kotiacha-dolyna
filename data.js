@@ -70,7 +70,11 @@ window.DATA = {
     { id: "harbuz", uk: "гарбуз", tr: "har-BUZ", en: "pumpkin", ic: "@pumpkin" },
     { id: "kukurudza", uk: "кукурудза", tr: "ku-ku-RU-dza", en: "corn", ic: "🌽", acc: "кукурудзу" },
     { id: "borshch", uk: "борщ", tr: "borshch", en: "borscht", ic: "@borshch", fact: { uk: "Борщ варять у кожній українській родині.", en: "Ukrainian borscht cooking was added to UNESCO's heritage list in 2022." } },
-    { id: "varenyky", uk: "вареники", tr: "va-RE-ny-ky", en: "varenyky (dumplings)", ic: "@varenyky" },
+    { id: "varenyky", uk: "вареники", tr: "va-RE-ny-ky", en: "varenyky (dumplings)", ic: "@varenyky", fact: { uk: "Вареники ліплять із тіста.", en: "Varenyky are dumplings filled with potato, cheese or cherries." } },
+    { id: "deruny", uk: "деруни", tr: "de-RU-ny", en: "potato pancakes (deruny)", ic: "@deruny", fact: { uk: "Деруни смажать із картоплі.", en: "Deruny are crispy fried potato pancakes, often eaten with sour cream." } },
+    { id: "holubtsi", uk: "голубці", tr: "ho-lub-TSI", en: "cabbage rolls (holubtsi)", ic: "@holubtsi", fact: { uk: "Голубці роблять із капусти.", en: "Holubtsi are cabbage leaves rolled around rice and filling, then simmered in tomato sauce." } },
+    { id: "syrnyky", uk: "сирники", tr: "SYR-ny-ky", en: "cheese pancakes (syrnyky)", ic: "@syrnyky", fact: { uk: "Сирники роблять із сиру.", en: "Syrnyky are small fried cottage-cheese pancakes, often served with sour cream or jam." } },
+    { id: "rys", uk: "рис", tr: "rys", en: "rice", ic: "🍚" },
     { id: "pyrih", uk: "пиріг", tr: "py-RIH", en: "pie", ic: "🥧" },
     { id: "chai", uk: "чай", tr: "chai", en: "tea", ic: "🍵" },
     { id: "voda", uk: "вода", tr: "vo-DA", en: "water", ic: "💧", acc: "воду" },
@@ -169,9 +173,15 @@ window.DATA = {
         recipe_borshch: { uk: "Я варю борщ! Допоможеш мені?", en: "I'm making borscht! Will you help me?" },
         ready_borshch: { uk: "Борщ готовий! Сідай, їж, сонечко!", en: "The borscht is ready! Sit down and eat, sunshine!" },
         recipe_varenyky: { uk: "А тепер — вареники! Допоможеш?", en: "And now, varenyky! Will you help?" },
-        ready_varenyky: { uk: "Вареники готові! Смачного!", en: "The varenyky are ready! Enjoy your meal!" }
+        ready_varenyky: { uk: "Вареники готові! Смачного!", en: "The varenyky are ready! Enjoy your meal!" },
+        recipe_deruny: { uk: "Сьогодні я смажу деруни. Допоможеш?", en: "Today I'm frying deruny. Will you help?" },
+        ready_deruny: { uk: "Деруни готові! Їж, поки гарячі!", en: "The deruny are ready! Eat them while they're hot!" },
+        recipe_holubtsi: { uk: "Тепер я роблю голубці. Допоможеш?", en: "Now I'm making holubtsi. Will you help?" },
+        ready_holubtsi: { uk: "Голубці готові! Смачного, сонечко!", en: "The holubtsi are ready! Enjoy, sunshine!" },
+        recipe_syrnyky: { uk: "А на десерт — сирники! Допоможеш?", en: "And for dessert, syrnyky! Will you help?" },
+        ready_syrnyky: { uk: "Сирники готові! Бери, поки теплі!", en: "The syrnyky are ready! Take them while they're warm!" }
       },
-      wants: ["kapusta", "kartoplia", "morkva", "tsybulia", "chasnyk", "pomidor", "sil", "yaitse", "maslo", "buriak", "boroshno", "syr"]
+      wants: ["kapusta", "kartoplia", "morkva", "tsybulia", "chasnyk", "pomidor", "sil", "yaitse", "maslo", "buriak", "boroshno", "syr", "rys", "med"]
     },
     {
       id: "taras", name: "Тарас", nameEn: "Taras", voice: "orus",
@@ -231,7 +241,10 @@ window.DATA = {
   // Grandma Olia's cooking. She asks for each ingredient in turn, then cooks the dish and you eat together.
   recipes: [
     { id: "borshch", dish: "borshch", needs: ["buriak", "kapusta", "kartoplia", "morkva", "tsybulia", "pomidor"] },
-    { id: "varenyky", dish: "varenyky", needs: ["boroshno", "kartoplia", "tsybulia", "syr", "maslo"] }
+    { id: "varenyky", dish: "varenyky", needs: ["boroshno", "kartoplia", "tsybulia", "syr", "maslo"] },
+    { id: "deruny", dish: "deruny", needs: ["kartoplia", "tsybulia", "yaitse", "boroshno", "sil"] },
+    { id: "holubtsi", dish: "holubtsi", needs: ["kapusta", "rys", "tsybulia", "morkva", "pomidor"] },
+    { id: "syrnyky", dish: "syrnyky", needs: ["syr", "yaitse", "boroshno", "med"] }
   ],
 
   // The valley's cats. Bring each one the treat it wants and it becomes your friend
@@ -276,7 +289,7 @@ window.DATA = {
   },
 
   shop: {
-    food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6, korovai: 10, paska: 10 },
+    food: { boroshno: 3, khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6, deruny: 6, holubtsi: 7, syrnyky: 6, rys: 3, korovai: 10, paska: 10 },
     seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
     home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, pysanka: 6, motanka: 8, tarilka: 10, vinok: 8, didukh: 10, vyshyvanka: 12, bandura: 20, kartyna: 10, dzerkalo: 10, hodynnyk: 10, kylym: 15 },
     // Toys and furniture for the cat friends (they use them).
