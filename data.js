@@ -1,0 +1,215 @@
+// Everything the game teaches: words, phrases, villagers, shop.
+// The voice script (tools/voice.mjs) reads this same file, so text and audio can't drift apart.
+//
+// Word fields: id, uk (Ukrainian), tr (how to say it, stressed syllable in CAPS), en,
+// ic (an emoji, or "@name" for a hand-drawn icon), acc (the "bring me ..." form, when it changes).
+window.DATA = {
+  words: [
+    // --- around the village
+    { id: "khata", uk: "хата", tr: "KHA-ta", en: "cottage", ic: "@khata", acc: "хату" },
+    { id: "parkan", uk: "паркан", tr: "par-KAN", en: "fence", ic: "@parkan" },
+    { id: "krynytsia", uk: "криниця", tr: "kry-NY-tsia", en: "well", ic: "@well", acc: "криницю" },
+    { id: "derevo", uk: "дерево", tr: "DE-re-vo", en: "tree", ic: "🌳" },
+    { id: "yablunia", uk: "яблуня", tr: "YA-blu-nia", en: "apple tree", ic: "@appletree", acc: "яблуню" },
+    { id: "kushch", uk: "кущ", tr: "kushch", en: "bush", ic: "@bush" },
+    { id: "kamin", uk: "камінь", tr: "KA-min", en: "stone", ic: "@stone" },
+    { id: "kvitka", uk: "квітка", tr: "KVIT-ka", en: "flower", ic: "🌷", acc: "квітку" },
+    { id: "soniashnyk", uk: "соняшник", tr: "SO-niash-nyk", en: "sunflower", ic: "🌻" },
+    { id: "hryb", uk: "гриб", tr: "hryb", en: "mushroom", ic: "🍄" },
+    { id: "stavok", uk: "ставок", tr: "sta-VOK", en: "pond", ic: "@pond" },
+    { id: "choven", uk: "човен", tr: "CHO-ven", en: "boat", ic: "🛶" },
+    { id: "tserkva", uk: "церква", tr: "TSERK-va", en: "church", ic: "@church", acc: "церкву" },
+    { id: "mlyn", uk: "млин", tr: "mlyn", en: "windmill", ic: "@mill" },
+    { id: "lavka", uk: "лавка", tr: "LAV-ka", en: "bench", ic: "@bench", acc: "лавку" },
+    { id: "leleka", uk: "лелека", tr: "le-LE-ka", en: "stork", ic: "@stork", acc: "лелеку" },
+    { id: "vulyk", uk: "вулик", tr: "VU-lyk", en: "beehive", ic: "@hive" },
+    { id: "rynok", uk: "ринок", tr: "RY-nok", en: "market", ic: "@stall" },
+    { id: "horod", uk: "город", tr: "ho-ROD", en: "vegetable garden", ic: "@plot" },
+    // --- animals
+    { id: "kit", uk: "кіт", tr: "kit", en: "cat", ic: "🐈" },
+    { id: "sobaka", uk: "собака", tr: "so-BA-ka", en: "dog", ic: "🐕" },
+    { id: "kurka", uk: "курка", tr: "KUR-ka", en: "hen", ic: "🐔" },
+    { id: "piven", uk: "півень", tr: "PI-ven", en: "rooster", ic: "🐓" },
+    { id: "korova", uk: "корова", tr: "ko-RO-va", en: "cow", ic: "🐄" },
+    { id: "kin", uk: "кінь", tr: "kin", en: "horse", ic: "🐎" },
+    { id: "koza", uk: "коза", tr: "ko-ZA", en: "goat", ic: "🐐" },
+    { id: "kachka", uk: "качка", tr: "KACH-ka", en: "duck", ic: "🦆" },
+    { id: "svynia", uk: "свиня", tr: "svy-NIA", en: "pig", ic: "🐖" },
+    { id: "bdzhola", uk: "бджола", tr: "bdzho-LA", en: "bee", ic: "🐝" },
+    { id: "metelyk", uk: "метелик", tr: "me-TE-lyk", en: "butterfly", ic: "🦋" },
+    { id: "zhaba", uk: "жаба", tr: "ZHA-ba", en: "frog", ic: "🐸" },
+    { id: "ryba", uk: "риба", tr: "RY-ba", en: "fish", ic: "🐟", acc: "рибу" },
+    // --- food
+    { id: "khlib", uk: "хліб", tr: "khlib", en: "bread", ic: "🍞" },
+    { id: "moloko", uk: "молоко", tr: "mo-lo-KO", en: "milk", ic: "🥛" },
+    { id: "syr", uk: "сир", tr: "syr", en: "cheese", ic: "🧀" },
+    { id: "yaitse", uk: "яйце", tr: "yai-TSE", en: "egg", ic: "🥚" },
+    { id: "med", uk: "мед", tr: "med", en: "honey", ic: "🍯" },
+    { id: "maslo", uk: "масло", tr: "MAS-lo", en: "butter", ic: "🧈" },
+    { id: "yabluko", uk: "яблуко", tr: "YA-blu-ko", en: "apple", ic: "🍎" },
+    { id: "hrusha", uk: "груша", tr: "HRU-sha", en: "pear", ic: "🍐", acc: "грушу" },
+    { id: "vyshnia", uk: "вишня", tr: "VYSH-nia", en: "cherry", ic: "🍒", acc: "вишню" },
+    { id: "polunytsia", uk: "полуниця", tr: "po-lu-NY-tsia", en: "strawberry", ic: "🍓", acc: "полуницю" },
+    { id: "kavun", uk: "кавун", tr: "ka-VUN", en: "watermelon", ic: "🍉" },
+    { id: "kartoplia", uk: "картопля", tr: "kar-TOP-lia", en: "potato", ic: "🥔", acc: "картоплю" },
+    { id: "morkva", uk: "морква", tr: "MORK-va", en: "carrot", ic: "🥕", acc: "моркву" },
+    { id: "kapusta", uk: "капуста", tr: "ka-PUS-ta", en: "cabbage", ic: "🥬", acc: "капусту" },
+    { id: "tsybulia", uk: "цибуля", tr: "tsy-BU-lia", en: "onion", ic: "🧅", acc: "цибулю" },
+    { id: "chasnyk", uk: "часник", tr: "chas-NYK", en: "garlic", ic: "🧄" },
+    { id: "pomidor", uk: "помідор", tr: "po-mi-DOR", en: "tomato", ic: "🍅" },
+    { id: "ohirok", uk: "огірок", tr: "o-hi-ROK", en: "cucumber", ic: "🥒" },
+    { id: "harbuz", uk: "гарбуз", tr: "har-BUZ", en: "pumpkin", ic: "🎃" },
+    { id: "kukurudza", uk: "кукурудза", tr: "ku-ku-RU-dza", en: "corn", ic: "🌽", acc: "кукурудзу" },
+    { id: "borshch", uk: "борщ", tr: "borshch", en: "borscht", ic: "🍲" },
+    { id: "varenyky", uk: "вареники", tr: "va-RE-ny-ky", en: "dumplings", ic: "🥟" },
+    { id: "pyrih", uk: "пиріг", tr: "py-RIH", en: "pie", ic: "🥧" },
+    { id: "chai", uk: "чай", tr: "chai", en: "tea", ic: "🍵" },
+    { id: "voda", uk: "вода", tr: "vo-DA", en: "water", ic: "💧", acc: "воду" },
+    { id: "sil", uk: "сіль", tr: "sil", en: "salt", ic: "🧂" },
+    // --- for the cottage
+    { id: "stil", uk: "стіл", tr: "stil", en: "table", ic: "@table" },
+    { id: "stilets", uk: "стілець", tr: "sti-LETS", en: "chair", ic: "🪑" },
+    { id: "lizhko", uk: "ліжко", tr: "LIZH-ko", en: "bed", ic: "🛏️" },
+    { id: "lampa", uk: "лампа", tr: "LAM-pa", en: "lamp", ic: "💡", acc: "лампу" },
+    { id: "kylym", uk: "килим", tr: "KY-lym", en: "rug", ic: "@rug" },
+    { id: "kartyna", uk: "картина", tr: "kar-TY-na", en: "painting", ic: "🖼️", acc: "картину" },
+    { id: "vazon", uk: "вазон", tr: "va-ZON", en: "potted plant", ic: "🪴" },
+    { id: "knyha", uk: "книга", tr: "KNY-ha", en: "book", ic: "📚", acc: "книгу" },
+    { id: "svichka", uk: "свічка", tr: "SVICH-ka", en: "candle", ic: "🕯️", acc: "свічку" },
+    { id: "hlechyk", uk: "глечик", tr: "HLE-chyk", en: "clay jug", ic: "🏺" },
+    { id: "dzerkalo", uk: "дзеркало", tr: "DZER-ka-lo", en: "mirror", ic: "🪞" },
+    { id: "hodynnyk", uk: "годинник", tr: "ho-DYN-nyk", en: "clock", ic: "🕰️" },
+    { id: "pich", uk: "піч", tr: "pich", en: "stove", ic: "@stove" },
+    { id: "rushnyk", uk: "рушник", tr: "rush-NYK", en: "embroidered towel", ic: "@rushnyk" },
+    { id: "chashka", uk: "чашка", tr: "CHASH-ka", en: "cup", ic: "☕", acc: "чашку" },
+    { id: "kvity", uk: "квіти", tr: "KVI-ty", en: "flowers", ic: "💐" },
+    // --- tools and things you carry
+    { id: "nasinnia", uk: "насіння", tr: "na-SIN-nia", en: "seeds", ic: "🌱" },
+    { id: "liika", uk: "лійка", tr: "LIY-ka", en: "watering can", ic: "@can", acc: "лійку" },
+    { id: "koshyk", uk: "кошик", tr: "KO-shyk", en: "basket", ic: "🧺" },
+    { id: "hroshi", uk: "гроші", tr: "HRO-shi", en: "money", ic: "💰" }
+  ],
+
+  // Phrases in the teacher's voice: things you say, and the guide's instructions.
+  phrases: [
+    { id: "pryvit", uk: "Привіт!", en: "Hi!" },
+    { id: "dobryi_den", uk: "Добрий день!", en: "Good day!" },
+    { id: "diakuiu", uk: "Дякую!", en: "Thank you!" },
+    { id: "bud_laska", uk: "Будь ласка.", en: "Please. / You're welcome." },
+    { id: "tak", uk: "Так.", en: "Yes." },
+    { id: "ni", uk: "Ні.", en: "No." },
+    { id: "do_pobachennia", uk: "До побачення!", en: "Goodbye!" },
+    { id: "dobre_diakuiu", uk: "Добре, дякую!", en: "Good, thanks!" },
+    { id: "chudovo", uk: "Чудово!", en: "Wonderful!" },
+    { id: "nepohano", uk: "Непогано.", en: "Not bad." },
+    { id: "shcho_tse", uk: "Що це?", en: "What is this?" },
+    { id: "skilky", uk: "Скільки коштує?", en: "How much is it?" },
+    { id: "os", uk: "Ось, будь ласка.", en: "Here you go." },
+    { id: "molodets", uk: "Молодець!", en: "Well done!" },
+    { id: "nove_slovo", uk: "Нове слово!", en: "A new word!" },
+    { id: "i_explore", uk: "Оглянь село.", en: "Look around the village." },
+    { id: "i_talk", uk: "Поговори з бабою Олею.", en: "Talk to Grandma Olia." },
+    { id: "i_plant", uk: "Посади насіння.", en: "Plant the seeds." },
+    { id: "i_water", uk: "Полий город.", en: "Water the garden." },
+    { id: "i_harvest", uk: "Збери врожай.", en: "Gather the harvest." },
+    { id: "i_market", uk: "Іди на ринок.", en: "Go to the market." },
+    { id: "i_decor", uk: "Прикрась хату.", en: "Decorate the cottage." },
+    { id: "i_free", uk: "Гуляй і допомагай сусідам.", en: "Wander, and help your neighbours." }
+  ],
+
+  // Villagers. voice = Gemini voice, style = how they should sound.
+  npcs: [
+    {
+      id: "olia", name: "Баба Оля", nameEn: "Grandma Olia", voice: "gacrux",
+      style: "A kind, warm elderly Ukrainian grandmother. Speaks Ukrainian slowly, clearly and lovingly.",
+      look: { skin: "#f3cfb0", shirt: "#ffffff", trim: "#d43a3a", skirt: "#7a3b3b", hair: "#cfcfcf", hat: "scarf", hatCol: "#d43a3a" },
+      lines: {
+        greet: { uk: "Добрий день, сонечко!", en: "Good day, sunshine!" },
+        intro: { uk: "Я — баба Оля. Я варю борщ.", en: "I'm Grandma Olia. I'm cooking borscht." },
+        how: { uk: "Як справи?", en: "How are you?" },
+        good: { uk: "Це добре!", en: "That's good!" },
+        thanks: { uk: "Дякую, сонечко! Ти молодець!", en: "Thank you, sunshine! Well done!" }
+      },
+      wants: ["kapusta", "kartoplia", "morkva", "tsybulia", "chasnyk", "pomidor", "sil", "yaitse", "maslo"]
+    },
+    {
+      id: "taras", name: "Тарас", nameEn: "Taras", voice: "orus",
+      style: "A relaxed, friendly Ukrainian fisherman in his forties. Speaks Ukrainian clearly, unhurried.",
+      look: { skin: "#eec39a", shirt: "#f7f3e8", trim: "#2c5fa8", skirt: "#3d5a80", hair: "#5a3a22", hat: "straw", hatCol: "#e8c66a" },
+      lines: {
+        greet: { uk: "Привіт! Гарний день, правда?", en: "Hi! A lovely day, isn't it?" },
+        intro: { uk: "Мене звати Тарас. Я ловлю рибу.", en: "My name is Taras. I catch fish." },
+        how: { uk: "Як справи?", en: "How are you?" },
+        good: { uk: "Це добре!", en: "That's good!" },
+        thanks: { uk: "О, дякую! Дуже смачно!", en: "Oh, thank you! Very tasty!" }
+      },
+      wants: ["khlib", "syr", "chai", "pyrih", "ohirok"]
+    },
+    {
+      id: "andriiko", name: "Андрійко", nameEn: "Andriiko", voice: "puck",
+      style: "A cheerful, playful young Ukrainian boy. Speaks Ukrainian brightly and clearly.",
+      look: { skin: "#f6d2b3", shirt: "#ffffff", trim: "#2e9e5b", skirt: "#3a7d44", hair: "#e0b34c", hat: "none", hatCol: "#000", small: true },
+      lines: {
+        greet: { uk: "Привіт! Пограймося?", en: "Hi! Shall we play?" },
+        intro: { uk: "Я — Андрійко. А це мій собака Бровко.", en: "I'm Andriiko. And this is my dog Brovko." },
+        how: { uk: "Як справи?", en: "How are you?" },
+        good: { uk: "Це добре!", en: "That's good!" },
+        thanks: { uk: "Ура! Дякую!", en: "Hooray! Thanks!" }
+      },
+      wants: ["yabluko", "hrusha", "vyshnia", "polunytsia", "kavun", "med"]
+    },
+    {
+      id: "bohdan", name: "Пан Богдан", nameEn: "Mr. Bohdan", voice: "algieba",
+      style: "A gentle, thoughtful older Ukrainian beekeeper. Speaks Ukrainian calmly and clearly.",
+      look: { skin: "#eabf98", shirt: "#fff8e6", trim: "#c98a1a", skirt: "#6b4f2a", hair: "#8a8a8a", hat: "straw", hatCol: "#f1dfa0" },
+      lines: {
+        greet: { uk: "Добрий день! Радий тебе бачити.", en: "Good day! Glad to see you." },
+        intro: { uk: "Я — пан Богдан. Це мої бджоли.", en: "I'm Mr. Bohdan. These are my bees." },
+        how: { uk: "Як справи?", en: "How are you?" },
+        good: { uk: "Це добре!", en: "That's good!" },
+        thanks: { uk: "Щиро дякую!", en: "Thank you kindly!" }
+      },
+      wants: ["kvitka", "soniashnyk", "voda", "harbuz", "kukurudza", "hryb"]
+    },
+    {
+      id: "oksana", name: "Оксана", nameEn: "Oksana", voice: "aoede",
+      style: "A bright, welcoming young Ukrainian market seller. Speaks Ukrainian clearly and cheerfully.",
+      look: { skin: "#f5cfae", shirt: "#ffffff", trim: "#d43a3a", skirt: "#2c5fa8", hair: "#6b3d1e", hat: "wreath", hatCol: "#ff7aa8" },
+      lines: {
+        greet: { uk: "Доброго ранку! Що бажаєте?", en: "Good morning! What would you like?" },
+        intro: { uk: "Я — Оксана. Тут усе свіже!", en: "I'm Oksana. Everything here is fresh!" },
+        thanks: { uk: "Дякую за допомогу!", en: "Thank you for the help!" }
+      },
+      wants: []
+    }
+  ],
+
+  // "Bring me, please, ..." — the item goes on the end in its acc form.
+  questLine: { uk: "Принеси мені, будь ласка, %s.", en: "Bring me, please, %s." },
+
+  // Prices are spoken by Oksana. Ukrainian counts money in three ways: 2-4 гривні, 5+ гривень.
+  prices: {
+    2: "Дві гривні.", 3: "Три гривні.", 4: "Чотири гривні.", 5: "П'ять гривень.", 6: "Шість гривень.",
+    8: "Вісім гривень.", 10: "Десять гривень.", 15: "П'ятнадцять гривень.", 20: "Двадцять гривень."
+  },
+
+  shop: {
+    food: { khlib: 5, moloko: 4, syr: 6, yaitse: 2, med: 8, maslo: 5, hrusha: 3, vyshnia: 3, kavun: 8, chai: 4, sil: 2, pyrih: 6, varenyky: 6, borshch: 6 },
+    seeds: { morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
+    home: { vazon: 6, chashka: 4, svichka: 4, knyha: 5, kvity: 5, lampa: 8, hlechyk: 8, rushnyk: 8, stilets: 10, kartyna: 10, dzerkalo: 10, hodynnyk: 10, stil: 15, kylym: 15, lizhko: 20, pich: 20 }
+  },
+
+  // Which cottage items hang on the wall (the rest stand on the floor).
+  wallItems: ["kartyna", "dzerkalo", "hodynnyk", "rushnyk"],
+
+  // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
+  ui: {
+    take: ["Взяти", "Take"], enter: ["Зайти", "Go in"], exit: ["Вийти", "Go out"], buy: ["Купити", "Buy"],
+    sell: ["Продати", "Sell"], plant: ["Посадити", "Plant"], water: ["Полити", "Water"], harvest: ["Зібрати", "Harvest"],
+    next: ["Далі", "Next"], close: ["Добре", "OK"], give: ["Дати", "Give"], putaway: ["Прибрати", "Put away"],
+    food: ["Їжа", "Food"], seeds: ["Насіння", "Seeds"], home: ["Для хати", "For the cottage"], help: ["Допомогти", "Help out"],
+    bag: ["Кошик", "Basket"], words: ["Словник", "Word book"], show: ["Показати", "Show English"],
+    empty: ["Порожньо", "Empty"], growing: ["Росте...", "Growing..."], thirsty: ["Хоче пити", "Needs water"],
+    start: ["Почати", "Start"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
+  }
+};
