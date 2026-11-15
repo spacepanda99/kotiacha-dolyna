@@ -867,7 +867,7 @@ function add(e) {
   add({ w: 'kin', x: 32.3, y: 13.0, s: 1.5, kind: 'animal', r: 1.0 });
   add({ w: 'koza', x: 28.6, y: 13.4, s: 1.1, kind: 'animal', r: 0.9 });
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
-  for (const [x, y] of [[4.9, 10.4], [12.4, 10.5], [24.1, 10.1], [26.9, 10.2], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
+  for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [23.4, 11.15], [26.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
   add({ w: 'pysanka', x: 26.2, y: 12.5, s: 0.6 });
   add({ w: 'bandura', x: 15.5, y: 19.5, s: 0.95 });
