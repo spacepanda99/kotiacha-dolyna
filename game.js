@@ -20,7 +20,7 @@ const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
 // ------------------------------------------------------------------ save
 const SAVE = 'kotiacha-dolyna-v1';
 const fresh = () => ({
-  coins: 10, hearts: 0, words: {}, bag: {}, seeds: { morkva: 3 }, home: {}, placed: {},
+  coins: 10, hearts: 0, words: {}, bag: { voda: 3 }, waterInit: 1, seeds: { morkva: 3 }, home: {}, placed: {},
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
   npc: {}, cats: {}, decor: {}, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
@@ -35,6 +35,8 @@ for (const [id, price] of Object.entries(D.shop.furnished)) {
   if (n) { S.coins += n * price; S.refunded = (S.refunded || 0) + n * price; }
   delete S.home[id]; delete S.decor[id];
 }
+if (!S.waterInit) { S.waterInit = 1; S.bag.voda = Math.max(S.bag.voda || 0, 3); }
+const WATER_MAX = 10, WELL_GIVES = 5;   // each trip to the well: +5 water, the can holds 10
 let saveT = 0;
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
 
@@ -694,7 +696,7 @@ function wordCard(id, o = {}) {
   say('w_' + id, ...(o.clips || []));
 }
 
-function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; save(); }
+function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; hud(); save(); }
 function take(e) {
   S.cd[e.k] = now() + e.cd * 1000;
   give(e.give); blip(880);
@@ -709,12 +711,20 @@ function interact(e) {
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); return shop(); }
   if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${stage() < 3 ? ' · This is your cottage.' : ''}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
+  if (e.w === 'krynytsia') {
+    const have = S.bag.voda || 0;
+    return wordCard('krynytsia', { note: `💧 ${have} / ${WATER_MAX}${stage() < 3 ? (have < WATER_MAX ? ' · Fill your can here.' : ' · Your can is full.') : ''}`, acts: have < WATER_MAX ? [{ k: 'fill', fn: () => {
+      const add = Math.min(WELL_GIVES, WATER_MAX - have); S.bag.voda = have + add; learn('voda'); hud(); bumpWater(); save(); closeSheet(); toast(`💧 +${add} ${W.voda.uk}  (${S.bag.voda} / ${WATER_MAX})`); say('w_voda'); blip(700, 0.12);
+    } }] : [] });
+  }
   if (e.give) return wordCard(e.w, { acts: ready(e) ? [{ k: 'take', fn: () => take(e) }] : [] });
   wordCard(e.w);
 }
 
 // ------------------------------------------------------------------ garden
+let noWater = false;
 function plotSheet(i) {
+  noWater = false;
   const p = S.plots[i];
   const fresh1 = learn('horod');
   cur = { plot: i };
@@ -726,14 +736,18 @@ function plotSheet(i) {
       ? `<div class="muted">${lab('plant')}</div><div class="grid">${seeds.map(k => `<button class="it" data-a="plant" data-v="${k}"><span class="q">${S.seeds[k]}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}</button>`).join('')}</div>`
       : `<div class="muted">🌱 ${D.ui.empty[0]}.<br>${stage() < 3 ? 'Buy seeds (насіння) at the market.' : 'Купи насіння на ринку.'}</div>`;
   } else if (!p.wet) {
-    body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">💧 ${D.ui.thirsty[0]}${stage() < 3 ? ' · ' + D.ui.thirsty[1] : ''}</div><div class="row">${btn('water', '', '💧 ' + lab('water'), 'blue')}</div></div>`;
+    const have = S.bag.voda || 0;
+    noWater = have === 0;
+    body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">💧 ${D.ui.thirsty[0]}${stage() < 3 ? ' · ' + D.ui.thirsty[1] : ''}</div>` +
+      (have ? `<div class="row">${btn('water', '', `💧 ${lab('water')}`, 'blue')}</div><div class="muted" style="padding:8px 0 0">💧 ${have} / ${WATER_MAX}</div>`
+        : `<div class="hint"><b>${PH.no_water.uk}</b>${stage() < 3 ? `<br>${PH.no_water.en}` : ''}</div><div class="row">${btn('goWell', '', '🪣 ' + lab('towell'), 'blue')}</div>`) + `</div>`;
   } else if (now() < p.ready) {
     body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">🌱 ${D.ui.growing[0]}${stage() < 3 ? ' · ' + D.ui.growing[1] : ''} (${Math.ceil((p.ready - now()) / 1000)} s)</div></div>`;
   } else {
     body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="row">${btn('harvest', '', lab('harvest'))}</div></div>`;
   }
   openSheet(head + body);
-  if (fresh1) say('w_horod');
+  if (fresh1) say('w_horod'); else if (noWater) say('p_no_water');
 }
 
 // ------------------------------------------------------------------ market
@@ -838,7 +852,7 @@ const TUT = [
   { p: 'i_explore', ev: 'word', need: 5, en: 'Tap things around you to learn their names.' },
   { p: 'i_talk', ev: 'olia', en: 'Follow the road east to the other cottage.' },
   { p: 'i_plant', ev: 'plant', en: 'Tap a garden bed beside your cottage.' },
-  { p: 'i_water', ev: 'water', en: 'Tap the bed again.' },
+  { p: 'i_water', ev: 'water', en: 'Tap the bed again. Each watering uses one 💧; refill at the well.' },
   { p: 'i_harvest', ev: 'harvest', en: 'Give it a moment, then tap the bed.' },
   { p: 'i_market', ev: 'buy', en: 'Find the striped stall on the square and buy something.' },
   { p: 'i_decor', ev: 'place', en: 'Go into your cottage and tap 🪑 Прикрасити (Decorate).' },
@@ -879,7 +893,8 @@ function setGuide() {
   }
   g.querySelector('.uk').textContent = uk; g.querySelector('.en').textContent = en;
 }
-function hud() { $('#coins').textContent = `💰 ${S.coins}`; $('#hearts').textContent = `❤️ ${S.hearts}`; }
+function hud() { $('#coins').textContent = `💰 ${S.coins}`; $('#hearts').textContent = `❤️ ${S.hearts}`; $('#water').textContent = `💧 ${S.bag.voda || 0}`; }
+function bumpWater() { const w = $('#water'); w.classList.remove('bump'); void w.offsetWidth; w.classList.add('bump'); }
 
 // ------------------------------------------------------------------ bag and word book
 function bagSheet() {
@@ -1102,7 +1117,6 @@ function drawWorld(t) {
         else if (now() < p.ready) { const g = 1 - (p.ready - now()) / 50e3; drawIcon(c, '🌱', 0, T * 0.25, T * (0.45 + 0.4 * Math.max(0, g))); }
         else drawIcon(c, W[p.c].ic, 0, T * 0.3 + Math.sin(t * 3 + e.i) * 3, T * 0.85);
       }
-      if (waterFx && waterFx.i === e.i) drawWatering(c, t - waterFx.t0);
       c.restore();
       continue;
     }
@@ -1113,6 +1127,8 @@ function drawWorld(t) {
     if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else drawIcon(c, e.ic, x, y - hop, s, { t, fruit: e.give === 'yabluko' ? ready(e) : true });
   }
+  // The watering can goes on top of everything, so the player never hides it.
+  if (waterFx) { const pe = ents.find(x => x.k === 'plot' + waterFx.i); if (pe) { c.save(); c.translate(pe.x * T, pe.y * T); c.scale(pe.s, pe.s); drawWatering(c, t - waterFx.t0); c.restore(); } }
   // Names of things you have met, when you stand near them. New or due things sparkle.
   for (const e of list) {
     if (e.me || e.kind === 'plot') continue;
@@ -1420,7 +1436,7 @@ const A = {
   next() { const d = dlg; if (!d) return closeSheet(); const st = d.steps[d.i]; dialog(d.npc, d.steps, d.i + 1); if (st.after) st.after(); },
   choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg === d) dialog(d.npc, d.steps, d.i + 1); }, 1500); },
   plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0)) return; S.seeds[v]--; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); closeSheet(); say('w_' + v); blip(600); tutEvent('plant'); save(); },
-  water() { const p = S.plots[cur.plot]; p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
+  water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
   harvest() { const p = S.plots[cur.plot], c = p.c; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].uk}`); tutEvent('harvest'); wordCard(c); save(); },
   tab(v) { shopTab = v; shopSel = null; shop(); },
   pick(v) { shopSel = v; learn(v); shop(); say('w_' + v); },
@@ -1445,6 +1461,7 @@ const A = {
     }
   },
   decorate() { decorSheet(); },
+  goWell() { const e = ents.find(x => x.w === 'krynytsia'); closeSheet(); walkTo(e.x, e.y, e); },
   decor(v) {
     if (BASICS.includes(v)) return;
     if (S.decor[v]) { delete S.decor[v]; S.home[v] = (S.home[v] || 0) + 1; blip(440); }

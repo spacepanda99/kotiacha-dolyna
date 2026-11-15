@@ -116,6 +116,7 @@ window.DATA = {
     { id: "nove_slovo", uk: "Нове слово!", en: "A new word!" },
     { id: "mur", uk: "Мур-мур! Тепер ми друзі.", en: "Purr! Now we are friends." },
     { id: "moia_khata", uk: "Моя хата.", en: "My cottage." },
+    { id: "no_water", uk: "Немає води. Іди до криниці.", en: "No water. Go to the well." },
     { id: "i_explore", uk: "Оглянь село.", en: "Look around the village." },
     { id: "i_talk", uk: "Поговори з бабою Олею.", en: "Talk to Grandma Olia." },
     { id: "i_plant", uk: "Посади насіння.", en: "Plant the seeds." },
@@ -251,6 +252,6 @@ window.DATA = {
     food: ["Їжа", "Food"], seeds: ["Насіння", "Seeds"], home: ["Для хати", "For the cottage"], help: ["Допомогти", "Help out"],
     bag: ["Кошик", "Basket"], words: ["Словник", "Word book"], show: ["Показати", "Show English"],
     empty: ["Порожньо", "Empty"], growing: ["Росте...", "Growing..."], thirsty: ["Хоче пити", "Needs water"],
-    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
+    start: ["Почати", "Start"], decor: ["Прикрасити", "Decorate"], fill: ["Набрати води", "Draw water"], towell: ["До криниці", "To the well"], notenough: ["Мало грошей", "Not enough money"], place: ["Поставити", "Place"]
   }
 };

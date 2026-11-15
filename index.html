@@ -26,6 +26,9 @@
   .pill.btn { padding:7px 11px; font-size:20px; }
   .pill.btn:active { transform:translateY(2px); box-shadow:0 1px 0 rgba(60,40,20,.18); }
   #hud .grow { flex:1; }
+  #water.bump { animation:bump .5s ease-out; }
+  @keyframes bump { 40% { transform:scale(1.25); } }
+  @media (max-width: 420px) { .pill { padding:6px 9px; font-size:15px; } .pill.btn { padding:6px 8px; font-size:18px; } #hud { gap:6px; } }
   #guide { position:fixed; top:calc(56px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(94vw, 560px); background:rgba(255,248,234,.95); border-radius:16px; padding:6px 12px; box-shadow:0 3px 0 rgba(60,40,20,.18); z-index:5; text-align:center; display:flex; gap:10px; align-items:center; }
   #guide .t { flex:1; min-width:0; }
   #guide .uk { font-weight:800; font-size:15px; line-height:1.2; }
@@ -135,6 +138,7 @@
 <div id="hud">
   <div class="pill" id="coins">💰 0</div>
   <div class="pill" id="hearts">❤️ 0</div>
+  <div class="pill" id="water">💧 0</div>
   <div class="grow"></div>
   <button class="pill btn" data-a="music" id="musicBtn" aria-label="Музика / Music">🎵</button>
   <button class="pill btn" data-a="words" aria-label="Словник / Word book">📖</button>
@@ -157,12 +161,12 @@
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v1.5</div>
+  <div class="ver">v1.6</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '1.5';</script>
-<script src="data.js?v=1.5"></script>
-<script src="game.js?v=1.5"></script>
+<script>window.APP_VERSION = '1.6';</script>
+<script src="data.js?v=1.6"></script>
+<script src="game.js?v=1.6"></script>
 </body>
 </html>
