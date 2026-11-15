@@ -95,6 +95,7 @@
 
   #start { position:fixed; inset:0; z-index:30; background:#bfe7fb; overflow:hidden; }
   #start #tc { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  #start .tmusic { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); width:46px; height:46px; border-radius:50%; background:rgba(255,248,234,.92); border:3px solid #4a2c1a; font-size:20px; box-shadow:0 3px 0 rgba(74,44,26,.35); z-index:2; }
   #start .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   #start .btns { position:absolute; left:0; right:0; bottom:calc(44px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; gap:10px; }
   #start .b { font-size:24px; padding:14px 46px; font-family:"Cozy", system-ui, sans-serif; letter-spacing:.5px; box-shadow:0 5px 0 #c98a1a, 0 8px 18px rgba(60,40,20,.25); border:3px solid #4a2c1a; }
@@ -150,17 +151,18 @@
 
 <div id="start">
   <canvas id="tc"></canvas>
+  <button class="tmusic" data-a="music" aria-label="Музика / Music">🎵</button>
   <h1 class="sr">Котяча Долина · Kotiacha Dolyna · Cat Valley</h1>
   <div class="btns">
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v0.8</div>
+  <div class="ver">v0.9</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '0.8';</script>
-<script src="data.js?v=0.8"></script>
-<script src="game.js?v=0.8"></script>
+<script>window.APP_VERSION = '0.9';</script>
+<script src="data.js?v=0.9"></script>
+<script src="game.js?v=0.9"></script>
 </body>
 </html>

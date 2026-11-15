@@ -85,14 +85,20 @@ const music = new Audio('music/theme.mp3');
 music.loop = true; music.preload = 'auto';
 let musicOn = true, duck = 1, musicVol = 0;
 try { musicOn = localStorage.getItem('kd-music') !== 'off'; } catch (e) {}
-function musicBtn() { const b = $('#musicBtn'); if (b) b.textContent = musicOn ? '🎵' : '🔇'; }
+function musicBtn() { for (const b of document.querySelectorAll('[data-a="music"]')) b.textContent = musicOn ? '🎵' : '🔇'; }
+// The theme starts on the title screen. An installed app is allowed to play sound straight away;
+// in a browser tab, Chrome waits for the first tap anywhere, so every tap tries again until it's playing.
+function startMusic() { if (musicOn && music.paused && !document.hidden) music.play().catch(() => {}); }
+document.addEventListener('pointerdown', startMusic, true);
+document.addEventListener('keydown', startMusic, true);
+addEventListener('load', () => { musicBtn(); startMusic(); });
 function musicTick(dt) {
   const target = musicOn ? 0.55 * duck : 0;
   musicVol += (target - musicVol) * Math.min(1, dt * 3);
   try { music.volume = Math.max(0, Math.min(1, musicVol)); } catch (e) {}
   if (!musicOn && musicVol < 0.01 && !music.paused) music.pause();
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) music.pause(); else if (musicOn && running) music.play().catch(() => {}); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) music.pause(); else startMusic(); });
 let actx = null;
 function blip(f = 660, d = 0.08) {
   try {
@@ -1099,10 +1105,10 @@ const A = {
       const inApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
       if (req && !inApp && !(document.fullscreenElement || document.webkitFullscreenElement)) { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); }
     } catch (e) {}
-    $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); if (musicOn) music.play().catch(() => {}); say('p_pryvit', guideClip); },
+    $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip); },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
-    musicBtn(); if (musicOn) music.play().catch(() => {}); toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
+    musicBtn(); if (musicOn) { musicVol = 0; music.play().catch(() => {}); } toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
   },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
   close: closeSheet,
@@ -1180,5 +1186,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf };
+window.__game = { S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
