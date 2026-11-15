@@ -532,6 +532,82 @@ function iconURL(id) {
 }
 
 // A little villager in an embroidered shirt. (x, y) is between the feet.
+// What the villagers are busy with. layer 0 is drawn behind them, layer 1 in front.
+// Bohdan puffs his smoker at the hives with bees about; Taras fishes; Grandma Olia waters her flower bed.
+function chore(c, x, y, id, t, layer) {
+  c.save(); c.translate(x, y); c.lineCap = 'round'; c.lineJoin = 'round';
+  if (id === 'bohdan') {
+    if (layer === 1) {
+      // a smoker in his left hand, puffing toward the hives
+      const hx = -17, hy = -27;
+      c.fillStyle = '#b9bec4'; rr(c, hx - 7, hy - 6, 12, 16, 3); c.fillStyle = '#8d939a'; c.fillRect(hx - 7, hy - 1, 12, 2);
+      c.fillStyle = '#9aa0a7'; poly(c, [[hx - 6, hy - 6], [hx + 4, hy - 6], [hx - 3, hy - 14], [hx - 6, hy - 14]]);
+      c.fillStyle = '#7a5532'; rr(c, hx + 4, hy - 2, 6, 9, 2);
+      for (let i = 0; i < 4; i++) {
+        const f = (t * 0.45 + i / 4) % 1;
+        c.fillStyle = `rgba(235,235,235,${0.75 * (1 - f)})`; circ(c, hx - 5 - f * 34, hy - 16 - f * 26 + Math.sin(t * 2 + i) * 3, 4 + f * 9);
+      }
+      // bees busy around him
+      for (let i = 0; i < 4; i++) {
+        const a = t * (1.6 + i * 0.3) + i * 1.7, bx = -10 + Math.cos(a) * (24 + i * 6), by = -62 + Math.sin(a * 1.3) * 16;
+        c.fillStyle = 'rgba(255,255,255,.8)'; ell(c, bx - 1, by - 3, 2.6, 1.6);
+        c.fillStyle = '#f2b51d'; ell(c, bx, by, 3.4, 2.4); c.fillStyle = '#3b2f2a'; c.fillRect(bx - 0.6, by - 2.2, 1.3, 4.4);
+      }
+    }
+  } else if (id === 'taras') {
+    if (layer === 1) {
+      // rod over the water from his right hand, float bobbing out on the pond
+      const hx = 16, hy = -27, tip = [74, -96], fl = [112, -2 + Math.sin(t * 2.2) * 1.5 + (Math.sin(t * 0.7) > 0.93 ? 4 : 0)];
+      c.strokeStyle = '#c8a46a'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(hx - 4, hy + 6); c.lineTo(tip[0], tip[1]); c.stroke();
+      c.fillStyle = '#5b6470'; circ(c, hx + 3, hy - 3, 3.5);
+      c.strokeStyle = 'rgba(70,70,70,.8)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(tip[0], tip[1]); c.quadraticCurveTo(tip[0] + 30, tip[1] + 40, fl[0], fl[1]); c.stroke();
+      const r = (t * 0.6) % 1; c.strokeStyle = `rgba(255,255,255,${0.7 * (1 - r)})`; c.lineWidth = 1.4; c.beginPath(); c.ellipse(112, 2, 6 + r * 14, (6 + r * 14) * 0.35, 0, 0, 7); c.stroke();
+      c.fillStyle = '#e2392f'; circ(c, fl[0], fl[1], 4.5); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(fl[0], fl[1], 4.5, 0, Math.PI); c.fill();
+    } else {
+      // a bucket for the catch
+      c.fillStyle = '#8a9099'; poly(c, [[-38, -18], [-22, -18], [-24, 0], [-36, 0]]); c.fillStyle = '#6d737b'; ell(c, -30, -18, 8, 2.6);
+      c.strokeStyle = '#6d737b'; c.lineWidth = 1.3; c.beginPath(); c.arc(-30, -18, 8, Math.PI, 0); c.stroke();
+    }
+  } else if (id === 'oksana') {
+    if (layer === 1) {
+      // sweeping in front of her stall: a besom swishing side to side, little dust puffs
+      const sw = Math.sin(t * 3.2), a = 0.25 + sw * 0.35;
+      c.save(); c.translate(15, -27); c.rotate(a);
+      c.strokeStyle = '#9b6b3c'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -10); c.lineTo(0, 22); c.stroke();
+      c.fillStyle = '#d9b45a'; poly(c, [[-3, 20], [3, 20], [9, 34], [-9, 34]]);
+      c.strokeStyle = '#b8913e'; c.lineWidth = 1; for (const dx of [-5, 0, 5]) { c.beginPath(); c.moveTo(dx * 0.4, 22); c.lineTo(dx, 34); c.stroke(); }
+      c.fillStyle = '#c23b2f'; c.fillRect(-3, 18, 6, 2.5);
+      c.restore();
+      const bx = 15 - Math.sin(a) * 31;
+      for (let i = 0; i < 3; i++) { const f = (t * 1.6 + i / 3) % 1; c.fillStyle = `rgba(214,190,140,${0.55 * (1 - f)})`; circ(c, bx - sw * f * 14 + (i - 1) * 4, 2 - f * 10, 2.5 + f * 4); }
+    }
+  } else if (id === 'olia') {
+    if (layer === 0) {
+      // her flower bed, to her left
+      c.fillStyle = '#8b6440'; ell(c, -62, 2, 34, 9); c.fillStyle = '#9c7350'; ell(c, -62, 0, 31, 7);
+      const fl = [[-86, '#e2574c'], [-76, '#ffd23f'], [-66, '#ff7aa8'], [-56, '#ffffff'], [-46, '#9b6bd6'], [-38, '#e2574c'], [-81, '#ff7aa8'], [-61, '#ffd23f'], [-50, '#5aa9e6']];
+      fl.forEach(([fx, col], i) => {
+        const fy = i > 5 ? 6 : -1, h = 16 + (i % 3) * 5, sway = Math.sin(t * 1.4 + i) * 1.5;
+        c.strokeStyle = '#4f8f3a'; c.lineWidth = 2; c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + sway, fy - h); c.stroke();
+        c.fillStyle = '#5fa046'; ell(c, fx + 3, fy - h * 0.45, 4, 1.8);
+        c.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k * 1.2566; circ(c, fx + sway + Math.cos(a) * 3.4, fy - h + Math.sin(a) * 3.4, 2.6); }
+        c.fillStyle = '#f2b51d'; circ(c, fx + sway, fy - h, 2);
+      });
+    } else {
+      // watering can tipped over the bed, with water drops falling
+      const tilt = 0.35 + Math.sin(t * 1.1) * 0.08;
+      c.save(); c.translate(-18, -26); c.rotate(-tilt);
+      c.fillStyle = '#5aa0c8'; rr(c, -9, -7, 18, 15, 4); c.fillStyle = '#4a86a8'; c.fillRect(-9, -2, 18, 2);
+      c.strokeStyle = '#5aa0c8'; c.lineWidth = 3; c.beginPath(); c.moveTo(-8, 0); c.lineTo(-22, -9); c.stroke();
+      c.fillStyle = '#4a86a8'; ell(c, -23, -9, 3, 2);
+      c.strokeStyle = '#4a86a8'; c.lineWidth = 2; c.beginPath(); c.arc(3, -7, 6, Math.PI, 0); c.stroke();
+      c.restore();
+      c.fillStyle = 'rgba(120,190,240,.85)';
+      for (let i = 0; i < 6; i++) { const f = (t * 1.6 + i / 6) % 1; ell(c, -40 - i % 3 * 4 - f * 6, -34 + f * 32, 1.3, 2.4); }
+    }
+  }
+  c.restore();
+}
 function person(c, x, y, L, t, moving, sc) {
   const k = (L.small ? 0.78 : 1) * (sc || 1);
   c.save(); c.translate(x, y); c.scale(k, k);
@@ -644,10 +720,10 @@ function add(e) {
   // Villagers.
   add({ w: 'khata', k: 'n_olia', x: 24.5, y: 12.7, kind: 'npc', npc: 'olia', s: 1.3 });
   add({ w: 'khata', k: 'n_oksana', x: 19.5, y: 18.1, kind: 'npc', npc: 'oksana', s: 1.3 });
-  add({ w: 'khata', k: 'n_taras', x: 25.2, y: 20.9, kind: 'npc', npc: 'taras', s: 1.3 });
+  add({ w: 'khata', k: 'n_taras', x: 25.3, y: 21.2, kind: 'npc', npc: 'taras', s: 1.3 });
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
   add({ w: 'sobaka', x: 15.7, y: 21.3, kind: 'animal', r: 1.0 });
-  add({ w: 'khata', k: 'n_bohdan', x: 6.2, y: 21.3, kind: 'npc', npc: 'bohdan', s: 1.3 });
+  add({ w: 'khata', k: 'n_bohdan', x: 9.1, y: 20.4, kind: 'npc', npc: 'bohdan', s: 1.3 });
   for (let i = ents.length - 1; i >= 0; i--) if (ents[i].w === 'kit') ents.splice(i, 1);
   for (const ct of D.cats) add({ w: ct.word, k: 'cat_' + ct.id, kind: 'animal', an: 'cat', cat: ct.id, v: ct.v, x: ct.x, y: ct.y, r: 1.3 });
   let ducks = 0;
@@ -1595,7 +1671,7 @@ function drawWorld(t) {
   for (const e of list) {
     const x = e.x * T, y = e.y * T;
     if (e.me) { c.save(); c.translate(x, y); c.scale(P.face, 1); person(c, 0, 0, ME, t, P.moving, 1); c.restore(); continue; }
-    if (e.kind === 'npc') { person(c, x, y, NPC[e.npc].look, t + e.x, false, 1); continue; }
+    if (e.kind === 'npc') { chore(c, x, y, e.npc, t, 0); person(c, x, y, NPC[e.npc].look, t + e.x, false, 1); chore(c, x, y, e.npc, t, 1); continue; }
     if (e.kind === 'pond') continue;
     if (e.kind === 'plot') {
       // Everything in a bed is drawn at bed scale, so bigger beds get bigger crops too.

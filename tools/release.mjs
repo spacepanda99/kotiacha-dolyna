@@ -1,12 +1,12 @@
 // Stamps a new version number everywhere it lives, so phones notice and update themselves.
-//   node tools/release.mjs 0.8
+//   node tools/release.mjs 41      (whole numbers, going up by one each release)
 // Updates: the label on the title screen, window.APP_VERSION, the ?v= on the scripts,
 // version.json (what running copies check), the offline cache name in sw.js, and 404.html.
 import fs from 'node:fs';
 import path from 'node:path';
 const root = path.resolve(path.dirname(decodeURIComponent(new URL(import.meta.url).pathname).replace(/^\/([A-Za-z]:)/, '$1')), '..');
 const v = process.argv[2];
-if (!/^\d+\.\d+(\.\d+)?$/.test(v || '')) { console.log('usage: node tools/release.mjs <version, e.g. 0.8>'); process.exit(1); }
+if (!/^\d+(\.\d+)*$/.test(v || '')) { console.log('usage: node tools/release.mjs <version, e.g. 41>'); process.exit(1); }
 const f = p => path.join(root, p);
 let html = fs.readFileSync(f('index.html'), 'utf8');
 html = html.replace(/<div class="ver">v[\d.]+<\/div>/, `<div class="ver">v${v}</div>`)
