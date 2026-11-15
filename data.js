@@ -17,7 +17,7 @@ window.DATA = {
     { id: "soniashnyk", uk: "соняшник", tr: "SO-niash-nyk", en: "sunflower", ic: "🌻" },
     { id: "hryb", uk: "гриб", tr: "hryb", en: "mushroom", ic: "🍄" },
     { id: "stavok", uk: "ставок", tr: "sta-VOK", en: "pond", ic: "@pond" },
-    { id: "choven", uk: "човен", tr: "CHO-ven", en: "boat", ic: "🛶" },
+    { id: "choven", uk: "човен", tr: "CHO-ven", en: "boat", ic: "@canoe" },
     { id: "tserkva", uk: "церква", tr: "TSERK-va", en: "church", ic: "@church", acc: "церкву" },
     { id: "mlyn", uk: "млин", tr: "mlyn", en: "windmill", ic: "@mill" },
     { id: "lavka", uk: "лавка", tr: "LAV-ka", en: "bench", ic: "@bench", acc: "лавку" },

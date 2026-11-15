@@ -446,6 +446,18 @@ const DRAW = {
     c.fillStyle = dark; circ(c, 26.5, -31, 0.9);
     c.restore();
   },
+  // A wooden rowing boat pulled up on the bank, with an oar resting in it.
+  canoe(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -2, 40, 6);
+    c.fillStyle = '#8a5a32'; c.beginPath(); c.moveTo(-44, -22); c.quadraticCurveTo(-30, 0, 0, -1); c.quadraticCurveTo(30, 0, 44, -22); c.closePath(); c.fill();
+    c.fillStyle = '#a8703f'; c.beginPath(); c.moveTo(-40, -21); c.quadraticCurveTo(-28, -5, 0, -6); c.quadraticCurveTo(28, -5, 40, -21); c.closePath(); c.fill();
+    c.strokeStyle = '#7a4c28'; c.lineWidth = 1.2; for (const yy of [-10, -15]) { c.beginPath(); c.moveTo(-34, yy - 4); c.quadraticCurveTo(0, yy + 6, 34, yy - 4); c.stroke(); }
+    c.fillStyle = '#5e3a1e'; ell(c, 0, -22, 42, 4.5); c.fillStyle = '#3f2a1a'; ell(c, 0, -21.5, 37, 2.8);
+    c.fillStyle = '#c99760'; c.fillRect(-4, -25, 8, 4);
+    c.strokeStyle = '#d9b07a'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(-26, -34); c.lineTo(22, -18); c.stroke();
+    c.fillStyle = '#d9b07a'; c.save(); c.translate(26, -17); c.rotate(0.32); ell(c, 0, 0, 8, 3.5); c.restore();
+    c.fillStyle = '#d43a3a'; c.fillRect(-38, -24, 6, 2); c.fillRect(32, -24, 6, 2);
+  },
   // A floor lamp: wooden base and pole, a cream fabric shade with an embroidered band, and a soft glow.
   floorlamp(c) {
     c.fillStyle = '#6b4a2a'; ell(c, 0, -3, 15, 4.5);
@@ -654,7 +666,14 @@ const solid = Array.from({ length: MH }, () => new Uint8Array(MW));
 const block = (x, y) => { if (x >= 0 && y >= 0 && x < MW && y < MH) solid[y][x] = 1; };
 const rect = (x0, y0, x1, y1) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) block(x, y); };
 const POND = { x: 29.5, y: 20.5, rx: 3.7, ry: 2.6 };
-const inPond = (x, y, g = 0) => ((x - POND.x) / (POND.rx + g)) ** 2 + ((y - POND.y) / (POND.ry + g)) ** 2 < 1;
+// The pond's edge wobbles with the angle, so it is not a perfect oval.
+const pondWob = a => 1 + 0.11 * Math.sin(2 * a + 0.8) + 0.07 * Math.sin(3 * a + 2.4) + 0.04 * Math.sin(5 * a + 1.1);
+const inPond = (x, y, g = 0) => { const dx = (x - POND.x) / POND.rx, dy = (y - POND.y) / POND.ry; return Math.hypot(dx, dy) < pondWob(Math.atan2(dy, dx)) * (1 + g / 3.1); };
+function pondPath(c, grow) {
+  c.beginPath();
+  for (let i = 0; i <= 72; i++) { const a = i / 72 * Math.PI * 2, w = pondWob(a); const px = (POND.x + Math.cos(a) * (POND.rx * w + grow)) * T, py = (POND.y + Math.sin(a) * (POND.ry * w + grow)) * T; i ? c.lineTo(px, py) : c.moveTo(px, py); }
+  c.closePath(); c.fill();
+}
 const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (x === 18 && y >= 6 && y <= 23) || (x === 7 && y >= 11 && y <= 13) || (x === 25 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
@@ -697,7 +716,7 @@ function add(e) {
   add({ w: 'lavka', x: 16.5, y: 18.9, s: 1.3, solid: true });
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
-  add({ w: 'choven', x: 31.7, y: 22.75, s: 1.5, flat: true });
+  add({ w: 'choven', x: 32.2, y: 22.75, s: 1.4, flat: true });
   add({ w: 'ryba', x: 28.3, y: 21.6, s: 0.8, kind: 'animal', r: 0.8, water: true, give: 'ryba', cd: 60, hide: true });
   add({ w: 'kachka', x: 30.6, y: 19.4, kind: 'animal', r: 1.0, water: true });
   add({ w: 'kachka', x: 28.6, y: 19.9, kind: 'animal', r: 0.8, water: true });
@@ -746,8 +765,8 @@ const ground = document.createElement('canvas');
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (isRoad(x, y)) { c.fillStyle = '#ecd9a6'; rr(c, x * T - 5, y * T - 5, T + 10, T + 10, 16); }
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (isRoad(x, y)) { c.fillStyle = '#f5e6bd'; for (let i = 0; i < 3; i++) ell(c, x * T + r() * T, y * T + r() * T, 5, 3); }
   for (let i = 0; i < 260; i++) { const x = r() * ground.width, y = r() * ground.height; if (isRoad(Math.floor(x / T), Math.floor(y / T))) continue; c.fillStyle = pick(['#ffffff', '#ffe36e', '#ffb3c7']); circ(c, x, y, 2.4); }
-  c.fillStyle = '#d9c489'; ell(c, POND.x * T, POND.y * T, (POND.rx + 0.35) * T, (POND.ry + 0.35) * T);
-  c.fillStyle = '#6cc3e8'; ell(c, POND.x * T, POND.y * T, POND.rx * T, POND.ry * T);
+  c.fillStyle = '#d9c489'; pondPath(c, 0.35);
+  c.fillStyle = '#6cc3e8'; pondPath(c, 0);
   c.fillStyle = '#8fd4f0'; ell(c, (POND.x - 1) * T, (POND.y - 0.8) * T, 1.4 * T, 0.5 * T);
   c.fillStyle = '#5fb760'; for (const [x, y] of [[27.2, 21.9], [31.6, 19.2], [32.3, 21.3]]) ell(c, x * T, y * T, 14, 8);
 })();
@@ -1685,6 +1704,14 @@ function drawWorld(t) {
         else if (now() < p.ready) { const g = 1 - (p.ready - now()) / 50e3; drawIcon(c, '🌱', 0, T * 0.25, T * (0.45 + 0.4 * Math.max(0, g))); }
         else drawIcon(c, W[p.c].ic, 0, T * 0.3 + Math.sin(t * 3 + e.i) * 3, T * 0.85);
       }
+      c.restore();
+      continue;
+    }
+    if (e.w === 'ryba') {
+      const dir = e.face === -1 ? -1 : 1, wig = Math.sin(t * (e.walk ? 9 : 3) + e.hx) * 0.35, k = e.s;
+      c.save(); c.translate(x, y - 6); c.scale(dir * k, k);
+      c.fillStyle = 'rgba(28,70,105,.42)'; ell(c, 0, 0, 20, 8);
+      c.save(); c.translate(-17, 0); c.rotate(wig); c.beginPath(); c.moveTo(0, 0); c.lineTo(-13, -8); c.lineTo(-13, 8); c.closePath(); c.fill(); c.restore();
       c.restore();
       continue;
     }
