@@ -2170,7 +2170,7 @@ function drawWorld(t) {
     if (e.kind === 'npc') {
       const n = S.npc[e.npc], top = y - T * 1.45;
       if (near && n && n.met) label(c, NPC[e.npc].name, x, y + 16);
-      const bub = n && n.mad ? '😠' : e.npc === 'oksana' ? '🧺' : n && n.q ? (stage() < 2 && W[n.q].ic[0] !== '@' ? W[n.q].ic : '❔') : '💬';
+      const bub = n && n.mad ? '😠' : e.npc === 'oksana' ? '🧺' : n && n.q ? W[n.q].ic : '💬';
       bubble(c, x, top + Math.sin(t * 2.5 + e.x) * 3, 19);
       drawIcon(c, bub, x, top + 12 + Math.sin(t * 2.5 + e.x) * 3, 27);
       continue;
@@ -2179,7 +2179,7 @@ function drawWorld(t) {
     if (e.cat) {
       const ct = D.cats.find(k => k.id === e.cat), top = y - T * 0.85 + Math.sin(t * 2.5 + e.hx) * 2;
       if (S.cats[e.cat]) drawIcon(c, '❤️', x, top + 8, 18);
-      else { bubble(c, x, top, 15); drawIcon(c, stage() < 2 && W[ct.wants].ic[0] !== '@' ? W[ct.wants].ic : '❔', x, top + 9, 21); }
+      else { bubble(c, x, top, 15); drawIcon(c, W[ct.wants].ic, x, top + 9, 21); }
       if (near && S.words[e.w]) label(c, S.cats[e.cat] ? ct.name : W[e.w].uk, x, y + 16);
       continue;
     }
