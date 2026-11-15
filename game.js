@@ -922,7 +922,7 @@ function wordsSheet() {
 // A drawn room, wider than a phone screen: swipe left and right to look around. Everything has its own
 // natural spot (stove in the corner, bed along the wall, chair tucked under the table, cup on the
 // windowsill), so decorating is just: open Прикрасити, tap an item.
-let mode = 'world', roomX = 0;
+let mode = 'world', roomX = 0, tour = null;
 // x: across the room (0 = left end, 1 = right end); y: down the screen (the wall meets the floor at 0.56);
 // s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
@@ -960,11 +960,14 @@ function decorRect(id) {
 function enterHome() {
   closeSheet(); mode = 'home';
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#homebar').style.display = 'flex';
-  roomX = DECOR.stil.x * roomW() - cv.width / 2; clampPan();
-  if (panMax() > 10 && !S.panTold) { S.panTold = 1; save(); setTimeout(() => toast('👆 ← → Проведи пальцем · Swipe to look around'), 600); }
+  const mid = DECOR.stil.x * roomW() - cv.width / 2;
+  roomX = mid; clampPan();
+  // The first few times in, the view glides from one end of the room to the other and settles at the table,
+  // so it's clear there's more to see. Touching the screen stops it.
+  if (panMax() > 10 && (S.tours || 0) < 3) { S.tours = (S.tours || 0) + 1; save(); roomX = 0; tour = { t0: nowT, mid }; }
   blip(520);
 }
-function exitHome() { mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
+function exitHome() { tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
 function homeTap(sx, py) {
   const px = sx + roomX;
   const friends = D.cats.filter(ct => S.cats[ct.id]);
@@ -987,6 +990,14 @@ function decorSheet() {
 }
 function drawHome(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
+  if (tour) {
+    const a = t - tour.t0, ease = k => k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2, max = panMax();
+    if (a < 0.5) roomX = 0;
+    else if (a < 2.6) roomX = ease((a - 0.5) / 2.1) * max;
+    else if (a < 3.0) roomX = max;
+    else if (a < 4.2) roomX = max + ease((a - 3.0) / 1.2) * (tour.mid - max);
+    else { roomX = tour.mid; tour = null; }
+  }
   clampPan();
   c.save(); c.translate(-roomX, 0);
   // back wall, beams, embroidered border
@@ -1028,11 +1039,6 @@ function drawHome(t) {
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
   }
   c.restore();
-  // soft arrows at the edges while there's more room to see
-  const pulse = 0.55 + 0.25 * Math.sin(t * 3), ay = h * 0.68, as = u * 0.05;
-  c.fillStyle = `rgba(74,44,26,${pulse})`;
-  if (roomX > 4) poly(c, [[u * 0.025, ay], [u * 0.025 + as, ay - as], [u * 0.025 + as, ay + as]]);
-  if (roomX < panMax() - 4) poly(c, [[w - u * 0.025, ay], [w - u * 0.025 - as, ay - as], [w - u * 0.025 - as, ay + as]]);
 }
 
 // ------------------------------------------------------------------ the world, drawn
@@ -1380,7 +1386,7 @@ function hitEnt(wx, wy) {
   return best;
 }
 let down = null;
-cv.addEventListener('pointerdown', ev => { down = { x: ev.clientX, y: ev.clientY, t: now(), rx: roomX }; });
+cv.addEventListener('pointerdown', ev => { tour = null; down = { x: ev.clientX, y: ev.clientY, t: now(), rx: roomX }; });
 // Inside the cottage, dragging pans the room.
 cv.addEventListener('pointermove', ev => {
   if (!down || mode !== 'home' || sheetOpen()) return;
@@ -1449,6 +1455,7 @@ const A = {
   words: wordsSheet, bag: bagSheet,
   guide() { say(guideClip); },
   exitHome,
+  enterHome,
   hear(v) { say(v); },
   hear2(v) { say('w_' + v, 'p_bud_laska'); },
   hearItem(v) { learn(v); say('w_' + v); },
