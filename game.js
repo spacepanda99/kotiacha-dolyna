@@ -1029,7 +1029,7 @@ let mode = 'world', roomX = 0, tour = null;
 // s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
   // against the back wall, left to right
-  pich: { x: 0.07, y: 0.578, s: 0.46, z: 1 }, hlechyk: { x: 0.165, y: 0.582, s: 0.21, z: 1 },
+  pich: { x: 0.082, y: 0.578, s: 0.6, z: 1 }, hlechyk: { x: 0.197, y: 0.585, s: 0.3, z: 1 },
   polytsia: { x: 0.44, y: 0.582, s: 0.55, z: 1 },
   lampa: { x: 0.64, y: 0.582, s: 0.56, z: 1 },
   kihtetochka: { x: 0.745, y: 0.58, s: 0.52, z: 1 },
@@ -1042,7 +1042,7 @@ const DECOR = {
   // cat bed and toys on the floor near the cat tree
   lezhanka: { x: 0.79, y: 0.87, s: 0.3, z: 3 }, miachyk: { x: 0.68, y: 0.9, s: 0.12, z: 4 }, myshka: { x: 0.3, y: 0.9, s: 0.15, z: 4 },
   // walls: mirror between stove and window, painting centred between shelf and lamp, the рушник dressing the window
-  dzerkalo: { x: 0.205, y: 0.4, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.548, y: 0.42, s: 0.2, z: 0, wall: true },
+  dzerkalo: { x: 0.215, y: 0.37, s: 0.15, z: 0, wall: true }, kartyna: { x: 0.548, y: 0.42, s: 0.2, z: 0, wall: true },
   rushnyk: { win: 0, y: 0.37, s: 0.24, z: 1, wall: true, fit: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
@@ -1089,7 +1089,7 @@ function homeTap(sx, py) {
 }
 function catSpot(i) {
   // The first friend curls up in the cat bed, the second sits on top of the cat tree, if they're in the room.
-  if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx, y: r.by - r.sz * 0.12, s: roomU() * 0.22 }; }
+  if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: roomU() * 0.3, sleep: true }; }
   if (i === 1 && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: roomU() * 0.16 }; }
   const xs = [0.55, 0.25, 0.64, 0.12, 0.86, 0.36]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
 }
@@ -1125,6 +1125,43 @@ function windowRushnyk(c, wx, ww, wt, wb, u) {
     c.fillStyle = red; const cx = x0 + end / 2, cy = y1 - H * 0.32, d = end * 0.32; poly(c, [[cx, cy - d], [cx + d, cy], [cx, cy + d], [cx - d, cy]]);
     c.strokeStyle = '#e8dcc6'; c.lineWidth = 1; for (let x = x0 + 2; x < x0 + end; x += 3) { c.beginPath(); c.moveTo(x, y1); c.lineTo(x, y1 + H * 0.05); c.stroke(); }
   }
+}
+// A cat curled up asleep: body in a loaf, tail wrapped round the front, head resting with eyes closed,
+// slow breathing, and little z's drifting up.
+function sleepingCat(c, x, y, s, C, t) {
+  const k = s / 100, breathe = 1 + Math.sin(t * 1.6) * 0.035;
+  c.save(); c.translate(x, y); c.scale(k, k);
+  c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 3.2;
+  c.save(); c.scale(1, breathe);
+  c.fillStyle = C.body; c.beginPath(); c.ellipse(4, -20, 36, 20, 0, 0, 7); c.fill();
+  c.save(); c.clip(); for (const [dx, dy, r, col] of C.pb) { c.fillStyle = C[col]; circ(c, dx * 1.1 + 6, dy * 0.5, r * 1.1); } c.restore();
+  c.beginPath(); c.ellipse(4, -20, 36, 20, 0, 0, 7); c.stroke();
+  c.restore();
+  // tail around the front
+  c.beginPath(); c.moveTo(38, -14); c.quadraticCurveTo(30, 4, -2, 0); c.quadraticCurveTo(-22, -2, -30, -8);
+  c.lineWidth = 11; c.strokeStyle = INK; c.stroke(); c.lineWidth = 7; c.strokeStyle = C.tail; c.stroke();
+  c.lineWidth = 3.2; c.strokeStyle = INK;
+  // head resting at the front left
+  for (const dir of [-1, 1]) {
+    c.fillStyle = dir > 0 && C.earR !== 'body' ? C[C.earR] : C.body;
+    c.beginPath(); c.moveTo(-24 + dir * 6, -36); c.lineTo(-24 + dir * 12, -51); c.lineTo(-24 + dir * 16, -32); c.closePath(); c.fill(); c.stroke();
+  }
+  c.fillStyle = C.body; c.beginPath(); c.ellipse(-24, -24, 17, 15, 0, 0, 7); c.fill();
+  c.save(); c.clip(); for (const [dx, dy, r, col] of C.ph) { c.fillStyle = C[col]; circ(c, -24 + dx * 0.7, -24 + (dy + 70) * 0.7, r * 0.75); } c.restore();
+  c.beginPath(); c.ellipse(-24, -24, 17, 15, 0, 0, 7); c.stroke();
+  c.lineWidth = 2.2; for (const ex of [-30, -18]) { c.beginPath(); c.arc(ex, -26, 3.6, 0.1 * Math.PI, 0.9 * Math.PI); c.stroke(); }
+  c.fillStyle = '#e8708a'; poly(c, [[-26, -20], [-22, -20], [-24, -18]]);
+  c.fillStyle = '#f08aa0'; circ(c, -35, -20, 2.4); circ(c, -13, -20, 2.4);
+  // z z z
+  c.fillStyle = INK; c.font = '900 14px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  for (let i = 0; i < 3; i++) {
+    const ph = ((t * 0.45) + i / 3) % 1;
+    c.globalAlpha = Math.sin(ph * Math.PI) * 0.8;
+    c.font = `900 ${10 + ph * 10}px system-ui, sans-serif`;
+    c.fillText('z', -8 + ph * 20 + Math.sin(ph * 6) * 3, -50 - ph * 40);
+  }
+  c.globalAlpha = 1;
+  c.restore();
 }
 function drawHome(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
@@ -1172,7 +1209,7 @@ function drawHome(t) {
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.55); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
     else drawIcon(c, W[id].ic, r.cx, r.by, r.sz);
   }
-  D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
+  D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
   if (ids.length === BASICS.length && stage() < 3) {
     c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
