@@ -266,15 +266,15 @@ window.DATA = {
     { uk: "У нас багато котів!", pics: ["w:kit", "w:khata", "w:kit"],
       en: "Our valley has more cats than people, sunflowers everywhere, and a stork on the pole by the road. Everyone here speaks Ukrainian. Don't worry: you'll pick it up just by living here." },
     { uk: "Торкнись — і почуєш слово.", pics: ["👆", "w:yablunia", "✨"],
-      en: "Tap anything to walk over and hear its name. Things that sparkle ✨ are new to you, or a word that's due for a refresher. Tap the 🔊 to hear any word again." },
+      en: "Tap anything to walk over and hear its name. Things that sparkle ✨ are new to you, or a word that's due for a refresher. Tap the 🔊 to hear any word again. Many things also carry a little 🌾 note about Ukrainian culture." },
     { uk: "Сусіди попросять про допомогу.", pics: ["face:andriiko", "w:morkva", "w:yabluko"],
-      en: "The neighbours will ask you for things. Grow vegetables in your garden, pick apples, draw water from the well, or buy from Oksana's market stall. Bring them what they ask for, and they'll thank you with coins and hearts. The cats get hungry too: bring each one its favourite treat and it becomes your friend." },
+      en: "The neighbours will ask you for things. Grow vegetables in your garden, pick apples, draw water from the well, catch a fish, or buy from Oksana's market stall. Bring them what they ask for and they'll gladly pay you for it. Grandma Olia cooks a different dish each time and thanks you with hearts. The cats get hungry too: bring each one its favourite treat and it becomes your friend." },
     { uk: "Прикрась свою хату.", pics: ["w:khata", "w:kartyna", "w:vazon"],
-      en: "Spend your coins on lovely things at the market, then step inside your cottage and tap the + spots to make it home." },
+      en: "Spend your coins on lovely things at the market, then go into your cottage and tap the 🪑 Прикрасити (Decorate) button to place them and make it home." },
     { uk: "Спершу з перекладом, а потім — українською.", pics: ["📖", "👁️", "❤️"],
       en: "At first everything has English with it. As you learn, the English quietly fades away. Tap 👁 to peek whenever you need to. Your word book 📖 shows how far you've come." },
     { uk: "Чекаю на тебе! Обіймаю, баба Оля.", pics: ["face:olia", "❤️", "w:borshch"],
-      en: "I'll be waiting for you, with borscht on the stove. Hugs, Grandma Olia." }
+      en: "I'll be waiting for you, with something tasty on the stove. Hugs, Grandma Olia." }
   ],
 
   // "Bring me, please, ..." — the item goes on the end in its acc form.
