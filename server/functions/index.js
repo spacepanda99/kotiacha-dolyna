@@ -103,7 +103,7 @@ Do NOT mark down: a rolled versus unrolled R, a different accent, speaking a lit
     let a = simA * 100;
     if (clarity < 50) a *= 0.5 + clarity / 100;           // only truly unclear speech is marked down
     const b = Math.max(0, Math.min(100, Math.round(Number(B.score) || 0)));
-    let score = (a + b) / 2;
+    let score = 0.42 * a + 0.58 * b;                       // the friendly teacher counts a little more
     if (a < 30) score = Math.min(score, 45);               // B cannot rescue what A could not hear
     score = Math.round(Math.max(0, Math.min(100, score)));
     const heard = alts[0] || '';
