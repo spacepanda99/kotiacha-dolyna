@@ -1698,7 +1698,7 @@ function micRefresh() {
   const b = $('#micBtn'); if (!b) return;
   let top, sub, off = false;
   if (!MIC.supported) { top = '🎤 Мікрофон недоступний'; sub = 'Microphone not available here'; off = true; }
-  else if (MIC.state === 'granted') { top = '🎤 Мікрофон увімкнено ✓'; sub = 'Microphone is on'; }
+  else if (MIC.state === 'granted') { top = '🎤 Потренуватись говорити'; sub = 'Microphone is on · Practice speaking'; }
   else if (MIC.state === 'denied') { top = '🎤 Мікрофон заблоковано'; sub = 'Blocked: tap for how to allow it'; }
   else { top = '🎤 Увімкнути мікрофон'; sub = 'Enable microphone'; }
   b.innerHTML = `${top}<small>${sub}</small>`; b.classList.toggle('off', off);
@@ -2644,7 +2644,7 @@ const A = {
     } catch (e) {}
     $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
     // Open the page with ?say on the end to try the speaking round straight away (it does not use up Grandma's dish).
-    if (/[?&]say/.test(location.search)) setTimeout(() => { speakRound(curRecipe()); sp.test = true; }, 700);
+    if (/[?&]say/.test(location.search)) setTimeout(() => { if (!sp) { speakRound(curRecipe()); sp.test = true; } }, 700);
     if (S.refunded && !S.refundTold) { S.refundTold = 1; save(); setTimeout(() => toast(`🛏️ Меблі вже в хаті! +${S.refunded} ₴`), 1500); } },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
@@ -2668,11 +2668,14 @@ const A = {
   },
   async mic() {
     if (!MIC.supported) return toast('Microphone not available here');
+    if (MIC.state === 'granted') return A.practice();
     if (MIC.state === 'denied') return toast('Chrome: tap the lock beside the address, then Permissions, then Microphone');
-    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach(t => t.stop()); MIC.state = 'granted'; toast('🎤 Мікрофон увімкнено · Microphone is on'); }
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach(t => t.stop()); MIC.state = 'granted'; toast('🎤 Мікрофон увімкнено · Microphone is on'); micRefresh(); return; }
     catch (e) { MIC.state = e && e.name === 'NotAllowedError' ? 'denied' : MIC.state; toast('🎤 Мікрофон не увімкнено · Not enabled'); }
     micRefresh();
   },
+  // Practice speaking from the title screen: opens the game and the say-it round, without using up Grandma's dish.
+  practice() { A.start(); setTimeout(() => { if (!sp) { speakRound(curRecipe()); sp.test = true; } }, 500); },
   spSay() { spAttempt(); },
   spEyeUk() { if (sp) { sp.showUk = true; spRender(); } },
   spEyeTr() { if (sp) { sp.showTr = true; spRender(); } },
@@ -2681,7 +2684,7 @@ const A = {
   spSkip() { spAdvance(); },
   spGo() { const R = sp && sp.R, test = sp && sp.test; sp = null; if (test) return closeSheet(); if (R) mealScene(R); },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
-  close: closeSheet,
+  close() { if (sp) return; closeSheet(); },   // a stray tap outside must not throw away a speaking round
   words: wordsSheet, bag: bagSheet,
   guide() { say(guideClip); },
   guideEye() { guideEnOn = !guideEnOn; setGuide(); },
