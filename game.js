@@ -670,6 +670,102 @@ const DRAW = {
     c.fillStyle = '#9b1f3a'; ell(c, 0, -25, 8, 4); c.fillStyle = '#c93058'; ell(c, -1, -26, 5, 2.4);
     c.fillStyle = '#fffdf5'; for (const [x, y] of [[-22, -20], [24, -22], [-2, -29]]) circ(c, x, y, 0.9);
   },
+  // Marigolds: a low green clump thick with orange and gold blooms.
+  chornobryvtsi(c, o) {
+    c.save(); c.rotate(((o && o.sway) || 0) * 0.8);
+    c.fillStyle = 'rgba(0,0,0,.1)'; ell(c, 0, -2, 34, 4);
+    c.fillStyle = '#3d8a45'; ell(c, 0, -16, 34, 16); c.fillStyle = '#4fa257'; ell(c, -6, -20, 24, 11);
+    for (const [x, y, r] of [[-22, -30, 9], [-4, -40, 10.5], [16, -32, 9.5], [-12, -19, 8], [8, -17, 8.5], [28, -18, 7.5]]) {
+      c.fillStyle = '#e8850f'; for (let k = 0; k < 8; k++) { const a = k * 0.785; circ(c, x + Math.cos(a) * r * 0.62, y + Math.sin(a) * r * 0.62, r * 0.46); }
+      c.fillStyle = '#ffb81f'; circ(c, x, y, r * 0.66); c.fillStyle = '#a3360c'; circ(c, x, y, r * 0.3);
+    }
+    c.restore();
+  },
+  // A tyn: a fence woven from willow rods between stakes, with clay jugs drying upside down on top.
+  tyn(c) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -1, 50, 4);
+    c.fillStyle = '#7a4e26'; for (const x of [-42, -21, 0, 21, 42]) rr(c, x - 3, -64, 6, 64, 3);
+    c.lineCap = 'round';
+    for (let r = 0; r < 6; r++) {
+      const y = -10 - r * 7.6; c.strokeStyle = r % 2 ? '#c99a5a' : '#b08040'; c.lineWidth = 5.6; c.beginPath(); c.moveTo(-49, y);
+      for (let i = 0; i < 4; i++) { const x0 = -42 + i * 21; c.quadraticCurveTo(x0 + 10.5, y + ((i + r) % 2 ? 4.5 : -4.5), x0 + 21, y); }
+      c.lineTo(49, y); c.stroke();
+    }
+    for (const [x, k] of [[-21, 1], [21, 0.82]]) {
+      c.save(); c.translate(x, -62); c.scale(k, k);
+      c.fillStyle = '#8f3f1c'; rr(c, -6.5, -4, 13, 4, 2); c.fillStyle = '#b5562b'; rr(c, -4.5, -10, 9, 8, 2); ell(c, 0, -19, 10.5, 11.5);
+      c.fillStyle = '#f1dfa0'; c.fillRect(-9.6, -22, 19.2, 2.2); c.fillStyle = 'rgba(255,255,255,.25)'; ell(c, -4, -23, 2.6, 5);
+      c.restore();
+    }
+  },
+  // The blue and yellow flag on a pole, rippling.
+  prapor(c, o) {
+    const t = (o && o.t) || 0;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -1, 9, 3);
+    c.fillStyle = '#8a8f96'; rr(c, -1.8, -97, 3.6, 97, 1.8); c.fillStyle = '#ffd23f'; circ(c, 0, -97, 3.2);
+    const wv = i => Math.sin(t * 3 - i * 0.75) * 2.4 * (i / 8);
+    for (const [col, y0] of [['#2f6fb5', -93], ['#ffd23f', -79.5]]) {
+      c.fillStyle = col; c.beginPath(); c.moveTo(1.8, y0);
+      for (let i = 0; i <= 8; i++) c.lineTo(1.8 + i * 5.6, y0 + wv(i));
+      for (let i = 8; i >= 0; i--) c.lineTo(1.8 + i * 5.6, y0 + 14 + wv(i));
+      c.closePath(); c.fill();
+    }
+  },
+  // A swallow on the wing: blue-black back, white belly, rusty throat, long forked tail.
+  lastivka(c, o) {
+    const f = Math.sin(((o && o.t) || 0) * 13);
+    c.save(); c.translate(0, -50);
+    c.fillStyle = '#1f2a44';
+    poly(c, [[-16, -3], [-48, -11], [-30, 0], [-48, 11], [-16, 3]]);
+    poly(c, [[-8, -3], [10, -5], [-6, -34 - f * 8], [-22, -26 - f * 8]]);
+    ell(c, 2, 0, 22, 8.5); circ(c, 21, -3, 8);
+    c.fillStyle = '#fffdf5'; ell(c, 3, 4, 15, 4.6);
+    c.fillStyle = '#1f2a44'; poly(c, [[-10, 0], [8, 1], [-10, 26 + f * 8], [-24, 18 + f * 8]]);
+    c.fillStyle = '#b5412b'; circ(c, 23, 1.5, 3.8);
+    c.fillStyle = '#2a1a10'; poly(c, [[28, -4.5], [35, -2.5], [28, -1]]);
+    c.fillStyle = '#fff'; circ(c, 23.5, -5, 1.3); c.fillStyle = '#111'; circ(c, 23.8, -5, 0.7);
+    c.restore();
+  },
+  // A skrynia: a green painted dowry chest with flowers, brass bands and a domed lid.
+  skrynia(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -2, 46, 5);
+    c.fillStyle = '#5a3a1c'; rr(c, -40, -8, 9, 8, 2); rr(c, 31, -8, 9, 8, 2);
+    c.fillStyle = '#2f7d5b'; rr(c, -42, -44, 84, 38, 4);
+    c.fillStyle = '#256b4d'; rr(c, -44, -62, 88, 22, 9); c.fillStyle = '#39916b'; rr(c, -39, -59, 78, 6, 3);
+    c.fillStyle = '#e8c66a'; c.fillRect(-42, -42, 84, 2.4); for (const x of [-31, 31]) c.fillRect(x - 2, -62, 4, 56);
+    for (const x of [-15, 15]) {
+      c.fillStyle = '#9fd18b'; ell(c, x - 9, -14, 5.5, 2.4); ell(c, x + 9, -14, 5.5, 2.4);
+      c.fillStyle = '#d43a3a'; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257 - 1.57) * 6, -25 + Math.sin(k * 1.257 - 1.57) * 6, 4.4);
+      c.fillStyle = '#ffd23f'; circ(c, x, -25, 3);
+    }
+    c.fillStyle = '#fffdf5'; for (const [x, y] of [[0, -32], [0, -18], [-24, -34], [24, -34]]) circ(c, x, y, 1.5);
+    c.fillStyle = '#3b2f2a'; rr(c, -3.5, -47, 7, 10, 2); c.fillStyle = '#e8c66a'; circ(c, 0, -41.5, 1.4);
+  },
+  // Kutia: a clay bowl heaped with wheat, speckled with poppy seeds and raisins, a thread of honey on top.
+  kutia(c) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -3, 38, 5);
+    c.fillStyle = '#8f3f1c'; ell(c, 0, -30, 39, 10);
+    c.fillStyle = '#e9d9b0'; ell(c, 0, -34, 34, 13); c.fillStyle = '#f5ebca'; ell(c, -4, -38, 24, 8);
+    c.fillStyle = '#2d2d2d'; for (const [x, y] of [[-22, -36], [-11, -42], [0, -37], [11, -43], [20, -36], [-5, -33], [9, -34], [-16, -33], [25, -33], [3, -44]]) circ(c, x, y, 1.15);
+    c.fillStyle = '#6b2f4a'; for (const [x, y] of [[-9, -38], [15, -39], [3, -41]]) ell(c, x, y, 2.8, 2);
+    c.strokeStyle = '#e0a020'; c.lineWidth = 2.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(-18, -42); c.quadraticCurveTo(-8, -47, 0, -41); c.quadraticCurveTo(8, -36, 18, -40); c.stroke();
+    c.fillStyle = '#b5562b'; c.beginPath(); c.moveTo(-39, -30); c.quadraticCurveTo(-36, -2, 0, -2); c.quadraticCurveTo(36, -2, 39, -30); c.quadraticCurveTo(0, -17, -39, -30); c.fill();
+    c.fillStyle = '#f1dfa0'; for (let i = -3; i <= 3; i++) circ(c, i * 8.5, -13 - (9 - i * i) * 0.25, 1.9);
+    c.fillStyle = 'rgba(255,255,255,.18)'; ell(c, -20, -15, 5, 8);
+  },
+  // Uzvar: a glass jug of deep amber fruit drink with apple slices and berries, and a cup beside it.
+  uzvar(c) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 2, -2, 40, 5);
+    c.strokeStyle = '#cfe6ee'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.arc(-34, -40, 12, 1.9, 4.4); c.stroke();
+    c.fillStyle = 'rgba(214,236,244,.92)'; rr(c, -34, -76, 44, 74, 10);
+    c.fillStyle = '#a84a26'; rr(c, -31, -60, 38, 55, 8); c.fillStyle = '#c4683a'; rr(c, -31, -60, 38, 6, 3);
+    c.fillStyle = '#f2d9a0'; for (const [x, y] of [[-20, -44], [-6, -30], [-18, -20], [-2, -48]]) { c.beginPath(); c.arc(x, y, 6, 0.3, 3.44); c.fill(); }
+    c.fillStyle = '#6e1f30'; for (const [x, y] of [[-8, -15], [-24, -32], [0, -38]]) circ(c, x, y, 3.2);
+    c.fillStyle = 'rgba(255,255,255,.5)'; rr(c, -30, -71, 5, 52, 2.5);
+    c.strokeStyle = '#fffdf5'; c.lineWidth = 3.6; c.beginPath(); c.arc(40, -13, 6, -1.3, 1.3); c.stroke();
+    c.fillStyle = '#fffdf5'; rr(c, 17, -25, 23, 23, 5); c.fillStyle = '#d43a3a'; c.fillRect(17, -13, 23, 2.6);
+    c.fillStyle = '#a84a26'; ell(c, 28.5, -23, 9.5, 3);
+  },
   // A wooden rowing boat pulled up on the bank, with an oar resting in it.
   canoe(c) {
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -2, 40, 6);
@@ -934,7 +1030,9 @@ const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (x === 18 && y >= 6 
 const ents = [];
 const ANIMAL_OF = { zhaba: 'frog', kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
 const ASIZE = { frog: 0.62, horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.85, cat: 0.65, hen: 0.6, rooster: 0.72, duck: 0.55 };
-const SPEED = { frog: 0.75, horse: 0.6, cow: 0.3, goat: 0.45, pig: 0.35, dog: 0.7, cat: 0.55, hen: 0.4, rooster: 0.45, duck: 0.3 };
+// how long each animal stands about between strolls, in seconds
+const IDLE = { cow: [10, 24], horse: [8, 20], goat: [5, 13], pig: [7, 16], dog: [3, 9], cat: [5, 15], hen: [2, 6], rooster: [3, 8], duck: [3, 9], frog: [4, 10] };
+const SPEED = { frog: 0.75, horse: 0.5, cow: 0.28, goat: 0.45, pig: 0.35, dog: 0.7, cat: 0.55, hen: 0.4, rooster: 0.45, duck: 0.3 };
 function add(e) {
   e.k = e.k || (e.w + ents.length);
   e.s = e.s || 1; e.ic = e.ic || W[e.w].ic;
@@ -977,16 +1075,20 @@ function add(e) {
   add({ w: 'kachka', x: 28.6, y: 19.9, kind: 'animal', r: 0.8, water: true });
   add({ w: 'zhaba', x: 26.3, y: 23.2, s: 0.7, kind: 'animal', r: 0.5 });
   // Pasture.
-  add({ w: 'korova', x: 30.2, y: 12.4, s: 1.4, kind: 'animal', r: 1.2, give: 'moloko', cd: 120 });
-  add({ w: 'kin', x: 32.3, y: 13.0, s: 1.5, kind: 'animal', r: 1.0 });
+  add({ w: 'korova', x: 30.0, y: 12.2, s: 1.4, kind: 'animal', r: 1.3, give: 'moloko', cd: 120 });
+  add({ w: 'kin', x: 32.6, y: 13.0, s: 1.5, kind: 'animal', r: 1.3 });
   add({ w: 'koza', x: 28.6, y: 13.4, s: 1.1, kind: 'animal', r: 0.9 });
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [23.4, 11.15], [26.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
   add({ w: 'pysanka', x: 26.2, y: 12.5, s: 0.6 });
-  for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4]]) add({ w: 'mak', x, y, s: 0.8 });           // poppies beside the sunflowers
-  for (const [x, y] of [[34.3, 21.5], [34.3, 22.9], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0 });   // a strip of wheat
+  for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
+  for (const [x, y] of [[34.3, 21.5], [34.3, 22.2], [34.3, 22.9], [34.3, 23.6], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0, give: 'pshenytsia', cd: 150, hide: true });   // a strip of wheat
   add({ w: 'vinok', x: 22.4, y: 18.5, s: 0.7 });
+  for (const [x, y] of [[4.5, 11.5], [22.6, 11.5], [27.2, 11.35], [17.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
+  for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28 });   // Grandma's wattle fence
+  add({ w: 'prapor', x: 21.95, y: 15.95, s: 2.3, solid: true });
+  add({ w: 'lastivka', x: 12.6, y: 6.9, s: 0.7, kind: 'fly', cx: 12.6, cy: 6.9, ph: 1.3, swoop: true });
   add({ w: 'bandura', x: 15.5, y: 19.5, s: 0.95 });
   // Beehives and the sunflower field.
   for (let i = 0; i < 3; i++) add({ w: 'vulyk', x: 4.5 + i * 1.5, y: 19.9, s: 1.3, solid: true });
@@ -1010,7 +1112,7 @@ function add(e) {
   for (const ct of D.cats) add({ w: ct.word, k: 'cat_' + ct.id, kind: 'animal', an: 'cat', cat: ct.id, v: ct.v, x: ct.x, y: ct.y, r: 1.3 });
   let ducks = 0;
   for (const e of ents) {
-    e.hx = e.x; e.hy = e.y; e.tw = 0;
+    e.hx = e.x; e.hy = e.y; e.tw = Math.random() * 6; e.st = 'idle'; e.act = 'look'; e.vel = 0; e.wk = 0; e.dip = 0; e.rest = 0; e.face = Math.random() < 0.5 ? -1 : 1; e.fs = e.face;
     if (e.kind === 'animal' && ANIMAL_OF[e.w]) { e.an = ANIMAL_OF[e.w]; if (e.an === 'duck') e.v = ducks++; }
     if (e.an) e.s = ASIZE[e.an];
   }
@@ -1157,11 +1259,11 @@ function fxDraw(c) {
 // person, a hen comes up to the knee). Legs swing with the distance walked, so nothing slides or hops.
 // L body length, B body height, G leg length, neck [forward, up], head [long radius, short radius].
 const QUAD = {
-  horse: { k: 1.3, L: 62, B: 26, G: 34, col: '#9a5b34', far: '#7a4526', dark: '#4a2a14', neck: [14, 28], head: [15, 7.5], hrot: 0.55, tail: 'hair', mane: true, hoof: '#3b2a1e', ear: 'up', graze: true, muzzle: '#c98f6a' },
-  cow: { k: 1.2, L: 64, B: 32, G: 22, col: '#fffaf0', far: '#d8d0c0', dark: '#2d2a2a', neck: [9, 7], head: [14, 10], hrot: 0.3, tail: 'tuft', horns: 'cow', udder: true, hoof: '#3b2a1e', ear: 'side', graze: true, patches: [[-14, -6, 12], [10, 5, 9], [25, -8, 7]], muzzle: '#f4b6b0' },
-  goat: { k: 1, L: 38, B: 20, G: 20, col: '#f3ead7', far: '#d1c5a8', dark: '#a8956e', neck: [8, 13], head: [10, 6.5], hrot: 0.35, tail: 'stub', horns: 'goat', beard: true, hoof: '#5b4636', ear: 'side', graze: true },
-  pig: { k: 1, L: 44, B: 27, G: 11, col: '#f6b0b8', far: '#e39aa6', dark: '#d77f90', neck: [3, -2], head: [12, 11], hrot: 0.1, tail: 'curl', snout: true, ear: 'flop', hoof: '#b8697b' },
-  dog: { k: 1, L: 36, B: 17, G: 16, col: '#c98a4a', far: '#a56c34', dark: '#7a4b22', neck: [6, 8], head: [9.5, 8], hrot: 0.1, tail: 'wag', ear: 'flop', patches: [[-8, -2, 7]], muzzle: '#fff3e0', nose: true },
+  horse: { k: 1.3, L: 62, B: 26, G: 34, col: '#9a5b34', far: '#7a4526', dark: '#4a2a14', neck: [14, 28], head: [15, 7.5], hrot: 0.6, tail: 'hair', mane: true, hoof: '#3b2a1e', ear: 'up', graze: true, muzzle: '#6e3f24', shape: 'horse', long: true, forelock: true, blaze: '#fff3e0', shade: 'rgba(0,0,0,.1)', amp: 0.42 },
+  cow: { k: 1.2, L: 64, B: 32, G: 22, col: '#fffaf0', far: '#d8d0c0', dark: '#2d2a2a', neck: [9, 7], head: [14, 10], hrot: 0.3, tail: 'tuft', horns: 'cow', udder: true, hoof: '#3b2a1e', ear: 'side', graze: true, shape: 'cow', rest: true, chew: true, amp: 0.34, shade: 'rgba(0,0,0,.07)', patches: [[-14, -6, 12], [10, 5, 9], [25, -8, 7]], muzzle: '#f4b6b0' },
+  goat: { k: 1, L: 38, B: 20, G: 20, col: '#f3ead7', far: '#d1c5a8', dark: '#a8956e', neck: [8, 13], head: [10, 6.5], hrot: 0.35, tail: 'stub', horns: 'goat', beard: true, hoof: '#5b4636', ear: 'side', graze: true, chew: true },
+  pig: { k: 1, L: 44, B: 27, G: 11, col: '#f6b0b8', far: '#e39aa6', dark: '#d77f90', neck: [3, -2], head: [12, 11], hrot: 0.1, tail: 'curl', snout: true, ear: 'flop', hoof: '#b8697b', rest: true, doze: true, amp: 0.3 },
+  dog: { k: 1, L: 36, B: 17, G: 16, col: '#c98a4a', far: '#a56c34', dark: '#7a4b22', neck: [6, 8], head: [9.5, 8], hrot: 0.1, tail: 'wag', ear: 'flop', patches: [[-8, -2, 7]], muzzle: '#fff3e0', nose: true, rest: true },
 };
 // The six cats of the valley. Each also has a sitting portrait (see cat() by the title screen).
 const VAR = {
@@ -1172,7 +1274,7 @@ const VAR = {
   smuhastyi: { col: '#b89a74', far: '#9c805c', dark: '#5e4830', eye: '#7bc47f', stripes: true },
   trykolirna: { col: '#fffdf8', far: '#e2dbcf', dark: '#cfc7b8', eye: '#e6b43a', patches: [[-7, -3, 6, '#f0a24c'], [6, 2, 5, '#3d373c']], headPatch: '#f0a24c' },
 };
-const catQuad = v => Object.assign({ k: 1, L: 30, B: 13, G: 12, neck: [4, 6], head: [8, 7.5], hrot: 0, tail: 'cat', ear: 'point', nose: true, hoof: null }, VAR[v]);
+const catQuad = v => Object.assign({ k: 1, L: 30, B: 13, G: 12, neck: [4, 6], head: [8, 7.5], hrot: 0, tail: 'cat', ear: 'point', nose: true, hoof: null, rest: true, doze: true }, VAR[v]);
 function sitPal(v) {
   const V = VAR[v], tri = v === 'trykolirna';
   return {
@@ -1184,60 +1286,88 @@ function sitPal(v) {
 for (const v in VAR) DRAW['cat_' + v] = c => cat(c, 0, -2, 94, sitPal(v), 0, 0, 1);
 
 function quad(c, x, y, Q, t, e) {
-  const walk = !!e.walk, ph = (e.step || 0) * 34 / Q.G;
-  const sw = walk ? Math.sin(ph) : 0, bob = walk ? Math.abs(Math.cos(ph)) * 1.2 : Math.sin(t * 1.5 + e.hx) * 0.4;
-  const dir = e.face === -1 ? 1 : -1;
+  // wk: 0 standing .. 1 walking. rest: lying down. dip: head down to graze. All three glide, so nothing snaps.
+  const wk = e.wk || 0, rest = Q.rest ? (e.rest || 0) : 0, dip = Q.graze ? (e.dip || 0) : 0;
+  const G = Q.G * (1 - rest * 0.8), amp = Q.amp || 0.4;
+  // one stride covers the ground the legs really reach, so the feet don't slide
+  const cyc = (e.step || 0) * T / (1.6 * Q.G * Q.k * amp / 0.4);
+  const breath = Math.sin(t * 1.5 + e.hx) * 0.4, bob = wk * (1 - Math.cos(cyc * 12.566)) * 0.5 * (Q.B * 0.035) + breath * (1 - wk);
+  const fs = e.fs === undefined ? (e.face === -1 ? -1 : 1) : e.fs, dir = -(Math.abs(fs) < 0.12 ? (fs < 0 ? -0.12 : 0.12) : fs);
   c.save(); c.translate(x, y); c.scale(Q.k * dir, Q.k); c.lineCap = 'round'; c.lineJoin = 'round';
-  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, Q.L * 0.55, 5);
-  const by = -Q.G - Q.B / 2 - bob, lw = Math.max(3.5, Q.B * 0.24), hipF = Q.L * 0.33, hipB = -Q.L * 0.33;
-  const leg = (hx, a, col) => {
-    c.save(); c.translate(hx, -Q.G - bob * 0.5 - 1); c.rotate(a);
-    c.fillStyle = col; rr(c, -lw / 2, -2, lw, Q.G + 2, lw / 2);
-    if (Q.hoof) { c.fillStyle = Q.hoof; rr(c, -lw / 2, Q.G - 5, lw, 5.5, 2); }
-    c.restore();
+  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, Q.L * (0.55 + rest * 0.06), 5);
+  const by = -G - Q.B / 2 - bob, lw = Math.max(3.5, Q.B * 0.24), hipF = Q.L * 0.33, hipB = -Q.L * 0.33, hipY = -G - bob * 0.5 - 1;
+  // A leg in two parts. It swings back while the foot is on the ground, then bends, lifts and reaches forward.
+  const leg = (hx, off, col) => {
+    const p = ((cyc + off) % 1 + 1) % 1, th = -amp * Math.cos(p * 6.283) * wk;
+    const kn = (p > 0.5 ? Math.sin((p - 0.5) * 6.283) : 0) * 0.95 * wk + rest * 0.5;
+    const U = G * 0.52, Lo = G * 0.5;
+    const kx = hx - Math.sin(th) * U, ky = hipY + Math.cos(th) * U, fx = kx - Math.sin(th + kn) * Lo, fy = ky + Math.cos(th + kn) * Lo;
+    c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(hx, hipY); c.lineTo(kx, ky); c.stroke();
+    c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(kx, ky); c.lineTo(fx, fy); c.stroke();
+    if (Q.hoof && rest < 0.5) { c.strokeStyle = Q.hoof; c.lineWidth = lw * 0.86; c.beginPath(); c.moveTo(fx - Math.sin(th + kn) * -2.5, fy - Math.cos(th + kn) * 2.5); c.lineTo(fx, fy); c.stroke(); }
   };
-  // far-side legs first
-  leg(hipF - 3, -sw * 0.5, Q.far); leg(hipB - 3, sw * 0.5, Q.far);
-  // tail
+  // a four-beat walk: hind, then the fore on the same side, then the other side
+  leg(hipF - 3, 0.75, Q.far); leg(hipB - 3, 0.5, Q.far);
+  // tail, with a lazy sway and now and then a proper swish
   const tx = -Q.L / 2 + 2, ty = by - Q.B * 0.15;
-  if (Q.tail === 'hair') { c.strokeStyle = Q.dark; c.lineWidth = 7; c.beginPath(); c.moveTo(tx, ty); c.quadraticCurveTo(tx - 14 - sw * 3, ty + 8, tx - 10 + Math.sin(t * 2 + e.hx) * 3, ty + 34); c.stroke(); }
-  else if (Q.tail === 'tuft') { c.strokeStyle = Q.dark; c.lineWidth = 2.2; c.beginPath(); c.moveTo(tx, ty); c.quadraticCurveTo(tx - 9, ty + 10, tx - 6 + Math.sin(t * 2.4 + e.hx) * 4, ty + 26); c.stroke(); c.fillStyle = Q.dark; circ(c, tx - 6 + Math.sin(t * 2.4 + e.hx) * 4, ty + 27, 3.2); }
-  else if (Q.tail === 'stub') { c.fillStyle = Q.col; poly(c, [[tx + 3, ty + 2], [tx - 6, ty - 8], [tx + 5, ty - 4]]); }
+  const swish = Math.sin(t * 2 + e.hx) * 0.5 + Math.max(0, Math.sin(t * 0.7 + e.hx * 5) - 0.8) * 5 * Math.sin(t * 9);
+  if (Q.tail === 'hair') { c.strokeStyle = Q.dark; c.lineWidth = 7.5; c.beginPath(); c.moveTo(tx + 2, ty - 2); c.quadraticCurveTo(tx - 13 - wk * 3, ty + 4, tx - 9 + swish * 5, ty + 30 - rest * 14); c.stroke(); c.lineWidth = 4; c.beginPath(); c.moveTo(tx - 9 + swish * 5, ty + 26 - rest * 14); c.lineTo(tx - 8 + swish * 6.5, ty + 37 - rest * 16); c.stroke(); }
+  else if (Q.tail === 'tuft') { const ex = tx - 6 + swish * 5, ey = ty + 26 - rest * 12; c.strokeStyle = Q.far; c.lineWidth = 2.4; c.beginPath(); c.moveTo(tx, ty); c.quadraticCurveTo(tx - 9, ty + 10, ex, ey); c.stroke(); c.fillStyle = Q.dark; ell(c, ex, ey + 2, 2.8, 4.2); }
+  else if (Q.tail === 'stub') { c.fillStyle = Q.col; const w = Math.sin(t * 11 + e.hx) * (swish > 1 ? 2 : 0.4); poly(c, [[tx + 3, ty + 2], [tx - 6 + w, ty - 8], [tx + 5, ty - 4]]); }
   else if (Q.tail === 'curl') { c.strokeStyle = Q.dark; c.lineWidth = 2.6; c.beginPath(); c.arc(tx - 3, ty - 2, 4, 0.3, 5.2); c.stroke(); }
-  else if (Q.tail === 'wag') { const a = -1.0 + Math.sin(t * 9 + e.hx) * 0.45; c.strokeStyle = Q.col; c.lineWidth = 4.5; c.beginPath(); c.moveTo(tx + 2, ty); c.lineTo(tx + 2 + Math.cos(a) * -14, ty + Math.sin(a) * 14); c.stroke(); }
-  else if (Q.tail === 'cat') { const s2 = Math.sin(t * 2 + e.hx * 2) * 5; c.strokeStyle = Q.col; c.lineWidth = 4; c.beginPath(); c.moveTo(tx + 2, ty + 1); c.bezierCurveTo(tx - 12, ty + 2, tx - 16 + s2, ty - 12, tx - 9 + s2, ty - 21); c.stroke(); }
-  // body
-  c.fillStyle = Q.col; c.beginPath(); c.ellipse(0, by, Q.L / 2, Q.B / 2, 0, 0, 7); c.fill();
-  if (Q.patches || Q.stripes) {
+  else if (Q.tail === 'wag') { const a = -1.0 + Math.sin(t * (rest > 0.5 ? 3 : 9) + e.hx) * (rest > 0.5 ? 0.2 : 0.45); c.strokeStyle = Q.col; c.lineWidth = 4.5; c.beginPath(); c.moveTo(tx + 2, ty); c.lineTo(tx + 2 + Math.cos(a) * -14, ty + Math.sin(a) * 14); c.stroke(); }
+  else if (Q.tail === 'cat') { const s2 = Math.sin(t * 2 + e.hx * 2) * 5, up = 1 - rest; c.strokeStyle = Q.col; c.lineWidth = 4; c.beginPath(); c.moveTo(tx + 2, ty + 1); c.bezierCurveTo(tx - 12, ty + 2, tx - 16 + s2 * up, ty - 12 * up + 6 * rest, tx - 9 + s2 * up + 14 * rest, ty - 21 * up + 9 * rest); c.stroke(); }
+  // body: a barrel, with a deep chest and round quarters for the horse and a squarer frame for the cow
+  c.fillStyle = Q.col; c.beginPath();
+  if (Q.shape === 'horse') { c.ellipse(0, by, Q.L / 2, Q.B * 0.46, 0, 0, 7); c.moveTo(Q.L * 0.3 + Q.B * 0.52, by + 0.5); c.arc(Q.L * 0.3, by + 0.5, Q.B * 0.52, 0, 7); c.moveTo(-Q.L * 0.29 + Q.B * 0.53, by); c.arc(-Q.L * 0.29, by, Q.B * 0.53, 0, 7); }
+  else if (Q.shape === 'cow' && c.roundRect) { c.roundRect(-Q.L / 2, by - Q.B / 2, Q.L, Q.B, [Q.B * 0.42, Q.B * 0.5, Q.B * 0.45, Q.B * 0.4]); }
+  else c.ellipse(0, by, Q.L / 2, Q.B / 2, 0, 0, 7);
+  c.fill();
+  if (Q.patches || Q.stripes || Q.shade) {
     c.save(); c.clip();
+    if (Q.shade) { c.fillStyle = Q.shade; ell(c, -2, by + Q.B * 0.52, Q.L * 0.5, Q.B * 0.2); }
     for (const p of Q.patches || []) { c.fillStyle = p[3] || Q.dark; circ(c, p[0], by + p[1], p[2]); }
     if (Q.stripes) { c.strokeStyle = Q.dark; c.lineWidth = 2; for (let i = -1; i <= 2; i++) { c.beginPath(); c.moveTo(i * 6 - 2, by - Q.B / 2); c.lineTo(i * 6, by - 1); c.stroke(); } }
     c.restore();
   }
-  if (Q.udder) { c.fillStyle = '#f4b6b0'; ell(c, -Q.L * 0.16, by + Q.B / 2 - 1, 8, 5); }
+  if (Q.udder && rest < 0.5) { c.fillStyle = '#f4b6b0'; ell(c, -Q.L * 0.16, by + Q.B / 2 - 1, 8, 5); }
   // near-side legs
-  leg(hipF + 2, sw * 0.5, Q.col); leg(hipB + 2, -sw * 0.5, Q.col);
-  // neck and head; grazers lower their heads now and then when standing
-  const dip = !walk && Q.graze ? Math.max(0, Math.sin(t * 0.45 + e.hx * 3)) : 0;
-  const hx = Q.L / 2 + Q.neck[0] - dip * 2, hy = by - Q.neck[1] + dip * (Q.neck[1] + Q.G * 0.75);
-  c.strokeStyle = Q.col; c.lineWidth = Q.B * 0.5; c.beginPath(); c.moveTo(Q.L / 2 - 7, by - Q.B * 0.1); c.lineTo(hx - 2, hy + 2); c.stroke();
-  if (Q.mane) { c.strokeStyle = Q.dark; c.lineWidth = 5; c.beginPath(); c.moveTo(Q.L / 2 - 12, by - Q.B * 0.42); c.lineTo(hx - 6, hy - 5); c.stroke(); }
-  c.save(); c.translate(hx, hy); c.rotate(Q.hrot + dip * 0.5);
+  leg(hipF + 2, 0.25, Q.col); leg(hipB + 2, 0, Q.col);
+  // neck and head: down to graze, nodding a little with each step
+  const nod = wk * Math.sin(cyc * 12.566 + 0.8) * (Q.graze ? 1.6 : 0.7);
+  const munch = dip > 0.8 ? Math.sin(t * 7 + e.hx) * 0.8 : 0;
+  const hx = Q.L / 2 + Q.neck[0] - dip * 2 + wk * 2, hy = by - Q.neck[1] * (1 - wk * 0.12) + dip * (Q.neck[1] + G * 0.75 + Q.B * 0.1) + nod + munch;
+  if (Q.shape) {
+    c.fillStyle = Q.col; c.beginPath(); c.moveTo(Q.L / 2 - Q.B * 0.62, by - Q.B * 0.4); c.quadraticCurveTo(Q.L / 2 - 2, (by + hy) / 2 - Q.B * 0.3, hx - Q.head[0] * 0.5, hy - Q.head[1] * 0.7);
+    c.lineTo(hx + 1, hy + Q.head[1] * 0.8); c.quadraticCurveTo(Q.L / 2 + 5, (by + hy) / 2 + Q.B * 0.2, Q.L / 2 - 3, by + Q.B * 0.2); c.closePath(); c.fill();
+  } else { c.strokeStyle = Q.col; c.lineWidth = Q.B * 0.5; c.beginPath(); c.moveTo(Q.L / 2 - 7, by - Q.B * 0.1); c.lineTo(hx - 2, hy + 2); c.stroke(); }
+  if (Q.mane) { c.strokeStyle = Q.dark; c.lineWidth = 6; c.beginPath(); c.moveTo(Q.L / 2 - Q.B * 0.5, by - Q.B * 0.44); c.quadraticCurveTo(Q.L / 2 - 4, (by + hy) / 2 - Q.B * 0.42, hx - Q.head[0] * 0.5, hy - Q.head[1] * 0.9); c.stroke(); }
+  c.save(); c.translate(hx, hy); c.rotate(Q.hrot + dip * 0.5 + nod * 0.02);
   const a0 = Q.head[0], b0 = Q.head[1];
+  const flick = Math.max(0, Math.sin(t * 1.1 + e.hx * 7) - 0.9) * 10 * Math.sin(t * 16);   // an ear twitch now and then
   if (Q.horns === 'cow') { c.strokeStyle = '#e9dcc0'; c.lineWidth = 3; c.beginPath(); c.arc(-a0 * 0.2, -b0 - 2, 5, Math.PI, 1.7 * Math.PI); c.stroke(); }
   if (Q.horns === 'goat') { c.strokeStyle = '#a8956e'; c.lineWidth = 2.6; c.beginPath(); c.arc(-a0 * 0.75, -b0 - 1, 8, 1.15 * Math.PI, 1.95 * Math.PI); c.stroke(); }
-  if (Q.ear === 'up') { c.fillStyle = Q.col; poly(c, [[-a0 * 0.5, -b0 + 1], [-a0 * 0.35, -b0 - 9], [-a0 * 0.05, -b0 + 1]]); }
-  if (Q.ear === 'point') { c.fillStyle = Q.col; poly(c, [[-a0 * 0.75, -b0 + 3], [-a0 * 0.5, -b0 - 7], [-a0 * 0.05, -b0 + 1]]); poly(c, [[a0 * 0.0, -b0 + 1], [a0 * 0.4, -b0 - 7], [a0 * 0.7, -b0 + 3]]); }
-  c.fillStyle = Q.col; c.beginPath(); c.ellipse(a0 * 0.25, 0, a0, b0, 0, 0, 7); c.fill();
+  if (Q.ear === 'up') { c.fillStyle = Q.far; poly(c, [[-a0 * 0.3, -b0 + 1], [-a0 * 0.2 + flick, -b0 - 8], [a0 * 0.1, -b0 + 1]]); c.fillStyle = Q.col; poly(c, [[-a0 * 0.55, -b0 + 1], [-a0 * 0.42 - flick, -b0 - 10], [-a0 * 0.08, -b0 + 1]]); }
+  if (Q.ear === 'point') { c.fillStyle = Q.col; poly(c, [[-a0 * 0.75, -b0 + 3], [-a0 * 0.5 - flick * 0.5, -b0 - 7], [-a0 * 0.05, -b0 + 1]]); poly(c, [[a0 * 0.0, -b0 + 1], [a0 * 0.4, -b0 - 7], [a0 * 0.7, -b0 + 3]]); }
+  c.fillStyle = Q.col;
+  if (Q.long) {   // a long face: broad cheek tapering to the nose
+    c.beginPath(); c.moveTo(-a0 * 0.62, -b0 * 0.85); c.quadraticCurveTo(a0 * 0.3, -b0 * 1.25, a0 * 1.22, -b0 * 0.5); c.quadraticCurveTo(a0 * 1.5, b0 * 0.15, a0 * 1.2, b0 * 0.72);
+    c.quadraticCurveTo(a0 * 0.5, b0 * 0.85, a0 * 0.1, b0 * 1.25); c.quadraticCurveTo(-a0 * 0.75, b0 * 1.3, -a0 * 0.62, -b0 * 0.85); c.fill();
+  } else { c.beginPath(); c.ellipse(a0 * 0.25, 0, a0, b0, 0, 0, 7); c.fill(); }
   if (Q.headPatch) { c.save(); c.clip(); c.fillStyle = Q.headPatch; circ(c, -a0 * 0.3, -b0 * 0.5, a0 * 0.6); c.restore(); }
-  if (Q.muzzle) { c.fillStyle = Q.muzzle; ell(c, a0 * 0.85, b0 * 0.15, a0 * 0.42, b0 * 0.72); }
+  if (Q.blaze) { c.save(); c.clip(); c.fillStyle = Q.blaze; c.beginPath(); c.ellipse(a0 * 0.55, -b0 * 0.75, a0 * 0.6, b0 * 0.3, 0.25, 0, 7); c.fill(); c.restore(); }
+  const chew = (rest > 0.5 || (Q.chew && dip < 0.2 && wk < 0.2)) ? Math.sin(t * 5.5 + e.hx) * 0.7 : 0;
+  if (Q.muzzle) { c.fillStyle = Q.muzzle; ell(c, a0 * (Q.long ? 1.08 : 0.85), b0 * 0.15 + chew, a0 * (Q.long ? 0.3 : 0.42), b0 * (Q.long ? 0.62 : 0.72)); c.fillStyle = 'rgba(60,30,20,.55)'; circ(c, a0 * (Q.long ? 1.2 : 1.02), -b0 * 0.05 + chew, 1.1); }
   if (Q.snout) { c.fillStyle = Q.dark; ell(c, a0 * 1.1, 1, 4.5, 5.5); c.fillStyle = '#8a4a5a'; circ(c, a0 * 1.12, -1, 0.9); circ(c, a0 * 1.12, 3, 0.9); }
   if (Q.nose) { c.fillStyle = Q.tail === 'cat' ? '#e8708a' : '#2a1a10'; circ(c, a0 * 1.2, 0.5, Q.tail === 'cat' ? 1.3 : 2); }
-  if (Q.ear === 'side') { c.fillStyle = Q.far; ell(c, -a0 * 0.5, -b0 * 0.55, 5, 2.8); }
+  if (Q.ear === 'side') { c.fillStyle = Q.far; c.beginPath(); c.ellipse(-a0 * 0.5, -b0 * 0.55, 5.5, 2.8, -0.3 + flick * 0.15, 0, 7); c.fill(); }
   if (Q.ear === 'flop') { c.fillStyle = Q.dark; c.beginPath(); c.ellipse(-a0 * 0.25, -b0 * 0.1, 4.2, 7, 0.3, 0, 7); c.fill(); }
+  if (Q.forelock) { c.strokeStyle = Q.dark; c.lineWidth = 4; c.beginPath(); c.moveTo(-a0 * 0.3, -b0 * 1.0); c.quadraticCurveTo(a0 * 0.15, -b0 * 1.15, a0 * 0.3, -b0 * 0.45); c.stroke(); }
   if (Q.beard) { c.fillStyle = Q.dark; poly(c, [[a0 * 0.5, b0 - 1], [a0 * 0.75, b0 + 8], [a0 * 0.9, b0 - 2]]); }
-  c.fillStyle = Q.eye || '#2a1a10'; circ(c, a0 * 0.45, -b0 * 0.25, Q.eye ? 1.9 : 1.6);
-  if (Q.eye) { c.fillStyle = '#1d191c'; ell(c, a0 * 0.45, -b0 * 0.25, 0.7, 1.7); }
+  // eyes: a blink every few seconds, and nearly shut when dozing
+  const ex = a0 * (Q.long ? 0.2 : 0.45), ey = -b0 * 0.25, shut = rest > 0.85 && Q.doze ? 1 : ((t * 0.27 + e.hx * 1.7) % 1) < 0.035 ? 1 : 0;
+  if (shut) { c.strokeStyle = Q.eye ? '#1d191c' : '#2a1a10'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(ex - 2, ey); c.lineTo(ex + 2, ey + 0.4); c.stroke(); }
+  else { c.fillStyle = Q.eye || '#2a1a10'; circ(c, ex, ey, Q.eye ? 1.9 : 1.7); if (Q.eye) { c.fillStyle = '#1d191c'; ell(c, ex, ey, 0.7, 1.7); } else { c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, ex + 0.5, ey - 0.6, 0.5); } }
   if (Q.tail === 'cat') { c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 0.7; for (const dy of [-1, 1.5]) { c.beginPath(); c.moveTo(a0 * 0.9, 1.5 + dy); c.lineTo(a0 * 1.7, 0.5 + dy * 2.2); c.stroke(); } }
   c.restore();
   c.restore();
@@ -1248,9 +1378,9 @@ const BIRD = {
   rooster: { k: 1.18, body: '#b5522a', wing: '#7a2f1a', tail: '#1f4d3a', comb: 5, big: true },
 };
 function bird(c, x, y, B, t, e) {
-  const walk = !!e.walk, ph = (e.step || 0) * 34, sw = walk ? Math.sin(ph) : 0;
-  const dir = e.face === -1 ? 1 : -1;
-  const peck = !walk && Math.sin(t * 1.3 + e.hx * 5) > 0.55 ? 1 : 0;
+  const walk = !!e.walk, ph = (e.step || 0) * 34, sw = Math.sin(ph) * (e.wk || 0);
+  const dir = -(e.fs === undefined ? (e.face === -1 ? -1 : 1) : Math.abs(e.fs) < 0.12 ? 0.12 : e.fs);
+  const peck = !walk && e.act === 'graze' && Math.sin(t * 2.6 + e.hx * 5) > 0.2 ? 1 : 0;
   c.save(); c.translate(x, y); c.scale(B.k * dir, B.k); c.lineCap = 'round';
   c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, 13, 3.5);
   c.strokeStyle = '#e09a2a'; c.lineWidth = 2;
@@ -1569,7 +1699,8 @@ function plotSheet(i) {
 let shopTab = 'food', shopSel = null;
 // Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
 const owned = k => (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
-const sellPrice = id => { for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
+const sellPrice = id => { if (id === 'ryba') return 4;   // a fish takes a rod and some patience
+  for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
 function shop() {
   const tabs = ['food', 'seeds', 'tools', 'home', 'cats', 'sell', 'help'];
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
@@ -1612,6 +1743,8 @@ function sourceHint(id) {
   if (D.shop.seeds[id]) return '🌱 Grow it in your garden. Seeds are at the market.';
   if (D.shop.food[id]) return '🧺 Oksana sells it at the market.';
   if (id === 'kalyna') return '🌿 Kalyna bushes grow in the valley.';
+  if (id === 'pshenytsia') return '🌾 Wheat grows in a strip by the pond, on the east side.';
+  if (id === 'mak') return '🌺 Poppies grow beside the sunflower field.';
   if (D.shop.home[id]) return '🧺 Oksana sells it at the market, for your cottage.';
   return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: S.gear && S.gear.vudka ? '🎣 Catch one in the pond.' : '🎣 Buy a fishing rod (вудка) at the market, then fish in the pond.' }[id] || '';
 }
@@ -1636,7 +1769,7 @@ const line = (npc, key) => ({ uk: npc.lines[key].uk, en: npc.lines[key].en, clip
 const mine = id => ({ uk: PH[id].uk, en: PH[id].en, clip: 'p_' + id, me: true });
 // Grandma Olia is cooking. She asks for each ingredient in turn (taking all you have with you at once),
 // and when she has everything she cooks the dish and you eat it together.
-const MASS = ['boroshno', 'syr', 'maslo', 'sil', 'kapusta', 'kartoplia', 'morkva', 'tsybulia'];
+const MASS = ['boroshno', 'syr', 'maslo', 'sil', 'kapusta', 'kartoplia', 'morkva', 'tsybulia', 'pshenytsia', 'med', 'rys'];
 function recipeList(R) {
   return `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">${R.needs.map(id => { const n = recipeHave(id), full = n >= NEED; return `<span style="position:relative;text-align:center;opacity:${n ? 1 : 0.45}"><img src="${iconURL(id)}" style="width:34px;height:34px;display:block;margin:0 auto" alt=""><span style="font-size:12px;font-weight:800;color:${full ? '#3f8a3a' : '#8a7566'}">${full ? '✓' : n + '/' + NEED}</span></span>`; }).join('')}</div>`;
 }
@@ -1754,11 +1887,14 @@ async function toWav16k(dec) {
 }
 async function scoreWord(id, wav) {
   const w = W[id];
-  const r = await fetch(SPEECH_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ word: w.uk, tr: w.tr, wav }) });
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 25000);   // never leave the player on the spinner
+  let r;
+  try { r = await fetch(SPEECH_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ word: w.uk, tr: w.tr, wav }), signal: ctl.signal }); } finally { clearTimeout(timer); }
   const j = await r.json().catch(() => ({}));
   if (r.status === 429) return { limit: true, message: j.message || 'Enough practice for today. Come back tomorrow!' };
   if (!r.ok) throw new Error('score ' + r.status);
-  return j;
+  const esc = x => String(x || '').replace(/[<>&"]/g, '').slice(0, 140);   // shown as HTML, so nothing from the network goes in raw
+  return { score: Math.max(0, Math.min(100, Math.round(Number(j.score) || 0))), heard: esc(j.heard), tip: esc(j.tip) };
 }
 
 // The round after a dish: each ingredient in turn. Say it, get a score, try again or move on. Always skippable.
@@ -1982,7 +2118,7 @@ const DECOR = {
   didukh: { x: 0.515, y: 0.585, s: 0.36, z: 1, hw: 0.4 },
   vyshyvanka: { x: 0.69, y: 0.39, s: 0.2, z: 0, wall: true, hw: 0.8 }, bandura: { x: 0.855, y: 0.38, s: 0.2, z: 0, wall: true, hw: 0.7 },
   tarilka: { x: 0.43, y: 0.262, s: 0.105, z: 0, wall: true, hw: 0.7 }, vinok: { x: 0.79, y: 0.37, s: 0.13, z: 0, wall: true, hw: 0.6 },
-  motanka: { x: 0.25, y: 0.8, s: 0.2, z: 4, hw: 0.4 },
+  motanka: { x: 0.25, y: 0.8, s: 0.2, z: 4, hw: 0.4 }, skrynia: { x: 0.6, y: 0.74, s: 0.3, z: 1.6, hw: 0.8 },
   pysanka: { sill: 0.17, s: 0.1, z: 2, wall: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
@@ -2200,10 +2336,42 @@ function update(dt, t, rdt = dt) {
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
   for (const e of ents) {
     if (e.kind === 'animal') {
-      e.tw -= dt;
-      if (e.tw <= 0) { e.tw = rnd(2, 6); const a = rnd(0, 7), r = rnd(0, e.r); const nx = e.hx + Math.cos(a) * r, ny = e.hy + Math.sin(a) * r * 0.6; if (e.water ? inPond(nx, ny, -0.5) : !solid[Math.floor(ny)][Math.floor(nx)]) { e.gx = nx; e.gy = ny; } }
-      if (e.gx !== undefined) { const dx = e.gx - e.x, dy = e.gy - e.y, d = Math.hypot(dx, dy); const sp = SPEED[e.an] || 0.5; if (d > 0.03) { e.x += dx / d * sp * dt; e.y += dy / d * sp * dt; if (Math.abs(dx) > 0.01) e.face = dx > 0 ? -1 : 1; e.walk = true; e.step = (e.step || 0) + sp * dt; } else e.walk = false; }
+      // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
+      // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
+      const sp = SPEED[e.an] || 0.5, idle = IDLE[e.an] || [3, 8];
+      if (e.st === 'walk') {
+        const dx = e.gx - e.x, dy = e.gy - e.y, d = Math.hypot(dx, dy);
+        const turned = Math.abs(e.fs - e.face) < 0.4;
+        const want = turned ? sp * Math.min(1, d / 0.3 + 0.12) : 0;
+        e.vel += (want - e.vel) * (1 - Math.exp(-dt * 3.5));
+        if (d < 0.04 || (e.walkT += dt) > 30) { e.st = 'idle'; e.tw = rnd(idle[0], idle[1]); const k = Math.random(); e.act = (QUAD[e.an] || {}).rest || e.an === 'cat' ? (k < 0.35 && e.tw > 6 ? 'rest' : k < 0.75 ? 'graze' : 'look') : (k < 0.65 ? 'graze' : 'look'); }
+        else { const m = Math.min(d, e.vel * dt); e.x += dx / d * m; e.y += dy / d * m; e.step = (e.step || 0) + m; }
+      } else {
+        e.vel += (0 - e.vel) * (1 - Math.exp(-dt * 6));
+        e.tw -= dt;
+        if (e.tw <= 0) {
+          if (e.act === 'rest') { e.act = 'look'; e.tw = 1.6; }           // get up first
+          else {
+            e.tw = 1.5;
+            for (let i = 0; i < 8; i++) {
+              const nx = e.hx + rnd(-1, 1) * e.r, dx = nx - e.x;
+              if (Math.abs(dx) < Math.min(0.5, e.r * 0.45)) continue;                       // a walk worth taking
+              if (i < 5 && Math.random() < 0.7 && (dx > 0 ? -1 : 1) !== e.face) continue;   // mostly keep going the way it faces
+              let ny = e.hy + rnd(-1, 1) * e.r * 0.5; ny = e.y + Math.max(-0.45 * Math.abs(dx), Math.min(0.45 * Math.abs(dx), ny - e.y));
+              if (!(e.water ? inPond(nx, ny, -0.5) : !solid[Math.floor(ny)][Math.floor(nx)])) continue;
+              e.gx = nx; e.gy = ny; e.st = 'walk'; e.walkT = 0; e.face = dx > 0 ? -1 : 1; e.act = 'look'; break;
+            }
+          }
+        }
+      }
+      { const k = 1 - Math.exp(-dt * 7); e.fs += (e.face - e.fs) * k; }
+      e.wk = Math.max(0, Math.min(1, e.vel / (sp * 0.8))); e.walk = e.wk > 0.2;
+      // heads go down to graze, with a look up now and then
+      const grazing = e.st === 'idle' && e.act === 'graze' && Math.sin(t * 0.23 + e.hx * 3) > -0.55;
+      e.dip += ((grazing ? 1 : 0) - e.dip) * (1 - Math.exp(-dt * 2.2));
+      e.rest += ((e.st === 'idle' && e.act === 'rest' ? 1 : 0) - e.rest) * (1 - Math.exp(-dt * 1.8));
     } else if (e.kind === 'fly') {
+      if (e.swoop) { e.x = e.cx + Math.sin(t * 0.8 + e.ph) * 3.2; e.y = e.cy + Math.sin(t * 1.6 + e.ph) * 0.7; e.face = Math.cos(t * 0.8 + e.ph) >= 0 ? 1 : -1; continue; }
       e.x = e.cx + Math.sin(t * 0.7 + e.ph) * 1.4 + Math.sin(t * 2.3 + e.ph) * 0.2;
       e.y = e.cy + Math.cos(t * 0.5 + e.ph * 2) * 0.8;
     }
@@ -2309,7 +2477,8 @@ function drawWorld(t) {
     const s = e.s * T;
     if (!e.flat && e.kind !== 'fly') { c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, y, s * (e.ic[0] === '@' ? 0.36 : 0.28), s * 0.09); }
     const hop = e.kind === 'animal' && e.walk ? Math.abs(Math.sin(t * 9 + e.x)) * 3 : e.kind === 'fly' ? Math.sin(t * 9 + e.ph) * 4 : 0;
-    if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
+    if (e.swoop) { c.save(); c.translate(x, y); c.scale(e.face || 1, 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
+    else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
     else drawIcon(c, e.ic, x, y - hop, s, { t, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 0.9, t, s / 220);

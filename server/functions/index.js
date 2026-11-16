@@ -11,7 +11,7 @@ const KEY = defineSecret('KD_GEMINI_KEY');
 const MODEL = 'gemini-3.5-flash-lite';
 const DAILY_TOTAL = 400;   // all players together, per day
 const DAILY_PER_IP = 80;   // one player, per day (a cooking round is about 6 attempts)
-const MAX_WAV_BYTES = 400 * 1024;
+const MAX_WAV_BYTES = 200 * 1024;   // the game sends at most 6 seconds of 16 kHz mono (192 KB)
 const ORIGINS = ['https://spacepanda99.github.io'];
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
@@ -19,7 +19,8 @@ const okOrigin = o => ORIGINS.includes(o) || LOCAL.test(o || '');
 const clean = (s, n) => String(s || '').replace(/[^\p{L}\p{N} '’ʼ().,-]/gu, '').slice(0, n);
 
 // Compare words the way a beginner should be judged: ignore apostrophes, the soft sign, and i/y mix-ups.
-const norm = x => String(x || '').toLowerCase().replace(/[^\p{L}]/gu, '').replace(/ь/g, '').replace(/ґ/g, 'г').replace(/ї/g, 'і');
+// Russian-style spellings of the same sound (ы, э, ё) count as their Ukrainian letters.
+const norm = x => String(x || '').toLowerCase().replace(/[^\p{L}]/gu, '').replace(/[ьъ]/g, '').replace(/ґ/g, 'г').replace(/ї/g, 'і').replace(/ы/g, 'и').replace(/э/g, 'е').replace(/ё/g, 'о');
 // Edit distance where sounds a beginner mixes up cost less than a completely wrong sound.
 const VOW = 'аеєиіїоуюя', PAIRS = ['шщ', 'сш', 'зж', 'цч', 'цс', 'чш', 'хг', 'ву', 'вф', 'бп', 'дт', 'гк', 'нм', 'иі', 'ие', 'ео', 'ую', 'яа', 'єе'];
 const subCost = (x, y) => x === y ? 0 : PAIRS.some(p => (p[0] === x && p[1] === y) || (p[1] === x && p[0] === y)) ? 0.4 : (VOW.includes(x) && VOW.includes(y)) ? 0.6 : 1;
@@ -54,12 +55,21 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   if (req.method === 'OPTIONS') return res.status(204).send('');
   if (req.method !== 'POST' || !okOrigin(origin)) return res.status(403).json({ error: 'not allowed' });
 
-  const { word, tr, wav } = req.body || {};
-  const w = clean(word, 40), t = clean(tr, 40);
-  if (!w || typeof wav !== 'string' || wav.length < 200 || wav.length > MAX_WAV_BYTES * 1.4) return res.status(400).json({ error: 'bad request' });
-  if (Buffer.from(wav.slice(0, 8), 'base64').slice(0, 4).toString() !== 'RIFF') return res.status(400).json({ error: 'bad audio' });
+  res.set('Cache-Control', 'no-store'); res.set('X-Content-Type-Options', 'nosniff');
+  if (!req.is('application/json')) return res.status(400).json({ error: 'bad request' });
 
-  const ip = (req.get('x-forwarded-for') || req.ip || 'x').split(',')[0].trim();
+  // Everything from the caller is checked before it goes anywhere near the prompt or the model:
+  // the word must be a short Ukrainian word, the "said like" hint plain Latin letters, the audio a small 16 kHz mono WAV.
+  const { word, tr, wav } = req.body || {};
+  const w = typeof word === 'string' && /^[Ѐ-ӿ'’ʼ -]{1,30}$/.test(word.trim()) ? word.trim() : '';
+  const t = typeof tr === 'string' && /^[A-Za-z' -]{1,40}$/.test(tr.trim()) ? tr.trim() : '';
+  if (!w || typeof wav !== 'string' || wav.length < 200 || wav.length > MAX_WAV_BYTES * 1.4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(wav)) return res.status(400).json({ error: 'bad request' });
+  const head = Buffer.from(wav.slice(0, 64), 'base64');
+  if (head.length < 44 || head.toString('latin1', 0, 4) !== 'RIFF' || head.toString('latin1', 8, 12) !== 'WAVE' || head.readUInt16LE(20) !== 1 || head.readUInt16LE(22) !== 1 || head.readUInt32LE(24) !== 16000 || head.readUInt16LE(34) !== 16) return res.status(400).json({ error: 'bad audio' });
+
+  // The caller's address is the LAST entry Google's front end adds to X-Forwarded-For. Anything before it was
+  // sent by the caller and can be faked, so it must not be used for the per-person limit.
+  const ip = String(req.get('x-forwarded-for') || req.ip || 'x').split(',').pop().trim() || 'x';
   try { if (!(await underCap(ip))) return res.status(429).json({ error: 'limit', message: 'Enough practice for today. Come back tomorrow!' }); }
   catch (err) { console.error('cap check failed'); return res.status(500).json({ error: 'server' }); }
 
@@ -68,15 +78,18 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   //     evidence: mumbling cannot pass, because a mumble does not sound like the word to someone who doesn't know it.
   //  B: is told the word and asked, as a friendly teacher, whether a Ukrainian speaker would recognise it.
   //  The final score mostly trusts both, but B can never rescue a recording that A could not make anything of.
-  const callGemini = async (prompt, schema) => {
+  const callGemini = async (prompt, schema, again) => {
     const body = {
       contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: wav } }] }],
       generationConfig: { temperature: 0, maxOutputTokens: 200, responseMimeType: 'application/json', responseSchema: schema },
     };
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
-      method: 'POST', headers: { 'x-goog-api-key': KEY.value(), 'content-type': 'application/json' }, body: JSON.stringify(body),
+      method: 'POST', headers: { 'x-goog-api-key': KEY.value(), 'content-type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(15000),
     });
-    if (!r.ok) throw new Error('gemini ' + r.status);
+    if (!r.ok) {
+      if (!again && (r.status === 429 || r.status >= 500)) { await new Promise(z => setTimeout(z, 700)); return callGemini(prompt, schema, true); }   // one retry for a passing hiccup
+      throw new Error('gemini ' + r.status);
+    }
     const j = await r.json();
     const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
     return JSON.parse((parts.find(x => typeof x.text === 'string') || {}).text);
