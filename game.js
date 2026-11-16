@@ -1754,7 +1754,7 @@ async function toWav16k(dec) {
 }
 async function scoreWord(id, wav) {
   const w = W[id];
-  const r = await fetch(SPEECH_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ word: w.uk, wav }) });
+  const r = await fetch(SPEECH_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ word: w.uk, tr: w.tr, wav }) });
   const j = await r.json().catch(() => ({}));
   if (r.status === 429) return { limit: true, message: j.message || 'Enough practice for today. Come back tomorrow!' };
   if (!r.ok) throw new Error('score ' + r.status);

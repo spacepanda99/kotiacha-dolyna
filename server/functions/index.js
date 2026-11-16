@@ -19,11 +19,16 @@ const okOrigin = o => ORIGINS.includes(o) || LOCAL.test(o || '');
 const clean = (s, n) => String(s || '').replace(/[^\p{L}\p{N} '’ʼ().,-]/gu, '').slice(0, n);
 
 // Compare words the way a beginner should be judged: ignore apostrophes, the soft sign, and i/y mix-ups.
-const norm = x => String(x || '').toLowerCase().replace(/[^\p{L}]/gu, '').replace(/ь/g, '').replace(/ґ/g, 'г').replace(/[иї]/g, 'і');
-function lev(a, b) {
-  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
-  for (let j = 1; j <= b.length; j++) d[0][j] = j;
-  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+const norm = x => String(x || '').toLowerCase().replace(/[^\p{L}]/gu, '').replace(/ь/g, '').replace(/ґ/g, 'г').replace(/ї/g, 'і');
+// Edit distance where sounds a beginner mixes up cost less than a completely wrong sound.
+const VOW = 'аеєиіїоуюя', PAIRS = ['шщ', 'сш', 'зж', 'цч', 'цс', 'чш', 'хг', 'ву', 'вф', 'бп', 'дт', 'гк', 'нм', 'иі', 'ие', 'ео', 'ую', 'яа', 'єе'];
+const subCost = (x, y) => x === y ? 0 : PAIRS.some(p => (p[0] === x && p[1] === y) || (p[1] === x && p[0] === y)) ? 0.4 : (VOW.includes(x) && VOW.includes(y)) ? 0.6 : 1;
+const indel = x => 'йв'.includes(x) ? 0.5 : VOW.includes(x) ? 0.8 : 1;
+function wlev(a, b) {
+  const d = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+  for (let i = 1; i <= a.length; i++) d[i][0] = d[i - 1][0] + indel(a[i - 1]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = d[0][j - 1] + indel(b[j - 1]);
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + indel(a[i - 1]), d[i][j - 1] + indel(b[j - 1]), d[i - 1][j - 1] + subCost(a[i - 1], b[j - 1]));
   return d[a.length][b.length];
 }
 
@@ -49,8 +54,8 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   if (req.method === 'OPTIONS') return res.status(204).send('');
   if (req.method !== 'POST' || !okOrigin(origin)) return res.status(403).json({ error: 'not allowed' });
 
-  const { word, wav } = req.body || {};
-  const w = clean(word, 40);
+  const { word, tr, wav } = req.body || {};
+  const w = clean(word, 40), t = clean(tr, 40);
   if (!w || typeof wav !== 'string' || wav.length < 200 || wav.length > MAX_WAV_BYTES * 1.4) return res.status(400).json({ error: 'bad request' });
   if (Buffer.from(wav.slice(0, 8), 'base64').slice(0, 4).toString() !== 'RIFF') return res.status(400).json({ error: 'bad audio' });
 
@@ -58,37 +63,54 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   try { if (!(await underCap(ip))) return res.status(429).json({ error: 'limit', message: 'Enough practice for today. Come back tomorrow!' }); }
   catch (err) { console.error('cap check failed'); return res.status(500).json({ error: 'server' }); }
 
-  // Gemini is NOT told the target word. It only writes down what it hears and how clearly it was spoken, so
-  // mumbling cannot pass; the score is worked out here by comparing what it heard with the target.
-  const prompt = `Listen to this short recording of a language learner saying one Ukrainian word. Do not guess what they meant to say.
-Reply as JSON with: heard (exactly the Ukrainian word you can make out, in Cyrillic, or "" if you cannot make out a real word; if it is unclear, write the nearest sounds rather than a word you expect), clarity (integer 0-100: how clearly and distinctly it was spoken; whispering, mumbling, trailing off, heavy noise or cut-off sounds are under 50; a clear attempt with a foreign accent is 80 or more).`;
-  const body = {
-    contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: wav } }] }],
-    generationConfig: {
-      temperature: 0, maxOutputTokens: 120, responseMimeType: 'application/json',
-      responseSchema: { type: 'OBJECT', properties: { heard: { type: 'STRING' }, clarity: { type: 'INTEGER' } }, required: ['heard', 'clarity'] },
-    },
-  };
-  try {
+  // Two listeners, then a judge.
+  //  A: hears the recording BLIND (not told the word) and writes down up to three things it could be. This is the
+  //     evidence: mumbling cannot pass, because a mumble does not sound like the word to someone who doesn't know it.
+  //  B: is told the word and asked, as a friendly teacher, whether a Ukrainian speaker would recognise it.
+  //  The final score mostly trusts both, but B can never rescue a recording that A could not make anything of.
+  const callGemini = async (prompt, schema) => {
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: wav } }] }],
+      generationConfig: { temperature: 0, maxOutputTokens: 200, responseMimeType: 'application/json', responseSchema: schema },
+    };
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`, {
       method: 'POST', headers: { 'x-goog-api-key': KEY.value(), 'content-type': 'application/json' }, body: JSON.stringify(body),
     });
-    if (!r.ok) { console.error('gemini status', r.status); return res.status(502).json({ error: 'upstream' }); }
+    if (!r.ok) throw new Error('gemini ' + r.status);
     const j = await r.json();
     const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
-    const txt = (parts.find(x => typeof x.text === 'string') || {}).text;
-    const out = JSON.parse(txt);
-    const heard = clean(out.heard, 40), clarity = Math.max(0, Math.min(100, Math.round(Number(out.clarity) || 0)));
-    const a = norm(w), b = norm(heard);
-    const sim = !b ? 0 : 1 - lev(a, b) / Math.max(a.length, b.length, 1);
-    const factor = clarity >= 70 ? 1 : 0.4 + 0.6 * clarity / 70;
-    const score = Math.round(Math.max(0, Math.min(100, sim * 100 * factor)));
-    let tip;
-    if (!heard) tip = 'I could not make out a word. Speak up and say it slowly.';
+    return JSON.parse((parts.find(x => typeof x.text === 'string') || {}).text);
+  };
+  const promptA = `Listen to this short recording of a language learner saying one Ukrainian word. Do not guess what they meant to say.
+Reply as JSON with:
+heard: up to 3 different Ukrainian words (or the nearest sounds) it could be, most likely first, in Cyrillic. Use an empty list if you cannot make out anything word-like.
+clarity: integer 0-100, how clearly it was spoken. Whispering, mumbling, trailing off, heavy noise or cut-off sounds are under 50. A clear attempt with a foreign accent is 80 or more.`;
+  const promptB = `You are a warm, encouraging Ukrainian teacher listening to an adult beginner. They are trying to say the word "${w}"${t ? ` (said like "${t}")` : ''}.
+Would a Ukrainian speaker recognise this word from the recording? Reply as JSON with:
+score: integer 0-100. 90-100: clearly the right word, even with a foreign accent. 70-89: recognisable but one sound is clearly off. 40-69: only partly right. 0-39: a different word, silence, noise, or too unclear to tell what word it is.
+tip: one short friendly English sentence (at most 14 words). If the score is under 90, name the one sound to fix.
+Do NOT mark down: a rolled versus unrolled R, a different accent, speaking a little slowly or quickly, the stress being on a different syllable, or soft versus hard consonants. Beginners cannot hear those yet.`;
+  try {
+    const [A, B] = await Promise.all([
+      callGemini(promptA, { type: 'OBJECT', properties: { heard: { type: 'ARRAY', items: { type: 'STRING' } }, clarity: { type: 'INTEGER' } }, required: ['heard', 'clarity'] }),
+      callGemini(promptB, { type: 'OBJECT', properties: { score: { type: 'INTEGER' }, tip: { type: 'STRING' } }, required: ['score', 'tip'] }),
+    ]);
+    const alts = (Array.isArray(A.heard) ? A.heard : []).map(x => clean(x, 40)).filter(Boolean).slice(0, 3);
+    const clarity = Math.max(0, Math.min(100, Math.round(Number(A.clarity) || 0)));
+    const target = norm(w);
+    let simA = 0;
+    alts.forEach((h, k) => { const hn = norm(h); if (hn) simA = Math.max(simA, (1 - wlev(target, hn) / Math.max(target.length, hn.length, 1)) * [1, 0.92, 0.85][k]); });
+    let a = simA * 100;
+    if (clarity < 50) a *= 0.5 + clarity / 100;           // only truly unclear speech is marked down
+    const b = Math.max(0, Math.min(100, Math.round(Number(B.score) || 0)));
+    let score = (a + b) / 2;
+    if (a < 30) score = Math.min(score, 45);               // B cannot rescue what A could not hear
+    score = Math.round(Math.max(0, Math.min(100, score)));
+    const heard = alts[0] || '';
+    let tip = clean(B.tip, 120);
+    if (!heard || a < 30) tip = !heard ? 'I could not make out a word. Speak up and say it slowly.' : `I heard "${heard}". Tap the speaker, then copy the sounds slowly.`;
     else if (score >= 90) tip = 'Wonderful, that was clear!';
-    else if (sim >= 0.9 && clarity < 70) tip = 'Right word! Speak up a little and say each sound clearly.';
-    else if (score >= 70) tip = `Very close. I heard "${heard}". Say it once more, slowly.`;
-    else tip = `I heard "${heard}". Tap the speaker, then copy the sounds slowly.`;
+    else if (!tip) tip = `I heard "${heard}". Say it once more, slowly.`;
     return res.json({ heard, score, tip });
   } catch (err) {
     console.error('score failed', String(err && err.message).slice(0, 120));
