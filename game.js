@@ -2643,6 +2643,8 @@ const A = {
       if (req && !inApp && !(document.fullscreenElement || document.webkitFullscreenElement)) { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); }
     } catch (e) {}
     $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
+    // Open the page with ?say on the end to try the speaking round straight away (it does not use up Grandma's dish).
+    if (/[?&]say/.test(location.search)) setTimeout(() => { speakRound(curRecipe()); sp.test = true; }, 700);
     if (S.refunded && !S.refundTold) { S.refundTold = 1; save(); setTimeout(() => toast(`🛏️ Меблі вже в хаті! +${S.refunded} ₴`), 1500); } },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
@@ -2677,7 +2679,7 @@ const A = {
   spStop() { if (sp) sp.stop = true; },
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
-  spGo() { const R = sp && sp.R; sp = null; if (R) mealScene(R); },
+  spGo() { const R = sp && sp.R, test = sp && sp.test; sp = null; if (test) return closeSheet(); if (R) mealScene(R); },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
   close: closeSheet,
   words: wordsSheet, bag: bagSheet,
