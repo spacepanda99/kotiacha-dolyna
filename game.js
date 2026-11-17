@@ -117,7 +117,7 @@ document.addEventListener('pointerdown', startMusic, true);
 document.addEventListener('keydown', startMusic, true);
 addEventListener('load', () => { musicBtn(); startMusic(); });
 function musicTick(dt) {
-  const target = musicOn ? 0.55 * duck : 0;
+  const target = musicOn && !sp ? 0.55 * duck : 0;   // silent for the whole speaking round, so the mic only hears you
   musicVol += (target - musicVol) * Math.min(1, dt * 3);
   try { music.volume = Math.max(0, Math.min(1, musicVol)); } catch (e) {}
   if (!musicOn && musicVol < 0.01 && !music.paused) music.pause();
@@ -1845,6 +1845,7 @@ function stopSay() { sayToken++; for (const k in clipCache) { try { clipCache[k]
 
 // Listens until the person has spoken and then gone quiet (or 4.5 s), and returns a 16 kHz WAV as base64.
 async function recordOnce(ctl, onLevel) {
+  musicVol = 0; try { music.volume = 0; } catch (e) {}
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
   const AC = window.AudioContext || window.webkitAudioContext, ac = new AC();
   try {
