@@ -1106,6 +1106,8 @@ function pondPath(c, grow, stroke) {
 const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (x === 18 && y >= 6 && y <= 23) || (x === 7 && y >= 11 && y <= 13) || (x === 25 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
+// Whether a spot is on the road or within m tiles of it (the road is drawn a little wider than its tiles).
+const nearRoad = (x, y, m) => { for (const dx of [-m, 0, m]) for (const dy of [-m, 0, m]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return false; };
 const ANIMAL_OF = { zhaba: 'frog', kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
 const ASIZE = { frog: 0.62, horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.85, cat: 0.65, hen: 0.6, rooster: 0.72, duck: 0.55 };
 // how long each animal stands about between strolls, in seconds
@@ -1767,7 +1769,13 @@ function walkTo(wx, wy, ent) {
   P.path = path; P.goal = ent || null;
   if (!path.length && ent) arrive();
 }
-function arrive() { const e = P.goal; P.goal = null; if (e && e.kind === 'npc') P.face = e.x >= P.x ? 1 : -1; if (e) interact(e); }
+// When she gets to someone to talk to (or to the market, where Oksana is), she turns side-on to face them.
+function arrive() {
+  const e = P.goal; P.goal = null;
+  const who = e && (e.kind === 'npc' ? e : e.kind === 'shop' ? ents.find(q => q.npc === 'oksana') : null);
+  if (who) { P.face = who.x >= P.x ? 1 : -1; P.lookAt = P.face > 0 ? Math.PI / 2 : Math.PI * 1.5; }
+  if (e) interact(e);
+}
 
 // ------------------------------------------------------------------ learning
 // First meeting teaches the word. After that it comes back "due" at growing intervals.
@@ -1906,7 +1914,7 @@ function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; hud(); save(); }
 // Your own farm: hens (up to four) and a cow scratch and graze in the yard below your cottage, and a butter
 // churn stands by your door once you've bought one. They're added to the world when bought and on loading.
 const FARM_MAX = { kurka: 4, korova: 1 };
-const HEN_SPOTS = [[10.3, 13.9], [11.2, 14.5], [10.6, 15.2], [11.7, 13.8]], COW_SPOT = [12.9, 14.9];
+const HEN_SPOTS = [[11.1, 16.0], [12.0, 16.5], [10.8, 16.9], [12.7, 15.95]], COW_SPOT = [14.0, 16.5];   // on the grass below the road
 const farmN = k => (S.farm && S.farm[k]) || 0;
 let churnUntil = 0;
 function farmEnts() {
@@ -3011,7 +3019,8 @@ function update(dt, t, rdt = dt) {
     // Walking away shows her back, walking across her side, walking toward you her front; when she stops
     // she stays facing the way she was going. A half turn (back to front) always goes round through the side she last faced.
     const away = P.moving && P.mdy < 0 && -P.mdy > Math.abs(P.mdx) * 1.1, across = P.moving && !away && Math.abs(P.mdx) > 0.35;
-    const TAU = Math.PI * 2, cur = P.va || 0, base = !P.moving ? Math.round(cur / (Math.PI / 2)) * (Math.PI / 2) : away ? Math.PI : across ? (P.mdx > 0 ? Math.PI / 2 : Math.PI * 1.5) : 0;
+    if (P.path.length) P.lookAt = null;   // a new walk forgets who she was facing
+    const TAU = Math.PI * 2, cur = P.va || 0, base = !P.moving ? (P.lookAt != null ? P.lookAt : Math.round(cur / (Math.PI / 2)) * (Math.PI / 2)) : away ? Math.PI : across ? (P.mdx > 0 ? Math.PI / 2 : Math.PI * 1.5) : 0;
     let goal = base + TAU * Math.round((cur - base) / TAU);
     if (Math.abs(Math.abs(goal - cur) - Math.PI) < 0.6) {
       const side = P.face === -1 ? Math.PI * 1.5 : Math.PI / 2;
@@ -3053,6 +3062,7 @@ function update(dt, t, rdt = dt) {
               if (i < 5 && Math.random() < 0.7 && (dx > 0 ? -1 : 1) !== e.face) continue;   // mostly keep going the way it faces
               let ny = e.hy + rnd(-1, 1) * e.r * 0.5; ny = e.y + Math.max(-0.45 * Math.abs(dx), Math.min(0.45 * Math.abs(dx), ny - e.y));
               if (!(e.water ? inPond(nx, ny, -0.5) : !solid[Math.floor(ny)][Math.floor(nx)])) continue;
+              if (!e.water && e.an !== 'cat' && e.an !== 'dog' && nearRoad(nx, ny, 0.45)) continue;   // farm animals keep to the grass
               e.gx = nx; e.gy = ny; e.st = 'walk'; e.walkT = 0; e.face = dx > 0 ? -1 : 1; e.act = 'look'; break;
             }
           }
