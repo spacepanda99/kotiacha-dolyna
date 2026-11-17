@@ -54,7 +54,9 @@ const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { local
 // How far along the learner is. English fades out as this rises.
 const mastered = () => Object.values(S.words).filter(w => w.l >= 3).length;
 const stage = () => { const m = mastered(); return m >= 40 ? 3 : m >= 12 ? 2 : 1; };
-const lab = k => { const u = D.ui[k]; return u[0] + (stage() < 3 ? `<small>${u[1]}</small>` : ''); };
+const lab = k => { const u = D.ui[k]; return u[0] + `<small${stage() < 3 ? '' : ' class="xl"'}>${u[1]}</small>`; };
+// English that is shown while you're learning and, in the all-Ukrainian stage, kept hidden until you tap 👁.
+const xl = h => stage() < 3 ? h : h ? `<span class="xl">${h}</span>` : '';
 const TR = { а:'a',б:'b',в:'v',г:'h',ґ:'g',д:'d',е:'e',є:'ye',ж:'zh',з:'z',и:'y',і:'i',ї:'yi',й:'i',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'kh',ц:'ts',ч:'ch',ш:'sh',щ:'shch',ь:'',ю:'yu',я:'ya',"'":'','’':'' };
 const translit = s => s.split('').map(ch => { const lo = ch.toLowerCase(); if (!(lo in TR)) return ch; const r = TR[lo]; return ch === lo ? r : cap(r); }).join('');
 
@@ -1753,7 +1755,7 @@ function catSheet(e) {
   if (S.cats[ct.id]) return wordCard(ct.word, { note: `❤️ ${ct.name} · ${PH.mur.uk}`, clips: ['p_mur'] });
   const has = (S.bag[ct.wants] || 0) > 0, st = stage();
   wordCard(ct.word, {
-    note: `<b>${ct.line}</b>${st < 2 ? `<br>${ct.lineEn}` : ''}${st < 3 && !has ? `<br><small>${sourceHint(ct.wants)}</small>` : ''}`,
+    note: `<b>${ct.line}</b>${st < 2 ? `<br>${ct.lineEn}` : `<span class="xl"><br>${ct.lineEn}</span>`}${!has ? xl(`<br><small>${sourceHint(ct.wants)}</small>`) : ''}`,
     clips: ['c_' + ct.id],
     acts: has ? [{ k: 'give', fn: () => {
       S.bag[ct.wants]--; S.cats[ct.id] = 1; S.hearts += 2; { const ce = ents.find(q => q.cat === ct.id); if (ce) fxHearts(ce.x, ce.y - 0.6); } learn(ct.wants); useWord(ct.wants, true);
@@ -1964,17 +1966,17 @@ function wordCard(id, o = {}) {
   let recall = false;
   if (!isNew && t >= st.d && st.l < 5) { if (st.l < 2) { st.l = 2; st.d = t + IV[2]; } else recall = true; }
   const hideEn = !isNew && st.l >= 2;
-  cur = { id, peeked: false };
+  cur = { id, peeked: false, hideEn };
   acts = o.acts || [];
-  const en = hideEn ? `<button class="peek" data-a="peek">👁 ${D.ui.show[0]}</button>` : `<div class="en">${w.en}</div>`;
+  const en = hideEn || stage() >= 3 ? `<button class="peek" data-a="peek">👁 ${D.ui.show[0]}</button>` : `<div class="en">${w.en}</div>`;
   openSheet(`<div class="card">
-    ${isNew ? `<div class="tag">✨ ${PH.nove_slovo.uk}</div>` : ''}
+    ${isNew ? `<div class="tag">✨ ${PH.nove_slovo.uk}${stage() >= 3 ? xl(' · ' + PH.nove_slovo.en) : ''}</div>` : ''}
     <img class="big" src="${iconURL(id)}" alt="">
     <div class="word">${w.uk}</div>
     ${st.l < 4 ? `<div class="tr">${w.tr}</div>` : ''}
     <div id="en">${en}</div>
     ${o.note ? `<div class="hint">${o.note}</div>` : ''}
-    ${w.fact ? `<div class="fact"><b>🌾 ${stage() < 3 ? 'Ukrainian culture' : 'Культура'}</b><div class="fu">${w.fact.uk}</div>${stage() < 3 ? `<div class="fe">${w.fact.en}</div>` : ''}</div>` : ''}
+    ${w.fact ? `<div class="fact"><b>🌾 ${stage() < 3 ? 'Ukrainian culture' : 'Культура' + xl(' · Ukrainian culture')}</b><div class="fu">${w.fact.uk}</div><div class="fe${stage() < 3 ? '' : ' xl'}">${w.fact.en}</div></div>` : ''}
     <div class="row">
       ${btn('hear', 'w_' + id, '🔊', 'round blue')}
       ${acts.map((a, i) => btn('act', i, lab(a.k))).join('')}
@@ -2022,7 +2024,7 @@ function farmEnts() {
 function churnCard() {
   const has = (S.bag.moloko || 0) > 0, st = stage();
   wordCard('maslobiika', {
-    note: `🥛 ${W.moloko.uk}: ${S.bag.moloko || 0}${st < 3 ? (has ? ' · One milk makes one butter.' : ' · You need milk. Milk a cow first.') : ''}`,
+    note: `🥛 ${W.moloko.uk}: ${S.bag.moloko || 0}${xl((has ? ' · One milk makes one butter.' : ' · You need milk. Milk a cow first.'))}`,
     acts: has ? [{ k: 'churn', fn: () => {
       S.bag.moloko--; give('maslo'); learn('maslo'); churnUntil = now() + 1600; blip(660, 0.12); setTimeout(() => blip(780, 0.12), 400);
       const ce = ents.find(q => q.k === 'my_churn'); if (ce) setTimeout(() => fxBurst(ce.x, ce.y - 1, W.maslo.ic), 900);
@@ -2037,7 +2039,7 @@ function take(e) {
   give(e.give); blip(880); fxBurst(e.x, e.y - e.s * 0.45, W[e.give].ic);
   toast(`+1 ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
   // Grandma calls out from her cottage that you're welcome to her eggs and milk.
-  if (e.give !== e.w) wordCard(e.give, e.olias ? { note: `👵 <b>«${NPC.olia.lines.share.uk}»</b>${stage() < 3 ? `<br>${NPC.olia.lines.share.en}` : ''}`, clips: ['v_olia_share'] } : {}); else closeSheet();
+  if (e.give !== e.w) wordCard(e.give, e.olias ? { note: `👵 <b>«${NPC.olia.lines.share.uk}»</b>${xl(`<br>${NPC.olia.lines.share.en}`)}`, clips: ['v_olia_share'] } : {}); else closeSheet();
 }
 const ready = e => !(S.cd[e.k] > now());
 
@@ -2045,7 +2047,7 @@ function fishCard(e) {
   const has = !!S.gear.vudka, st = stage();
   wordCard(e.w, has
     ? { acts: [{ k: 'fish', fn: startFishing }] }
-    : { note: `🎣 <b>${PH.need_rod.uk}</b>${st < 3 ? `<br>${PH.need_rod.en} Buy one at the market («${D.ui.tools[0]}» tab).` : ''}`, clips: ['p_need_rod'] });
+    : { note: `🎣 <b>${PH.need_rod.uk}</b>${xl(`<br>${PH.need_rod.en} Buy one at the market («${D.ui.tools[0]}» tab).`)}`, clips: ['p_need_rod'] });
 }
 // Fishing: cast the float onto the water, wait for a bite, then reel the fish out in an arc.
 let fishFx = null;
@@ -2100,11 +2102,11 @@ function interact(e) {
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
-  if (e.k === 'oliaHome') return wordCard('khata', { note: `🏠 <b>Хата баби Олі</b>${stage() < 3 ? " · Grandma Olia's cottage. She is inside, cooking." : ''}`, acts: [{ k: 'enter', fn: enterOlia }] });
-  if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${stage() < 3 ? ' · This is your cottage.' : ''}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
+  if (e.k === 'oliaHome') return wordCard('khata', { note: `🏠 <b>Хата баби Олі</b>${xl(" · Grandma Olia's cottage. She is inside, cooking.")}`, acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${xl(' · This is your cottage.')}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
   if (e.w === 'krynytsia') {
     const have = S.bag.voda || 0;
-    return wordCard('krynytsia', { note: `💧 ${have} / ${WATER_MAX}${stage() < 3 ? (have < WATER_MAX ? ' · Fill your can here.' : ' · Your can is full.') : ''}`, acts: have < WATER_MAX ? [{ k: 'fill', fn: () => {
+    return wordCard('krynytsia', { note: `💧 ${have} / ${WATER_MAX}${xl((have < WATER_MAX ? ' · Fill your can here.' : ' · Your can is full.'))}`, acts: have < WATER_MAX ? [{ k: 'fill', fn: () => {
       const add = Math.min(WELL_GIVES, WATER_MAX - have); S.bag.voda = have + add; learn('voda'); hud(); bumpWater(); save(); closeSheet(); toast(`💧 +${add} ${W.voda.uk}  (${S.bag.voda} / ${WATER_MAX})`); say('w_voda'); blip(700, 0.12);
     } }] : [] });
   }
@@ -2596,7 +2598,7 @@ function fadeThen(fn) { const f = $('#fade'); f.classList.add('on'); setTimeout(
 function enterHome() { closeSheet(); fadeThen(enterHomeNow); }
 function exitHome() { fadeThen(exitHomeNow); }
 function enterHomeNow() {
-  mode = 'home';
+  mode = 'home'; pickHomeCats();
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#decorBtn').style.display = ''; $('#homebar').style.display = 'flex';
   const mid = DECOR.stil.x * roomW() - cv.width / 2;
   roomX = mid; clampPan();
@@ -2608,7 +2610,7 @@ function enterHomeNow() {
 function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
 function homeTap(sx, py) {
   const px = sx + roomX;
-  const friends = D.cats.filter(ct => S.cats[ct.id]);
+  const friends = homeCats().map(h => h.ct);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
   const ids = inRoom().sort((a, b) => (DECOR[b].wall ? 0 : 10) + DECOR[b].z - (DECOR[a].wall ? 0 : 10) - DECOR[a].z);
   let best = null, bestScore = -1e9;
@@ -2620,16 +2622,38 @@ function homeTap(sx, py) {
   }
   if (best) return wordCard(best, BASICS.includes(best) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(best); closeSheet(); } }] });
 }
+// Three of your cats are at home at any time; the rest are out and about. Each visit picks which three,
+// and they're busy: one looks up at you by the table, one is asleep on the bed, one washes itself in the window.
+const BED_CAT = [0.12, 0.42];
+// With a ball or a toy mouse on the floor, a cat plays with it; the toy gets knocked a little each swat.
+const playToy = () => S.decor.miachyk ? 'miachyk' : S.decor.myshka ? 'myshka' : null;
+const toyNudge = t => -Math.max(0, Math.sin(t * 4 - 0.5)) * roomU() * 0.02;   // where on the bed the sleeper lies, as a share of the bed's size
+const HOME_POSES = ['look', 'sleep', 'groom'];
+let homeTrio = null;
+function pickHomeCats() {
+  const f = D.cats.filter(ct => S.cats[ct.id]);
+  for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [f[i], f[j]] = [f[j], f[i]]; }
+  homeTrio = f.slice(0, 3).map((ct, i) => ({ ct, pose: HOME_POSES[i] }));
+}
+function homeCats() {
+  if (!homeTrio || homeTrio.some(h => !S.cats[h.ct.id]) || (homeTrio.length < 3 && D.cats.some(ct => S.cats[ct.id] && !homeTrio.some(h => h.ct === ct)))) pickHomeCats();
+  return homeTrio;
+}
 function catSpot(i) {
-  // Your cats gather round the table, where the view opens when you come in, so you always see all of them
-  // (a phone shows under a third of the room, and they used to be spread right across it). The first one
-  // curls up in the cat bed and the second sits on the cat tree, but only if those are in that same view.
+  // The one looking at you sits on the floor by the table, where the view opens when you come in; the
+  // sleeper is curled up on your bed and the one washing itself sits on the windowsill.
   const u = roomU(), mid = DECOR.stil.x * roomW(), v0 = Math.max(0, Math.min(panMax(), mid - cv.width / 2)), v1 = v0 + cv.width;
   const inView = x => x > v0 + u * 0.1 && x < v1 - u * 0.1;
-  if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); if (inView(r.cx)) return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: u * 0.3, sleep: true }; }
-  if (i === 1 && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); if (inView(r.cx)) return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: u * 0.16 }; }
+  const pose = (homeCats()[i] || {}).pose;
+  if (pose === 'sleep') {   // the cat bed if you have one, else the top of the cat tree, else your own bed
+    if (S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: u * 0.3, sleep: true }; }
+    if (S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.08, y: r.by - r.sz * 0.88, s: u * 0.15, sleep: true }; }
+    const r = decorRect('lizhko'); return { x: r.cx + r.sz * BED_CAT[0], y: r.by - r.sz * BED_CAT[1], s: u * 0.2, sleep: true };
+  }
+  if (pose === 'look' && playToy()) { const r = decorRect(playToy()); return { x: r.cx + u * 0.12, y: r.by, s: u * 0.22, play: true }; }   // batting the toy about
+  if (pose === 'groom') return { x: WIN_X * roomW() - u * 0.06, y: cv.height * 0.462, s: u * 0.15 };
   const offs = [0, -0.3, 0.3, -0.6, 0.6, 0.15], x = Math.max(v0 + u * 0.13, Math.min(v1 - u * 0.13, mid + offs[i % 6] * u));
-  return { x, y: cv.height * 0.885, s: u * 0.25 };
+  return { x, y: cv.height * 0.885, s: pose === 'sleep' ? u * 0.27 : u * 0.25, sleep: pose === 'sleep' };
 }
 function decorSheet() {
   const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && !S.decor[id] && S.home[id] > 0);
@@ -2745,9 +2769,9 @@ function drawHome(t) {
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.75); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
-    else drawIcon(c, W[id].ic, r.cx, r.by, r.sz);
+    else drawIcon(c, W[id].ic, r.cx + (id === playToy() && homeCats()[0] ? toyNudge(t) : 0), r.by, r.sz);
   }
-  D.cats.filter(ct => S.cats[ct.id]).forEach((ct, i) => { const p = catSpot(i); if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, i % 2 ? -1 : 1); });
+  homeCats().forEach(({ ct, pose }, i) => { const p = catSpot(i); if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play ? 1 : i % 2 ? -1 : 1, pose === 'groom' ? 'groom' : p.play ? 'play' : null); });
   if (ids.length === BASICS.length && stage() < 3) {
     c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
@@ -2869,7 +2893,7 @@ function drawOlia(t) {
   for (const [dx, dy, col] of [[-0.27, -0.3, '#d43a3a'], [0.27, -0.3, '#d43a3a']]) { leaf(sx + dx * ss - ss * 0.03, sby + dy * ss + ss * 0.03, ss * 0.028, 2.4); leaf(sx + dx * ss + ss * 0.03, sby + dy * ss + ss * 0.03, ss * 0.028, 0.7); flower(sx + dx * ss, sby + dy * ss, ss * 0.022, col); }
   const mcx = sx + ss * 0.2, mcy = sby - ss * 0.835, mcs = u * 0.2;
   sleepingCat(c, mcx, mcy, mcs, CATS[1], t);
-  hit(mcx - mcs * 0.45, mcy - mcs * 0.55, mcs * 0.9, mcs * 0.6, word('kit', { note: `❤️ <b>${OLIA_PETS[0]}</b>${st < 3 ? " · Grandma's cat. He sleeps on the warm stove." : ''}` }));
+  hit(mcx - mcs * 0.45, mcy - mcs * 0.55, mcs * 0.9, mcs * 0.6, word('kit', { note: `❤️ <b>${OLIA_PETS[0]}</b>${xl(" · Grandma's cat. He sleeps on the warm stove.")}` }));
   // firewood
   const wxl = sx + ss * 0.56, wy = sby + u * 0.012;
   shadow(wxl, wy, u * 0.075);
@@ -3070,7 +3094,7 @@ function drawOlia(t) {
   c.fillStyle = 'rgba(60,40,20,.14)'; ell(c, ballx, yy + u * 0.004, u * 0.026, u * 0.006);
   c.fillStyle = '#d43a3a'; circ(c, ballx, yy - u * 0.024, u * 0.025); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.2; c.beginPath(); c.arc(ballx, yy - u * 0.024, u * 0.016, bat, bat + 2.4); c.stroke();
   cat(c, px2, yy, u * 0.17, CATS[0], t, 0.7, -1);
-  hit(px2 - u * 0.08, yy - u * 0.19, u * 0.16, u * 0.2, word('kit', { note: `❤️ <b>${OLIA_PETS[1]}</b>${st < 3 ? " · Grandma's kitten. He loves her wool." : ''}` }));
+  hit(px2 - u * 0.08, yy - u * 0.19, u * 0.16, u * 0.2, word('kit', { note: `❤️ <b>${OLIA_PETS[1]}</b>${xl(" · Grandma's kitten. He loves her wool.")}` }));
 
   c.restore();
 }
@@ -3393,8 +3417,10 @@ const CATS = [
   { body: '#8f8277', a: '#f0a24c', b: '#4d4440', eye: '#e6b43a', chub: 1.28, fluffy: true, bib: true, tail: '#8f8277', earR: 'b', pb: [[-14, -36, 11, 'a'], [12, -44, 8, 'b'], [-18, -18, 7, 'b']], ph: [[-11, -70, 8, 'a'], [10, -76, 8, 'b']] },
   { body: '#a9a6ab', a: '#f3c4a2', b: '#8e8a90', eye: '#c9c26a', chub: 0.92, fluffy: false, bib: false, tail: '#a9a6ab', earR: 'body', pb: [[-8, -34, 8, 'a'], [10, -26, 6, 'a']], ph: [[0, -80, 5, 'a'], [-12, -66, 6, 'a'], [12, -66, 6, 'a']] },
 ];
-function cat(c, x, y, s, C, t, ph, face) {
-  const k = s / 100, ch = C.chub;
+function cat(c, x, y, s, C, t, ph, face, act) {
+  const k = s / 100, ch = C.chub, groom = act === 'groom', play = act === 'play', bat = Math.max(0, Math.sin(t * 4));
+  const wash = groom ? (Math.sin(t * 0.5 + ph) > 0.3 ? 'ear' : 'lick') : null, lick = Math.sin(t * 7 + ph);
+  const tilt = play ? -0.2 - bat * 0.05 : !groom ? 0 : wash === 'ear' ? -0.32 + Math.sin(t * 3) * 0.06 : 0.14 + lick * 0.04;
   c.save(); c.translate(x, y); c.scale(k * (face || 1), k);
   c.lineJoin = 'round'; c.lineCap = 'round';
   c.fillStyle = 'rgba(40,30,20,.16)'; ell(c, 0, 0, 34 * ch, 6);
@@ -3409,7 +3435,8 @@ function cat(c, x, y, s, C, t, ph, face) {
   c.save(); c.clip(); for (const [dx, dy, r, col] of C.pb) { c.fillStyle = C[col]; circ(c, dx * ch, dy, r); } c.restore();
   c.beginPath(); c.ellipse(0, -28, 27 * ch, 29, 0, 0, 7); c.stroke();
   if (C.bib) { c.fillStyle = '#ffffff'; ell(c, 0, -30, 13 * ch, 18); if (C.fluffy) for (let i = -2; i <= 2; i++) circ(c, i * 5 * ch, -14 - Math.abs(i) * 2, 6); }
-  c.fillStyle = '#ffffff'; for (const px of [-11, 11]) { c.beginPath(); c.ellipse(px * ch, -4, 8, 6, 0, 0, 7); c.fill(); c.stroke(); }
+  c.fillStyle = '#ffffff'; for (const px of groom || play ? [11] : [-11, 11]) { c.beginPath(); c.ellipse(px * ch, -4, 8, 6, 0, 0, 7); c.fill(); c.stroke(); }
+  c.save(); if (tilt) { c.translate(0, -50); c.rotate(tilt); c.translate(0, 50); }
   // ears
   for (const dir of [-1, 1]) {
     c.fillStyle = dir > 0 && C.earR !== 'body' ? C[C.earR] : C.body;
@@ -3422,7 +3449,7 @@ function cat(c, x, y, s, C, t, ph, face) {
   c.beginPath(); c.arc(0, -70, 24, 0, 7); c.stroke();
   if (C.fluffy) { c.fillStyle = C.bib ? '#ffffff' : C.body; for (const dir of [-1, 1]) { c.beginPath(); c.moveTo(dir * 19, -64); c.lineTo(dir * 30, -58); c.lineTo(dir * 20, -54); c.closePath(); c.fill(); c.stroke(); } }
   // face: eyes blink now and then
-  const blink = Math.sin(t * 0.8 + ph * 3) > 0.985;
+  const blink = groom || Math.sin(t * 0.8 + ph * 3) > 0.985;
   for (const ex of [-9, 9]) {
     if (blink) { c.lineWidth = 2.6; c.beginPath(); c.arc(ex, -72, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); c.lineWidth = 3.2; }
     else { c.fillStyle = C.eye; ell(c, ex, -72, 5.2, 6.4); c.fillStyle = '#2a1a10'; ell(c, ex, -71.5, 2.6, 5.4); c.fillStyle = '#fff'; circ(c, ex + 1.6, -74.5, 1.6); }
@@ -3432,6 +3459,20 @@ function cat(c, x, y, s, C, t, ph, face) {
   c.lineWidth = 2; c.beginPath(); c.arc(-2.5, -61.5, 2.5, 0, Math.PI); c.moveTo(5, -61.5); c.arc(2.5, -61.5, 2.5, 0, Math.PI); c.stroke();
   c.strokeStyle = 'rgba(74,44,26,.6)'; c.lineWidth = 1.2;
   for (const dir of [-1, 1]) for (const dy of [-1.5, 2]) { c.beginPath(); c.moveTo(dir * 13, -63 + dy); c.lineTo(dir * 32, -65 + dy * 2.5); c.stroke(); }
+  if (groom && wash === 'lick' && lick > 0.2) { c.fillStyle = '#e8708a'; ell(c, -1, -57.5, 3, 3.6); }   // little pink tongue
+  c.restore();
+  if (play) {   // swatting the toy on the floor in front
+    const px = -32 - bat * 10, py = -8 - bat * 12;
+    c.strokeStyle = INK; c.lineWidth = 3.2;
+    c.fillStyle = C.body; c.beginPath(); c.moveTo(-16 * ch, -30); c.quadraticCurveTo(-28, -28, px + 2, py - 5); c.lineTo(px + 3, py + 5); c.quadraticCurveTo(-20, -14, -8 * ch, -16); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(px, py, 7, 6, -0.3, 0, 7); c.fill(); c.stroke();
+  }
+  if (groom) {   // the lifted front paw: at the mouth for licking, or rubbing over the ear
+    const [px, py] = wash === 'ear' ? [-20 + Math.sin(t * 3) * 4, -86 + Math.sin(t * 3) * 6] : [-4, -50 + lick * 3];
+    c.strokeStyle = INK; c.lineWidth = 3.2;
+    c.fillStyle = C.body; c.beginPath(); c.moveTo(-14 * ch, -22); c.quadraticCurveTo(-22, -40, px - 3, py + 4); c.lineTo(px + 5, py + 6); c.quadraticCurveTo(-8, -36, -4 * ch, -20); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(px, py, 7, 6, wash === 'ear' ? -0.6 : 0.3, 0, 7); c.fill(); c.stroke();
+  }
   c.restore();
 }
 
@@ -3507,11 +3548,13 @@ function drawTitle(t) {
   for (const dir of [-1, 1]) for (let i = 0; i < (land ? 12 : 6); i++) drawIcon(c, '@parkan', hx + dir * (hs * 0.62 + i * hs * 0.28), hy + hs * 0.02, hs * 0.3);
   drawIcon(c, '@khata', hx, hy, hs);
   for (let i = 0; i < (land ? 16 : 10); i++) { const side = i % 2 ? 1 : -1, n = Math.floor(i / 2); sunflower(c, hx + side * (hs * 0.62 + n * hs * 0.3), hy + hs * 0.01, hs * (0.42 + (n % 2) * 0.08), t, i); }
-  // the cats: Cleo, Cece (biggest by far) and Baby (smallest)
-  const cs = hs * 0.33, cy = hy + hs * (land ? 0.18 : 0.2);
-  cat(c, hx - hs * 0.4, cy, cs, CATS[0], t, 0, 1);
-  cat(c, hx + hs * 0.42, cy + hs * 0.02, cs * 1.3, CATS[1], t, 1.7, -1);
-  cat(c, hx + hs * 0.02, cy + hs * 0.06, cs * 0.7, CATS[2], t, 3.1, 1);
+  // the cats: Cleo, Cece (biggest by far) and Baby (smallest), out towards the sides so the buttons
+  // in the middle don't cover them
+  const cs = hs * 0.33, cy = hy + hs * (land ? 0.18 : 0.2), edge = (x, m = 0.6) => Math.max(cs * m, Math.min(W - cs * m, x));
+  const lx = land ? hx - hs * 1.05 : W * 0.2, rx = land ? hx + hs * 1.05 : W * 0.85;
+  cat(c, edge(lx), cy, cs, CATS[0], t, 0, 1);
+  cat(c, edge(rx), cy + hs * 0.02, cs * 1.3, CATS[1], t, 1.7, -1);
+  cat(c, edge(land ? lx + hs * 0.36 : W * 0.07, 0.35), cy + hs * 0.09, cs * 0.7, CATS[2], t, 3.1, 1);
   // big sunflowers in the corners
   sunflower(c, W * 0.06, H, hs * (land ? 0.55 : 0.78), t, 9);
   sunflower(c, W * 0.17, H, hs * (land ? 0.42 : 0.6), t, 10);
@@ -3690,7 +3733,7 @@ const A = {
   hear2(v) { say('w_' + v, 'p_bud_laska'); },
   hearItem(v) { learn(v); say('w_' + v); },
   hearWord(v) { say('w_' + v); toast(`${W[v].uk} — ${W[v].en}`); },
-  peek() { cur.peeked = true; $('#en').innerHTML = `<div class="en">${W[cur.id].en}</div>`; },
+  peek() { if (cur.hideEn) cur.peeked = true; $('#en').innerHTML = `<div class="en">${W[cur.id].en}</div>`; for (const el of document.querySelectorAll('#sheet .xl')) el.classList.remove('xl'); },
   peekLine() { $('#en').innerHTML = `<div class="en">${cur.en}</div>`; for (const el of document.querySelectorAll('#sheet .cen')) el.style.display = ''; },
   act(v) { const a = acts[+v]; if (a) a.fn(); },
   next() { const d = dlg; if (!d) return closeSheet(); const st = d.steps[d.i]; dialog(d.npc, d.steps, d.i + 1); if (st.after) st.after(); },
@@ -3773,5 +3816,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { give: (k,n) => give(k,n), FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { give: (k,n) => give(k,n), homeCats: () => homeCats().map(h => h.ct.id + ":" + h.pose), catSpot, FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
