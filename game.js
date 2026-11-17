@@ -2862,6 +2862,10 @@ function drawHome(t) {
 // She greets you as you come in; tap her to talk again, and tap anything else to hear its name.
 const OX = { stove: 0.085, rack: 0.335, olia: 0.478, clock: 0.537, win: 0.618, table: 0.738, chest: 0.822, bed: 0.898 };
 const OLIA_PETS = ['Мурчик', 'Пушок'];
+// First visit: once her greeting closes, the view pans to one end of the room, across to the other and back,
+// and the name of everything you can tap pops up as the view reaches it (a wave sweeping along with the pan),
+// stays a moment and fades: just so you know it's all there to tap.
+let oliaWave = null;
 let oliaHits = [], oliaTip = 0;   // first visit: 1 = waiting for her greeting to open, 2 = waiting for it to close
 const recipeReady = R => recipeTotal(R) >= R.needs.length * NEED;
 function enterOlia() { closeSheet(); fadeThen(enterOliaNow); }
@@ -2884,18 +2888,18 @@ function drawOlia(t) {
   const h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56, R = curRecipe(), ready = recipeReady(R), st = stage();
   if (tour) {
     const a = t - tour.t0, ease = k => k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2, max = panMax();
-    if (a < 0.5) roomX = 0;
-    else if (a < 2.6) roomX = ease((a - 0.5) / 2.1) * max;
-    else if (a < 3.0) roomX = max;
-    else if (a < 4.2) roomX = max + ease((a - 3.0) / 1.2) * (tour.mid - max);
-    else { roomX = tour.mid; tour = null; }
+    const legs = [[tour.mid, 0, 1.8], [0, 0, 0.4], [0, max, 3.6], [max, max, 0.4], [max, tour.mid, 1.8]];
+    let k = a, i = 0;
+    while (i < legs.length && k > legs[i][2]) { k -= legs[i][2]; i++; }
+    if (i >= legs.length) { roomX = tour.mid; tour = null; }
+    else { const [p, q, d] = legs[i]; roomX = p + (q - p) * ease(Math.min(1, k / d)); if (oliaWave) oliaWave.pass = i < 2 ? 0 : i < 4 ? 1 : 2; }
   }
   clampPan();
   if (oliaTip === 1 && sheetOpen()) oliaTip = 2;
-  else if (oliaTip === 2 && !sheetOpen() && !sp) { oliaTip = 0; S.oliaTip = 1; save(); toast('👀 Роздивись бабину хату!' + (stage() < 3 ? ' · Explore Grandma’s room: tap things to hear their names.' : ''), 5000); }
+  else if (oliaTip === 2 && !sheetOpen() && !sp) { oliaTip = 0; S.oliaTip = 1; save(); if (panMax() > 10) { tour = { t0: t, mid: roomX }; oliaWave = { seen: {}, pass: 0 }; } toast('👀 Роздивись бабину хату!' + (stage() < 3 ? ' · Explore Grandma’s room: tap things to hear their names.' : ''), 5000); }
   oliaHits = [];
   const hit = (x, y, ww, hh, fn) => oliaHits.push({ x, y, w: ww, h: hh, fn });
-  const word = (id, o) => () => { if (W[id]) wordCard(id, o); };
+  const word = (id, o) => Object.assign(() => { if (W[id]) wordCard(id, o); }, { wid: id });   // wid: for the name labels
   const icon = (id, x, y, s, o) => { drawIcon(c, W[id].ic, x, y, s); hit(x - s * 0.45, y - s, s * 0.9, s * 1.03, word(id, o)); };
   const shadow = (x, y, rx) => { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, x, y, rx, rx * 0.17); };
   const flower = (x, y, r, col, mid) => { c.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k * 1.2566 - 1.57; circ(c, x + Math.cos(a) * r, y + Math.sin(a) * r, r * 0.72); } c.fillStyle = mid || '#f2c230'; circ(c, x, y, r * 0.55); };
@@ -3171,6 +3175,29 @@ function drawOlia(t) {
   c.fillStyle = '#d43a3a'; circ(c, ballx, yy - u * 0.024, u * 0.025); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.2; c.beginPath(); c.arc(ballx, yy - u * 0.024, u * 0.016, bat, bat + 2.4); c.stroke();
   cat(c, px2, yy, u * 0.17, CATS[0], t, 0.7, -1);
   hit(px2 - u * 0.08, yy - u * 0.19, u * 0.16, u * 0.2, word('kit', { note: `❤️ <b>${OLIA_PETS[1]}</b>${xl(" · Grandma's kitten. He loves her wool.")}` }));
+
+  // the wave of name labels during the first-visit pan
+  if (oliaWave) {
+    const W0 = cv.width, fs = Math.max(13, Math.round(u * 0.04));
+    c.font = `800 ${fs}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    let live = false;
+    oliaHits.forEach((r, i) => {
+      const id = r.fn.wid; if (!id || !W[id]) return;
+      const cx = r.x + r.w / 2, sx = cx - roomX, key = i + ':' + oliaWave.pass;
+      if (tour && sx > W0 * 0.1 && sx < W0 * 0.9 && oliaWave.seen[key] === undefined) oliaWave.seen[key] = t;
+      const t0 = oliaWave.seen[key]; if (t0 === undefined) return;
+      const age = t - t0, al = age < 0.15 ? age / 0.15 : age < 1.1 ? 1 : Math.max(0, 1 - (age - 1.1) / 0.45);
+      if (al <= 0) return; live = true;
+      const pop = age < 0.2 ? 0.6 + age / 0.2 * 0.5 : age < 0.3 ? 1.1 - (age - 0.2) : 1, txt = W[id].uk, tw = c.measureText(txt).width + fs, y = Math.max(fs, r.y - fs * 0.4);
+      c.save(); c.globalAlpha = al; c.translate(cx, y); c.scale(pop, pop);
+      c.fillStyle = 'rgba(74,44,26,.25)'; rr(c, -tw / 2, -fs * 0.72 + 2, tw, fs * 1.44, fs * 0.72);
+      c.fillStyle = '#fff8ea'; rr(c, -tw / 2, -fs * 0.72, tw, fs * 1.44, fs * 0.72);
+      c.strokeStyle = '#4a2c1a'; c.lineWidth = 2; c.beginPath(); if (c.roundRect) c.roundRect(-tw / 2, -fs * 0.72, tw, fs * 1.44, fs * 0.72); c.stroke();
+      c.fillStyle = '#4a2c1a'; c.fillText(txt, 0, 1);
+      c.restore();
+    });
+    if (!tour && !live) oliaWave = null;
+  }
 
   c.restore();
 }
