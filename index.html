@@ -44,6 +44,7 @@
   #veil { position:fixed; inset:0; background:rgba(40,30,20,.28); z-index:9; display:none; }
   #sheet { position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:min(100vw, 560px); max-height:78vh; overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; background:var(--cream); border-radius:26px 26px 0 0; padding:16px 16px calc(18px + env(safe-area-inset-bottom)); z-index:10; display:none; box-shadow:0 -6px 24px rgba(40,30,20,.25); }
   #sheet.show, #veil.show, #sheet.closing, #veil.closing { display:block; }
+  #sheet::before { content:""; display:block; width:44px; height:5px; border-radius:3px; background:rgba(90,70,50,.22); margin:-8px auto 8px; }   /* grab handle: swipe down to close */
   #veil.show { animation:veilIn .22s ease-out; }
   #veil.closing { animation:veilOut .19s ease-in forwards; pointer-events:none; }
   #sheet.closing { animation:fall .19s ease-in forwards; pointer-events:none; }
@@ -201,12 +202,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v83</div>
+  <div class="ver">v84</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '83';</script>
-<script src="data.js?v=83"></script>
-<script src="game.js?v=83"></script>
+<script>window.APP_VERSION = '84';</script>
+<script src="data.js?v=84"></script>
+<script src="game.js?v=84"></script>
 </body>
 </html>

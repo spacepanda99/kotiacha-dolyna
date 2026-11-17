@@ -1142,7 +1142,7 @@ function add(e) {
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [23.4, 11.15], [26.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
-  add({ w: 'pysanka', x: 16.85, y: 18.93, s: 0.6, lift: 0.465 });   // sitting on the market bench
+  add({ w: 'pysanka', x: 22.15, y: 17.12, s: 0.6 });   // a basket of pysanky beside the market stall
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
   for (const [x, y] of [[34.3, 21.5], [34.3, 22.2], [34.3, 22.9], [34.3, 23.6], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0, give: 'pshenytsia', cd: 150, hide: true });   // a strip of wheat
   for (const [x, y] of [[4.5, 11.5], [22.6, 11.5], [27.2, 11.35], [17.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
@@ -1726,6 +1726,39 @@ function closeSheet() {
   if (onClose) { const f = onClose; onClose = null; f(); }
 }
 const sheetOpen = () => sheet.classList.contains('show');
+// Swipe a card down to close it, the same as tapping above it. The drag only starts while the card is
+// scrolled to its top, so scrolling a long card still works; a short drag springs back.
+{
+  let y0 = null, x0 = 0, dy = 0, t0 = 0, drag = false;
+  const clear = () => { sheet.style.transition = ''; sheet.style.transform = ''; veil.style.transition = ''; veil.style.opacity = ''; };
+  sheet.addEventListener('touchstart', ev => {
+    y0 = null; if (ev.touches.length !== 1 || sheet.scrollTop > 0 || sp) return;
+    y0 = ev.touches[0].clientY; x0 = ev.touches[0].clientX; dy = 0; t0 = Date.now(); drag = false;
+  }, { passive: true });
+  sheet.addEventListener('touchmove', ev => {
+    if (y0 === null) return;
+    const d = ev.touches[0].clientY - y0, dx = ev.touches[0].clientX - x0;
+    if (!drag) {
+      if (d > 8 && d > Math.abs(dx) * 1.2 && sheet.scrollTop <= 0) { drag = true; sheet.style.transition = 'none'; veil.style.transition = 'none'; }
+      else { if (d < -4 || Math.abs(dx) > 12) y0 = null; return; }
+    }
+    ev.preventDefault();
+    dy = Math.max(0, d); sheet.style.transform = `translate(-50%, ${dy}px)`; veil.style.opacity = String(Math.max(0.15, 1 - dy / 350));
+  }, { passive: false });
+  const end = () => {
+    if (y0 === null) return; y0 = null; if (!drag) return; drag = false;
+    const fast = dy / Math.max(1, Date.now() - t0) > 0.35;   // px per ms
+    if (dy > 100 || (fast && dy > 35)) {
+      sheet.style.transition = 'transform .17s ease-in'; veil.style.transition = 'opacity .17s ease-in';
+      sheet.style.transform = `translate(-50%, ${sheet.offsetHeight + 20}px)`; veil.style.opacity = '0';
+      setTimeout(() => { A.close(); sheet.classList.remove('closing'); veil.classList.remove('closing'); clear(); }, 170);
+    } else {
+      sheet.style.transition = 'transform .22s cubic-bezier(.2,1.3,.4,1)'; veil.style.transition = 'opacity .2s'; sheet.style.transform = 'translate(-50%, 0)'; veil.style.opacity = '';
+      setTimeout(clear, 230);
+    }
+  };
+  sheet.addEventListener('touchend', end); sheet.addEventListener('touchcancel', end);
+}
 let toastT = 0;
 function toast(msg, ms = 1900) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
 const btn = (a, v, inner, cls = '') => `<button class="b ${cls}" data-a="${a}" data-v="${v}">${inner}</button>`;
