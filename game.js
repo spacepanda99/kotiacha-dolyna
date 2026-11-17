@@ -1890,16 +1890,29 @@ function catRoute(sx, sy, tx, ty) {
 }
 // A cat you've just befriended trots after you until you take it home (S.cats[id] = 'f'); once inside
 // it's a house cat (S.cats[id] = 1) and no longer out in the village.
+// With several following, each keeps its own place in the line (further back the later it joined), and
+// they nudge apart so no two stand in the same spot.
 function followStep(e, dt) {
+  const line = ents.filter(q => q.cat && S.cats[q.cat] === 'f'), idx = Math.max(0, line.indexOf(e));
+  const near = 0.8 + idx * 0.75;
   const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy);
-  if (d > 7) { e.x = P.x + (P.x > e.x ? -1 : 1) * 0.9; e.y = P.y + 0.15; e.vel = 0; return; }   // left behind a building: catch up
-  const want = d > 1.6 ? 3.8 : d > 1.0 ? 2 : 0;
+  const free = (x, y) => !(solid[Math.floor(y)] || [])[Math.floor(x)];
+  if (d > 7 + idx) { e.x = P.x + (P.x > e.x ? -1 : 1) * near; e.y = P.y + (idx % 2 ? 0.35 : 0.1); e.vel = 0; return; }   // left behind a building: catch up
+  const want = d > near + 0.8 ? 3.8 : d > near + 0.2 ? 2 : 0;
   e.vel += (want - e.vel) * (1 - Math.exp(-dt * 4));
-  if (e.vel > 0.02 && d > 0.8) {
-    const m = Math.min(d - 0.8, e.vel * dt), nx = e.x + dx / d * m, ny = e.y + dy / d * m;
-    const free = (x, y) => !(solid[Math.floor(y)] || [])[Math.floor(x)];
+  if (e.vel > 0.02 && d > near) {
+    const m = Math.min(d - near, e.vel * dt), nx = e.x + dx / d * m, ny = e.y + dy / d * m;
     if (free(nx, ny)) { e.x = nx; e.y = ny; } else if (free(nx, e.y)) e.x = nx; else if (free(e.x, ny)) e.y = ny;
     e.step = (e.step || 0) + m;
+  }
+  for (const o of line) {   // shuffle sideways away from a cat that's too close
+    if (o === e) continue;
+    const ox = e.x - o.x, oy = e.y - o.y, od = Math.hypot(ox, oy);
+    if (od < 0.6) {
+      const push = (0.6 - od) * Math.min(1, dt * 5), ux = od > 0.01 ? ox / od : idx % 2 ? 1 : -1, uy = od > 0.01 ? oy / od : 0.5;
+      const nx = e.x + ux * push, ny = e.y + uy * push * 0.6;
+      if (free(nx, ny)) { e.x = nx; e.y = ny; }
+    }
   }
   if (Math.abs(dx) > 0.15) e.face = dx > 0 ? -1 : 1;
   e.st = 'idle'; e.act = 'look'; e.tw = 1;
