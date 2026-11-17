@@ -2441,10 +2441,15 @@ function homeTap(sx, py) {
   if (best) return wordCard(best, BASICS.includes(best) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(best); closeSheet(); } }] });
 }
 function catSpot(i) {
-  // The first friend curls up in the cat bed, the second sits on top of the cat tree, if they're in the room.
-  if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: roomU() * 0.3, sleep: true }; }
-  if (i === 1 && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: roomU() * 0.16 }; }
-  const xs = [0.55, 0.25, 0.66, 0.12, 0.84, 0.36]; return { x: xs[i % 6] * roomW(), y: cv.height * 0.885, s: roomU() * 0.25 };
+  // Your cats gather round the table, where the view opens when you come in, so you always see all of them
+  // (a phone shows under a third of the room, and they used to be spread right across it). The first one
+  // curls up in the cat bed and the second sits on the cat tree, but only if those are in that same view.
+  const u = roomU(), mid = DECOR.stil.x * roomW(), v0 = Math.max(0, Math.min(panMax(), mid - cv.width / 2)), v1 = v0 + cv.width;
+  const inView = x => x > v0 + u * 0.1 && x < v1 - u * 0.1;
+  if (i === 0 && S.decor.lezhanka) { const r = decorRect('lezhanka'); if (inView(r.cx)) return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: u * 0.3, sleep: true }; }
+  if (i === 1 && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); if (inView(r.cx)) return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: u * 0.16 }; }
+  const offs = [0, -0.3, 0.3, -0.6, 0.6, 0.15], x = Math.max(v0 + u * 0.13, Math.min(v1 - u * 0.13, mid + offs[i % 6] * u));
+  return { x, y: cv.height * 0.885, s: u * 0.25 };
 }
 function decorSheet() {
   const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && !S.decor[id] && S.home[id] > 0);
