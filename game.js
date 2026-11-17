@@ -2996,6 +2996,26 @@ function update(dt, t, rdt = dt) {
 }
 
 // A round speech bubble with a soft shadow and a little tail.
+// Oksana's bubble: a wicker basket with a loaf, two red apples and a leaf, an embroidered cloth over the front.
+function marketBasket(c, x, y) {
+  c.save(); c.translate(x, y); c.lineCap = 'round'; c.lineJoin = 'round';
+  c.strokeStyle = '#8a5a2b'; c.lineWidth = 2.8; c.beginPath(); c.arc(0, 0, 11.5, Math.PI * 1.06, Math.PI * 1.94); c.stroke();
+  c.strokeStyle = '#d29a5c'; c.lineWidth = 1.1; c.beginPath(); c.arc(0, 0, 11.5, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+  c.fillStyle = '#d9963a'; ell(c, -5, -2, 7.5, 4.4); c.fillStyle = '#efb758'; ell(c, -6, -3.4, 4.2, 1.8);
+  c.strokeStyle = '#b8752a'; c.lineWidth = 0.9; for (const k of [-9, -5.5, -2]) { c.beginPath(); c.moveTo(k, -5); c.lineTo(k + 1.6, -1.5); c.stroke(); }
+  c.fillStyle = '#e2392f'; circ(c, 4.5, -2.2, 3.8); circ(c, 9, -0.6, 3.3);
+  c.fillStyle = 'rgba(255,255,255,.6)'; circ(c, 3.4, -3.5, 1.1); circ(c, 8, -1.8, 0.9);
+  c.strokeStyle = '#6b4422'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(4.6, -5.8); c.lineTo(5.2, -7.2); c.stroke();
+  c.fillStyle = '#4f9a3f'; c.save(); c.translate(6.6, -7.2); c.rotate(-0.5); ell(c, 0, 0, 2.6, 1.2); c.restore();
+  c.fillStyle = '#b57a3e'; poly(c, [[-13.5, -0.5], [13.5, -0.5], [10.5, 11], [-10.5, 11]]);
+  c.strokeStyle = 'rgba(110,70,30,.55)'; c.lineWidth = 0.9;
+  for (const yy of [3.5, 7.5]) { const w = 13.5 - (yy + 0.5) * 0.27; c.beginPath(); c.moveTo(-w, yy); c.lineTo(w, yy); c.stroke(); }
+  for (let i = -5; i <= 5; i++) { c.beginPath(); c.moveTo(i * 2.3, 0.5 + (i & 1) * 4); c.lineTo(i * 2.1, 3 + (i & 1) * 4); c.stroke(); }
+  c.fillStyle = '#8a5a2b'; rr(c, -14.5, -2, 29, 3.4, 1.7);
+  c.fillStyle = '#fffaf0'; poly(c, [[-7, 1.4], [7, 1.4], [4.5, 7.5], [0, 10], [-4.5, 7.5]]);
+  c.fillStyle = '#d43a3a'; for (const [px, py] of [[-3.6, 3.6], [0, 3.6], [3.6, 3.6], [0, 7]]) poly(c, [[px, py - 1.4], [px + 1.4, py], [px, py + 1.4], [px - 1.4, py]]);
+  c.restore();
+}
 function bubble(c, x, y, R) {
   c.fillStyle = 'rgba(60,40,20,.16)'; circ(c, x, y + 3, R);
   c.fillStyle = 'rgba(255,253,245,.97)'; circ(c, x, y, R); poly(c, [[x - 5, y + R - 3], [x + 5, y + R - 3], [x, y + R + 6]]);
@@ -3107,10 +3127,11 @@ function drawWorld(t) {
     const x = e.x * T, y = e.y * T;
     if (e.kind === 'npc') {
       const n = S.npc[e.npc], top = y - T * 1.45;
-      if (n && n.met && (n.k || 0) < 3) offer(e, NPC[e.npc].name);
-      const bub = n && n.mad ? '😠' : e.npc === 'oksana' ? '🧺' : n && n.q ? (stage() < 2 && W[n.q].ic[0] !== '@' ? W[n.q].ic : '❔') : '💬';
+      if (n && n.met && (n.k || 0) < 3 && e.npc !== 'oksana') offer(e, NPC[e.npc].name);   // Oksana's chats open the shop and never count up, so she'd be labelled for ever
+      const bub = n && n.mad ? '😠' : e.npc === 'oksana' ? 'market' : n && n.q ? (stage() < 2 && W[n.q].ic[0] !== '@' ? W[n.q].ic : '❔') : '💬';
       bubble(c, x, top + Math.sin(t * 2.5 + e.x) * 3, 19);
-      drawIcon(c, bub, x, top + 12 + Math.sin(t * 2.5 + e.x) * 3, 27);
+      if (bub === 'market') marketBasket(c, x, top + 3 + Math.sin(t * 2.5 + e.x) * 3);
+      else drawIcon(c, bub, x, top + 12 + Math.sin(t * 2.5 + e.x) * 3, 27);
       continue;
     }
     if (e.kind === 'fly') { if (isFresh(e.w)) drawIcon(c, '✨', x + 12, y - 14, 18); continue; }
