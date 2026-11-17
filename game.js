@@ -3573,7 +3573,7 @@ const CATS = [
 function cat(c, x, y, s, C, t, ph, face, act) {
   const k = s / 100, ch = C.chub, groom = act === 'groom', swat = act === 'swat', play = act === 'play' || swat, bat = Math.max(0, Math.sin(t * 4));
   const wash = groom ? (Math.sin(t * 0.5 + ph) > 0.3 ? 'ear' : 'lick') : null, lick = Math.sin(t * 7 + ph);
-  const tilt = swat ? -0.12 - bat * 0.06 : play ? -0.2 - bat * 0.05 : !groom ? 0 : wash === 'ear' ? -0.32 + Math.sin(t * 3) * 0.06 : 0.14 + lick * 0.04;
+  const tilt = swat ? -0.3 - bat * 0.06 : play ? -0.2 - bat * 0.05 : !groom ? 0 : wash === 'ear' ? -0.32 + Math.sin(t * 3) * 0.06 : 0.14 + lick * 0.04;
   c.save(); c.translate(x, y); c.scale(k * (face || 1), k);
   c.lineJoin = 'round'; c.lineCap = 'round';
   c.fillStyle = 'rgba(40,30,20,.16)'; ell(c, 0, 0, 34 * ch, 6);
@@ -3603,9 +3603,11 @@ function cat(c, x, y, s, C, t, ph, face, act) {
   if (C.fluffy) { c.fillStyle = C.bib ? '#ffffff' : C.body; for (const dir of [-1, 1]) { c.beginPath(); c.moveTo(dir * 19, -64); c.lineTo(dir * 30, -58); c.lineTo(dir * 20, -54); c.closePath(); c.fill(); c.stroke(); } }
   // face: eyes blink now and then
   const blink = groom || Math.sin(t * 0.8 + ph * 3) > 0.985;
+  // Where it looks: up at the towel it's batting, down at the toy, otherwise at you.
+  const [gx, gy] = swat ? [-2.4, -1.4] : play ? [-2.4, 1] : [0, 0];
   for (const ex of [-9, 9]) {
     if (blink) { c.lineWidth = 2.6; c.beginPath(); c.arc(ex, -72, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); c.lineWidth = 3.2; }
-    else { c.fillStyle = C.eye; ell(c, ex, -72, 5.2, 6.4); c.fillStyle = '#2a1a10'; ell(c, ex, -71.5, 2.6, 5.4); c.fillStyle = '#fff'; circ(c, ex + 1.6, -74.5, 1.6); }
+    else { c.fillStyle = C.eye; ell(c, ex, -72, 5.2, 6.4); c.fillStyle = '#2a1a10'; ell(c, ex + gx, -71.5 + gy, 2.6, 5.4); c.fillStyle = '#fff'; circ(c, ex + gx + 1.6, -74.5 + gy, 1.6); }
   }
   c.fillStyle = '#f08aa0'; circ(c, -14, -63, 3.4); circ(c, 14, -63, 3.4);
   c.fillStyle = '#e8708a'; poly(c, [[-3, -65], [3, -65], [0, -62]]);
