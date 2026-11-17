@@ -1538,7 +1538,7 @@ function closeSheet() {
 }
 const sheetOpen = () => sheet.classList.contains('show');
 let toastT = 0;
-function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 1900); }
+function toast(msg, ms = 1900) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
 const btn = (a, v, inner, cls = '') => `<button class="b ${cls}" data-a="${a}" data-v="${v}">${inner}</button>`;
 
 function wordCard(id, o = {}) {
@@ -2158,7 +2158,7 @@ function enterHomeNow() {
   if (panMax() > 10 && (S.tours || 0) < 3) { S.tours = (S.tours || 0) + 1; save(); roomX = 0; tour = { t0: nowT, mid }; }
   blip(520);
 }
-function exitHomeNow() { tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
+function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
 function homeTap(sx, py) {
   const px = sx + roomX;
   const friends = D.cats.filter(ct => S.cats[ct.id]);
@@ -2310,7 +2310,7 @@ function drawHome(t) {
 // She greets you as you come in; tap her to talk again, and tap anything else to hear its name.
 const OX = { stove: 0.085, rack: 0.335, olia: 0.478, clock: 0.537, win: 0.618, table: 0.738, chest: 0.822, bed: 0.898 };
 const OLIA_PETS = ['Мурчик', 'Пушок'];
-let oliaHits = [];
+let oliaHits = [], oliaTip = 0;   // first visit: 1 = waiting for her greeting to open, 2 = waiting for it to close
 const recipeReady = R => recipeTotal(R) >= R.needs.length * NEED;
 function enterOlia() { closeSheet(); fadeThen(enterOliaNow); }
 function enterOliaNow() {
@@ -2321,6 +2321,7 @@ function enterOliaNow() {
   roomX = mid; clampPan();
   tour = null; blip(520);
   setTimeout(() => { if (mode === 'olia' && !sheetOpen()) talk(NPC.olia); }, 500);
+  oliaTip = S.oliaTip ? 0 : 1;
 }
 function oliaTap(sx, py) {
   const px = sx + roomX;
@@ -2338,6 +2339,8 @@ function drawOlia(t) {
     else { roomX = tour.mid; tour = null; }
   }
   clampPan();
+  if (oliaTip === 1 && sheetOpen()) oliaTip = 2;
+  else if (oliaTip === 2 && !sheetOpen() && !sp) { oliaTip = 0; S.oliaTip = 1; save(); toast('👀 Роздивись бабину хату!' + (stage() < 3 ? ' · Explore Grandma’s room: tap things to hear their names.' : ''), 5000); }
   oliaHits = [];
   const hit = (x, y, ww, hh, fn) => oliaHits.push({ x, y, w: ww, h: hh, fn });
   const word = (id, o) => () => { if (W[id]) wordCard(id, o); };
@@ -2466,17 +2469,17 @@ function drawOlia(t) {
   }
   c.fillStyle = '#e0b272'; rr(c, cl - u * 0.016, ctop - u * 0.024, cw + u * 0.032, u * 0.034, u * 0.008);
   c.fillStyle = '#c4935c'; c.fillRect(cl - u * 0.016, ctop + u * 0.002, cw + u * 0.032, u * 0.008);
-  const n = R.needs.length, sp = Math.min(u * 0.112, (cw - u * 0.04) / n), is = Math.min(u * 0.1, sp * 0.95), ix0 = cl + u * 0.02 + sp / 2, top = ctop - u * 0.022;
+  const n = R.needs.length, gap = Math.min(u * 0.112, (cw - u * 0.04) / n), is = Math.min(u * 0.1, gap * 0.95), ix0 = cl + u * 0.02 + gap / 2, top = ctop - u * 0.022;
   R.needs.forEach((id, i) => {
-    const have = recipeHave(id), full = have >= NEED, x = ix0 + i * sp;
+    const have = recipeHave(id), full = have >= NEED, x = ix0 + i * gap;
     c.fillStyle = 'rgba(60,40,20,.14)'; ell(c, x, top, is * 0.36, is * 0.06);
     c.globalAlpha = have ? 1 : 0.34; drawIcon(c, W[id].ic, x, top + 1, is); c.globalAlpha = 1;
-    const pw = Math.min(u * 0.074, sp * 0.86), ph = u * 0.04, py = ctop + u * 0.012;
+    const pw = Math.min(u * 0.074, gap * 0.86), ph = u * 0.04, py = ctop + u * 0.012;
     c.font = `800 ${Math.round(u * 0.03)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = 'rgba(60,40,20,.2)'; rr(c, x - pw / 2, py + 2, pw, ph, ph / 2);
     c.fillStyle = full ? '#3f8a3a' : '#fff8ea'; rr(c, x - pw / 2, py, pw, ph, ph / 2);
     c.fillStyle = full ? '#fff' : '#4a2c1a'; c.fillText(full ? '✓' : `${have}/${NEED}`, x, py + ph / 2 + 1);
-    hit(x - sp / 2, top - is, sp, is + ph + u * 0.04, word(id, { note: `🥣 <b>${have} / ${NEED}</b>${full ? '' : `<br><small>${(S.seeds[id] || 0) > 0 ? '🌱 ' + D.ui.plantit[0] : sourceHint(id)}</small>`}` }));
+    hit(x - gap / 2, top - is, gap, is + ph + u * 0.04, word(id, { note: `🥣 <b>${have} / ${NEED}</b>${full ? '' : `<br><small>${(S.seeds[id] || 0) > 0 ? '🌱 ' + D.ui.plantit[0] : sourceHint(id)}</small>`}` }));
   });
 
   // ---- the cuckoo clock (ходики) with its pine-cone weights, and a tear-off calendar
