@@ -2179,7 +2179,12 @@ function shop() {
     if (shopSel && list[shopSel] && !owned(shopSel)) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
   }
   setTimeout(() => sheet.classList.add('fixed'), 0);   // the market keeps one height, however few items a tab has
+  // Redrawing the shop rebuilds the tab row, which would jump back to the first tab: keep it where it was,
+  // and make sure the chosen tab is fully in view.
+  const oldTabs = sheetOpen() && sheet.querySelector('.tabs'), keepX = oldTabs ? oldTabs.scrollLeft : 0;
   openSheet(`<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>${body}`);
+  { const row = sheet.querySelector('.tabs'), on = row && row.querySelector('.tab.on');
+    if (row) { row.scrollLeft = keepX; if (on) { const l = on.offsetLeft - row.offsetLeft, r = l + on.offsetWidth; if (l < row.scrollLeft) row.scrollLeft = l - 8; else if (r > row.scrollLeft + row.clientWidth) row.scrollLeft = r - row.clientWidth + 8; } } }
 }
 // Helping at the stall: Oksana asks for something by name, you hand it over.
 // This is where words that are due for review come back.
