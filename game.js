@@ -408,11 +408,13 @@ const DRAW = {
     c.strokeStyle = '#6f452c'; c.lineWidth = 3;
     for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(-36, -58 + i * 18); c.lineTo(36, -58 + i * 18); c.stroke(); }
   },
-  table(c) {
+  table(c, o) {
+    const sw = (o && o.swing) || 0, at = y => sw * (y + 54) / 26;   // the hanging end swings, the top stays put
     c.fillStyle = '#8a5a2b'; c.fillRect(-38, -42, 8, 42); c.fillRect(30, -42, 8, 42);
     c.fillStyle = '#c08a55'; rr(c, -46, -54, 92, 13, 4);
-    c.fillStyle = '#fffdf5'; rr(c, -16, -56, 32, 28, 2);
-    c.fillStyle = '#e2574c'; c.fillRect(-16, -34, 32, 3); c.fillRect(-16, -40, 32, 2);
+    c.fillStyle = '#fffdf5'; if (!sw) rr(c, -16, -56, 32, 28, 2); else { rr(c, -16, -56, 32, 4, 2); poly(c, [[-16, -54], [16, -54], [16 + sw, -28], [-16 + sw, -28]]); }
+    c.fillStyle = '#e2574c';
+    for (const [y, h] of [[-34, 3], [-40, 2]]) poly(c, [[-16 + at(y), y], [16 + at(y), y], [16 + at(y + h), y + h], [-16 + at(y + h), y + h]]);
   },
   // A traditional Ukrainian килим: black border with ochre diamonds, a deep burgundy field, a central
   // folk medallion with a red rose, stylised roses with leaves either side, cream stars, and fringed ends.
@@ -2638,10 +2640,12 @@ function homeTap(sx, py) {
 }
 // Three of your cats are at home at any time; the rest are out and about. Each visit picks which three,
 // and they're busy: one looks up at you by the table, one is asleep on the bed, one washes itself in the window.
-const BED_CAT = [0.12, 0.42];
+const BED_CAT = [-0.06, 0.42];   // where on the bed the sleeper lies (the middle), as a share of the bed's size
 // With a ball or a toy mouse on the floor, a cat plays with it; the toy gets knocked a little each swat.
 const playToy = () => S.decor.miachyk ? 'miachyk' : S.decor.myshka ? 'myshka' : null;
-const toyNudge = t => -Math.max(0, Math.sin(t * 4 - 0.5)) * roomU() * 0.02;   // where on the bed the sleeper lies, as a share of the bed's size
+const toyNudge = t => -Math.max(0, Math.sin(t * 4 - 0.5)) * roomU() * 0.02;
+// The towel hanging off the table swings when the cat bats it (in the table drawing's own units).
+const towelSwing = t => -Math.max(0, Math.sin(t * 4 - 0.4)) * 7 + Math.sin(t * 1.3) * 0.8;
 const HOME_POSES = ['look', 'sleep', 'groom'];
 let homeTrio = null;
 function pickHomeCats() {
@@ -2654,17 +2658,19 @@ function homeCats() {
   return homeTrio;
 }
 function catSpot(i) {
-  // The one looking at you sits on the floor by the table, where the view opens when you come in; the
-  // sleeper is curled up on your bed and the one washing itself sits on the windowsill.
+  // One plays by the table, where the view opens when you come in: batting the towel hanging off it, or the
+  // ball or toy mouse once you've bought one. One sleeps in the middle of your bed (or in the cat bed, once
+  // bought), and one washes itself on the windowsill (or up on the cat tree, once bought).
   const u = roomU(), mid = DECOR.stil.x * roomW(), v0 = Math.max(0, Math.min(panMax(), mid - cv.width / 2)), v1 = v0 + cv.width;
   const inView = x => x > v0 + u * 0.1 && x < v1 - u * 0.1;
   const pose = (homeCats()[i] || {}).pose;
-  if (pose === 'sleep') {   // the cat bed if you have one, else the top of the cat tree, else your own bed
+  if (pose === 'sleep') {
     if (S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: u * 0.3, sleep: true }; }
-    if (S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.08, y: r.by - r.sz * 0.88, s: u * 0.15, sleep: true }; }
     const r = decorRect('lizhko'); return { x: r.cx + r.sz * BED_CAT[0], y: r.by - r.sz * BED_CAT[1], s: u * 0.2, sleep: true };
   }
   if (pose === 'look' && playToy()) { const r = decorRect(playToy()); return { x: r.cx + u * 0.12, y: r.by, s: u * 0.22, play: true }; }   // batting the toy about
+  if (pose === 'look') { const r = decorRect('stil'); return { x: r.cx + u * 0.055, y: cv.height * 0.885, s: u * 0.25, towel: true }; }   // batting the towel on the table
+  if (pose === 'groom' && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: u * 0.16 }; }
   if (pose === 'groom') return { x: WIN_X * roomW() - u * 0.06, y: cv.height * 0.462, s: u * 0.15 };
   const offs = [0, -0.3, 0.3, -0.6, 0.6, 0.15], x = Math.max(v0 + u * 0.13, Math.min(v1 - u * 0.13, mid + offs[i % 6] * u));
   return { x, y: cv.height * 0.885, s: pose === 'sleep' ? u * 0.27 : u * 0.25, sleep: pose === 'sleep' };
@@ -2783,9 +2789,9 @@ function drawHome(t) {
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.75); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
-    else drawIcon(c, W[id].ic, r.cx + (id === playToy() && homeCats()[0] ? toyNudge(t) : 0), r.by, r.sz);
+    else drawIcon(c, W[id].ic, r.cx + (id === playToy() && homeCats()[0] ? toyNudge(t) : 0), r.by, r.sz, id === 'stil' && !playToy() && homeCats()[0] ? { swing: towelSwing(t) } : undefined);
   }
-  homeCats().forEach(({ ct, pose }, i) => { const p = catSpot(i); if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play ? 1 : i % 2 ? -1 : 1, pose === 'groom' ? 'groom' : p.play ? 'play' : null); });
+  homeCats().forEach(({ ct, pose }, i) => { const p = catSpot(i); if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, pose === 'groom' ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); });
   if (ids.length === BASICS.length && stage() < 3) {
     c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
@@ -3447,9 +3453,9 @@ const CATS = [
   { body: '#a9a6ab', a: '#f3c4a2', b: '#8e8a90', eye: '#c9c26a', chub: 0.92, fluffy: false, bib: false, tail: '#a9a6ab', earR: 'body', pb: [[-8, -34, 8, 'a'], [10, -26, 6, 'a']], ph: [[0, -80, 5, 'a'], [-12, -66, 6, 'a'], [12, -66, 6, 'a']] },
 ];
 function cat(c, x, y, s, C, t, ph, face, act) {
-  const k = s / 100, ch = C.chub, groom = act === 'groom', play = act === 'play', bat = Math.max(0, Math.sin(t * 4));
+  const k = s / 100, ch = C.chub, groom = act === 'groom', swat = act === 'swat', play = act === 'play' || swat, bat = Math.max(0, Math.sin(t * 4));
   const wash = groom ? (Math.sin(t * 0.5 + ph) > 0.3 ? 'ear' : 'lick') : null, lick = Math.sin(t * 7 + ph);
-  const tilt = play ? -0.2 - bat * 0.05 : !groom ? 0 : wash === 'ear' ? -0.32 + Math.sin(t * 3) * 0.06 : 0.14 + lick * 0.04;
+  const tilt = swat ? -0.12 - bat * 0.06 : play ? -0.2 - bat * 0.05 : !groom ? 0 : wash === 'ear' ? -0.32 + Math.sin(t * 3) * 0.06 : 0.14 + lick * 0.04;
   c.save(); c.translate(x, y); c.scale(k * (face || 1), k);
   c.lineJoin = 'round'; c.lineCap = 'round';
   c.fillStyle = 'rgba(40,30,20,.16)'; ell(c, 0, 0, 34 * ch, 6);
@@ -3490,10 +3496,13 @@ function cat(c, x, y, s, C, t, ph, face, act) {
   for (const dir of [-1, 1]) for (const dy of [-1.5, 2]) { c.beginPath(); c.moveTo(dir * 13, -63 + dy); c.lineTo(dir * 32, -65 + dy * 2.5); c.stroke(); }
   if (groom && wash === 'lick' && lick > 0.2) { c.fillStyle = '#e8708a'; ell(c, -1, -57.5, 3, 3.6); }   // little pink tongue
   c.restore();
-  if (play) {   // swatting the toy on the floor in front
-    const px = -32 - bat * 10, py = -8 - bat * 12;
+  if (play) {   // swatting the toy on the floor in front, or up at the towel above
+    const px = swat ? -34 - bat * 4 : -32 - bat * 10, py = swat ? -98 - bat * 12 : -8 - bat * 12;
     c.strokeStyle = INK; c.lineWidth = 3.2;
-    c.fillStyle = C.body; c.beginPath(); c.moveTo(-16 * ch, -30); c.quadraticCurveTo(-28, -28, px + 2, py - 5); c.lineTo(px + 3, py + 5); c.quadraticCurveTo(-20, -14, -8 * ch, -16); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle = C.body; c.beginPath();
+    if (swat) { c.moveTo(-26 * ch, -42); c.quadraticCurveTo(-36, -66, px - 5, py + 2); c.lineTo(px + 5, py + 4); c.quadraticCurveTo(-24, -62, -16 * ch, -40); }   // reaching up the outside of the head
+    else { c.moveTo(-16 * ch, -30); c.quadraticCurveTo(-28, -28, px + 2, py - 5); c.lineTo(px + 3, py + 5); c.quadraticCurveTo(-20, -14, -8 * ch, -16); }
+    c.closePath(); c.fill(); c.stroke();
     c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(px, py, 7, 6, -0.3, 0, 7); c.fill(); c.stroke();
   }
   if (groom) {   // the lifted front paw: at the mouth for licking, or rubbing over the ear
