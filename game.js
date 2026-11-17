@@ -91,9 +91,18 @@ function enOf(id) {
 // Live subtitles on the talking cards: always in English (that's what they're for), what is being said right
 // now, the words lighting up as they're spoken, the last line staying up afterwards so you can read it. Shown or hidden with the button under the
 // card; the choice is remembered on this device.
-let subsOn = false, subNow = null;
-try { subsOn = localStorage.getItem('kd-subs') === 'on'; } catch (e) {}
+// On by default while learning; off by default once you reach stage 3 (the all-Ukrainian stage). A tap on 💬
+// is remembered for the stage band it was made in, so reaching stage 3 turns them off once and a tap brings them back.
+let subNow = null;
+const subsBand = () => stage() >= 3 ? 'adv' : 'new';
+function subsOnNow() {
+  let v = null; try { v = localStorage.getItem('kd-subs'); } catch (e) {}
+  const [c, band] = String(v || '').split('@');
+  if ((c === 'on' || c === 'off') && (band || 'new') === subsBand()) return c === 'on';
+  return subsBand() === 'new';
+}
 function subsHTML() {
+  const subsOn = subsOnNow();
   return `<div class="subs"><div id="subline"${subsOn ? '' : ' style="display:none"'}></div><button class="subt" data-a="subs">💬 ${subsOn ? 'Сховати субтитри' : 'Показати субтитри'}<small>${subsOn ? 'Hide English subtitles' : 'Show English subtitles'}</small></button></div>`;
 }
 function subStart(id, a) {
@@ -3878,7 +3887,7 @@ const A = {
   enterHome,
   hear(v) { say(v); },
   subs() {
-    subsOn = !subsOn; try { localStorage.setItem('kd-subs', subsOn ? 'on' : 'off'); } catch (e) {}
+    const on = !subsOnNow(); try { localStorage.setItem('kd-subs', (on ? 'on' : 'off') + '@' + subsBand()); } catch (e) {}
     const box = sheet.querySelector('.subs'); if (box) box.outerHTML = subsHTML();
     subPaint();
   },
