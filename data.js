@@ -127,7 +127,7 @@ window.DATA = {
     { id: "nasinnia", uk: "насіння", tr: "na-SIN-nia", en: "seeds", ic: "🌱" },
     { id: "vudka", uk: "вудка", tr: "VUD-ka", en: "fishing rod", ic: "@rod", acc: "вудку" },
     { id: "liika", uk: "лійка", tr: "LIY-ka", en: "watering can", ic: "@can", acc: "лійку" },
-    { id: "koshyk", uk: "кошик", tr: "KO-shyk", en: "basket", ic: "🧺" },
+    { id: "koshyk", uk: "кошик", tr: "KO-shyk", en: "basket", ic: "@koshyk" },
     { id: "hroshi", uk: "гроші", tr: "HRO-shi", en: "money", ic: "💰" }
   ],
 

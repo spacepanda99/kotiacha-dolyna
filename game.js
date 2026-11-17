@@ -142,6 +142,7 @@ const poly = (c, pts) => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0
 
 // Hand-drawn things. Each draws inside a 100-wide, 100-tall box whose bottom centre is (0, 0).
 const DRAW = {
+  koshyk(c) { c.scale(3.2, 3.2); marketBasket(c, 0, -11.5); },   // the same wicker basket as in Oksana's bubble
   khata(c) {
     c.fillStyle = '#b5553f'; c.fillRect(21, -86, 12, 30); c.fillStyle = '#8f3f2d'; c.fillRect(19, -89, 16, 5);   // chimney
     c.fillStyle = '#fffdf5'; rr(c, -40, -52, 80, 52, 4);
@@ -3559,6 +3560,7 @@ document.addEventListener('click', ev => {
 document.addEventListener('contextmenu', ev => ev.preventDefault());
 
 hud(); setGuide();
+{ const b = document.querySelector('[data-a=bag]'); if (b) b.innerHTML = `<img src="${iconURL('koshyk')}" alt="" style="width:1.3em;height:1.3em;display:block;pointer-events:none">`; }   // the drawn basket, not the emoji
 requestAnimationFrame(frame);
 // ------------------------------------------------------------------ staying up to date
 // Every time the game opens or comes back to the front, it asks the server which version is current.
