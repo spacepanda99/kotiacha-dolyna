@@ -25,7 +25,11 @@ const fresh = () => ({
   npc: {}, cats: {}, decor: {}, gear: {}, farm: {}, recipe: { i: 0, have: {}, started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
 let S;
-try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { S = fresh(); }
+try { S = JSON.parse(localStorage.getItem(SAVE) || '{}'); } catch (e) { S = {}; }
+// A save from a very old build (anything before the farm, 2026-11-17) starts the village fresh: the game
+// has changed too much since, and an early install on a phone shouldn't drop someone into a half-made world.
+if (S && Object.keys(S).length && !S.farm) { S = {}; try { localStorage.removeItem(SAVE); localStorage.removeItem('kd-subs'); } catch (e) {} }
+S = Object.assign(fresh(), S);
 if (S.placed && Object.keys(S.placed).length) {
   for (const id of Object.values(S.placed)) { if (!S.decor[id]) S.decor[id] = 1; else S.home[id] = (S.home[id] || 0) + 1; }
   S.placed = {};
