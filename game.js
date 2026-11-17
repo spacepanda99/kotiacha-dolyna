@@ -2165,9 +2165,23 @@ let shopTab = 'food', shopSel = null;
 const owned = k => shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
 const sellPrice = id => { if (id === 'ryba') return 4;   // a fish takes a rod and some patience
   for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
-function shop() {
+let shopShown = null;   // the tab the shop was last drawn on
+// The shop's title and its row of tabs, shown above every tab (Oksana's helping game too, so you can always
+// switch to another tab). Redrawing rebuilds the row, which would jump back to the first tab: shopTabsKeep()
+// puts it back where it was and makes sure the chosen tab is fully in view.
+function shopHead() {
   const tabs = ['food', 'seeds', 'tools', 'farm', 'home', 'cats', 'sell', 'help'];
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
+  return `<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>`;
+}
+const shopTabsX = () => { const r = sheetOpen() && sheet.querySelector('.tabs'); return r ? r.scrollLeft : null; };
+function shopTabsKeep(keepX) {
+  const row = sheet.querySelector('.tabs'), on = row && row.querySelector('.tab.on');
+  if (!row) return;
+  row.scrollLeft = keepX || 0;
+  if (on) { const l = on.offsetLeft - row.offsetLeft, r = l + on.offsetWidth; if (l < row.scrollLeft) row.scrollLeft = l - 8; else if (r > row.scrollLeft + row.clientWidth) row.scrollLeft = r - row.clientWidth + 8; }
+}
+function shop() {
   let body = '';
   if (shopTab === 'help') return helpRound(0);
   if (shopTab === 'sell') {
@@ -2179,12 +2193,10 @@ function shop() {
     if (shopSel && list[shopSel] && !owned(shopSel)) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
   }
   setTimeout(() => sheet.classList.add('fixed'), 0);   // the market keeps one height, however few items a tab has
-  // Redrawing the shop rebuilds the tab row, which would jump back to the first tab: keep it where it was,
-  // and make sure the chosen tab is fully in view.
-  const oldTabs = sheetOpen() && sheet.querySelector('.tabs'), keepX = oldTabs ? oldTabs.scrollLeft : 0;
-  openSheet(`<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>${body}`);
-  { const row = sheet.querySelector('.tabs'), on = row && row.querySelector('.tab.on');
-    if (row) { row.scrollLeft = keepX; if (on) { const l = on.offsetLeft - row.offsetLeft, r = l + on.offsetWidth; if (l < row.scrollLeft) row.scrollLeft = l - 8; else if (r > row.scrollLeft + row.clientWidth) row.scrollLeft = r - row.clientWidth + 8; } } }
+  const keepX = shopTabsX(), keepY = keepX !== null && shopShown === shopTab ? sheet.scrollTop : 0;   // picking an item on the same tab keeps the list where it was
+  shopShown = shopTab;
+  openSheet(shopHead() + body);
+  sheet.scrollTop = keepY; shopTabsKeep(keepX);
 }
 // Helping at the stall: Oksana asks for something by name, you hand it over.
 // This is where words that are due for review come back.
@@ -2198,11 +2210,13 @@ function helpRound(n) {
   while (opts.length < 4) { const k = pick(pool); if (!opts.includes(k)) opts.push(k); }
   opts.sort(() => Math.random() - 0.5);
   help = { n, target, tries: 0 };
-  const w = W[target], hide = stage() >= 2 && known(target) >= 2;
-  openSheet(`<div class="dlg"><img class="face" src="${faceURL(NPC.oksana.look)}" alt=""><div><div class="who">${NPC.oksana.name} · ${n + 1}/5</div>
+  const w = W[target], hide = stage() >= 2 && known(target) >= 2, keepX = shopTabsX();
+  shopShown = 'help';
+  openSheet(shopHead() + `<div class="dlg"><img class="face" src="${faceURL(NPC.oksana.look)}" alt=""><div><div class="who">${NPC.oksana.name} · ${n + 1}/5</div>
     <div class="line">${hide ? '🔊 …' : '«' + cap(w.uk) + ', будь ласка!»'}</div>${stage() < 2 ? `<div class="en">"${cap(w.en)}, please!"</div>` : ''}</div></div>
     <div class="grid" style="margin-top:14px;grid-template-columns:repeat(4,1fr)">${opts.map(k => `<button class="it" data-a="hand" data-v="${k}" style="min-height:76px"><img src="${iconURL(k)}" alt="">${stage() < 2 ? `<div class="e">${W[k].uk}</div>` : ''}</button>`).join('')}</div>
-    <div class="row">${btn('hear2', target, '🔊', 'round blue')}${btn('tab', 'food', lab('close'), 'ghost')}</div>`);
+    <div class="row">${btn('hear2', target, '🔊', 'round blue')}${btn('tab', 'food', '← ' + lab('back'), 'ghost')}</div>`);
+  shopTabsKeep(keepX);
   say('w_' + target, 'p_bud_laska');
 }
 

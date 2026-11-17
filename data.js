@@ -304,7 +304,8 @@ window.DATA = {
   // Prices are spoken by Oksana. Ukrainian counts money in three ways: 2-4 гривні, 5+ гривень.
   prices: {
     2: "Дві гривні.", 3: "Три гривні.", 4: "Чотири гривні.", 5: "П'ять гривень.", 6: "Шість гривень.",
-    8: "Вісім гривень.", 10: "Десять гривень.", 15: "П'ятнадцять гривень.", 20: "Двадцять гривень.", 40: "Сорок гривень."
+    7: "Сім гривень.", 8: "Вісім гривень.", 10: "Десять гривень.", 12: "Дванадцять гривень.", 15: "П'ятнадцять гривень.", 16: "Шістнадцять гривень.",
+    20: "Двадцять гривень.", 24: "Двадцять чотири гривні.", 30: "Тридцять гривень.", 40: "Сорок гривень."
   },
 
   shop: {
@@ -325,7 +326,7 @@ window.DATA = {
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
-    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"],
+    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], back: ["Назад", "Back"],
     take: ["Взяти", "Take"], enter: ["Зайти", "Go in"], exit: ["Вийти", "Go out"], buy: ["Купити", "Buy"],
     sell: ["Продати", "Sell"], plant: ["Посадити", "Plant"], water: ["Полити", "Water"], harvest: ["Зібрати", "Harvest"],
     next: ["Далі", "Next"], close: ["Добре", "OK"], give: ["Дати", "Give"], putaway: ["Прибрати", "Put away"],
