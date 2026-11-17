@@ -180,6 +180,32 @@ const poly = (c, pts) => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0
 
 // Hand-drawn things. Each draws inside a 100-wide, 100-tall box whose bottom centre is (0, 0).
 const DRAW = {
+  // A framed portrait of President Zelensky for the cottage wall: gilt frame, the flag's blue and yellow
+  // behind him, short dark hair and beard, olive crew-neck top with a small gold trident.
+  zelensky(c) {
+    c.fillStyle = 'rgba(0,0,0,.18)'; rr(c, -44, -94, 92, 92, 5);
+    c.fillStyle = '#b8892f'; rr(c, -46, -96, 92, 92, 5); c.fillStyle = '#e2bd5a'; rr(c, -43, -93, 86, 86, 4); c.fillStyle = '#a87a26'; rr(c, -39, -89, 78, 78, 2);
+    c.save(); c.beginPath(); c.rect(-37, -87, 74, 74); c.clip();
+    c.fillStyle = '#2f6fc0'; c.fillRect(-37, -87, 74, 40); c.fillStyle = '#f2c230'; c.fillRect(-37, -47, 74, 34);
+    // shoulders and top
+    c.fillStyle = '#55603a'; c.beginPath(); c.moveTo(-36, -13); c.quadraticCurveTo(-34, -34, -14, -37); c.lineTo(14, -37); c.quadraticCurveTo(34, -34, 36, -13); c.closePath(); c.fill();
+    c.fillStyle = '#48522f'; c.beginPath(); c.moveTo(-9, -37); c.quadraticCurveTo(0, -29, 9, -37); c.closePath(); c.fill();
+    c.fillStyle = '#e2b84a'; poly(c, [[17, -27], [19, -22], [21, -27], [21, -20], [17, -20]]);
+    // neck, ears, face
+    c.fillStyle = '#e3b896'; c.fillRect(-6, -44, 12, 9);
+    c.fillStyle = '#e8bf9e'; ell(c, -14.5, -56, 3, 4.5); ell(c, 14.5, -56, 3, 4.5); ell(c, 0, -57, 14, 17);
+    // short dark hair and a close beard
+    c.fillStyle = '#3a2c22'; c.beginPath(); c.ellipse(0, -63, 14.6, 12, 0, Math.PI, 0); c.fill(); c.fillRect(-14.6, -63, 3, 6); c.fillRect(11.6, -63, 3, 6);
+    c.fillStyle = 'rgba(58,44,34,.55)'; c.beginPath(); c.moveTo(-13.5, -55); c.quadraticCurveTo(-12, -40, 0, -40); c.quadraticCurveTo(12, -40, 13.5, -55); c.quadraticCurveTo(8, -46, 0, -46); c.quadraticCurveTo(-8, -46, -13.5, -55); c.fill();
+    // brows, eyes, nose, a calm smile
+    c.strokeStyle = '#3a2c22'; c.lineWidth = 1.8; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(-9, -62); c.lineTo(-3.5, -61.5); c.moveTo(3.5, -61.5); c.lineTo(9, -62); c.stroke();
+    c.fillStyle = '#3a2c22'; circ(c, -6, -58, 1.5); circ(c, 6, -58, 1.5);
+    c.strokeStyle = '#c99476'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(0, -56); c.lineTo(-1.5, -51); c.lineTo(0.8, -50.5); c.stroke();
+    c.strokeStyle = '#7a4a3a'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, -49, 4, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+    c.restore();
+    c.fillStyle = 'rgba(255,255,255,.12)'; poly(c, [[-37, -87], [-10, -87], [-37, -55]]);
+  },
   // A wooden butter churn: a tall tapered tub with iron hoops, a lid, and the dasher handle through the middle.
   maslobiika(c) {
     const bob = churnUntil > now() ? Math.abs(Math.sin(now() / 120)) * 12 : 0;

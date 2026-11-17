@@ -90,7 +90,7 @@ window.DATA = {
     { id: "lizhko", uk: "ліжко", tr: "LIZH-ko", en: "bed", ic: "@ukbed" },
     { id: "lampa", uk: "лампа", tr: "LAM-pa", en: "lamp", ic: "@floorlamp", acc: "лампу" },
     { id: "kylym", uk: "килим", tr: "KY-lym", en: "rug", ic: "@rug", fact: { uk: "Килими ткали вручну.", en: "Hand-woven rugs with flowers and bright patterns decorated the walls of village homes." } },
-    { id: "kartyna", uk: "картина", tr: "kar-TY-na", en: "painting", ic: "🖼️", acc: "картину", fact: { uk: "Марія Примаченко малювала казкових звірів.", en: "Maria Prymachenko painted bright, fantastical animals. Her folk paintings are loved around the world." } },
+    { id: "kartyna", uk: "Зеленський", tr: "ze-LEN-skyi", en: "Zelensky", ic: "@zelensky", acc: "Зеленського", fact: { uk: "Володимир Зеленський — президент України.", en: "Volodymyr Zelensky has been the President of Ukraine since 2019." } },   // a framed portrait for the cottage wall
     { id: "vazon", uk: "вазон", tr: "va-ZON", en: "potted plant", ic: "🪴" },
     { id: "knyha", uk: "книга", tr: "KNY-ha", en: "book", ic: "@books", acc: "книгу" },
     { id: "svichka", uk: "свічка", tr: "SVICH-ka", en: "candle", ic: "🕯️", acc: "свічку" },
