@@ -2074,7 +2074,10 @@ function wordCard(id, o = {}) {
   const hideEn = !isNew && st.l >= 2;
   cur = { id, peeked: false, hideEn };
   acts = o.acts || [];
-  const en = hideEn || stage() >= 3 ? `<button class="peek" data-a="peek">👁 ${D.ui.show[0]}</button>` : `<div class="en">${w.en}</div>`;
+  // The eye also shows when only the note has English tucked away (a cat's "wants fish" at stage 2),
+  // even though the word itself is still shown in English.
+  const peekBtn = `<button class="peek" data-a="peek">👁 ${D.ui.show[0]}</button>`;
+  const en = hideEn || stage() >= 3 ? peekBtn : `<div class="en">${w.en}</div>${/class="xl"/.test(o.note || '') ? peekBtn : ''}`;
   openSheet(`<div class="card">
     ${isNew ? `<div class="tag">✨ ${PH.nove_slovo.uk}${stage() >= 3 ? xl(' · ' + PH.nove_slovo.en) : ''}</div>` : ''}
     <img class="big" src="${iconURL(id)}" alt="">
