@@ -1999,9 +1999,8 @@ function talk(npc) {
     // Ask for something whose word is new or due for review.
     const wants = npc.wants.slice().sort(() => Math.random() - 0.5).sort((a, b) => (isFresh(b) ? 1 : 0) - (isFresh(a) ? 1 : 0));
     const item = wants[0];
-    const q = quest(item);
-    q.after = () => { n.q = item; learn(item); setGuide(); save(); };
-    steps.push(q);
+    n.q = item; learn(item); setGuide();
+    steps.push(quest(item));
   }
   save();
   dialog(npc, steps);
@@ -2420,19 +2419,14 @@ function drawWatering(c, a) {
     }
   }
 }
-// "My cottage" on a little red-and-cream banner above the roof, with a heart.
+// A small, quiet house badge over your cottage (the name shows as a label when you're close).
 function homeSign(c, x, y, t) {
-  const top = stage() < 3 ? 'Моя хата' : 'Моя хата', sub = stage() < 3 ? 'My cottage' : '';
-  c.save(); c.translate(x, y + Math.sin(t * 1.6) * 2);
-  c.font = '900 22px "Cozy", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-  const w = Math.max(c.measureText('❤ ' + top).width, sub ? 90 : 0) + 30, h = sub ? 50 : 34;
-  c.fillStyle = 'rgba(74,44,26,.25)'; rr(c, -w / 2 + 2, -h / 2 + 4, w, h, 12);
-  c.fillStyle = '#4a2c1a'; rr(c, -w / 2 - 3, -h / 2 - 3, w + 6, h + 6, 14);
-  c.fillStyle = '#fff8ea'; rr(c, -w / 2, -h / 2, w, h, 12);
-  c.fillStyle = '#d43a3a'; c.fillRect(-w / 2 + 8, -h / 2 + 4, w - 16, 3); c.fillRect(-w / 2 + 8, h / 2 - 5, w - 16, 2.5);
-  c.fillStyle = '#e2574c'; c.fillText('❤', -c.measureText(' ' + top).width / 2 - 2, sub ? -8 : 1);
-  c.fillStyle = '#3b2f2a'; c.fillText(top, 12, sub ? -8 : 1);
-  if (sub) { c.font = '700 13px system-ui, sans-serif'; c.fillStyle = '#8a7566'; c.fillText(sub, 0, 11); }
+  c.save(); c.translate(x, y + Math.sin(t * 1.4) * 1.5); c.globalAlpha = 0.78;
+  c.fillStyle = 'rgba(74,44,26,.18)'; c.beginPath(); c.arc(1, 2, 14, 0, 7); c.fill();
+  c.fillStyle = '#fff8ea'; c.strokeStyle = '#7a5a44'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, 13, 0, 7); c.fill(); c.stroke();
+  c.fillStyle = '#c9553f'; c.beginPath(); c.moveTo(-7.5, -1); c.lineTo(0, -7.5); c.lineTo(7.5, -1); c.closePath(); c.fill();
+  c.fillStyle = '#7a5a44'; c.fillRect(-5, -1, 10, 7.5);
+  c.fillStyle = '#fff8ea'; c.fillRect(-1.6, 2, 3.2, 4.5);
   c.restore();
 }
 function drawWorld(t) {
@@ -2508,7 +2502,7 @@ function drawWorld(t) {
       continue;
     }
     const wd = S.words[e.w];
-    if (e.kind === 'home') { homeSign(c, x, y - e.s * T * 0.62, t); }
+    if (e.kind === 'home') { homeSign(c, x, y - e.s * T * 0.5, t); if (near) label(c, 'Моя хата' + (stage() < 3 ? ' · My cottage' : ''), x, y + 16); }
     else if (e.k === 'oliaHome') { if (near) label(c, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''), x, y + 16); }
     else if (wd && near && isFresh(e.w) && e.w !== 'soniashnyk') label(c, W[e.w].uk, e.labelX ? e.labelX * T : x, y + 16);
     else if (wd && near && isFresh(e.w) && e.w === 'soniashnyk' && Math.hypot(e.x - P.x, e.y - P.y) < 1) label(c, W[e.w].uk, x, y + 16);
