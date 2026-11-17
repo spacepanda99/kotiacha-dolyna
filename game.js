@@ -1537,14 +1537,22 @@ const VAR = {
   trykolirna: { col: '#fffdf8', far: '#e2dbcf', dark: '#cfc7b8', eye: '#e6b43a', patches: [[-7, -3, 6, '#f0a24c'], [6, 2, 5, '#3d373c']], headPatch: '#f0a24c' },
 };
 const catQuad = v => Object.assign({ k: 1, L: 30, B: 13, G: 12, neck: [4, 6], head: [8, 7.5], hrot: 0, tail: 'cat', ear: 'point', nose: true, hoof: null, rest: true, doze: true }, VAR[v]);
+// The same cat indoors as out in the village (catQuad): same coat, stripes, patches and eyes.
 function sitPal(v) {
   const V = VAR[v], tri = v === 'trykolirna', rb = v === 'rudobilyi';
-  if (rb) return { body: V.col, a: '#f0a24c', b: '#f0a24c', eye: V.eye, chub: 1, fluffy: false, bib: false, tail: '#f0a24c', earR: 'a', pb: [[-12, -38, 11, 'a'], [12, -24, 7, 'a']], ph: [[-9, -80, 10, 'a'], [11, -82, 6, 'a']] };
+  if (rb) return { body: V.col, a: '#f0a24c', b: '#f0a24c', eye: V.eye, chub: 1, fluffy: false, bib: false, tail: V.col, earR: 'a', pb: [[-12, -38, 11, 'a'], [12, -24, 7, 'a']], ph: [[11, -82, 10, 'a']] };
   return {
-    body: V.col, a: tri ? '#f0a24c' : V.dark, b: tri ? '#3d373c' : V.dark, eye: V.eye, chub: 1, fluffy: false, bib: v === 'chornobila', tail: V.col, earR: tri ? 'b' : 'body',
-    pb: tri ? [[-10, -36, 10, 'a'], [10, -22, 8, 'b']] : V.stripes ? [[-16, -40, 5, 'a'], [-4, -48, 5, 'a'], [10, -44, 5, 'a'], [18, -30, 5, 'a']] : [],
-    ph: tri ? [[-10, -78, 8, 'a'], [10, -76, 7, 'b']] : V.stripes ? [[-6, -90, 3.5, 'a'], [0, -92, 3.5, 'a'], [6, -90, 3.5, 'a']] : [],
+    body: V.col, a: tri ? '#f0a24c' : V.dark, b: tri ? '#3d373c' : V.dark, eye: V.eye, chub: 1, fluffy: false, bib: v === 'chornobila', tail: V.col, earR: tri ? 'a' : 'body',
+    stripes: V.stripes ? V.dark : null,
+    pb: tri ? [[-10, -36, 10, 'a'], [10, -22, 8, 'b']] : [],
+    ph: tri ? [[11, -82, 10, 'a']] : [],
   };
+}
+// Tabby stripes across a sitting cat's flanks (inside the body clip).
+function sitStripes(c, C, ch) {
+  c.strokeStyle = C.stripes; c.lineWidth = 4.5;
+  for (const dir of [-1, 1]) for (let i = 0; i < 3; i++) { const y = -46 + i * 11; c.beginPath(); c.moveTo(dir * 29 * ch, y - 2); c.quadraticCurveTo(dir * 20 * ch, y, dir * 13 * ch, y + 4); c.stroke(); }
+  c.strokeStyle = INK; c.lineWidth = 3.2;
 }
 for (const v in VAR) DRAW['cat_' + v] = c => cat(c, 0, -2, 94, sitPal(v), 0, 0, 1);
 
@@ -2852,7 +2860,10 @@ function sleepingCat(c, x, y, s, C, t) {
   c.lineJoin = 'round'; c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 3.2;
   c.save(); c.scale(1, breathe);
   c.fillStyle = C.body; c.beginPath(); c.ellipse(4, -20, 36, 20, 0, 0, 7); c.fill();
-  c.save(); c.clip(); for (const [dx, dy, r, col] of C.pb) { c.fillStyle = C[col]; circ(c, dx * 1.1 + 6, dy * 0.5, r * 1.1); } c.restore();
+  c.save(); c.clip(); for (const [dx, dy, r, col] of C.pb) { c.fillStyle = C[col]; circ(c, dx * 1.1 + 6, dy * 0.5, r * 1.1); }
+  if (C.stripes) { c.strokeStyle = C.stripes; c.lineWidth = 5; for (let i = 0; i < 4; i++) { const sx = -6 + i * 11; c.beginPath(); c.moveTo(sx, -42); c.quadraticCurveTo(sx + 5, -32, sx + 2, -24); c.stroke(); } c.strokeStyle = INK; c.lineWidth = 3.2; }
+  if (C.bib) { c.fillStyle = '#ffffff'; ell(c, -8, -6, 15, 9); }
+  c.restore();
   c.beginPath(); c.ellipse(4, -20, 36, 20, 0, 0, 7); c.stroke();
   c.restore();
   // tail around the front
@@ -2865,7 +2876,7 @@ function sleepingCat(c, x, y, s, C, t) {
     c.beginPath(); c.moveTo(-24 + dir * 6, -36); c.lineTo(-24 + dir * 12, -51); c.lineTo(-24 + dir * 16, -32); c.closePath(); c.fill(); c.stroke();
   }
   c.fillStyle = C.body; c.beginPath(); c.ellipse(-24, -24, 17, 15, 0, 0, 7); c.fill();
-  c.save(); c.clip(); for (const [dx, dy, r, col] of C.ph) { c.fillStyle = C[col]; circ(c, -24 + dx * 0.7, -24 + (dy + 70) * 0.7, r * 0.75); } c.restore();
+  c.save(); c.clip(); for (const [dx, dy, r, col] of C.ph) { c.fillStyle = C[col]; circ(c, -24 + dx * 0.7, -24 + (dy + 70) * 0.7, r * 0.75); } if (C.bib) { c.fillStyle = '#ffffff'; ell(c, -24, -18, 9, 6.5); } c.restore();
   c.beginPath(); c.ellipse(-24, -24, 17, 15, 0, 0, 7); c.stroke();
   c.lineWidth = 2.2; for (const ex of [-30, -18]) { c.beginPath(); c.arc(ex, -26, 3.6, 0.1 * Math.PI, 0.9 * Math.PI); c.stroke(); }
   c.fillStyle = '#e8708a'; poly(c, [[-26, -20], [-22, -20], [-24, -18]]);
@@ -3631,7 +3642,7 @@ function cat(c, x, y, s, C, t, ph, face, act) {
   c.lineWidth = 3.2; c.strokeStyle = INK;
   // body with its patches
   c.fillStyle = C.body; c.beginPath(); c.ellipse(0, -28, 27 * ch, 29, 0, 0, 7); c.fill();
-  c.save(); c.clip(); for (const [dx, dy, r, col] of C.pb) { c.fillStyle = C[col]; circ(c, dx * ch, dy, r); } c.restore();
+  c.save(); c.clip(); for (const [dx, dy, r, col] of C.pb) { c.fillStyle = C[col]; circ(c, dx * ch, dy, r); } if (C.stripes) sitStripes(c, C, ch); c.restore();
   c.beginPath(); c.ellipse(0, -28, 27 * ch, 29, 0, 0, 7); c.stroke();
   if (C.bib) { c.fillStyle = '#ffffff'; ell(c, 0, -30, 13 * ch, 18); if (C.fluffy) for (let i = -2; i <= 2; i++) circ(c, i * 5 * ch, -14 - Math.abs(i) * 2, 6); }
   c.fillStyle = '#ffffff'; for (const px of groom || play ? [11] : [-11, 11]) { c.beginPath(); c.ellipse(px * ch, -4, 8, 6, 0, 0, 7); c.fill(); c.stroke(); }
