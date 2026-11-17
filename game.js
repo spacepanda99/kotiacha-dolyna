@@ -2257,7 +2257,8 @@ function plotSheet(i) {
 // ------------------------------------------------------------------ market
 let shopTab = 'food', shopSel = null;
 // Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
-const owned = k => shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
+const catThings = k => (S.home[k] || 0) + nPlaced(k);
+const owned = k => shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : shopTab === 'cats' && MULTI[k] ? catThings(k) >= MULTI[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
 const sellPrice = id => { if (id === 'ryba') return 4;   // a fish takes a rod and some patience
   for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
 let shopShown = null;   // the tab the shop was last drawn on
@@ -2284,7 +2285,7 @@ function shop() {
     body = items.length ? `<div class="grid">${items.map(k => `<button class="it" data-a="sell" data-v="${k}"><span class="q">${S.bag[k]}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">+${sellPrice(k)} ₴</div></button>`).join('')}</div>` : `<div class="muted">🧺 ${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`;
   } else {
     const list = D.shop[shopTab];
-    body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : shopTab === 'farm' ? `<span class="q">${farmN(k)}/${FARM_MAX[k]}</span>` : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}${shopTab === 'seeds' ? `<div class="e">🌱 ${W.nasinnia.uk}${stage() < 3 ? ' · seeds' : ''}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
+    body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : shopTab === 'farm' ? `<span class="q">${farmN(k)}/${FARM_MAX[k]}</span>` : shopTab === 'cats' && MULTI[k] && catThings(k) ? `<span class="q">${catThings(k)}/${MULTI[k]}</span>` : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}${shopTab === 'seeds' ? `<div class="e">🌱 ${W.nasinnia.uk}${stage() < 3 ? ' · seeds' : ''}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
     if (shopSel && list[shopSel] && !owned(shopSel)) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
   }
   setTimeout(() => sheet.classList.add('fixed'), 0);   // the market keeps one height, however few items a tab has
@@ -2707,11 +2708,24 @@ const roomU = () => Math.min(cv.width, cv.height * 0.72);
 const roomW = () => Math.max(cv.width, roomU() * 3.4); // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
+// Cat things you can own more than one of: a cat bed for every cat, and a few of each toy.
+const MULTI = { lezhanka: D.cats.length, miachyk: 3, myshka: 3 };
+// Where the second, third… of each stands (the first uses its DECOR spot): x across the room, y down the screen.
+const MORE_AT = {
+  lezhanka: [[0.14, 0.86], [0.55, 0.69], [0.8, 0.87], [0.975, 0.76], [0.34, 0.7], [0.63, 0.86], [0.23, 0.69]],
+  miachyk: [[0.9, 0.88], [0.16, 0.88]],
+  myshka: [[0.5, 0.88], [0.76, 0.71]],
+};
+const nPlaced = id => +S.decor[id] || 0;
 const BASICS = Object.keys(D.shop.furnished);          // always in the room
 const inRoom = () => [...BASICS, ...Object.keys(S.decor).filter(id => DECOR[id] && !BASICS.includes(id))];
+// Everything in the room, one entry per piece (two cat beds are two entries), in drawing order.
+const itemZ = ({ id, k }) => (DECOR[id].wall ? 0 : 10) + (k && MORE_AT[id][k - 1][1] > 0.85 ? 4 : DECOR[id].z);
+const roomItems = () => inRoom().flatMap(id => Array.from({ length: MULTI[id] ? nPlaced(id) : 1 }, (_, k) => ({ id, k }))).sort((a, b) => itemZ(a) - itemZ(b) || decorRect(a.id, a.k).by - decorRect(b.id, b.k).by);
 // Where an item stands, in room pixels (bottom-centre) plus its tap box.
-function decorRect(id) {
-  const d = DECOR[id], u = roomU(), RW = roomW(), sz = d.s * u;
+function decorRect(id, k = 0) {
+  const m = k && MORE_AT[id] && MORE_AT[id][k - 1];
+  const d = m ? { ...DECOR[id], win: undefined, x: m[0], y: m[1] } : DECOR[id], u = roomU(), RW = roomW(), sz = d.s * u;
   let x = (d.x ?? WIN_X) * RW, y = d.y * cv.height;
   if (d.win !== undefined) x = WIN_X * RW;
   if (d.fit) { const ww = u * 0.3, wt = cv.height * 0.27, wb = cv.height * 0.45; return { x: x - ww * 0.65, y: wt - u * 0.05, w: ww * 1.3, h: (wb - wt) * 0.85, cx: x, by: wb, sz: ww }; }
@@ -2744,60 +2758,66 @@ function homeTap(sx, py) {
   const px = sx + roomX;
   const friends = homeCats().map(h => h.ct);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
-  const ids = inRoom().sort((a, b) => (DECOR[b].wall ? 0 : 10) + DECOR[b].z - (DECOR[a].wall ? 0 : 10) - DECOR[a].z);
   let best = null, bestScore = -1e9;
-  for (const id of ids) {
-    const r = decorRect(id);
+  for (const it of roomItems()) {
+    const r = decorRect(it.id, it.k);
     if (!(px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h)) continue;
-    const score = ((DECOR[id].wall ? 0 : 10) + DECOR[id].z) * 1e4 - Math.abs(px - r.cx);
-    if (score > bestScore) { bestScore = score; best = id; }
+    const score = itemZ(it) * 1e4 - Math.abs(px - r.cx);
+    if (score > bestScore) { bestScore = score; best = it.id; }
   }
   if (best) return wordCard(best, BASICS.includes(best) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(best); closeSheet(); } }] });
 }
-// Three of your cats are at home at any time; the rest are out and about. Each visit picks which three,
-// and they're busy: one looks up at you by the table, one is asleep on the bed, one washes itself in the window.
-const BED_CAT = [-0.06, 0.42];   // where on the bed the sleeper lies (the middle), as a share of the bed's size
-// With a ball or a toy mouse on the floor, a cat plays with it; the toy gets knocked a little each swat.
-const playToy = () => S.decor.miachyk ? 'miachyk' : S.decor.myshka ? 'myshka' : null;
+// Every cat you've brought home lives here, and they're busy. One bats the towel hanging off the table (or a
+// toy, once you have one), one sleeps in the middle of your bed (or a cat bed), one washes itself on the
+// windowsill (or up on the cat tree). The rest take the other cat beds and toys, curl up on the warm stove,
+// and any left over sit about or nap on the floor.
+const BED_CAT = [-0.06, 0.39];   // where on the bed the sleeper lies (the middle), as a share of the bed's size
+const STOVE_CAT = [0.33, 0.825];  // the sleeper on top of the stove, as a share of the stove's size
+// The toy a cat is batting gets knocked a little each swat.
 const toyNudge = t => -Math.max(0, Math.sin(t * 4 - 0.5)) * roomU() * 0.02;
 // The towel hanging off the table swings when the cat bats it (in the table drawing's own units).
 const towelSwing = t => -Math.max(0, Math.sin(t * 4 - 0.4)) * 7 + Math.sin(t * 1.3) * 0.8;
-const HOME_POSES = ['look', 'sleep', 'groom'];
-let homeTrio = null;
+let homeList = null;
+const houseCats = () => D.cats.filter(ct => S.cats[ct.id] === 1);
 function pickHomeCats() {
-  const f = D.cats.filter(ct => S.cats[ct.id] === 1);
+  const f = houseCats();
   for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [f[i], f[j]] = [f[j], f[i]]; }
-  homeTrio = f.slice(0, 3).map((ct, i) => ({ ct, pose: HOME_POSES[i] }));
+  homeList = f.map(ct => ({ ct }));
 }
 function homeCats() {
-  if (!homeTrio || homeTrio.some(h => S.cats[h.ct.id] !== 1) || (homeTrio.length < 3 && D.cats.some(ct => S.cats[ct.id] === 1 && !homeTrio.some(h => h.ct === ct)))) pickHomeCats();
-  return homeTrio;
+  if (!homeList || homeList.length !== houseCats().length || homeList.some(h => S.cats[h.ct.id] !== 1)) pickHomeCats();
+  return homeList;
 }
-function catSpot(i) {
-  // One plays by the table, where the view opens when you come in: batting the towel hanging off it, or the
-  // ball or toy mouse once you've bought one. One sleeps in the middle of your bed (or in the cat bed, once
-  // bought), and one washes itself on the windowsill (or up on the cat tree, once bought).
-  const u = roomU(), mid = DECOR.stil.x * roomW(), v0 = Math.max(0, Math.min(panMax(), mid - cv.width / 2)), v1 = v0 + cv.width;
-  const inView = x => x > v0 + u * 0.1 && x < v1 - u * 0.1;
-  const pose = (homeCats()[i] || {}).pose;
-  if (pose === 'sleep') {
-    if (S.decor.lezhanka) { const r = decorRect('lezhanka'); return { x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: u * 0.3, sleep: true }; }
-    const r = decorRect('lizhko'); return { x: r.cx + r.sz * BED_CAT[0], y: r.by - r.sz * BED_CAT[1], s: u * 0.2, sleep: true };
-  }
-  if (pose === 'look' && playToy()) { const r = decorRect(playToy()); return { x: r.cx + u * 0.12, y: r.by, s: u * 0.22, play: true }; }   // batting the toy about
-  if (pose === 'look') { const r = decorRect('stil'); return { x: r.cx + u * 0.055, y: cv.height * 0.885, s: u * 0.25, towel: true }; }   // batting the towel on the table
-  if (pose === 'groom' && S.decor.kihtetochka) { const r = decorRect('kihtetochka'); return { x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: u * 0.16 }; }
-  if (pose === 'groom') return { x: WIN_X * roomW() - u * 0.06, y: cv.height * 0.462, s: u * 0.15 };
-  const offs = [0, -0.3, 0.3, -0.6, 0.6, 0.15], x = Math.max(v0 + u * 0.13, Math.min(v1 - u * 0.13, mid + offs[i % 6] * u));
-  return { x, y: cv.height * 0.885, s: pose === 'sleep' ? u * 0.27 : u * 0.25, sleep: pose === 'sleep' };
+// Free floor spots for any cats left over (x across the room, y down the screen); every other one naps.
+const FLOOR_SPOTS = [[0.57, 0.87], [0.25, 0.86], [0.84, 0.88], [0.12, 0.8], [0.7, 0.8], [0.36, 0.86], [0.95, 0.88], [0.47, 0.67]];
+function homeSpots() {
+  const u = roomU(), h = cv.height, toys = [], beds = [];
+  for (const id of ['miachyk', 'myshka']) for (let k = 0; k < nPlaced(id); k++) toys.push([id, k]);
+  for (let k = 0; k < nPlaced('lezhanka'); k++) beds.push(k);
+  const towel = () => { const r = decorRect('stil'); return { kind: 'towel', x: r.cx + u * 0.055, y: h * 0.885, s: u * 0.25, towel: true }; };
+  const toy = ([id, k]) => { const r = decorRect(id, k); return { kind: 'play', x: r.cx + u * 0.12, y: r.by, s: u * 0.22, play: true, toy: id + k }; };
+  const catBed = k => { const r = decorRect('lezhanka', k); return { kind: 'sleep', x: r.cx + r.sz * 0.05, y: r.by - r.sz * 0.08, s: u * 0.3, sleep: true }; };
+  const bed = () => { const r = decorRect('lizhko'); return { kind: 'sleep', x: r.cx + r.sz * BED_CAT[0], y: r.by - r.sz * BED_CAT[1], s: u * 0.2, sleep: true }; };
+  const tree = () => { const r = decorRect('kihtetochka'); return { kind: 'groom', x: r.cx - r.sz * 0.1, y: r.by - r.sz * 0.9, s: u * 0.16, groom: true }; };
+  const sill = () => ({ kind: 'groom', x: WIN_X * roomW() - u * 0.06, y: h * 0.462, s: u * 0.15, groom: true });
+  const stove = () => { const r = decorRect('pich'); return { kind: 'sleep', x: r.cx + r.sz * STOVE_CAT[0], y: r.by - r.sz * STOVE_CAT[1], s: u * 0.17, sleep: true }; };
+  const hasTree = !!S.decor.kihtetochka, hadToy = toys.length > 0, hadBed = beds.length > 0;
+  const out = [toys.length ? toy(toys.shift()) : towel(), beds.length ? catBed(beds.shift()) : bed(), hasTree ? tree() : sill()];
+  if (hasTree) out.push(sill());
+  const sleepers = [...(hadBed ? [bed()] : []), ...beds.map(catBed), stove()], players = toys.map(toy);
+  while (sleepers.length || players.length) { if (players.length) out.push(players.shift()); if (sleepers.length) out.push(sleepers.shift()); }
+  if (hadToy) out.push(towel());
+  FLOOR_SPOTS.forEach(([fx, fy], i) => out.push(i % 2 ? { kind: 'sleep', x: fx * roomW(), y: fy * h, s: u * 0.27, sleep: true } : { kind: 'sit', x: fx * roomW(), y: fy * h, s: u * 0.25 }));
+  return out;
 }
+function catSpot(i) { const sp = homeSpots(); return sp[i] || sp[sp.length - 1]; }
 function decorSheet() {
-  const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && !S.decor[id] && S.home[id] > 0);
+  const ids = Object.keys(DECOR).filter(id => !BASICS.includes(id) && S.home[id] > 0 && (MULTI[id] || !S.decor[id]));
   const placedAny = Object.keys(S.decor).some(id => DECOR[id] && !BASICS.includes(id));
   const st = stage();
   openSheet(`<h3><span><span class="uk">${D.ui.decor[0]}</span> ${st < 3 ? `<small>${D.ui.decor[1]}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>` +
     (ids.length
-      ? `${st < 3 ? '<div class="muted" style="padding:0 0 10px">Tap something to put it in your cottage. To put something away, tap it in the room.</div>' : ''}<div class="grid">${ids.map(id => `<button class="it" data-a="decor" data-v="${id}">${S.home[id] > 1 ? `<span class="q">${S.home[id]}</span>` : ''}<img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}</button>`).join('')}</div>`
+      ? `${st < 3 ? '<div class="muted" style="padding:0 0 10px">Tap something to put it in your cottage. To put something away, tap it in the room.</div>' : ''}<div class="grid">${ids.map(id => `<button class="it" data-a="place" data-v="${id}">${S.home[id] > 1 ? `<span class="q">${S.home[id]}</span>` : ''}<img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}</button>`).join('')}</div>`
       : placedAny
         ? `<div class="muted">✨ ${D.ui.allin[0]}${st < 3 ? `<br>${D.ui.allin[1]}` : ''}</div>`
         : `<div class="muted">🏠 ${D.ui.empty[0]}.<br>${st < 3 ? 'Buy lovely things at the market, in the «Для хати» (For the cottage) and «Для котів» (For the cats) tabs.' : 'Купи щось на ринку: «Для хати», «Для котів».'}</div>`) +
@@ -2899,16 +2919,17 @@ function drawHome(t) {
   // a warm glow around the lamp or candle
   for (const id of ['lampa', 'svichka']) if (S.decor[id]) { const r = decorRect(id), gy = r.by - r.sz * (id === 'lampa' ? 0.82 : 0.6); g = c.createRadialGradient(r.cx, gy, 0, r.cx, gy, u * 0.7); g.addColorStop(0, 'rgba(255,214,120,.2)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, RW, h); }
   // everything in the room: wall things first, then floor things back to front
-  const ids = inRoom().sort((a, b) => (DECOR[a].wall ? 0 : 10) + DECOR[a].z - (DECOR[b].wall ? 0 : 10) - DECOR[b].z);
-  for (const id of ids) {
-    const r = decorRect(id);
+  const items = roomItems(), cats = homeCats(), spots = cats.map((_, i) => catSpot(i));
+  const batted = new Set(spots.filter(p => p.toy).map(p => p.toy)), towelCat = spots.some(p => p.towel);
+  for (const { id, k } of items) {
+    const r = decorRect(id, k);
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.75); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
-    else drawIcon(c, W[id].ic, r.cx + (id === playToy() && homeCats()[0] ? toyNudge(t) : 0), r.by, r.sz, id === 'stil' && !playToy() && homeCats()[0] ? { swing: towelSwing(t) } : undefined);
+    else drawIcon(c, W[id].ic, r.cx + (batted.has(id + k) ? toyNudge(t) : 0), r.by, r.sz, id === 'stil' && towelCat ? { swing: towelSwing(t) } : undefined);
   }
-  homeCats().forEach(({ ct, pose }, i) => { const p = catSpot(i); if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, pose === 'groom' ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); });
-  if (ids.length === BASICS.length && stage() < 3) {
+  cats.map((h, i) => [h, spots[i], i]).sort((a, b) => a[1].y - b[1].y).forEach(([{ ct }, p, i]) => { if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, p.groom ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); });
+  if (inRoom().length === BASICS.length && stage() < 3) {
     c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
   }
@@ -3957,11 +3978,15 @@ const A = {
   },
   decorate() { decorSheet(); },
   goWell() { const e = ents.find(x => x.w === 'krynytsia'); closeSheet(); walkTo(e.x, e.y, e); },
-  decor(v) {
-    if (BASICS.includes(v)) return;
-    if (S.decor[v]) { delete S.decor[v]; S.home[v] = (S.home[v] || 0) + 1; blip(440); }
-    else if (S.home[v] > 0) { S.home[v]--; S.decor[v] = 1; learn(v); say('w_' + v); blip(700); tutEvent('place'); }
-    save(); if (sheetOpen() && sheet.querySelector('[data-a="decor"]')) decorSheet();
+  decor(v) {   // tapped in the room: put one away
+    if (BASICS.includes(v) || !S.decor[v]) return;
+    const n = nPlaced(v) - 1; if (n > 0) S.decor[v] = n; else delete S.decor[v];
+    S.home[v] = (S.home[v] || 0) + 1; blip(440); save();
+  },
+  place(v) {   // tapped in the Прикрасити sheet: put one in the room
+    if (BASICS.includes(v) || !(S.home[v] > 0)) return;
+    S.home[v]--; S.decor[v] = nPlaced(v) + 1; learn(v); say('w_' + v); blip(700); tutEvent('place');
+    save(); decorSheet();
   },
 };
 document.addEventListener('click', ev => {
@@ -4004,5 +4029,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { give: (k,n) => give(k,n), homeCats: () => homeCats().map(h => h.ct.id + ":" + h.pose), catSpot, FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { give: (k,n) => give(k,n), homeCats: () => homeCats().map((h, i) => h.ct.id + ":" + catSpot(i).kind), catSpot, FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
