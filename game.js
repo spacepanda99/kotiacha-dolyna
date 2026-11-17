@@ -1365,7 +1365,7 @@ function add(e) {
   add({ w: 'sobaka', x: 15.4, y: 20.78, kind: 'animal', r: 1.0, fetch: true });   // plays fetch with Andriiko
   add({ w: 'khata', k: 'n_bohdan', x: 9.1, y: 20.4, kind: 'npc', npc: 'bohdan', s: 1.3 });
   for (let i = ents.length - 1; i >= 0; i--) if (ents[i].w === 'kit') ents.splice(i, 1);
-  for (const ct of D.cats) add({ w: ct.word, k: 'cat_' + ct.id, kind: 'animal', an: 'cat', cat: ct.id, v: ct.v, x: ct.x, y: ct.y, r: 1.3 });
+  for (const ct of D.cats) if (S.cats[ct.id] !== 1) add({ w: ct.word, k: 'cat_' + ct.id, kind: 'animal', an: 'cat', cat: ct.id, v: ct.v, x: ct.x, y: ct.y, r: 1.3 });
   let ducks = 0;
   for (const e of ents) {
     e.hx = e.x; e.hy = e.y; e.tw = Math.random() * 6; e.st = 'idle'; e.act = 'look'; e.vel = 0; e.wk = 0; e.dip = 0; e.rest = 0; e.face = Math.random() < 0.5 ? -1 : 1; e.fs = e.face;
@@ -1843,8 +1843,8 @@ function catSheet(e) {
     note: `<b>${ct.line}</b>${st < 2 ? `<br>${ct.lineEn}` : `<span class="xl"><br>${ct.lineEn}</span>`}${!has ? xl(`<br><small>${sourceHint(ct.wants)}</small>`) : ''}`,
     clips: ['c_' + ct.id],
     acts: has ? [{ k: 'give', fn: () => {
-      S.bag[ct.wants]--; S.cats[ct.id] = 1; S.hearts += 2; { const ce = ents.find(q => q.cat === ct.id); if (ce) fxHearts(ce.x, ce.y - 0.6); } learn(ct.wants); useWord(ct.wants, true);
-      hud(); save(); closeSheet(); toast(`❤️ ${ct.name}!  +2 ❤️`); say('p_mur'); blip(990, 0.15);
+      S.bag[ct.wants]--; S.cats[ct.id] = 'f'; S.hearts += 2; { const ce = ents.find(q => q.cat === ct.id); if (ce) fxHearts(ce.x, ce.y - 0.6); } learn(ct.wants); useWord(ct.wants, true);
+      hud(); save(); closeSheet(); toast(`❤️ ${ct.name}!  +2 ❤️${stage() < 3 ? ' · Take it home 🏠' : ''}`); say('p_mur'); blip(990, 0.15);
     } }] : [],
   });
 }
@@ -1872,6 +1872,22 @@ function catRoute(sx, sy, tx, ty) {
   // keep only the corners, so the walk is a few straight legs rather than a staircase of tiles
   const pts = path.map(i => ({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 }));
   return pts.filter((p, k) => k === pts.length - 1 || k === 0 || (pts[k + 1].x - p.x !== p.x - pts[k - 1].x || pts[k + 1].y - p.y !== p.y - pts[k - 1].y));
+}
+// A cat you've just befriended trots after you until you take it home (S.cats[id] = 'f'); once inside
+// it's a house cat (S.cats[id] = 1) and no longer out in the village.
+function followStep(e, dt) {
+  const dx = P.x - e.x, dy = P.y - e.y, d = Math.hypot(dx, dy);
+  if (d > 7) { e.x = P.x + (P.x > e.x ? -1 : 1) * 0.9; e.y = P.y + 0.15; e.vel = 0; return; }   // left behind a building: catch up
+  const want = d > 1.6 ? 3.8 : d > 1.0 ? 2 : 0;
+  e.vel += (want - e.vel) * (1 - Math.exp(-dt * 4));
+  if (e.vel > 0.02 && d > 0.8) {
+    const m = Math.min(d - 0.8, e.vel * dt), nx = e.x + dx / d * m, ny = e.y + dy / d * m;
+    const free = (x, y) => !(solid[Math.floor(y)] || [])[Math.floor(x)];
+    if (free(nx, ny)) { e.x = nx; e.y = ny; } else if (free(nx, e.y)) e.x = nx; else if (free(e.x, ny)) e.y = ny;
+    e.step = (e.step || 0) + m;
+  }
+  if (Math.abs(dx) > 0.15) e.face = dx > 0 ? -1 : 1;
+  e.st = 'idle'; e.act = 'look'; e.tw = 1;
 }
 function catRoam(e) {
   const sx = Math.floor(e.x), sy = Math.floor(e.y), far = Math.random() < 0.7, R = far ? 11 : 3;
@@ -2705,7 +2721,9 @@ function fadeThen(fn) { const f = $('#fade'); f.classList.add('on'); setTimeout(
 function enterHome() { closeSheet(); fadeThen(enterHomeNow); }
 function exitHome() { fadeThen(exitHomeNow); }
 function enterHomeNow() {
-  mode = 'home'; pickHomeCats();
+  mode = 'home';
+  for (const ct of D.cats) if (S.cats[ct.id] === 'f') { S.cats[ct.id] = 1; const i = ents.findIndex(q => q.cat === ct.id); if (i >= 0) ents.splice(i, 1); save(); }
+  pickHomeCats();
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#decorBtn').style.display = ''; $('#homebar').style.display = 'flex';
   const mid = DECOR.stil.x * roomW() - cv.width / 2;
   roomX = mid; clampPan();
@@ -2740,12 +2758,12 @@ const towelSwing = t => -Math.max(0, Math.sin(t * 4 - 0.4)) * 7 + Math.sin(t * 1
 const HOME_POSES = ['look', 'sleep', 'groom'];
 let homeTrio = null;
 function pickHomeCats() {
-  const f = D.cats.filter(ct => S.cats[ct.id]);
+  const f = D.cats.filter(ct => S.cats[ct.id] === 1);
   for (let i = f.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [f[i], f[j]] = [f[j], f[i]]; }
   homeTrio = f.slice(0, 3).map((ct, i) => ({ ct, pose: HOME_POSES[i] }));
 }
 function homeCats() {
-  if (!homeTrio || homeTrio.some(h => !S.cats[h.ct.id]) || (homeTrio.length < 3 && D.cats.some(ct => S.cats[ct.id] && !homeTrio.some(h => h.ct === ct)))) pickHomeCats();
+  if (!homeTrio || homeTrio.some(h => S.cats[h.ct.id] !== 1) || (homeTrio.length < 3 && D.cats.some(ct => S.cats[ct.id] === 1 && !homeTrio.some(h => h.ct === ct)))) pickHomeCats();
   return homeTrio;
 }
 function catSpot(i) {
@@ -3296,7 +3314,7 @@ function update(dt, t, rdt = dt) {
     if (e.kind === 'animal') {
       // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
       // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
-      if (e.fetch) fetchStep(e, dt); else {
+      if (e.cat && S.cats[e.cat] === 'f') followStep(e, dt); else if (e.fetch) fetchStep(e, dt); else {
       const sp = SPEED[e.an] || 0.5, idle = IDLE[e.an] || [3, 8];
       if (e.st === 'walk') {
         const dx = e.gx - e.x, dy = e.gy - e.y, d = Math.hypot(dx, dy);
