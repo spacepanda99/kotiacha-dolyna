@@ -22,7 +22,7 @@ const SAVE = 'kotiacha-dolyna-v1';
 const fresh = () => ({
   coins: 10, hearts: 0, words: {}, bag: { voda: 3 }, waterInit: 1, seeds: { morkva: 3 }, home: {}, placed: {},
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
-  npc: {}, cats: {}, decor: {}, gear: {}, recipe: { i: 0, have: {}, started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
+  npc: {}, cats: {}, decor: {}, gear: {}, farm: {}, recipe: { i: 0, have: {}, started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
 let S;
 try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(SAVE) || '{}')); } catch (e) { S = fresh(); }
@@ -142,6 +142,19 @@ const poly = (c, pts) => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0
 
 // Hand-drawn things. Each draws inside a 100-wide, 100-tall box whose bottom centre is (0, 0).
 const DRAW = {
+  // A wooden butter churn: a tall tapered tub with iron hoops, a lid, and the dasher handle through the middle.
+  maslobiika(c) {
+    const bob = churnUntil > now() ? Math.abs(Math.sin(now() / 120)) * 12 : 0;
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 26, 5);
+    c.strokeStyle = '#6b4422'; c.lineWidth = 4; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, -60 - bob); c.lineTo(0, -98 - bob); c.stroke();
+    c.lineWidth = 3.5; c.beginPath(); c.moveTo(-9, -98 - bob); c.lineTo(9, -98 - bob); c.stroke();
+    c.fillStyle = '#b5824e'; poly(c, [[-17, -66], [17, -66], [22, -3], [-22, -3]]);
+    c.fillStyle = 'rgba(0,0,0,.08)'; for (const x of [-12, -4, 4, 12]) poly(c, [[x - 1, -66], [x + 1, -66], [x * 1.3 + 1, -3], [x * 1.3 - 1, -3]]);
+    c.fillStyle = 'rgba(255,255,255,.18)'; poly(c, [[-14, -64], [-9, -64], [-12, -6], [-18, -6]]);
+    c.fillStyle = '#4a4a50'; for (const [y, w] of [[-55, 18.2], [-30, 20], [-10, 21.4]]) { c.fillRect(-w, y, w * 2, 3.5); }
+    c.fillStyle = '#8a5a2b'; ell(c, 0, -66, 18, 4.5); c.fillStyle = '#a06a35'; ell(c, 0, -67, 15, 3.4);
+    c.fillStyle = '#fff6dc'; if (bob > 4) { circ(c, -6, -69, 2.2); circ(c, 7, -70, 1.8); }
+  },
   koshyk(c) { c.scale(3.8, 3.8); marketBasket(c, 0, -11.5); },   // the same wicker basket as in Oksana's bubble
   khata(c) {
     c.fillStyle = '#b5553f'; c.fillRect(21, -86, 12, 30); c.fillStyle = '#8f3f2d'; c.fillRect(19, -89, 16, 5);   // chimney
@@ -1117,8 +1130,8 @@ function add(e) {
   // Grandma Olia's corner.
   rect(23, 8, 26, 10);
   add({ w: 'khata', k: 'oliaHome', x: 25, y: 11, s: 3.7 });
-  add({ w: 'kurka', x: 27.6, y: 11.8, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90 });
-  add({ w: 'kurka', x: 28.4, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90 });
+  add({ w: 'kurka', x: 27.6, y: 11.8, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens
+  add({ w: 'kurka', x: 28.4, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
   add({ w: 'piven', x: 27.2, y: 12.9, kind: 'animal', r: 1.2 });
   add({ w: 'kit', x: 22.4, y: 12.3, kind: 'animal', r: 0.8 });
   add({ w: 'kit', x: 12.4, y: 13.2, kind: 'animal', r: 1.2, s: 0.9 });
@@ -1140,7 +1153,7 @@ function add(e) {
   add({ w: 'kachka', x: 28.6, y: 19.9, kind: 'animal', r: 0.8, water: true });
   add({ w: 'zhaba', x: 26.3, y: 23.2, s: 0.7, kind: 'animal', r: 0.5 });
   // Pasture.
-  add({ w: 'korova', x: 30.0, y: 12.2, s: 1.4, kind: 'animal', r: 1.3, give: 'moloko', cd: 120 });
+  add({ w: 'korova', x: 30.0, y: 12.2, s: 1.4, kind: 'animal', r: 1.3, give: 'moloko', cd: 120, olias: true });   // Grandma's cow
   add({ w: 'kin', x: 32.6, y: 13.0, s: 1.5, kind: 'animal', r: 1.3 });
   add({ w: 'koza', x: 28.6, y: 13.4, s: 1.1, kind: 'animal', r: 0.9 });
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
@@ -1890,13 +1903,43 @@ function caught(e) {
   dialog(npc, [ask]);
 }
 function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; hud(); save(); }
+// Your own farm: hens (up to four) and a cow scratch and graze in the yard below your cottage, and a butter
+// churn stands by your door once you've bought one. They're added to the world when bought and on loading.
+const FARM_MAX = { kurka: 4, korova: 1 };
+const HEN_SPOTS = [[10.3, 13.9], [11.2, 14.5], [10.6, 15.2], [11.7, 13.8]], COW_SPOT = [12.9, 14.9];
+const farmN = k => (S.farm && S.farm[k]) || 0;
+let churnUntil = 0;
+function farmEnts() {
+  const put = o => {
+    if (ents.some(e => e.k === o.k)) return;
+    const e = add(o);
+    e.hx = e.x; e.hy = e.y; e.tw = Math.random() * 6; e.st = 'idle'; e.act = 'look'; e.vel = 0; e.wk = 0; e.dip = 0; e.rest = 0; e.face = Math.random() < 0.5 ? -1 : 1; e.fs = e.face;
+    if (e.kind === 'animal' && ANIMAL_OF[e.w]) { e.an = ANIMAL_OF[e.w]; e.s = ASIZE[e.an]; }
+  };
+  for (let i = 0; i < Math.min(FARM_MAX.kurka, farmN('kurka')); i++) put({ w: 'kurka', k: 'my_kurka' + i, x: HEN_SPOTS[i][0], y: HEN_SPOTS[i][1], kind: 'animal', r: 0.8, give: 'yaitse', cd: 90 });
+  if (farmN('korova') > 0) put({ w: 'korova', k: 'my_korova', x: COW_SPOT[0], y: COW_SPOT[1], s: 1.4, kind: 'animal', r: 0.6, give: 'moloko', cd: 120 });
+  if (S.gear.maslobiika) put({ w: 'maslobiika', k: 'my_churn', x: 8.75, y: 12.45, s: 0.85 });
+}
+// The butter churn: a cup of milk in, a pat of butter out, with the dasher going up and down a moment.
+function churnCard() {
+  const has = (S.bag.moloko || 0) > 0, st = stage();
+  wordCard('maslobiika', {
+    note: `🥛 ${W.moloko.uk}: ${S.bag.moloko || 0}${st < 3 ? (has ? ' · One milk makes one butter.' : ' · You need milk. Milk a cow first.') : ''}`,
+    acts: has ? [{ k: 'churn', fn: () => {
+      S.bag.moloko--; give('maslo'); learn('maslo'); churnUntil = now() + 1600; blip(660, 0.12); setTimeout(() => blip(780, 0.12), 400);
+      const ce = ents.find(q => q.k === 'my_churn'); if (ce) setTimeout(() => fxBurst(ce.x, ce.y - 1, W.maslo.ic), 900);
+      toast(`−1 ${W.moloko.uk}  +1 ${W.maslo.uk}`); closeSheet(); setTimeout(() => say('w_maslo'), 900);
+    } }] : [],
+  });
+}
 function take(e) {
   if (e.owner && !e.stealOk) return caught(e);
   e.stealOk = false;
   S.cd[e.k] = now() + e.cd * 1000;
   give(e.give); blip(880); fxBurst(e.x, e.y - e.s * 0.45, W[e.give].ic);
   toast(`+1 ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
-  if (e.give !== e.w) wordCard(e.give); else closeSheet();
+  // Grandma calls out from her cottage that you're welcome to her eggs and milk.
+  if (e.give !== e.w) wordCard(e.give, e.olias ? { note: `👵 <b>«${NPC.olia.lines.share.uk}»</b>${stage() < 3 ? `<br>${NPC.olia.lines.share.en}` : ''}`, clips: ['v_olia_share'] } : {}); else closeSheet();
 }
 const ready = e => !(S.cd[e.k] > now());
 
@@ -1967,6 +2010,7 @@ function interact(e) {
       const add = Math.min(WELL_GIVES, WATER_MAX - have); S.bag.voda = have + add; learn('voda'); hud(); bumpWater(); save(); closeSheet(); toast(`💧 +${add} ${W.voda.uk}  (${S.bag.voda} / ${WATER_MAX})`); say('w_voda'); blip(700, 0.12);
     } }] : [] });
   }
+  if (e.k === 'my_churn') return churnCard();
   if (e.give) return wordCard(e.w, { acts: ready(e) ? [{ k: 'take', fn: () => take(e) }] : [] });
   wordCard(e.w);
 }
@@ -2003,11 +2047,11 @@ function plotSheet(i) {
 // ------------------------------------------------------------------ market
 let shopTab = 'food', shopSel = null;
 // Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
-const owned = k => (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
+const owned = k => shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
 const sellPrice = id => { if (id === 'ryba') return 4;   // a fish takes a rod and some patience
   for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
 function shop() {
-  const tabs = ['food', 'seeds', 'tools', 'home', 'cats', 'sell', 'help'];
+  const tabs = ['food', 'seeds', 'tools', 'farm', 'home', 'cats', 'sell', 'help'];
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
   let body = '';
   if (shopTab === 'help') return helpRound(0);
@@ -2016,7 +2060,7 @@ function shop() {
     body = items.length ? `<div class="grid">${items.map(k => `<button class="it" data-a="sell" data-v="${k}"><span class="q">${S.bag[k]}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">+${sellPrice(k)} ₴</div></button>`).join('')}</div>` : `<div class="muted">🧺 ${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`;
   } else {
     const list = D.shop[shopTab];
-    body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}${shopTab === 'seeds' ? `<div class="e">🌱 ${W.nasinnia.uk}${stage() < 3 ? ' · seeds' : ''}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
+    body = `<div class="grid">${Object.keys(list).map(k => { const had = owned(k); return `<button class="it ${shopSel === k ? 'sel' : ''} ${had ? 'owned' : ''}" data-a="pick" data-v="${k}">${shopTab === 'seeds' ? '<span class="q">🌱</span>' : shopTab === 'farm' ? `<span class="q">${farmN(k)}/${FARM_MAX[k]}</span>` : ''}<img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div>${known(k) < 2 ? `<div class="e">${W[k].en}</div>` : ''}${shopTab === 'seeds' ? `<div class="e">🌱 ${W.nasinnia.uk}${stage() < 3 ? ' · seeds' : ''}</div>` : ''}<div class="e"><b>${had ? '✓ ' + D.ui.have[0] + (stage() < 3 ? ' · ' + D.ui.have[1] : '') : list[k] + ' ₴'}</b></div></button>`; }).join('')}</div>`;
     if (shopSel && list[shopSel] && !owned(shopSel)) body += `<div class="buyrow"><div class="what">${W[shopSel].uk} — ${list[shopSel]} ₴<br><small style="font-weight:600;color:var(--soft)">${D.prices[list[shopSel]]}</small></div>${btn('buy', shopSel, lab('buy'), 'blue')}</div>`;
   }
   setTimeout(() => sheet.classList.add('fixed'), 0);   // the market keeps one height, however few items a tab has
@@ -3562,10 +3606,11 @@ const A = {
     S.coins -= price;
     if (shopTab === 'seeds') { S.seeds[v] = (S.seeds[v] || 0) + 1; learn('nasinnia'); }
     else if (shopTab === 'home' || shopTab === 'cats') S.home[v] = (S.home[v] || 0) + 1;
-    else if (shopTab === 'tools') S.gear[v] = 1;
+    else if (shopTab === 'tools') { S.gear[v] = 1; farmEnts(); }
+    else if (shopTab === 'farm') { S.farm = S.farm || {}; S.farm[v] = farmN(v) + 1; farmEnts(); }
     else give(v);
     hud(); blip(880, 0.1); say('n_' + price, 'p_diakuiu');
-    toast(shopTab === 'seeds' ? `−${price} ₴  🌱 ${W.nasinnia.uk}: ${W[v].uk}${stage() < 3 ? ' · seeds to plant in your garden' : ''}` : `−${price} ₴  ${W[v].uk}`); tutEvent('buy'); save(); shop();
+    toast(shopTab === 'seeds' ? `−${price} ₴  🌱 ${W.nasinnia.uk}: ${W[v].uk}${stage() < 3 ? ' · seeds to plant in your garden' : ''}` : `−${price} ₴  ${W[v].uk}${stage() < 3 && (shopTab === 'farm' || v === 'maslobiika') ? ' · now by your cottage' : ''}`); tutEvent('buy'); save(); shop();
   },
   sell(v) { if (!(S.bag[v] > 0)) return; S.bag[v]--; S.coins += sellPrice(v); hud(); blip(820); say('w_' + v); save(); shop(); },
   hand(v) {
@@ -3597,6 +3642,7 @@ document.addEventListener('click', ev => {
 });
 document.addEventListener('contextmenu', ev => ev.preventDefault());
 
+farmEnts();   // your own hens, cow and churn
 hud(); setGuide();
 { const b = document.querySelector('[data-a=bag]'); if (b) b.innerHTML = `<img src="${iconURL('koshyk')}" alt="" style="width:1.5em;height:1.5em;margin:-0.1em;display:block;pointer-events:none">`; }   // the drawn basket, not the emoji
 requestAnimationFrame(frame);
@@ -3626,5 +3672,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { give: (k,n) => give(k,n), FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
