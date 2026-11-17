@@ -878,6 +878,7 @@ function iconURL(id) {
 // Bohdan puffs his smoker at the hives with bees about; Taras fishes; Grandma Olia waters her flower bed.
 function chore(c, x, y, id, t, layer) {
   c.save(); c.translate(x, y); c.lineCap = 'round'; c.lineJoin = 'round';
+  if (id === 'andriiko' && layer === 1 && FETCH.on === 'hand') { const h = boyHand(); ballArt(c, h.x, h.y - 1, 4.8); }
   if (id === 'bohdan') {
     if (layer === 1) {
       // a smoker in his left hand, puffing toward the hives
@@ -980,7 +981,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   if (L.dress) { poly(c, [[-13, -32 + bob], [13, -32 + bob], [19, -8 + bob], [-19, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-18, -12 + bob, 36, 2.5); }
   else rr(c, -14, -31 + bob, 28, 22, 6);
   if (!L.noArms) for (const sx of [-15.5, 15.5]) {   // arms swing from the shoulder
-    c.save(); c.translate(sx, -47 + bob); c.rotate(arm);
+    c.save(); c.translate(sx, -47 + bob); c.rotate(sx > 0 && L.armR !== undefined ? L.armR : arm);
     c.fillStyle = L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.trim; c.fillRect(-3.5, 13, 7, 2.5);
     c.fillStyle = L.skin; circ(c, 0, 19, 3.5); c.restore();
   }
@@ -1166,7 +1167,7 @@ function add(e) {
   add({ w: 'khata', k: 'n_oksana', x: 19.5, y: 18.1, kind: 'npc', npc: 'oksana', s: 1.3 });
   add({ w: 'khata', k: 'n_taras', x: 25.3, y: 21.2, kind: 'npc', npc: 'taras', s: 1.3 });
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
-  add({ w: 'sobaka', x: 15.7, y: 21.3, kind: 'animal', r: 1.0 });
+  add({ w: 'sobaka', x: 15.4, y: 20.78, kind: 'animal', r: 1.0, fetch: true });   // plays fetch with Andriiko
   add({ w: 'khata', k: 'n_bohdan', x: 9.1, y: 20.4, kind: 'npc', npc: 'bohdan', s: 1.3 });
   for (let i = ents.length - 1; i >= 0; i--) if (ents[i].w === 'kit') ents.splice(i, 1);
   for (const ct of D.cats) add({ w: ct.word, k: 'cat_' + ct.id, kind: 'animal', an: 'cat', cat: ct.id, v: ct.v, x: ct.x, y: ct.y, r: 1.3 });
@@ -1345,9 +1346,119 @@ function sitPal(v) {
 }
 for (const v in VAR) DRAW['cat_' + v] = c => cat(c, 0, -2, 94, sitPal(v), 0, 0, 1);
 
+// Andriiko and his dog play fetch. He winds up and throws a blue-and-yellow ball; the dog runs after it,
+// picks it up, trots back, drops it at his feet and waits; he scoops it up and throws again.
+// Phases: hold > wind > throw > fly (ball in the air, dog already running) > roll > (dog arrives) pick > back > drop > wait > scoop > hold.
+const FETCH = { ph: 'hold', t: 0, wait: 1.5, arm: 0.15, on: 'hand', bx: 0, by: 0, bz: 0, ax: 0, ay: 0, tx: 0, ty: 0, dur: 1, peak: 60, z0: 30, dip: false, boy: null };
+const DOG_MOUTH = 0.55;   // how far ahead of the dog's middle its mouth is, in tiles
+function ballArt(c, x, y, r) {
+  c.fillStyle = '#f2c230'; circ(c, x, y, r);
+  c.fillStyle = '#2c6ed5'; c.beginPath(); c.arc(x, y, r, Math.PI, 0); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.6)'; circ(c, x - r * 0.35, y - r * 0.4, r * 0.28);
+}
+function boyHand() {   // where Andriiko's right hand is, in pixels from his feet
+  const k = 0.78, a = FETCH.arm;
+  return { x: k * (15.5 - 19 * Math.sin(a)), y: k * (-47 + 19 * Math.cos(a)) };
+}
+function fetchStep(e, dt) {
+  const F = FETCH, ease = u => u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u);
+  if (!F.boy) { F.boy = ents.find(q => q.npc === 'andriiko'); if (!F.boy) return; }
+  const B = F.boy, sitX = B.x + 0.35 + DOG_MOUTH, sitY = B.y + 0.08;
+  F.t += dt;
+  const goTo = (gx, gy, sp) => {
+    const dx = gx - e.x, dy = gy - e.y, d = Math.hypot(dx, dy);
+    if (d < 0.04) { e.vel += (0 - e.vel) * (1 - Math.exp(-dt * 9)); return true; }
+    if (Math.abs(dx) > 0.06) e.face = dx > 0 ? -1 : 1;
+    const turned = Math.abs((e.ang ?? 0) - (e.face === -1 ? Math.PI : 0)) < 0.7;
+    const want = turned ? sp * Math.min(1, d / 0.35 + 0.15) : sp * 0.15;
+    e.vel += (want - e.vel) * (1 - Math.exp(-dt * 6));
+    const m = Math.min(d, e.vel * dt); e.x += dx / d * m; e.y += dy / d * m; e.step = (e.step || 0) + m;
+    return false;
+  };
+  const toPh = ph => { F.ph = ph; F.t = 0; };
+  const still = () => { e.vel += (0 - e.vel) * (1 - Math.exp(-dt * 9)); };
+  e.st = 'idle'; e.act = 'look'; F.dip = false; e.carry = false;
+  switch (F.ph) {
+    case 'hold':   // ball in hand, dog sitting beside him, eager
+      F.arm += (0.15 - F.arm) * (1 - Math.exp(-dt * 8));
+      if (goTo(sitX, sitY, 1.2)) e.face = 1;
+      if (F.t > F.wait) {
+        F.tx = B.x + 2.2; F.ty = B.y + 0.5;
+        for (let i = 0; i < 12; i++) {
+          const x = B.x + rnd(1.5, 3.0), y = B.y + rnd(-0.4, 1.4);
+          if (x > 1 && y > 1 && x < MW - 1 && y < MH - 1 && !solid[Math.floor(y)][Math.floor(x)]) { F.tx = x; F.ty = y; break; }
+        }
+        toPh('wind');
+      }
+      break;
+    case 'wind': F.arm = 0.15 + (-2.7 - 0.15) * ease(F.t / 0.5); still(); if (F.t > 0.55) toPh('throw'); break;
+    case 'throw':
+      F.arm = -2.7 + (-1.0 + 2.7) * ease(F.t / 0.13); still();
+      if (F.t > 0.13) {
+        const h = boyHand();
+        F.ax = B.x + h.x / T; F.ay = B.y + 0.02; F.z0 = -h.y;
+        const dist = Math.hypot(F.tx - F.ax, F.ty - F.ay);
+        F.dur = 0.55 + dist * 0.14; F.peak = 40 + dist * 14;
+        F.on = 'air'; F.bx = F.ax; F.by = F.ay; F.bz = F.z0; toPh('fly');
+      }
+      break;
+    case 'fly': case 'roll': {
+      if (F.ph === 'fly') {
+        const u = Math.min(1, F.t / F.dur);
+        F.bx = F.ax + (F.tx - F.ax) * u; F.by = F.ay + (F.ty - F.ay) * u; F.bz = F.z0 * (1 - u) + F.peak * 4 * u * (1 - u);
+        if (u >= 1) { F.ax = F.bx; F.ay = F.by; toPh('roll'); }
+      } else {   // one small bounce, rolling on a little and slowing down
+        const u = Math.min(1, F.t / 0.5), dx = F.tx - F.ax + (F.tx - (F.boy.x + 0.3)), dy = F.ty - F.ay + (F.ty - F.boy.y), d = Math.hypot(dx, dy) || 1;
+        const r = 0.35 * (1 - (1 - u) * (1 - u));
+        F.bx = F.ax + dx / d * r; F.by = F.ay + dy / d * r * 0.6; F.bz = 12 * 4 * u * (1 - u);
+        if (u >= 1) { F.bz = 0; F.on = 'ground'; }
+      }
+      F.arm += (0.15 - F.arm) * (1 - Math.exp(-dt * 4));
+      if (F.ph === 'fly' && F.t < 0.15) { still(); break; }
+      // run for the ball: aim so the mouth ends up on it
+      const side = e.x < F.bx ? -1 : 1, gx = F.bx + side * DOG_MOUTH;
+      if (goTo(gx, F.by, 2.4) && F.on === 'ground') { e.face = side === -1 ? -1 : 1; toPh('pick'); }
+      break;
+    }
+    case 'pick':   // head down, mouth the ball
+      still(); F.dip = F.t < 0.45; F.arm += (0.15 - F.arm) * (1 - Math.exp(-dt * 4));
+      if (F.t > 0.3) { F.on = 'mouth'; e.carry = true; }
+      if (F.t > 0.55) toPh('back');
+      break;
+    case 'back':   // trot back with it
+      F.on = 'mouth'; e.carry = true;
+      if (goTo(sitX, sitY, 1.7)) { e.face = 1; if (Math.abs((e.ang ?? 0)) < 0.25) toPh('drop'); }
+      break;
+    case 'drop':   // lower the head and let go at his feet
+      still(); F.dip = F.t < 0.5;
+      if (F.t < 0.3) { F.on = 'mouth'; e.carry = true; }
+      else {
+        if (F.on === 'mouth') { F.on = 'fall'; F.bx = e.x - DOG_MOUTH * 0.95; F.by = e.y + 0.02; }
+        const u = Math.min(1, (F.t - 0.3) / 0.35);
+        F.bz = u < 0.55 ? 14 * (1 - (u / 0.55) * (u / 0.55)) : 5 * Math.sin(Math.PI * (u - 0.55) / 0.45);
+        if (u >= 1) { F.bz = 0; F.on = 'ground'; toPh('wait'); }
+      }
+      break;
+    case 'wait': still(); e.face = 1; if (F.t > 0.8) { toPh('scoop'); F.ax = F.bx; F.ay = F.by; } break;
+    case 'scoop': {   // he reaches down and takes it back into his hand
+      still(); const u = ease(F.t / 0.45); F.arm = 0.15 + (-0.45 - 0.15) * Math.sin(Math.PI * Math.min(1, F.t / 0.45));
+      const h = boyHand(); F.bx = F.ax + (B.x + h.x / T - F.ax) * u; F.by = F.ay + (B.y + 0.02 - F.ay) * u; F.bz = -h.y * u; F.on = 'air';
+      if (F.t > 0.45) { F.on = 'hand'; F.wait = rnd(1.2, 2.6); toPh('hold'); }
+      break;
+    }
+  }
+  if (NPC.andriiko) NPC.andriiko.look.armR = F.arm;
+}
+function fetchDraw(c) {   // the ball whenever it's on its own (flying, rolling, lying, dropping)
+  const F = FETCH;
+  if (F.on === 'hand' || F.on === 'mouth' || !F.boy) return;
+  const x = F.bx * T, y = F.by * T, r = 4.8;
+  c.fillStyle = `rgba(0,0,0,${0.16 * Math.max(0.35, 1 - F.bz / 120)})`; ell(c, x, y, r * (1 - Math.min(0.4, F.bz / 200)), r * 0.38);
+  ballArt(c, x, y - r - F.bz, r);
+}
 function quad(c, x, y, Q, t, e) {
   // wk: 0 standing .. 1 walking. rest: lying down. dip: head down to graze. All three glide, so nothing snaps.
-  const wk = e.wk || 0, rest = Q.rest ? (e.rest || 0) : 0, dip = Q.graze ? (e.dip || 0) : 0;
+  const wk = e.wk || 0, rest = Q.rest ? (e.rest || 0) : 0, dip = Q.graze || e.fetch ? (e.dip || 0) : 0;
   const G = Q.G * (1 - rest * 0.8), amp = Q.amp || 0.4;
   // one stride covers the ground the legs really reach, so the feet don't slide
   const cyc = (e.step || 0) * T / (1.6 * Q.G * Q.k * amp / 0.4);
@@ -1420,6 +1531,7 @@ function quad(c, x, y, Q, t, e) {
   if (Q.muzzle) { c.fillStyle = Q.muzzle; ell(c, a0 * (Q.long ? 1.08 : 0.85), b0 * 0.15 + chew, a0 * (Q.long ? 0.3 : 0.42), b0 * (Q.long ? 0.62 : 0.72)); c.fillStyle = 'rgba(60,30,20,.55)'; circ(c, a0 * (Q.long ? 1.2 : 1.02), -b0 * 0.05 + chew, 1.1); }
   if (Q.snout) { c.fillStyle = Q.dark; ell(c, a0 * 1.1, 1, 4.5, 5.5); c.fillStyle = '#8a4a5a'; circ(c, a0 * 1.12, -1, 0.9); circ(c, a0 * 1.12, 3, 0.9); }
   if (Q.nose) { c.fillStyle = Q.tail === 'cat' ? '#e8708a' : '#2a1a10'; circ(c, a0 * 1.2, 0.5, Q.tail === 'cat' ? 1.3 : 2); }
+  if (e.carry) ballArt(c, a0 * 1.0, b0 * 0.95, 4.8);   // the fetch ball, held in its mouth
   if (Q.ear === 'side') { c.fillStyle = Q.far; c.beginPath(); c.ellipse(-a0 * 0.5, -b0 * 0.55, 5.5, 2.8, -0.3 + flick * 0.15, 0, 7); c.fill(); }
   if (Q.ear === 'flop') { c.fillStyle = Q.dark; c.beginPath(); c.ellipse(-a0 * 0.25, -b0 * 0.1, 4.2, 7, 0.3, 0, 7); c.fill(); }
   if (Q.forelock) { c.strokeStyle = Q.dark; c.lineWidth = 4; c.beginPath(); c.moveTo(-a0 * 0.3, -b0 * 1.0); c.quadraticCurveTo(a0 * 0.15, -b0 * 1.15, a0 * 0.3, -b0 * 0.45); c.stroke(); }
@@ -2752,6 +2864,7 @@ function update(dt, t, rdt = dt) {
     if (e.kind === 'animal') {
       // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
       // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
+      if (e.fetch) fetchStep(e, dt); else {
       const sp = SPEED[e.an] || 0.5, idle = IDLE[e.an] || [3, 8];
       if (e.st === 'walk') {
         const dx = e.gx - e.x, dy = e.gy - e.y, d = Math.hypot(dx, dy);
@@ -2778,9 +2891,10 @@ function update(dt, t, rdt = dt) {
           }
         }
       }
-      e.wk = Math.max(0, Math.min(1, e.vel / (sp * 0.8))); e.walk = e.wk > 0.2;
+      }
+      e.wk = Math.max(0, Math.min(1, e.vel / ((SPEED[e.an] || 0.5) * 0.8))); e.walk = e.wk > 0.2;
       // heads go down to graze, with a look up now and then
-      const grazing = e.st === 'idle' && e.act === 'graze' && Math.sin(t * 0.23 + e.hx * 3) > -0.55;
+      const grazing = e.fetch ? FETCH.dip : e.st === 'idle' && e.act === 'graze' && Math.sin(t * 0.23 + e.hx * 3) > -0.55;
       e.dip += ((grazing ? 1 : 0) - e.dip) * (1 - Math.exp(-dt * 2.2));
       e.rest += ((e.st === 'idle' && e.act === 'rest' ? 1 : 0) - e.rest) * (1 - Math.exp(-dt * 1.8));
     } else if (e.kind === 'fly') {
@@ -2900,6 +3014,7 @@ function drawWorld(t) {
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 0.9, t, s / 220);
   }
   // The watering can goes on top of everything, so the player never hides it.
+  fetchDraw(c);
   fxDraw(c);
   if (fishFx) drawFishing(c, t);
   if (waterFx) { const pe = ents.find(x => x.k === 'plot' + waterFx.i); if (pe) { c.save(); c.translate(pe.x * T, pe.y * T); c.scale(pe.s, pe.s); drawWatering(c, t - waterFx.t0); c.restore(); } }
@@ -3366,5 +3481,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { FETCH, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
