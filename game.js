@@ -1173,6 +1173,17 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   if (L.long) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.lineCap = 'butt'; c.beginPath(); c.arc(0, hy, 14.2, Math.PI * 1.08, Math.PI * 1.72); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10.5, hy - 9.5, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -7, hy - 12.5, 2.6); }
   c.fillStyle = '#3b2f2a'; if (blink) c.fillRect(6.5, hy + 0.6, 4, 1.3); else { ell(c, 8.5, hy + 1, 1.7, 2.1); c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, 9.1, hy + 0.2, 0.6); }
   c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, 7, hy + 6, 2.6);
+  if (L.hat === 'scarf') {   // over the top and back of the head, tied under the chin at the back
+    c.fillStyle = L.hatCol; c.beginPath(); c.arc(0, hy - 0.5, 15.8, Math.PI * 0.55, Math.PI * 1.9); c.lineTo(5, hy - 6); c.quadraticCurveTo(1, hy + 6, 3, hy + 14); c.closePath(); c.fill();
+    poly(c, [[-3, hy + 11], [-13, hy + 22], [-6, hy + 22]]);
+    c.fillStyle = '#fffdf5'; for (let i = 0; i < 5; i++) { const ang = Math.PI * (1.15 + i * 0.16); circ(c, Math.cos(ang) * 12.5, hy + Math.sin(ang) * 12.5, 1.3); }
+  } else if (L.hat === 'straw') {
+    c.fillStyle = L.hatCol; ell(c, 2, hy - 10, 22, 5.5); rr(c, -9, hy - 23, 20, 14, 6);
+    c.fillStyle = '#8a5a2b'; c.fillRect(-9, hy - 13, 20, 2.5);
+  } else if (L.hat === 'wreath') {
+    const cols = [L.hatCol, '#f2c230', '#ffffff', '#e2574c', '#5aa9e6'];
+    for (let i = 0; i < 6; i++) { const ang = Math.PI * (1.02 + i * 0.15); c.fillStyle = cols[i % 5]; circ(c, Math.cos(ang) * 14.5, hy - 2 + Math.sin(ang) * 14.5, 3.6); }
+  }
   if (!L.noArms) limb(arm, false);
   c.restore();
 }
@@ -1531,6 +1542,7 @@ function fetchStep(e, dt) {
   e.st = 'idle'; e.act = 'look'; F.dip = false; e.carry = false;
   switch (F.ph) {
     case 'hold':   // ball in hand, dog sitting beside him, eager
+      if (talkNpc === 'andriiko' && sheetOpen()) F.t = Math.min(F.t, F.wait - 0.2);   // not while he's talking to you
       F.arm += (0.15 - F.arm) * (1 - Math.exp(-dt * 8));
       if (goTo(sitX, sitY, 1.2)) e.face = 1;
       if (F.t > F.wait) {
@@ -2099,6 +2111,7 @@ function drawFishing(c, t) {
 function interact(e) {
   if (e.w === 'ryba' || e.kind === 'pond') return fishCard(e);
   if (e.cat) return catSheet(e);
+  talkNpc = e.kind === 'npc' ? e.npc : e.kind === 'shop' ? 'oksana' : null;
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
@@ -2421,6 +2434,7 @@ async function spAttempt() {
 }
 function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R.needs.length ? 'summary' : 'ready'; sp.last = null; sp.tries = 0; sp.showUk = sp.showTr = false; spRender(); }
 
+let talkNpc = null;   // the neighbour you're talking to (they turn to face you while a card is open)
 function talk(npc) {
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
@@ -3150,6 +3164,11 @@ function update(dt, t, rdt = dt) {
   for (const e of ents) {
     if (e.face !== undefined) turnTo(e, e.face, dt, TURN_SLOW[e.an] || 1);
     if (e.npc === 'oksana') oksanaStep(e, dt, t);
+    if (e.kind === 'npc') {   // turn to face you (side-on, towards whichever side you're on) while you talk
+      const goal = sheetOpen() && talkNpc === e.npc ? (P.x >= e.x ? 1 : -1) : 0;
+      e.tv = (e.tv || 0) + (goal - (e.tv || 0)) * (1 - Math.exp(-rdt * 7));   // real time: game time stops while a card is open
+      if (Math.abs(e.tv - goal) < 0.002) e.tv = goal;
+    }
     if (e.kind === 'animal') {
       // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
       // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
@@ -3287,7 +3306,17 @@ function drawWorld(t) {
       c.save(); c.translate(x, y - mid * 4); c.scale((view === 3 ? -1 : 1) * (1 - mid * 0.4), 1);
       if (view === 1 || view === 3) personSide(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
       c.restore(); continue; }
-    if (e.kind === 'npc') { const ok = e.npc === 'oksana'; chore(c, x, y, e.npc, t, 0); person(c, x, y, NPC[e.npc].look, ok ? t + 19.5 : t + e.x, ok ? OKS.walk : false, 1, ok ? OKS.legs : undefined); chore(c, x, y, e.npc, t, 1); continue; }
+    if (e.kind === 'npc') {
+      const ok = e.npc === 'oksana', a = Math.abs(e.tv || 0), L = NPC[e.npc].look, tt = ok ? t + 19.5 : t + e.x;
+      chore(c, x, y, e.npc, t, 0);
+      if (a < 0.02) { person(c, x, y, L, tt, ok ? OKS.walk : false, 1, ok ? OKS.legs : undefined); chore(c, x, y, e.npc, t, 1); continue; }
+      // turning: things in their hands are put down while they talk
+      const mid = a < 0.5 ? a * 2 : (1 - a) * 2;
+      c.save(); c.translate(x, y - mid * 4); c.scale(Math.sign(e.tv) * (1 - mid * 0.4), 1);
+      const Lt = Object.assign({}, L, { armR: undefined, armL: undefined });
+      if (a >= 0.5) personSide(c, 0, 0, Lt, tt, false, 1); else person(c, 0, 0, Lt, tt, false, 1, undefined, { side: a * 2 });
+      c.restore(); continue;
+    }
     if (e.kind === 'pond') continue;
     if (e.kind === 'plot') {
       // Everything in a bed is drawn at bed scale, so bigger beds get bigger crops too.
