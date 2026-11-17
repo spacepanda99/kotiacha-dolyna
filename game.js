@@ -2570,8 +2570,7 @@ function drawOlia(t) {
   }
   c.restore();
   const bob = Math.sin(t * 2.5) * u * 0.006, btop = oy - u * 0.465 + bob, bR = u * 0.05;
-  const bub = npcS && npcS.mad ? '😠' : ready ? '🍽️' : npcS && npcS.q && st < 2 ? W[npcS.q].ic : npcS && npcS.q ? '❔' : '💬';
-  bubble(c, ox, btop, bR); drawIcon(c, bub, ox, btop + bR * 0.62, bR * 1.4);
+  // No speech bubble over her head in here: she greets you as you come in, and the counter shows what she needs.
   hit(ox - u * 0.11, btop - bR, u * 0.22, oy - btop + bR, () => talk(NPC.olia));
 
   // ---- the table with its embroidered cloth: bare until everything is gathered, then the dish, steaming
