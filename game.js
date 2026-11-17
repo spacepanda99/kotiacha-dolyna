@@ -1017,6 +1017,47 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   c.restore();
 }
 const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true };
+// The same villager seen from the side, facing right (mirror it for left): one eye, a little nose, hair
+// down her back, legs striding one past the other, the far arm and leg a shade darker behind her.
+function personSide(c, x, y, L, t, moving, sc, ph) {
+  const k = (L.small ? 0.78 : 1) * (sc || 1), m = +moving || 0, w = ph === undefined ? t * 12 : ph;
+  c.save(); c.translate(x, y); c.scale(k, k);
+  const bob = -m * Math.abs(Math.sin(w)) * 2.6 + (1 - m) * Math.sin(t * 2) * 0.8;
+  const st = m * Math.sin(w) * 6, la = m * Math.max(0, Math.cos(w)) * 3.5, lb = m * Math.max(0, -Math.cos(w)) * 3.5;
+  const arm = m * Math.sin(w) * 0.55 + (1 - m) * Math.sin(t * 2) * 0.025;
+  const blink = (t * 0.29 + (L.small ? 0.4 : 0)) % 1 > 0.966;
+  c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 0, 14 - m * 1.5, 5.5);
+  const leg = (dx, lift, far) => {
+    c.fillStyle = far ? '#4a392c' : '#5b4636'; rr(c, -3.5 + dx, -13 - lift, 7, 13, 2.5);
+    c.fillStyle = far ? '#30251d' : '#3f3027'; rr(c, -4 + dx, -3.5 - lift, 11, 3.5, 1.7);
+  };
+  const limb = (sw, far) => {
+    c.save(); c.translate(0, -47 + bob); c.rotate(sw);
+    c.fillStyle = L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.trim; c.fillRect(-3.5, 13, 7, 2.5);
+    c.fillStyle = L.skin; circ(c, 0, 19, 3.5);
+    if (far) { c.fillStyle = 'rgba(60,40,30,.22)'; rr(c, -3.5, -1, 7, 23.5, 3); }
+    c.restore();
+  };
+  leg(-st, lb, true);
+  if (!L.noArms) limb(-arm, true);
+  if (L.long) { c.fillStyle = L.hair; rr(c, -16, -74 + bob, 19, 44, 10); }
+  leg(st, la, false);
+  c.fillStyle = L.skirt;
+  if (L.dress) { poly(c, [[-10, -32 + bob], [10, -32 + bob], [14, -8 + bob], [-13, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-13, -12 + bob, 27, 2.5); }
+  else rr(c, -10, -31 + bob, 20, 22, 6);
+  c.fillStyle = L.shirt; rr(c, -9, -51 + bob, 18, 26, 7);
+  c.fillStyle = L.trim; c.fillRect(4, -49 + bob, 3, 18); c.fillRect(-9, -30 + bob, 18, 3);
+  for (let i = 0; i < 3; i++) c.fillRect(1, -46 + i * 6 + bob, 2, 2);
+  c.fillStyle = L.skin; circ(c, 1, -63 + bob, 13.6); circ(c, 14, -61 + bob, 2.4);   // head and nose
+  c.fillStyle = L.hair; c.beginPath(); c.arc(0, -64 + bob, 14.6, Math.PI * 0.55, Math.PI * 1.9); c.lineTo(5, -69 + bob); c.lineTo(-1, -58 + bob); c.closePath(); c.fill();
+  if (L.long) rr(c, -15, -66 + bob, 7, 24, 3.5);
+  if (L.long) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.beginPath(); c.arc(0, -64 + bob, 13.8, Math.PI * 1.12, Math.PI * 1.83); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10, -73 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -6, -76.5 + bob, 2.6); }
+  c.fillStyle = '#3b2f2a'; if (blink) c.fillRect(5.5, -62.6 + bob, 4, 1.3); else { circ(c, 7.5, -62 + bob, 1.8); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, 8.1, -62.7 + bob, 0.6); }
+  c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.6; c.beginPath(); c.arc(9.5, -58.5 + bob, 2.8, 0.1 * Math.PI, 0.65 * Math.PI); c.stroke();
+  c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, 5, -58 + bob, 2.6);
+  if (!L.noArms) limb(arm, false);
+  c.restore();
+}
 function faceURL(L) {
   const k = document.createElement('canvas'); k.width = k.height = 128;
   const c = k.getContext('2d'); person(c, 64, 152, L, 0, false, L.small ? 2.1 : 1.7);
@@ -2675,12 +2716,22 @@ function update(dt, t, rdt = dt) {
   if (P.moving && P.step - P.dust > 0.55) { P.dust = P.step; fxDust(P.rx, P.ry); }
   { const far = Math.hypot(P.x - P.rx, P.y - P.ry) > 2.5, k = far ? 1 : 1 - Math.exp(-rdt * 20);
     P.rx += (P.x - P.rx) * k; P.ry += (P.y - P.ry) * k;
-    turnTo(P, P.face, rdt);
-    // Walking away: her back. Walking across (or diagonally): her face turned the way she goes. Walking toward
-    // you: straight on. Standing still she turns back round to face you, still glancing the way she went.
+    // She turns through four views as an angle: 0 front, π/2 her right side, π her back, 3π/2 her left side.
+    // Walking away shows her back, walking across her side, walking toward you her front; standing still
+    // she turns to face you. A half turn (back to front) always goes round through the side she last faced.
     const away = P.moving && P.mdy < 0 && -P.mdy > Math.abs(P.mdx) * 1.1, across = P.moving && !away && Math.abs(P.mdx) > 0.35;
-    const ws = away ? 0 : across ? 1 : P.moving ? 0 : (P.vs || 0) > 0.5 ? 0.6 : 0, wb = away ? 1 : 0, kv = 1 - Math.exp(-rdt * 9);
-    P.vs = (P.vs || 0) + (ws - (P.vs || 0)) * kv; P.vb = (P.vb || 0) + (wb - (P.vb || 0)) * kv;
+    const TAU = Math.PI * 2, base = away ? Math.PI : across ? (P.mdx > 0 ? Math.PI / 2 : Math.PI * 1.5) : 0, cur = P.va || 0;
+    let goal = base + TAU * Math.round((cur - base) / TAU);
+    if (Math.abs(Math.abs(goal - cur) - Math.PI) < 0.6) {
+      const side = P.face === -1 ? Math.PI * 1.5 : Math.PI / 2;
+      for (const g of [goal - TAU, goal, goal + TAU]) {
+        const lo = Math.min(cur, g), hi = Math.max(cur, g), n = Math.ceil((lo - side) / TAU);
+        if (Math.abs(g - cur) < Math.PI * 1.2 && side + n * TAU <= hi) { goal = g; break; }
+      }
+    }
+    P.vav = (P.vav || 0) + ((goal - cur) * 90 - (P.vav || 0) * 19) * rdt;
+    P.va = cur + P.vav * rdt;
+    if (Math.abs(P.vav) < 0.01 && Math.abs(goal - P.va) < 0.003) { P.va = ((goal % TAU) + TAU) % TAU; P.vav = 0; }
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
   for (const e of ents) {
     if (e.face !== undefined) turnTo(e, e.face, dt);
@@ -2790,7 +2841,13 @@ function drawWorld(t) {
   list.sort((a, b) => (a.flat ? -1e3 : 0) + a.y - ((b.flat ? -1e3 : 0) + b.y));
   for (const e of list) {
     const x = e.x * T, y = e.y * T;
-    if (e.me) { c.save(); c.translate(x, y - (P.tl || 0) * 4); c.scale(turnX(P, 0.62), 1); person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { side: (P.vs || 0) * Math.abs(P.fs), back: P.vb || 0 }); c.restore(); continue; }
+    if (e.me) {
+      // Draw whichever of the four views she is closest to; between views she narrows and lifts a little,
+      // so each change of view reads as a turn rather than a swap.
+      const q = Math.round((P.va || 0) / (Math.PI / 2)), view = ((q % 4) + 4) % 4, off = (P.va || 0) - q * Math.PI / 2, mid = 1 - Math.abs(Math.cos(2 * off));
+      c.save(); c.translate(x, y - mid * 4); c.scale((view === 3 ? -1 : 1) * (1 - mid * 0.4), 1);
+      if (view === 1 || view === 3) personSide(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
+      c.restore(); continue; }
     if (e.kind === 'npc') { chore(c, x, y, e.npc, t, 0); person(c, x, y, NPC[e.npc].look, t + e.x, false, 1); chore(c, x, y, e.npc, t, 1); continue; }
     if (e.kind === 'pond') continue;
     if (e.kind === 'plot') {
