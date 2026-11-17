@@ -1344,8 +1344,8 @@ function quad(c, x, y, Q, t, e) {
   const cyc = (e.step || 0) * T / (1.6 * Q.G * Q.k * amp / 0.4);
   const breath = Math.sin(t * 1.5 + e.hx) * 0.4, bob = wk * (1 - Math.cos(cyc * 12.566)) * 0.5 * (Q.B * 0.035) + breath * (1 - wk);
   const dir = -turnX(e);
-  c.save(); c.translate(x, y - (e.tl || 0) * 3); c.scale(Q.k * dir, Q.k); c.lineCap = 'round'; c.lineJoin = 'round';
-  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, Q.L * (0.55 + rest * 0.06), 5);
+  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y, Q.L * Q.k * (0.55 + rest * 0.06), 5 * Q.k);   // the shadow doesn't turn
+  c.save(); c.translate(x, y - (e.tl || 0) * 3); turnDepth(c, e); c.scale(Q.k * dir, Q.k); c.lineCap = 'round'; c.lineJoin = 'round';
   const by = -G - Q.B / 2 - bob, lw = Math.max(3.5, Q.B * 0.24), hipF = Q.L * 0.33, hipB = -Q.L * 0.33, hipY = -G - bob * 0.5 - 1;
   // A leg in two parts. It swings back while the foot is on the ground, then bends, lifts and reaches forward.
   const leg = (hx, off, col) => {
@@ -1432,8 +1432,8 @@ function bird(c, x, y, B, t, e) {
   const walk = !!e.walk, ph = (e.step || 0) * 34, sw = Math.sin(ph) * (e.wk || 0);
   const dir = -turnX(e);
   const peck = !walk && e.act === 'graze' && Math.sin(t * 2.6 + e.hx * 5) > 0.2 ? 1 : 0;
-  c.save(); c.translate(x, y - (e.tl || 0) * 2.5); c.scale(B.k * dir, B.k); c.lineCap = 'round';
-  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, 13, 3.5);
+  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y, 13 * B.k, 3.5 * B.k);
+  c.save(); c.translate(x, y - (e.tl || 0) * 2.5); turnDepth(c, e); c.scale(B.k * dir, B.k); c.lineCap = 'round';
   c.strokeStyle = '#e09a2a'; c.lineWidth = 2;
   for (const [lx, s2] of [[-3, sw], [3, -sw]]) { c.beginPath(); c.moveTo(lx, -9); c.lineTo(lx + s2 * 4, -1); c.lineTo(lx + s2 * 4 + 4, -1); c.stroke(); }
   c.fillStyle = B.tail;
@@ -1451,7 +1451,7 @@ function bird(c, x, y, B, t, e) {
 }
 function drawDuck(c, x, y, t, e) {
   const dir = -turnX(e), bob = Math.sin(t * 2 + e.hx * 4) * 1.2, drake = e.v === 0;
-  c.save(); c.translate(x, y + bob); c.scale(dir, 1);
+  c.save(); c.translate(x, y + bob); turnDepth(c, e); c.scale(dir, 1);
   c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5;
   for (let i = 0; i < 2; i++) { c.beginPath(); c.ellipse(0, -1, 17 + i * 6 + (e.walk ? Math.sin(t * 5) * 2 : 0), 3.5 + i * 1.5, 0, 0.1, Math.PI - 0.1); c.stroke(); }
   c.fillStyle = drake ? '#cfc8bd' : '#a9794e'; ell(c, 0, -8, 15, 8);
@@ -1467,7 +1467,7 @@ function drawAnimal(c, x, y, e, t) {
     // hops in little arcs while moving; sits with a slow throat-puff otherwise
     const ph = e.walk ? ((e.step || 0) * 2.4) % 1 : 0, lift = e.walk ? Math.sin(Math.PI * ph) * 16 : (e.tl || 0) * 4, dir = -turnX(e);
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y, 13 - lift * 0.3, 3.5);
-    c.save(); c.translate(x, y - lift); c.scale(dir, 1);
+    c.save(); c.translate(x, y - lift); turnDepth(c, e); c.scale(dir, 1);
     const k = e.s * T / 100, puff = e.walk ? 1 : 1 + Math.max(0, Math.sin(t * 2.2 + e.hx)) * 0.04;
     c.scale(k, k * puff); DRAW.frog(c, { hop: e.walk && ph > 0.12 && ph < 0.88 }); c.restore();
     return;
@@ -1570,13 +1570,18 @@ function useWord(id, ok) {
   else { w.l = Math.max(1, w.l - 1); w.d = now() + IV[1]; }
   save();
 }
-function turnTo(o, face, dt) {
+const TURN_SLOW = { cow: 2.3, horse: 2.1 };   // the big animals take their time (about 0.9 s)
+function turnTo(o, face, dt, slow = 1) {
   const goal = face === -1 ? Math.PI : 0;
   if (o.ang === undefined) { o.ang = goal; o.av = 0; }
-  o.av += ((goal - o.ang) * 90 - o.av * 19) * dt;   // about 0.4 s for a full turn
+  o.av += ((goal - o.ang) * 90 / (slow * slow) - o.av * 19 / slow) * dt;   // about 0.4 s for a full turn at slow = 1
   o.ang += o.av * dt;
   if (Math.abs(goal - o.ang) < 0.002 && Math.abs(o.av) < 0.01) { o.ang = goal; o.av = 0; }
   o.fs = Math.cos(o.ang); o.tl = Math.sin(Math.max(0, Math.min(Math.PI, o.ang)));
+}
+function turnDepth(c, e) {
+  const tl = e.tl || 0;
+  if (tl > 0.005) c.transform(1, tl * 0.24 * (e.av >= 0 ? 1 : -1), 0, 1 + tl * 0.07, 0, 0);
 }
 // Horizontal scale for drawing. Animals are drawn side-on, so half-way round they narrow a lot (you see
 // them end-on); people face the camera, so they only narrow a little as they spin. Never fully flat.
@@ -2717,10 +2722,10 @@ function update(dt, t, rdt = dt) {
   { const far = Math.hypot(P.x - P.rx, P.y - P.ry) > 2.5, k = far ? 1 : 1 - Math.exp(-rdt * 20);
     P.rx += (P.x - P.rx) * k; P.ry += (P.y - P.ry) * k;
     // She turns through four views as an angle: 0 front, π/2 her right side, π her back, 3π/2 her left side.
-    // Walking away shows her back, walking across her side, walking toward you her front; standing still
-    // she turns to face you. A half turn (back to front) always goes round through the side she last faced.
+    // Walking away shows her back, walking across her side, walking toward you her front; when she stops
+    // she stays facing the way she was going. A half turn (back to front) always goes round through the side she last faced.
     const away = P.moving && P.mdy < 0 && -P.mdy > Math.abs(P.mdx) * 1.1, across = P.moving && !away && Math.abs(P.mdx) > 0.35;
-    const TAU = Math.PI * 2, base = away ? Math.PI : across ? (P.mdx > 0 ? Math.PI / 2 : Math.PI * 1.5) : 0, cur = P.va || 0;
+    const TAU = Math.PI * 2, cur = P.va || 0, base = !P.moving ? Math.round(cur / (Math.PI / 2)) * (Math.PI / 2) : away ? Math.PI : across ? (P.mdx > 0 ? Math.PI / 2 : Math.PI * 1.5) : 0;
     let goal = base + TAU * Math.round((cur - base) / TAU);
     if (Math.abs(Math.abs(goal - cur) - Math.PI) < 0.6) {
       const side = P.face === -1 ? Math.PI * 1.5 : Math.PI / 2;
@@ -2734,7 +2739,7 @@ function update(dt, t, rdt = dt) {
     if (Math.abs(P.vav) < 0.01 && Math.abs(goal - P.va) < 0.003) { P.va = ((goal % TAU) + TAU) % TAU; P.vav = 0; }
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
   for (const e of ents) {
-    if (e.face !== undefined) turnTo(e, e.face, dt);
+    if (e.face !== undefined) turnTo(e, e.face, dt, TURN_SLOW[e.an] || 1);
     if (e.kind === 'animal') {
       // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
       // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
@@ -2867,7 +2872,7 @@ function drawWorld(t) {
     }
     if (e.w === 'ryba') {
       const dir = turnX(e), wig = Math.sin(t * (e.walk ? 9 : 3) + e.hx) * 0.35, k = e.s;
-      c.save(); c.translate(x, y - 6); c.scale(dir * k, k);
+      c.save(); c.translate(x, y - 6); turnDepth(c, e); c.scale(dir * k, k);
       c.fillStyle = 'rgba(28,70,105,.42)'; ell(c, 0, 0, 20, 8);
       c.save(); c.translate(-17, 0); c.rotate(wig); c.beginPath(); c.moveTo(0, 0); c.lineTo(-13, -8); c.lineTo(-13, 8); c.closePath(); c.fill(); c.restore();
       c.restore();
@@ -2877,7 +2882,7 @@ function drawWorld(t) {
     const s = e.s * T;
     if (!e.flat && e.kind !== 'fly') { c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, y, s * (e.ic[0] === '@' ? 0.36 : 0.28), s * 0.09); }
     const hop = e.kind === 'animal' && e.walk ? Math.abs(Math.sin(t * 9 + e.x)) * 3 : e.kind === 'fly' ? Math.sin(t * 9 + e.ph) * 4 : 0;
-    if (e.swoop) { c.save(); c.translate(x, y); c.scale(turnX(e), 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
+    if (e.swoop) { c.save(); c.translate(x, y); turnDepth(c, e); c.scale(turnX(e), 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
     else drawIcon(c, e.ic, x, y - hop, s, { t, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
