@@ -37,7 +37,7 @@ window.DATA = {
     { id: "kachka", uk: "качка", tr: "KACH-ka", en: "duck", ic: "🦆" },
     { id: "svynia", uk: "свиня", tr: "svy-NIA", en: "pig", ic: "🐖" },
     { id: "bdzhola", uk: "бджола", tr: "bdzho-LA", en: "bee", ic: "🐝" },
-    { id: "metelyk", uk: "метелик", tr: "me-TE-lyk", en: "butterfly", ic: "🦋" },
+    { id: "metelyk", uk: "метелик", tr: "me-TE-lyk", en: "butterfly", ic: "@metelyk" },
     { id: "zhaba", uk: "жаба", tr: "ZHA-ba", en: "frog", ic: "@frog" },
     { id: "ryba", uk: "риба", tr: "RY-ba", en: "fish", ic: "🐟", acc: "рибу" },
     // --- the cats of the valley (colour words; "кішка" is a female cat)

@@ -227,23 +227,113 @@ const DRAW = {
   },
   stone(c) { c.fillStyle = '#a9a6a0'; ell(c, 0, -22, 40, 23); c.fillStyle = '#c4c1bb'; ell(c, -8, -30, 20, 9); },
   pond(c) { c.fillStyle = '#6cc3e8'; ell(c, 0, -45, 48, 32); c.fillStyle = '#a5e0f5'; ell(c, -12, -52, 18, 7); },
+  // A white village church: a tall middle with a golden onion dome on a drum, two lower wings with blue
+  // domes, arched windows and a wooden door, gold crosses on top.
   church(c) {
-    c.fillStyle = '#fffdf5'; rr(c, -30, -52, 60, 52, 3);
-    c.fillStyle = '#3d7cc2'; poly(c, [[-36, -50], [0, -72], [36, -50]]);
-    c.fillStyle = '#fffdf5'; rr(c, -9, -80, 18, 14, 2);
-    c.fillStyle = '#f2c230'; circ(c, 0, -86, 10); poly(c, [[-5, -92], [0, -100], [5, -92]]);
-    circ(c, -24, -56, 6); circ(c, 24, -56, 6);
-    c.fillRect(-1.5, -110, 3, 13); c.fillRect(-5.5, -106, 11, 3);
-    c.fillStyle = '#8a5a2b'; rr(c, -8, -26, 16, 26, 8);
-    c.fillStyle = '#bfe6fb'; rr(c, -24, -36, 9, 14, 4); rr(c, 15, -36, 9, 14, 4);
+    c.save(); c.scale(0.77, 0.77);   // drawn 130 tall, fitted into the 100-unit icon box
+    const wall = '#fffaf0', shade = '#ebe2cf', trim = '#c9b98f';
+    const arch = (x, y, w, h) => { c.beginPath(); c.moveTo(x - w / 2, y); c.lineTo(x - w / 2, y - h + w / 2); c.arc(x, y - h + w / 2, w / 2, Math.PI, 0); c.lineTo(x + w / 2, y); c.closePath(); c.fill(); };
+    const onion = (x, yb, w, h, col, hi) => {
+      c.fillStyle = col; c.beginPath(); c.moveTo(x - w * 0.42, yb);
+      c.bezierCurveTo(x - w * 0.78, yb - h * 0.38, x - w * 0.5, yb - h * 0.72, x, yb - h);
+      c.bezierCurveTo(x + w * 0.5, yb - h * 0.72, x + w * 0.78, yb - h * 0.38, x + w * 0.42, yb); c.closePath(); c.fill();
+      c.fillStyle = hi; c.beginPath(); c.moveTo(x - w * 0.3, yb - h * 0.12);
+      c.bezierCurveTo(x - w * 0.52, yb - h * 0.4, x - w * 0.3, yb - h * 0.66, x - w * 0.04, yb - h * 0.86);
+      c.bezierCurveTo(x - w * 0.2, yb - h * 0.6, x - w * 0.28, yb - h * 0.36, x - w * 0.12, yb - h * 0.12); c.closePath(); c.fill();
+    };
+    const cross = (x, y, k) => {
+      c.fillStyle = '#e8b628'; c.fillRect(x - 1.3 * k, y - 15 * k, 2.6 * k, 15 * k); c.fillRect(x - 5 * k, y - 11.5 * k, 10 * k, 2.2 * k);
+      c.save(); c.translate(x, y - 4.5 * k); c.rotate(-0.35); c.fillRect(-4 * k, -1 * k, 8 * k, 2 * k); c.restore();
+      c.fillStyle = '#f7d65a'; circ(c, x, y, 2 * k);
+    };
+    // side wings
+    for (const sd of [-1, 1]) {
+      const x = sd * 33;
+      c.fillStyle = wall; c.fillRect(x - 13, -40, 26, 40);
+      c.fillStyle = shade; c.fillRect(sd > 0 ? x + 6 : x - 13, -40, 7, 40);
+      c.fillStyle = '#2f6fb8'; poly(c, [[x - 16, -39], [x + 16, -39], [x + 11, -47], [x - 11, -47]]);
+      c.fillStyle = wall; c.fillRect(x - 5, -56, 10, 10); c.fillStyle = trim; c.fillRect(x - 6, -47, 12, 2);
+      onion(x, -55, 14, 15, '#2f6fb8', '#6aa3e0'); cross(x, -70, 0.7);
+      c.fillStyle = '#3a6fa8'; arch(x, -12, 9, 18); c.fillStyle = '#bfe3fa'; arch(x, -13.5, 6.5, 15);
+      c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(x - 0.5, -26, 1, 12);
+    }
+    // the middle: nave, gable, drum, golden dome
+    c.fillStyle = wall; c.fillRect(-21, -62, 42, 62);
+    c.fillStyle = shade; c.fillRect(11, -62, 10, 62);
+    c.fillStyle = '#2f6fb8'; poly(c, [[-25, -60], [25, -60], [0, -76]]);
+    c.fillStyle = '#245a96'; poly(c, [[0, -76], [25, -60], [12, -60]]);
+    c.fillStyle = wall; c.fillRect(-10, -88, 20, 20); c.fillStyle = shade; c.fillRect(4, -88, 6, 20);
+    c.fillStyle = '#3a6fa8'; for (const x of [-5, 3]) arch(x, -73, 4, 10);
+    c.fillStyle = trim; c.fillRect(-12, -89, 24, 2.5);
+    onion(0, -88, 24, 26, '#e3a91f', '#fbe07a'); cross(0, -114, 1);
+    // round window over the door, the door itself, the base
+    c.fillStyle = '#3a6fa8'; circ(c, 0, -46, 5); c.fillStyle = '#bfe3fa'; circ(c, 0, -46, 3.6);
+    c.fillStyle = '#c9a65a'; arch(0, 0, 18, 30);
+    c.fillStyle = '#7a4a24'; arch(0, 0, 14.5, 27);
+    c.fillStyle = '#5e3818'; c.fillRect(-0.6, -21, 1.2, 21);
+    c.fillStyle = '#e8b628'; circ(c, -2.5, -11, 1.2); circ(c, 2.5, -11, 1.2);
+    c.fillStyle = '#d6cdb6'; c.fillRect(-48, -5, 96, 5);
+    c.fillStyle = '#c9a65a'; c.fillRect(-21, -63, 42, 2); for (const x of [-33, 33]) c.fillRect(x - 13, -41, 26, 2);
+    c.restore();
   },
+  // A wooden Ukrainian windmill: a tapering plank tower on a stone footing, a shingled cap, a little door
+  // and window, and four lattice sails with canvas on them that turn in the wind.
   mill(c, o) {
-    c.fillStyle = '#b98452'; poly(c, [[-22, 0], [22, 0], [14, -62], [-14, -62]]);
-    c.fillStyle = '#8a5a2b'; poly(c, [[-19, -60], [0, -80], [19, -60]]); rr(c, -6, -20, 12, 20, 5);
-    c.save(); c.translate(0, -62); c.rotate(((o && o.t) || 0) * 0.5);
-    c.fillStyle = '#f3ead7';
-    for (let i = 0; i < 4; i++) { c.rotate(Math.PI / 2); rr(c, -5, -46, 10, 40, 2); }
-    c.fillStyle = '#6b4a2a'; circ(c, 0, 0, 5); c.restore();
+    c.save(); c.scale(0.84, 0.84);   // the sails reach 116 up; fit them into the 100-unit icon box
+    c.fillStyle = '#9d988f'; c.fillRect(-27, -8, 54, 8);
+    c.fillStyle = '#b8b3a9'; for (const [x, w] of [[-26, 12], [-13, 14], [2, 11], [14, 12]]) rr(c, x, -8, w, 6, 2);
+    c.fillStyle = '#b07a45'; poly(c, [[-24, -7], [24, -7], [15, -62], [-15, -62]]);
+    c.strokeStyle = 'rgba(90,55,25,.35)'; c.lineWidth = 1.1;
+    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 6.6, -7); c.lineTo(i * 4.1, -62); c.stroke(); }
+    c.fillStyle = 'rgba(0,0,0,.13)'; poly(c, [[9, -7], [24, -7], [15, -62], [6, -62]]);
+    c.fillStyle = '#8a5a2b'; poly(c, [[-21, -33], [21, -33], [20.5, -30], [-20.5, -30]]); poly(c, [[-16, -60], [16, -60], [15.6, -57], [-15.6, -57]]);
+    // door, steps, window
+    c.fillStyle = '#7a4a24'; rr(c, -6.5, -24, 13, 17, [6.5, 6.5, 0, 0]); c.fillStyle = '#e8b628'; circ(c, 3.5, -15, 1.1);
+    c.fillStyle = '#8a7f70'; c.fillRect(-9, -7, 18, 3); c.fillStyle = '#a89e8e'; c.fillRect(-7, -9, 14, 2.5);
+    c.fillStyle = '#5e3818'; c.fillRect(-5.5, -50, 11, 11); c.fillStyle = '#ffe9a8'; c.fillRect(-4, -48.5, 8, 8);
+    c.fillStyle = '#5e3818'; c.fillRect(-0.5, -48.5, 1, 8); c.fillRect(-4, -45, 8, 1);
+    // shingled cap
+    c.fillStyle = '#6b4224'; c.beginPath(); c.moveTo(-20, -60); c.quadraticCurveTo(-17, -80, 0, -88); c.quadraticCurveTo(17, -80, 20, -60); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(40,20,5,.35)'; c.lineWidth = 1;
+    for (const [y, w] of [[-66, 18], [-72, 15], [-78, 11]]) { c.beginPath(); for (let x = -w; x < w; x += 4) { c.moveTo(x + 4, y); c.arc(x + 2, y, 2, 0, Math.PI); } c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,.12)'; c.beginPath(); c.moveTo(-15, -62); c.quadraticCurveTo(-13, -78, -2, -85); c.quadraticCurveTo(-9, -76, -9, -62); c.closePath(); c.fill();
+    c.fillStyle = '#4a2c14'; c.fillRect(-1, -94, 2, 7); circ(c, 0, -95, 2);
+    // sails
+    c.save(); c.translate(0, -66); c.rotate(((o && o.t) || 0) * 0.5);
+    for (let i = 0; i < 4; i++) {
+      c.rotate(Math.PI / 2);
+      c.fillStyle = '#5e3818'; c.fillRect(-1.6, -50, 3.2, 50);
+      c.fillStyle = 'rgba(246,238,220,.92)'; c.fillRect(2, -49, 11, 38);
+      c.strokeStyle = '#7a4a24'; c.lineWidth = 1.2; c.strokeRect(2, -49, 11, 38);
+      c.beginPath();
+      for (let k = 1; k < 5; k++) { const y = -49 + k * 7.6; c.moveTo(1.6, y); c.lineTo(13, y); }
+      c.moveTo(7.5, -49); c.lineTo(7.5, -11); c.stroke();
+    }
+    c.fillStyle = '#4a2c14'; circ(c, 0, 0, 5.5); c.fillStyle = '#8a5a2b'; circ(c, 0, 0, 3); c.restore();
+    c.restore();
+  },
+  // A butterfly seen from above: orange forewings with dark edges and white spots, yellow hindwings.
+  // The wings fold up and open (drawn narrower and wider), with an occasional glide.
+  metelyk(c, o) {
+    const t = (o && o.t) || 0, glide = Math.sin(t * 0.9) > 0.6;
+    const f = glide ? 0.85 + 0.1 * Math.sin(t * 3) : 0.2 + 0.8 * Math.abs(Math.cos(t * 9));
+    c.save(); c.translate(0, -50);
+    for (const sd of [-1, 1]) {
+      c.save(); c.scale(sd * f, 1);
+      c.save(); c.translate(19, -12); c.rotate(-0.45);
+      c.fillStyle = '#3a2416'; ell(c, 0, 0, 23, 17); c.fillStyle = '#f08a24'; ell(c, -1.5, 1, 19, 13.5);
+      c.fillStyle = '#fbb24a'; ell(c, -6, 3, 9, 6); c.fillStyle = '#fff'; circ(c, 17, -4, 2.2); circ(c, 13, -9, 1.8); circ(c, 19, 2, 1.6);
+      c.restore();
+      c.save(); c.translate(14, 13); c.rotate(0.5);
+      c.fillStyle = '#3a2416'; ell(c, 0, 0, 15, 13); c.fillStyle = '#f7c53a'; ell(c, -1, -0.5, 11.5, 9.5);
+      c.fillStyle = '#fff'; circ(c, 11, 3, 1.5);
+      c.restore();
+      c.restore();
+    }
+    c.fillStyle = '#2b1a10'; ell(c, 0, 2, 3.6, 19); circ(c, 0, -19, 4.4);
+    c.strokeStyle = '#2b1a10'; c.lineWidth = 1.6; c.lineCap = 'round';
+    for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(sd * 1.5, -22); c.quadraticCurveTo(sd * 4, -34, sd * 10, -38); c.stroke(); circ(c, sd * 10, -38, 2); }
+    c.restore();
   },
   bench(c) {
     c.fillStyle = '#8a5a2b'; c.fillRect(-34, -30, 7, 30); c.fillRect(27, -30, 7, 30);
@@ -1141,9 +1231,9 @@ function add(e) {
   add({ w: 'kit', x: 8.6, y: 15.6, kind: 'animal', r: 1.0, s: 0.8 });
   add({ w: 'svynia', x: 29.4, y: 9.8, kind: 'animal', r: 1.0 });
   // Landmarks.
-  rect(29, 3, 31, 5); add({ w: 'tserkva', x: 30.5, y: 6, s: 4.2 });
+  rect(29, 3, 31, 5); add({ w: 'tserkva', x: 30.5, y: 6, s: 5.4 });
   add({ w: 'leleka', x: 21.5, y: 7, s: 2.6, solid: true });
-  rect(10, 2, 12, 4); add({ w: 'mlyn', x: 11.5, y: 5, s: 3.8, spin: true });
+  rect(10, 2, 12, 4); add({ w: 'mlyn', x: 11.5, y: 5, s: 4.5, spin: true });
   // Market square.
   rect(17, 16, 21, 16); add({ w: 'rynok', x: 19.5, y: 17, s: 4.3, kind: 'shop' });
   add({ w: 'lavka', x: 16.5, y: 18.9, s: 1.3, solid: true });
@@ -3204,6 +3294,7 @@ function drawWorld(t) {
     if (!e.flat && e.kind !== 'fly') { c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, y, s * (e.ic[0] === '@' ? 0.36 : 0.28), s * 0.09); }
     const hop = e.kind === 'animal' && e.walk ? Math.abs(Math.sin(t * 9 + e.x)) * 3 : e.kind === 'fly' ? Math.sin(t * 9 + e.ph) * 4 : 0;
     if (e.swoop) { c.save(); c.translate(x, y); turnDepth(c, e); c.scale(turnX(e), 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
+    else if (e.w === 'metelyk') drawIcon(c, e.ic, x, y - hop, s, { t: t + e.ph });   // each butterfly flaps on its own beat
     else if (e.lean) { c.save(); c.translate(x, y); c.rotate(e.lean); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }   // propped against something
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
