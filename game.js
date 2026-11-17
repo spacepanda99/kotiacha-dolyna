@@ -972,8 +972,11 @@ const DRAW = {
     c.fillStyle = '#ffe9a8'; ell(c, 0, -74, 19, 3.5);
   },
   // A carpeted cat tree: sisal posts, three platforms, a little cube house and a dangling pompom.
-  cattree(c) {
-    const carpet = '#e3cfae', edge = '#c9b08a', sisal = '#cfae78', rope = '#a8864f';
+  // The second cat tree (o.alt) is the mirror image, in sage green with a blue pompom.
+  cattree(c, o) {
+    const alt = o && o.alt;
+    if (alt) c.scale(-1, 1);
+    const carpet = alt ? '#b7d3a8' : '#e3cfae', edge = alt ? '#8db07e' : '#c9b08a', sisal = '#cfae78', rope = '#a8864f';
     const post = (x, y0, y1) => { c.fillStyle = sisal; c.fillRect(x - 5, y1, 10, y0 - y1); c.strokeStyle = rope; c.lineWidth = 1; for (let y = y1 + 3; y < y0; y += 4) { c.beginPath(); c.moveTo(x - 5, y); c.lineTo(x + 5, y - 1.5); c.stroke(); } };
     const plat = (x0, x1, y) => { c.fillStyle = edge; rr(c, x0, y - 1, x1 - x0, 7, 3); c.fillStyle = carpet; rr(c, x0, y - 5, x1 - x0, 6, 3); };
     post(-16, -6, -50); post(-12, -50, -88); post(24, -6, -32);
@@ -981,7 +984,7 @@ const DRAW = {
     c.fillStyle = '#5a4630'; circ(c, 20, -17, 8);
     plat(-42, 44, -2); plat(0, 42, -32); plat(-40, 4, -50); plat(-32, 12, -88);
     c.strokeStyle = '#8a7566'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(8, -84); c.lineTo(8, -66); c.stroke();
-    c.fillStyle = '#ff7aa8'; circ(c, 8, -63, 4.5);
+    c.fillStyle = alt ? '#5aa9e6' : '#ff7aa8'; circ(c, 8, -63, 4.5);
   },
   // A round cushioned cat bed.
   catbed(c) {
@@ -2733,10 +2736,11 @@ const roomW = () => Math.max(cv.width, roomU() * 3.4); // a phone in portrait se
 const panMax = () => Math.max(0, roomW() - cv.width);
 const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
 // Cat things you can own more than one of: a cat bed for every cat, and a few of each toy.
-const MULTI = { lezhanka: D.cats.length, miachyk: 3, myshka: 3 };
+const MULTI = { lezhanka: D.cats.length, miachyk: 3, myshka: 3, kihtetochka: 2 };
 // Where the second, third… of each stands (the first uses its DECOR spot): x across the room, y down the screen.
 const MORE_AT = {
-  lezhanka: [[0.14, 0.86], [0.55, 0.69], [0.8, 0.87], [0.975, 0.76], [0.34, 0.7], [0.63, 0.86], [0.23, 0.69]],
+  kihtetochka: [[0.12, 0.79]],   // the second one: front left, by the stove
+  lezhanka: [[0.3, 0.87], [0.55, 0.69], [0.8, 0.87], [0.975, 0.76], [0.34, 0.7], [0.63, 0.86], [0.23, 0.69]],
   miachyk: [[0.9, 0.88], [0.16, 0.88]],
   myshka: [[0.5, 0.88], [0.76, 0.71]],
 };
@@ -2828,6 +2832,7 @@ function homeSpots() {
   const hasTree = !!S.decor.kihtetochka, hadToy = toys.length > 0, hadBed = beds.length > 0;
   const out = [toys.length ? toy(toys.shift()) : towel(), beds.length ? catBed(beds.shift()) : bed(), hasTree ? tree() : sill()];
   if (hasTree) out.push(sill());
+  if (nPlaced('kihtetochka') > 1) { const r = decorRect('kihtetochka', 1); out.push({ kind: 'groom', x: r.cx + r.sz * 0.1, y: r.by - r.sz * 0.9, s: u * 0.16, groom: true }); }
   const sleepers = [...(hadBed ? [bed()] : []), ...beds.map(catBed), stove()], players = toys.map(toy);
   while (sleepers.length || players.length) { if (players.length) out.push(players.shift()); if (sleepers.length) out.push(sleepers.shift()); }
   if (hadToy) out.push(towel());
@@ -2953,7 +2958,7 @@ function drawHome(t) {
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
     if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.75); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
-    else drawIcon(c, W[id].ic, r.cx + (batted.has(id + k) ? toyNudge(t) : 0), r.by, r.sz, id === 'stil' && towelCat ? { swing: towelSwing(t) } : undefined);
+    else drawIcon(c, W[id].ic, r.cx + (batted.has(id + k) ? toyNudge(t) : 0), r.by, r.sz, id === 'stil' && towelCat ? { swing: towelSwing(t) } : id === 'kihtetochka' && k ? { alt: true } : undefined);
   }
   cats.map((h, i) => [h, spots[i], i]).sort((a, b) => a[1].y - b[1].y).forEach(([{ ct }, p, i]) => { if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, p.groom ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); });
   if (inRoom().length === BASICS.length && stage() < 3) {
