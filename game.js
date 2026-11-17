@@ -913,16 +913,19 @@ function chore(c, x, y, id, t, layer) {
     }
   } else if (id === 'oksana') {
     if (layer === 1) {
-      // sweeping in front of her stall: a besom swishing side to side, little dust puffs
-      const sw = Math.sin(t * 3.2), a = 0.25 + sw * 0.35;
-      c.save(); c.translate(15, -27); c.rotate(a);
-      c.strokeStyle = '#9b6b3c'; c.lineWidth = 3; c.beginPath(); c.moveTo(0, -10); c.lineTo(0, 22); c.stroke();
-      c.fillStyle = '#d9b45a'; poly(c, [[-3, 20], [3, 20], [9, 34], [-9, 34]]);
-      c.strokeStyle = '#b8913e'; c.lineWidth = 1; for (const dx of [-5, 0, 5]) { c.beginPath(); c.moveTo(dx * 0.4, 22); c.lineTo(dx, 34); c.stroke(); }
-      c.fillStyle = '#c23b2f'; c.fillRect(-3, 18, 6, 2.5);
+      // the broom in both hands, bristles swishing over the ground ahead of her
+      const p = oksPose(t), L = NPC.oksana.look;
+      c.save(); c.scale(OKS.dir, 1);
+      const bl = 15, hx = p.B[0] - p.ux * bl, hy = p.B[1] - p.uy * bl;   // where the bristles start
+      c.strokeStyle = '#9b6b3c'; c.lineWidth = 3; c.beginPath(); c.moveTo(p.HL[0] - p.ux * 2.5, p.HL[1] - p.uy * 2.5); c.lineTo(hx, hy); c.stroke();
+      c.save(); c.translate(hx, hy); c.rotate(Math.atan2(p.uy, p.ux) - Math.PI / 2 - p.sw * 0.12);
+      c.fillStyle = '#d9b45a'; poly(c, [[-3, 0], [3, 0], [8, bl], [-8, bl]]);
+      c.strokeStyle = '#b8913e'; c.lineWidth = 1; for (const dx of [-5, 0, 5]) { c.beginPath(); c.moveTo(dx * 0.4, 2); c.lineTo(dx, bl); c.stroke(); }
+      c.fillStyle = '#c23b2f'; c.fillRect(-3, 0, 6, 2.5);
       c.restore();
-      const bx = 15 - Math.sin(a) * 31;
-      for (let i = 0; i < 3; i++) { const f = (t * 1.6 + i / 3) % 1; c.fillStyle = `rgba(214,190,140,${0.55 * (1 - f)})`; circ(c, bx - sw * f * 14 + (i - 1) * 4, 2 - f * 10, 2.5 + f * 4); }
+      c.fillStyle = L.skin; circ(c, p.HL[0], p.HL[1], 3.6); circ(c, p.HR[0], p.HR[1], 3.6);
+      c.restore();
+      for (const q of OKS.dust) { const f = q.age / q.life; c.fillStyle = `rgba(196,168,118,${0.7 * (1 - f)})`; circ(c, q.x - x, q.y - y, q.r + f * 6); }
     }
   } else if (id === 'olia') {
     if (layer === 0) {
@@ -981,7 +984,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   if (L.dress) { poly(c, [[-13, -32 + bob], [13, -32 + bob], [19, -8 + bob], [-19, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-18, -12 + bob, 36, 2.5); }
   else rr(c, -14, -31 + bob, 28, 22, 6);
   if (!L.noArms) for (const sx of [-15.5, 15.5]) {   // arms swing from the shoulder
-    c.save(); c.translate(sx, -47 + bob); c.rotate(sx > 0 && L.armR !== undefined ? L.armR : arm);
+    c.save(); c.translate(sx, -47 + bob); c.rotate(sx > 0 && L.armR !== undefined ? L.armR : sx < 0 && L.armL !== undefined ? L.armL : arm);
     c.fillStyle = L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.trim; c.fillRect(-3.5, 13, 7, 2.5);
     c.fillStyle = L.skin; circ(c, 0, 19, 3.5); c.restore();
   }
@@ -1350,6 +1353,43 @@ for (const v in VAR) DRAW['cat_' + v] = c => cat(c, 0, -2, 94, sitPal(v), 0, 0, 
 // picks it up, trots back, drops it at his feet and waits; he scoops it up and throws again.
 // Phases: hold > wind > throw > fly (ball in the air, dog already running) > roll > (dog arrives) pick > back > drop > wait > scoop > hold.
 const FETCH = { ph: 'hold', t: 0, wait: 1.5, arm: 0.15, on: 'hand', bx: 0, by: 0, bz: 0, ax: 0, ay: 0, tx: 0, ty: 0, dur: 1, peak: 60, z0: 30, dip: false, boy: null };
+// Oksana sweeps along the front of her stall: a few steps one way, a pause, then back. Both hands are on
+// the broom (the upper one near her chest, the lower one at her hip), the bristles swish ahead of her
+// and every stroke kicks up a little cloud of dust. She stands still while you are talking to her.
+const OKS = { home: null, dir: 1, walk: 0, legs: 0, w: 0, pause: 1, dust: [], prev: 0 };
+function oksPose(t) {   // arm angles, hand and bristle positions in her own (unmirrored) pixels
+  const O = OKS, sw = Math.sin(O.w), sp = O.walk;
+  const bob = -sp * Math.abs(Math.sin(O.legs)) * 2.6 + (1 - sp) * Math.sin((t + 19.5) * 2) * 0.8;
+  const aL = -1.45 + 0.1 * sw, aR = 0.15 + 0.34 * sw;
+  const HL = [-15.5 - 19 * Math.sin(aL), -47 + bob + 19 * Math.cos(aL)], HR = [15.5 - 19 * Math.sin(aR), -47 + bob + 19 * Math.cos(aR)];
+  const dx = HR[0] - HL[0], dy = HR[1] - HL[1], d = Math.hypot(dx, dy), ux = dx / d, uy = dy / d;
+  const k = (-3 - HL[1]) / uy, B = [HL[0] + ux * k, -3];
+  return { aL, aR, HL, HR, B, ux, uy, sw };
+}
+function oksanaStep(e, dt, t) {
+  const O = OKS; if (O.home === null) O.home = e.x;
+  const ease = (v, goal, r) => v + (goal - v) * (1 - Math.exp(-dt * r));
+  if (sheetOpen()) { O.walk = ease(O.walk, 0, 6); }
+  else if (O.pause > 0) { O.pause -= dt; O.walk = ease(O.walk, 0, 5); }
+  else {
+    O.walk = ease(O.walk, 1, 3);
+    e.x += O.dir * 0.3 * O.walk * dt;
+    if (Math.abs(e.x - O.home) > 1.0) { e.x = O.home + Math.sign(e.x - O.home) * 1.0; O.dir = -O.dir; O.pause = rnd(1.4, 3); }
+  }
+  O.legs += O.walk * dt * 7;
+  O.w += dt * (sheetOpen() ? 1.2 : 3.4);
+  const p = oksPose(t), L = NPC.oksana && NPC.oksana.look;
+  if (L) { L.armR = O.dir > 0 ? p.aR : -p.aL; L.armL = O.dir > 0 ? p.aL : -p.aR; }
+  // a puff of dust each time the bristles sweep across the ground
+  const sw = Math.sin(O.w);
+  if (!sheetOpen() && Math.sign(sw) !== Math.sign(O.prev) && O.dust.length < 60) {
+    const bx = e.x * T + O.dir * p.B[0], by = e.y * T - 1, push = O.dir * (Math.cos(O.w) > 0 ? 1 : -1);
+    for (let i = 0; i < 6; i++) O.dust.push({ x: bx + rnd(-5, 5), y: by + rnd(-2, 2), vx: push * rnd(12, 32), vy: -rnd(8, 22), age: 0, life: rnd(0.8, 1.4), r: rnd(2.5, 4.5) });
+  }
+  O.prev = sw;
+  for (const q of O.dust) { q.age += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= Math.exp(-dt * 2); q.vy *= Math.exp(-dt * 1.5); }
+  O.dust = O.dust.filter(q => q.age < q.life);
+}
 const DOG_MOUTH = 0.55;   // how far ahead of the dog's middle its mouth is, in tiles
 function ballArt(c, x, y, r) {
   c.fillStyle = '#f2c230'; circ(c, x, y, r);
@@ -1685,6 +1725,11 @@ function learn(id) {
   S.words[id] = { l: 1, d: now() + IV[1] };
   tutEvent('word'); save(); return true;
 }
+// You looked at something whose tap opens a different panel (the shop): count it as a review, so it stops sparkling.
+function reviewed(id) {
+  const w = S.words[id]; if (!w || w.l >= 5 || now() < w.d) return;
+  w.l = Math.min(5, w.l + 1); w.d = now() + IV[w.l]; save();
+}
 function useWord(id, ok) {
   const w = S.words[id] || (S.words[id] = { l: 1, d: 0 });
   if (ok) { w.l = Math.min(5, w.l + 1); w.d = now() + IV[w.l]; }
@@ -1789,7 +1834,7 @@ function wordCard(id, o = {}) {
   () => {
     if (!recall) return;
     // Remembered it without peeking at the English: it moves up and comes back later.
-    if (!cur.peeked) { st.l = Math.min(5, st.l + 1); st.d = now() + IV[st.l]; } else st.d = now() + IV[1];
+    if (!cur.peeked) { st.l = Math.min(5, st.l + 1); st.d = now() + IV[st.l]; } else st.d = now() + IV[2];   // peeked: try again in a few minutes
     save();
   });
   say('w_' + id, ...(o.clips || []));
@@ -1875,7 +1920,7 @@ function interact(e) {
   if (e.cat) return catSheet(e);
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
-  if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); return shop(); }
+  if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { note: `🏠 <b>Хата баби Олі</b>${stage() < 3 ? " · Grandma Olia's cottage. She is inside, cooking." : ''}`, acts: [{ k: 'enter', fn: enterOlia }] });
   if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${stage() < 3 ? ' · This is your cottage.' : ''}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
   if (e.w === 'krynytsia') {
@@ -2894,6 +2939,7 @@ function update(dt, t, rdt = dt) {
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
   for (const e of ents) {
     if (e.face !== undefined) turnTo(e, e.face, dt, TURN_SLOW[e.an] || 1);
+    if (e.npc === 'oksana') oksanaStep(e, dt, t);
     if (e.kind === 'animal') {
       // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
       // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
@@ -3009,7 +3055,7 @@ function drawWorld(t) {
       c.save(); c.translate(x, y - mid * 4); c.scale((view === 3 ? -1 : 1) * (1 - mid * 0.4), 1);
       if (view === 1 || view === 3) personSide(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
       c.restore(); continue; }
-    if (e.kind === 'npc') { chore(c, x, y, e.npc, t, 0); person(c, x, y, NPC[e.npc].look, t + e.x, false, 1); chore(c, x, y, e.npc, t, 1); continue; }
+    if (e.kind === 'npc') { const ok = e.npc === 'oksana'; chore(c, x, y, e.npc, t, 0); person(c, x, y, NPC[e.npc].look, ok ? t + 19.5 : t + e.x, ok ? OKS.walk : false, 1, ok ? OKS.legs : undefined); chore(c, x, y, e.npc, t, 1); continue; }
     if (e.kind === 'pond') continue;
     if (e.kind === 'plot') {
       // Everything in a bed is drawn at bed scale, so bigger beds get bigger crops too.
@@ -3514,5 +3560,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { FETCH, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { FETCH, OKS, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
