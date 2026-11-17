@@ -1716,10 +1716,13 @@ function quad(c, x, y, Q, t, e) {
   c.save(); c.translate(x, y - (e.tl || 0) * 3); turnDepth(c, e); c.scale(Q.k * dir, Q.k); c.lineCap = 'round'; c.lineJoin = 'round';
   const by = -G - Q.B / 2 - bob, lw = Math.max(3.5, Q.B * 0.24), hipF = Q.L * 0.33, hipB = -Q.L * 0.33, hipY = -G - bob * 0.5 - 1;
   // A leg in two parts. It swings back while the foot is on the ground, then bends, lifts and reaches forward.
+  // Lying down, the legs fold under: the knee comes forward along the ground and the shin tucks back,
+  // so the animal settles onto them instead of sinking into the grass (and unfolds them to stand up).
   const leg = (hx, off, col) => {
-    const p = ((cyc + off) % 1 + 1) % 1, th = -amp * Math.cos(p * 6.283) * wk;
-    const kn = (p > 0.5 ? Math.sin((p - 0.5) * 6.283) : 0) * 0.95 * wk + rest * 0.5;
-    const U = G * 0.52, Lo = G * 0.5;
+    const p = ((cyc + off) % 1 + 1) % 1;
+    const th = -amp * Math.cos(p * 6.283) * wk * (1 - rest) - 1.45 * rest;
+    const kn = (p > 0.5 ? Math.sin((p - 0.5) * 6.283) : 0) * 0.95 * wk * (1 - rest) + 2.95 * rest;
+    const U = Q.G * 0.52 * (1 - rest * 0.25), Lo = Q.G * 0.5 * (1 - rest * 0.25);
     const kx = hx - Math.sin(th) * U, ky = hipY + Math.cos(th) * U, fx = kx - Math.sin(th + kn) * Lo, fy = ky + Math.cos(th + kn) * Lo;
     c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); c.moveTo(hx, hipY); c.lineTo(kx, ky); c.stroke();
     c.lineWidth = lw * 0.8; c.beginPath(); c.moveTo(kx, ky); c.lineTo(fx, fy); c.stroke();
