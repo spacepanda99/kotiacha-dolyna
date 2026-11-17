@@ -978,7 +978,7 @@ function person(c, x, y, L, t, moving, sc, ph) {
   c.fillStyle = L.skirt;
   if (L.dress) { poly(c, [[-13, -32 + bob], [13, -32 + bob], [19, -8 + bob], [-19, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-18, -12 + bob, 36, 2.5); }
   else rr(c, -14, -31 + bob, 28, 22, 6);
-  for (const sx of [-15.5, 15.5]) {   // arms swing from the shoulder
+  if (!L.noArms) for (const sx of [-15.5, 15.5]) {   // arms swing from the shoulder
     c.save(); c.translate(sx, -47 + bob); c.rotate(arm);
     c.fillStyle = L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.trim; c.fillRect(-3.5, 13, 7, 2.5);
     c.fillStyle = L.skin; circ(c, 0, 19, 3.5); c.restore();
@@ -2306,7 +2306,7 @@ function drawHome(t) {
 // Grandma cooks indoors. Her room is drawn like yours (swipe to look around) but it is all hers: the піч
 // with her cat asleep on top, a counter where the ingredients for today's dish line up with how many she
 // has of each, and the table, which stays bare until everything is gathered and then holds the hot dish.
-// Tap anything to hear its name; tap Grandma to talk.
+// She greets you as you come in; tap her to talk again, and tap anything else to hear its name.
 const OX = { stove: 0.085, rack: 0.335, olia: 0.478, clock: 0.537, win: 0.618, table: 0.738, chest: 0.822, bed: 0.898 };
 const OLIA_PETS = ['Мурчик', 'Пушок'];
 let oliaHits = [];
@@ -2316,10 +2316,10 @@ function enterOliaNow() {
   mode = 'olia';
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
   // Open on the counter and Grandma; once the dish is ready, on the table.
-  const mid = (recipeReady(curRecipe()) ? OX.table : 0.372) * roomW() - cv.width / 2;
+  const mid = (recipeReady(curRecipe()) ? OX.table : 0.385) * roomW() - cv.width / 2;
   roomX = mid; clampPan();
-  if (panMax() > 10 && (S.oliaTours || 0) < 2) { S.oliaTours = (S.oliaTours || 0) + 1; save(); tour = { t0: nowT, mid: roomX }; roomX = 0; }
-  blip(520);
+  tour = null; blip(520);
+  setTimeout(() => { if (mode === 'olia' && !sheetOpen()) talk(NPC.olia); }, 500);
 }
 function oliaTap(sx, py) {
   const px = sx + roomX;
@@ -2465,7 +2465,7 @@ function drawOlia(t) {
   }
   c.fillStyle = '#e0b272'; rr(c, cl - u * 0.016, ctop - u * 0.024, cw + u * 0.032, u * 0.034, u * 0.008);
   c.fillStyle = '#c4935c'; c.fillRect(cl - u * 0.016, ctop + u * 0.002, cw + u * 0.032, u * 0.008);
-  const n = R.needs.length, sp = Math.min(u * 0.102, (cw - u * 0.19) / n), is = Math.min(u * 0.1, sp * 0.95), ix0 = cl + u * 0.02 + sp / 2, top = ctop - u * 0.022;
+  const n = R.needs.length, sp = Math.min(u * 0.112, (cw - u * 0.04) / n), is = Math.min(u * 0.1, sp * 0.95), ix0 = cl + u * 0.02 + sp / 2, top = ctop - u * 0.022;
   R.needs.forEach((id, i) => {
     const have = recipeHave(id), full = have >= NEED, x = ix0 + i * sp;
     c.fillStyle = 'rgba(60,40,20,.14)'; ell(c, x, top, is * 0.36, is * 0.06);
@@ -2477,13 +2477,6 @@ function drawOlia(t) {
     c.fillStyle = full ? '#fff' : '#4a2c1a'; c.fillText(full ? '✓' : `${have}/${NEED}`, x, py + ph / 2 + 1);
     hit(x - sp / 2, top - is, sp, is + ph + u * 0.04, word(id, { note: `🥣 <b>${have} / ${NEED}</b>${full ? '' : `<br><small>${(S.seeds[id] || 0) > 0 ? '🌱 ' + D.ui.plantit[0] : sourceHint(id)}</small>`}` }));
   });
-  // her mixing bowl (макітра) at the end of the counter, the wooden spoon going round
-  const bx = cl + cw - u * 0.085, bt = top - u * 0.075, stir = Math.sin(t * 3.4);
-  c.strokeStyle = '#9b6b3c'; c.lineWidth = u * 0.009; c.lineCap = 'round'; c.beginPath(); c.moveTo(bx + u * 0.03 + stir * u * 0.02, bt - u * 0.075); c.lineTo(bx + stir * u * 0.012, bt + u * 0.03); c.stroke();
-  c.fillStyle = '#9b6b3c'; ell(c, bx + u * 0.031 + stir * u * 0.02, bt - u * 0.078, u * 0.011, u * 0.008);
-  c.fillStyle = '#a8562f'; c.beginPath(); c.moveTo(bx - u * 0.07, bt); c.quadraticCurveTo(bx - u * 0.06, top, bx - u * 0.03, top); c.lineTo(bx + u * 0.03, top); c.quadraticCurveTo(bx + u * 0.06, top, bx + u * 0.07, bt); c.closePath(); c.fill();
-  c.fillStyle = '#c56a3c'; ell(c, bx, bt, u * 0.07, u * 0.013); c.fillStyle = '#f3e3c4'; ell(c, bx, bt + u * 0.001, u * 0.058, u * 0.008);
-  c.strokeStyle = '#f3e6c8'; c.lineWidth = u * 0.004; c.beginPath(); for (let i = 0; i <= 12; i++) { const x = bx - u * 0.055 + i * u * 0.0092, y = bt + u * 0.035 + (i % 2 ? -1 : 1) * u * 0.006; if (i) c.lineTo(x, y); else c.moveTo(x, y); } c.stroke();
 
   // ---- the cuckoo clock (ходики) with its pine-cone weights, and a tear-off calendar
   const kx = OX.clock * RW, ky = wallB - u * 0.5, kr = u * 0.042, now2 = new Date(), swing = Math.sin(t * 3) * 0.3;
@@ -2552,10 +2545,28 @@ function drawOlia(t) {
 
   // ---- Grandma Olia at her counter, in her apron
   const ox = OX.olia * RW, oy = h * 0.6 + u * 0.055, sc = u * 0.0046, npcS = S.npc.olia;
-  person(c, ox, oy, NPC.olia.look, t, false, sc);
+  person(c, ox, oy, Object.assign({ noArms: true }, NPC.olia.look), t, false, sc);
   c.save(); c.translate(ox, oy); c.scale(sc, sc);
   c.fillStyle = '#fffdf5'; rr(c, -9.5, -31, 19, 22, 3); c.fillStyle = '#d43a3a'; c.fillRect(-9.5, -13, 19, 2); c.fillRect(-9.5, -31, 19, 1.6);
-  flower(0, -21, 2.6, '#d43a3a'); c.fillStyle = '#4f8f3a'; ell(c, -4.5, -18, 2.2, 1); ell(c, 4.5, -18, 2.2, 1);
+  flower(0, -19, 2.4, '#d43a3a'); c.fillStyle = '#4f8f3a'; ell(c, -4.2, -16.5, 2, 0.9); ell(c, 4.2, -16.5, 2, 0.9);
+  {
+    const L = NPC.olia.look, sa = t * 4.2, bx = -3, rim = -38, hx = bx + 3 + Math.cos(sa) * 6.5, hy = rim - 8.5 + Math.sin(sa) * 2, tipx = bx + Math.cos(sa) * 3.5, tipy = rim + 3;
+    const limb = (x0, y0, ex, ey, x1, y1) => {   // sleeve, embroidered cuff, hand
+      c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = L.shirt; c.lineWidth = 7; c.beginPath(); c.moveTo(x0, y0); c.lineTo(ex, ey); c.lineTo(x1, y1); c.stroke();
+      const d = Math.hypot(x1 - ex, y1 - ey) || 1, ux = (x1 - ex) / d, uy = (y1 - ey) / d;
+      c.strokeStyle = L.trim; c.lineWidth = 7; c.lineCap = 'butt'; c.beginPath(); c.moveTo(x1 - ux * 3.2, y1 - uy * 3.2); c.lineTo(x1 - ux * 0.8, y1 - uy * 0.8); c.stroke();
+      c.fillStyle = L.skin; circ(c, x1 + ux * 1.5, y1 + uy * 1.5, 3.6);
+    };
+    // the bowl, tucked against her
+    c.fillStyle = '#a8562f'; c.beginPath(); c.moveTo(bx - 14, rim); c.quadraticCurveTo(bx - 12, rim + 15, bx - 6, rim + 15); c.lineTo(bx + 6, rim + 15); c.quadraticCurveTo(bx + 12, rim + 15, bx + 14, rim); c.closePath(); c.fill();
+    c.strokeStyle = '#f3e6c8'; c.lineWidth = 1; c.beginPath(); for (let i = 0; i <= 10; i++) { const x = bx - 10 + i * 2, y = rim + 7 + (i % 2 ? -1.2 : 1.2); if (i) c.lineTo(x, y); else c.moveTo(x, y); } c.stroke();
+    c.fillStyle = '#c56a3c'; ell(c, bx, rim, 14, 3.2); c.fillStyle = '#f3e3c4'; ell(c, bx, rim + 0.3, 11.5, 2.1);
+    c.strokeStyle = 'rgba(190,160,110,.7)'; c.lineWidth = 0.9; c.beginPath(); c.ellipse(bx, rim + 0.3, 6.5, 1.1, 0, sa, sa + 4.2); c.stroke();   // the batter turning
+    // the spoon, then the arm that works it; the other arm holds the bowl
+    c.strokeStyle = '#9b6b3c'; c.lineWidth = 2.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(hx, hy); c.lineTo(tipx, tipy); c.stroke();
+    limb(-15.5, -46, -19.5, -36, bx - 12.5, rim + 5);
+    limb(15.5, -46, 21.5 + Math.cos(sa) * 1.2, -39 + Math.sin(sa) * 1, hx + 1.5, hy);
+  }
   c.restore();
   const bob = Math.sin(t * 2.5) * u * 0.006, btop = oy - u * 0.465 + bob, bR = u * 0.05;
   const bub = npcS && npcS.mad ? '😠' : ready ? '🍽️' : npcS && npcS.q && st < 2 ? W[npcS.q].ic : npcS && npcS.q ? '❔' : '💬';
