@@ -962,7 +962,8 @@ function chore(c, x, y, id, t, layer) {
 }
 // moving: 0..1, how much of a walk this is (it blends in and out, so steps start and stop softly).
 // ph: the walk phase; the player's comes from the distance walked, so the feet never slide.
-function person(c, x, y, L, t, moving, sc, ph) {
+function person(c, x, y, L, t, moving, sc, ph, view) {
+  const side = view ? view.side || 0 : 0, back = view ? view.back || 0 : 0, fx = side * 4.5;
   const k = (L.small ? 0.78 : 1) * (sc || 1), m = +moving || 0, w = ph === undefined ? t * 12 : ph;
   c.save(); c.translate(x, y); c.scale(k, k);
   const bob = -m * Math.abs(Math.sin(w)) * 2.6 + (1 - m) * Math.sin(t * 2) * 0.8;
@@ -984,14 +985,24 @@ function person(c, x, y, L, t, moving, sc, ph) {
     c.fillStyle = L.skin; circ(c, 0, 19, 3.5); c.restore();
   }
   c.fillStyle = L.shirt; rr(c, -14, -51 + bob, 28, 26, 8);
-  c.fillStyle = L.trim; c.fillRect(-2, -49 + bob, 4, 18); c.fillRect(-14, -30 + bob, 28, 3);
-  for (let i = 0; i < 3; i++) { c.fillRect(-6, -46 + i * 6 + bob, 2, 2); c.fillRect(4, -46 + i * 6 + bob, 2, 2); }
+  c.fillStyle = L.trim; c.fillRect(-2 + fx * 0.5, -49 + bob, 4, 18); c.fillRect(-14, -30 + bob, 28, 3);
+  for (let i = 0; i < 3; i++) { c.fillRect(-6 + fx * 0.5, -46 + i * 6 + bob, 2, 2); c.fillRect(4 + fx * 0.5, -46 + i * 6 + bob, 2, 2); }
   c.fillStyle = L.skin; circ(c, 0, -63 + bob, 14);
   c.fillStyle = L.hair; c.beginPath(); c.arc(0, -65 + bob, 14.6, Math.PI, 0); c.fill();
   if (L.long) { rr(c, -15.5, -66 + bob, 5, 20, 2.5); rr(c, 10.5, -66 + bob, 5, 20, 2.5); c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
+  c.save(); c.translate(fx, 0);   // the face slides toward the way she is looking
   c.fillStyle = '#3b2f2a'; if (blink) { c.fillRect(-7, -62.6 + bob, 4, 1.3); c.fillRect(3, -62.6 + bob, 4, 1.3); } else { circ(c, -5, -62 + bob, 1.8); circ(c, 5, -62 + bob, 1.8); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, -4.4, -62.7 + bob, 0.6); circ(c, 5.6, -62.7 + bob, 0.6); c.fillStyle = '#3b2f2a'; }
   c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.6; c.beginPath(); c.arc(0, -58 + bob, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
-  c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, -9, -58 + bob, 2.8); circ(c, 9, -58 + bob, 2.8);
+  c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, -9, -58 + bob, 2.8 * (1 - side * 0.6)); circ(c, 9, -58 + bob, 2.8);
+  c.restore();
+  if (side > 0.05) { c.fillStyle = L.hair; c.globalAlpha = Math.min(1, side * 1.2); c.beginPath(); c.arc(0, -63 + bob, 14.4, Math.PI * 0.55, Math.PI * 1.05); c.lineTo(-4, -70 + bob); c.closePath(); c.fill(); c.globalAlpha = 1; }   // hair over the far side of her head
+  if (back > 0.01) {   // from behind: hair covers her head, and her shirt has no buttons
+    c.globalAlpha = Math.min(1, back);
+    c.fillStyle = L.shirt; rr(c, -14, -51 + bob, 28, 20, 8);
+    c.fillStyle = L.hair; circ(c, 0, -63.5 + bob, 14.8);
+    if (L.long) rr(c, -15.5, -66 + bob, 31, 30, 10);
+    c.globalAlpha = 1;
+  }
   if (L.hat === 'scarf') {
     c.fillStyle = L.hatCol; c.beginPath(); c.arc(0, -64 + bob, 15.8, Math.PI * 0.98, Math.PI * 0.02); c.fill();
     poly(c, [[-14, -62 + bob], [-10, -50 + bob], [-16, -52 + bob]]); poly(c, [[14, -62 + bob], [10, -50 + bob], [16, -52 + bob]]);
@@ -1291,8 +1302,8 @@ function quad(c, x, y, Q, t, e) {
   // one stride covers the ground the legs really reach, so the feet don't slide
   const cyc = (e.step || 0) * T / (1.6 * Q.G * Q.k * amp / 0.4);
   const breath = Math.sin(t * 1.5 + e.hx) * 0.4, bob = wk * (1 - Math.cos(cyc * 12.566)) * 0.5 * (Q.B * 0.035) + breath * (1 - wk);
-  const fs = e.fs === undefined ? (e.face === -1 ? -1 : 1) : e.fs, dir = -(Math.abs(fs) < 0.12 ? (fs < 0 ? -0.12 : 0.12) : fs);
-  c.save(); c.translate(x, y); c.scale(Q.k * dir, Q.k); c.lineCap = 'round'; c.lineJoin = 'round';
+  const dir = -turnX(e);
+  c.save(); c.translate(x, y - (e.tl || 0) * 3); c.scale(Q.k * dir, Q.k); c.lineCap = 'round'; c.lineJoin = 'round';
   c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, Q.L * (0.55 + rest * 0.06), 5);
   const by = -G - Q.B / 2 - bob, lw = Math.max(3.5, Q.B * 0.24), hipF = Q.L * 0.33, hipB = -Q.L * 0.33, hipY = -G - bob * 0.5 - 1;
   // A leg in two parts. It swings back while the foot is on the ground, then bends, lifts and reaches forward.
@@ -1378,9 +1389,9 @@ const BIRD = {
 };
 function bird(c, x, y, B, t, e) {
   const walk = !!e.walk, ph = (e.step || 0) * 34, sw = Math.sin(ph) * (e.wk || 0);
-  const dir = -(e.fs === undefined ? (e.face === -1 ? -1 : 1) : Math.abs(e.fs) < 0.12 ? 0.12 : e.fs);
+  const dir = -turnX(e);
   const peck = !walk && e.act === 'graze' && Math.sin(t * 2.6 + e.hx * 5) > 0.2 ? 1 : 0;
-  c.save(); c.translate(x, y); c.scale(B.k * dir, B.k); c.lineCap = 'round';
+  c.save(); c.translate(x, y - (e.tl || 0) * 2.5); c.scale(B.k * dir, B.k); c.lineCap = 'round';
   c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, 13, 3.5);
   c.strokeStyle = '#e09a2a'; c.lineWidth = 2;
   for (const [lx, s2] of [[-3, sw], [3, -sw]]) { c.beginPath(); c.moveTo(lx, -9); c.lineTo(lx + s2 * 4, -1); c.lineTo(lx + s2 * 4 + 4, -1); c.stroke(); }
@@ -1398,7 +1409,7 @@ function bird(c, x, y, B, t, e) {
   c.restore();
 }
 function drawDuck(c, x, y, t, e) {
-  const dir = e.face === -1 ? 1 : -1, bob = Math.sin(t * 2 + e.hx * 4) * 1.2, drake = e.v === 0;
+  const dir = -turnX(e), bob = Math.sin(t * 2 + e.hx * 4) * 1.2, drake = e.v === 0;
   c.save(); c.translate(x, y + bob); c.scale(dir, 1);
   c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.5;
   for (let i = 0; i < 2; i++) { c.beginPath(); c.ellipse(0, -1, 17 + i * 6 + (e.walk ? Math.sin(t * 5) * 2 : 0), 3.5 + i * 1.5, 0, 0.1, Math.PI - 0.1); c.stroke(); }
@@ -1413,7 +1424,7 @@ function drawDuck(c, x, y, t, e) {
 function drawAnimal(c, x, y, e, t) {
   if (e.an === 'frog') {
     // hops in little arcs while moving; sits with a slow throat-puff otherwise
-    const ph = e.walk ? ((e.step || 0) * 2.4) % 1 : 0, lift = e.walk ? Math.sin(Math.PI * ph) * 16 : 0, dir = e.face === -1 ? 1 : -1;
+    const ph = e.walk ? ((e.step || 0) * 2.4) % 1 : 0, lift = e.walk ? Math.sin(Math.PI * ph) * 16 : (e.tl || 0) * 4, dir = -turnX(e);
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y, 13 - lift * 0.3, 3.5);
     c.save(); c.translate(x, y - lift); c.scale(dir, 1);
     const k = e.s * T / 100, puff = e.walk ? 1 : 1 + Math.max(0, Math.sin(t * 2.2 + e.hx)) * 0.04;
@@ -1518,6 +1529,17 @@ function useWord(id, ok) {
   else { w.l = Math.max(1, w.l - 1); w.d = now() + IV[1]; }
   save();
 }
+function turnTo(o, face, dt) {
+  const goal = face === -1 ? Math.PI : 0;
+  if (o.ang === undefined) { o.ang = goal; o.av = 0; }
+  o.av += ((goal - o.ang) * 90 - o.av * 19) * dt;   // about 0.4 s for a full turn
+  o.ang += o.av * dt;
+  if (Math.abs(goal - o.ang) < 0.002 && Math.abs(o.av) < 0.01) { o.ang = goal; o.av = 0; }
+  o.fs = Math.cos(o.ang); o.tl = Math.sin(Math.max(0, Math.min(Math.PI, o.ang)));
+}
+// Horizontal scale for drawing. Animals are drawn side-on, so half-way round they narrow a lot (you see
+// them end-on); people face the camera, so they only narrow a little as they spin. Never fully flat.
+const turnX = (o, min = 0.28) => { const v = o.fs === undefined ? (o.face === -1 ? -1 : 1) : o.fs, a = Math.abs(v), k = min + (1 - min) * a; return v < 0 ? -k : k; };
 const isFresh = id => { const w = S.words[id]; return !w || (w.l < 5 && now() >= w.d); };
 const known = id => S.words[id] ? S.words[id].l : 0;
 
@@ -2646,15 +2668,22 @@ function update(dt, t, rdt = dt) {
     const n = P.path[0], dx = n.x - P.x, dy = n.y - P.y, d = Math.hypot(dx, dy);
     P.moving = true;
     if (Math.abs(dx) > 0.02) P.face = dx > 0 ? 1 : -1;
+    if (d > 0.001) { P.mdx = dx / d; P.mdy = dy / d; }
     if (d <= step) { P.x = n.x; P.y = n.y; P.path.shift(); step -= d; P.step += d; if (!P.path.length) { S.x = P.x; S.y = P.y; save(); arrive(); } }
     else { P.x += dx / d * step; P.y += dy / d * step; P.step += step; step = 0; }
   }
   if (P.moving && P.step - P.dust > 0.55) { P.dust = P.step; fxDust(P.rx, P.ry); }
   { const far = Math.hypot(P.x - P.rx, P.y - P.ry) > 2.5, k = far ? 1 : 1 - Math.exp(-rdt * 20);
     P.rx += (P.x - P.rx) * k; P.ry += (P.y - P.ry) * k;
-    P.fs += (P.face - P.fs) * (1 - Math.exp(-rdt * 22));
+    turnTo(P, P.face, rdt);
+    // Walking away: her back. Walking across (or diagonally): her face turned the way she goes. Walking toward
+    // you: straight on. Standing still she turns back round to face you, still glancing the way she went.
+    const away = P.moving && P.mdy < 0 && -P.mdy > Math.abs(P.mdx) * 1.1, across = P.moving && !away && Math.abs(P.mdx) > 0.35;
+    const ws = away ? 0 : across ? 1 : P.moving ? 0 : (P.vs || 0) > 0.5 ? 0.6 : 0, wb = away ? 1 : 0, kv = 1 - Math.exp(-rdt * 9);
+    P.vs = (P.vs || 0) + (ws - (P.vs || 0)) * kv; P.vb = (P.vb || 0) + (wb - (P.vb || 0)) * kv;
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
   for (const e of ents) {
+    if (e.face !== undefined) turnTo(e, e.face, dt);
     if (e.kind === 'animal') {
       // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
       // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
@@ -2684,7 +2713,6 @@ function update(dt, t, rdt = dt) {
           }
         }
       }
-      { const k = 1 - Math.exp(-dt * 7); e.fs += (e.face - e.fs) * k; }
       e.wk = Math.max(0, Math.min(1, e.vel / (sp * 0.8))); e.walk = e.wk > 0.2;
       // heads go down to graze, with a look up now and then
       const grazing = e.st === 'idle' && e.act === 'graze' && Math.sin(t * 0.23 + e.hx * 3) > -0.55;
@@ -2762,7 +2790,7 @@ function drawWorld(t) {
   list.sort((a, b) => (a.flat ? -1e3 : 0) + a.y - ((b.flat ? -1e3 : 0) + b.y));
   for (const e of list) {
     const x = e.x * T, y = e.y * T;
-    if (e.me) { c.save(); c.translate(x, y); c.scale(P.fs >= 0 ? Math.max(0.2, P.fs) : Math.min(-0.2, P.fs), 1); person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); c.restore(); continue; }
+    if (e.me) { c.save(); c.translate(x, y - (P.tl || 0) * 4); c.scale(turnX(P, 0.62), 1); person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { side: (P.vs || 0) * Math.abs(P.fs), back: P.vb || 0 }); c.restore(); continue; }
     if (e.kind === 'npc') { chore(c, x, y, e.npc, t, 0); person(c, x, y, NPC[e.npc].look, t + e.x, false, 1); chore(c, x, y, e.npc, t, 1); continue; }
     if (e.kind === 'pond') continue;
     if (e.kind === 'plot') {
@@ -2781,7 +2809,7 @@ function drawWorld(t) {
       continue;
     }
     if (e.w === 'ryba') {
-      const dir = e.face === -1 ? -1 : 1, wig = Math.sin(t * (e.walk ? 9 : 3) + e.hx) * 0.35, k = e.s;
+      const dir = turnX(e), wig = Math.sin(t * (e.walk ? 9 : 3) + e.hx) * 0.35, k = e.s;
       c.save(); c.translate(x, y - 6); c.scale(dir * k, k);
       c.fillStyle = 'rgba(28,70,105,.42)'; ell(c, 0, 0, 20, 8);
       c.save(); c.translate(-17, 0); c.rotate(wig); c.beginPath(); c.moveTo(0, 0); c.lineTo(-13, -8); c.lineTo(-13, 8); c.closePath(); c.fill(); c.restore();
@@ -2792,7 +2820,7 @@ function drawWorld(t) {
     const s = e.s * T;
     if (!e.flat && e.kind !== 'fly') { c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, y, s * (e.ic[0] === '@' ? 0.36 : 0.28), s * 0.09); }
     const hop = e.kind === 'animal' && e.walk ? Math.abs(Math.sin(t * 9 + e.x)) * 3 : e.kind === 'fly' ? Math.sin(t * 9 + e.ph) * 4 : 0;
-    if (e.swoop) { c.save(); c.translate(x, y); c.scale(e.face || 1, 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
+    if (e.swoop) { c.save(); c.translate(x, y); c.scale(turnX(e), 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
     else drawIcon(c, e.ic, x, y - hop, s, { t, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
