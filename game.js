@@ -2313,7 +2313,7 @@ let oliaHits = [];
 const recipeReady = R => recipeTotal(R) >= R.needs.length * NEED;
 function enterOlia() { closeSheet(); fadeThen(enterOliaNow); }
 function enterOliaNow() {
-  mode = 'olia';
+  mode = 'olia'; if (!S.oliaVisited) { S.oliaVisited = 1; save(); }
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
   // Open on the counter and Grandma; once the dish is ready, on the table.
   const mid = (recipeReady(curRecipe()) ? OX.table : 0.385) * roomW() - cv.width / 2;
@@ -2799,13 +2799,17 @@ function drawWorld(t) {
   fxDraw(c);
   if (fishFx) drawFishing(c, t);
   if (waterFx) { const pe = ents.find(x => x.k === 'plot' + waterFx.i); if (pe) { c.save(); c.translate(pe.x * T, pe.y * T); c.scale(pe.s, pe.s); drawWatering(c, t - waterFx.t0); c.restore(); } }
-  // Names of things you have met, when you stand near them. New or due things sparkle.
+  // Name labels are rare: at most one at a time, for the thing you are standing right next to, and only
+  // while it is still new to you (a word you have just learned, a villager or cat you have barely got to
+  // know, Grandma's cottage before you have been in). Words due for review sparkle instead; tap to recall.
+  let tag = null;
+  const offer = (e, text, lx) => { const d = Math.hypot(e.x - P.x, e.y - P.y); if (d < 1.6 && (!tag || d < tag.d)) tag = { d, text, x: lx ?? e.x * T, y: e.y * T + 16 }; };
   for (const e of list) {
     if (e.me || e.kind === 'plot' || e.quiet) continue;
-    const x = e.x * T, y = e.y * T, near = Math.hypot(e.x - P.x, e.y - P.y) < 3.2;
+    const x = e.x * T, y = e.y * T;
     if (e.kind === 'npc') {
       const n = S.npc[e.npc], top = y - T * 1.45;
-      if (near && n && n.met) label(c, NPC[e.npc].name, x, y + 16);
+      if (n && n.met && (n.k || 0) < 3) offer(e, NPC[e.npc].name);
       const bub = n && n.mad ? '😠' : e.npc === 'oksana' ? '🧺' : n && n.q ? (stage() < 2 && W[n.q].ic[0] !== '@' ? W[n.q].ic : '❔') : '💬';
       bubble(c, x, top + Math.sin(t * 2.5 + e.x) * 3, 19);
       drawIcon(c, bub, x, top + 12 + Math.sin(t * 2.5 + e.x) * 3, 27);
@@ -2816,24 +2820,24 @@ function drawWorld(t) {
       const ct = D.cats.find(k => k.id === e.cat), top = y - T * 0.85 + Math.sin(t * 2.5 + e.hx) * 2;
       if (S.cats[e.cat]) drawIcon(c, '❤️', x, top + 8, 18);
       else { bubble(c, x, top, 15); drawIcon(c, stage() < 2 && W[ct.wants].ic[0] !== '@' ? W[ct.wants].ic : '❔', x, top + 9, 21); }
-      if (near && S.words[e.w]) label(c, S.cats[e.cat] ? ct.name : W[e.w].uk, x, y + 16);
+      if (S.words[e.w] && known(e.w) <= 1) offer(e, S.cats[e.cat] ? ct.name : W[e.w].uk);
       continue;
     }
     const wd = S.words[e.w];
-    if (e.kind === 'home') { homeSign(c, x, y - e.s * T * 0.5, t); if (near) label(c, 'Моя хата' + (stage() < 3 ? ' · My cottage' : ''), x, y + 16); }
+    if (e.kind === 'home') homeSign(c, x, y - e.s * T * 0.5, t);
     else if (e.k === 'oliaHome') {
-      if (near) label(c, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''), x, y + 16);
+      if (!S.oliaVisited) offer(e, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''));
       const n = S.npc.olia, top = y - T * 1.55 + Math.sin(t * 2.5 + e.x) * 3;   // over her door
       const bub = n && n.mad ? '😠' : recipeReady(curRecipe()) ? '🍽️' : n && n.q && stage() < 2 ? W[n.q].ic : n && n.q ? '❔' : '💬';
       bubble(c, x, top, 19); drawIcon(c, bub, x, top + 12, 27);
     }
-    else if (wd && near && isFresh(e.w) && e.w !== 'soniashnyk') label(c, W[e.w].uk, e.labelX ? e.labelX * T : x, y + 16);
-    else if (wd && near && isFresh(e.w) && e.w === 'soniashnyk' && Math.hypot(e.x - P.x, e.y - P.y) < 1) label(c, W[e.w].uk, x, y + 16);
+    else if (wd && known(e.w) <= 1 && (e.w !== 'soniashnyk' || Math.hypot(e.x - P.x, e.y - P.y) < 1)) offer(e, W[e.w].uk, e.labelX ? e.labelX * T : undefined);
     if (isFresh(e.w) && (e.w !== 'soniashnyk' || (Math.floor(e.x) + Math.floor(e.y)) % 5 === 0)) {
       const a = 0.55 + 0.45 * Math.sin(t * 4 + e.x * 3);
       c.globalAlpha = a; drawIcon(c, '✨', x + e.s * T * 0.3, y - e.s * T * (e.flat ? 0.2 : 0.75), 24); c.globalAlpha = 1;
     }
   }
+  if (tag) label(c, tag.text, tag.x, tag.y);
   if (P.path.length) { const g = P.path[P.path.length - 1], pu = 0.5 + 0.5 * Math.sin(t * 7); c.strokeStyle = `rgba(255,255,255,${0.55 + 0.3 * pu})`; c.lineWidth = 3; c.beginPath(); c.ellipse(g.x * T, g.y * T, 13 + pu * 3, 7 + pu * 1.6, 0, 0, 7); c.stroke(); c.fillStyle = 'rgba(255,255,255,.4)'; ell(c, g.x * T, g.y * T, 5, 2.7); }
   // cloud shadows drifting over everything
   c.globalAlpha = 0.17;
