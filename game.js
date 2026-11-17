@@ -2123,7 +2123,7 @@ function setGuide() {
     const n = active[0], q = S.npc[n.id].q;
     const R = n.id === 'olia' ? curRecipe() : null;
     uk = R ? `${W[R.dish].uk} ${recipeTotal(R)}/${R.needs.length * NEED}: ${W[q].acc || W[q].uk}` : `${n.name}: ${W[q].acc || W[q].uk}${st < 2 && W[q].ic[0] !== '@' ? ' ' + W[q].ic : ''}`;
-    full = R ? `Grandma Olia is making ${W[R.dish].en}. She needs ${W[q].en}.` : `${n.nameEn} will pay 6 ₴ for ${W[q].en}.`; en = st < 2 ? full : '';
+    full = R ? `Grandma Olia is making ${W[R.dish].en}. She needs ${W[q].en}.` : `${n.nameEn} will pay 6 hryvnias for ${W[q].en}.`; en = st < 2 ? full : '';
     guideClip = R ? `q_${n.id}_${q}` : `qp_${n.id}_${q}`;
   } else {
     uk = PH.i_free.uk; full = PH.i_free.en; en = st < 3 ? full : ''; guideClip = 'p_i_free';

@@ -293,7 +293,7 @@ window.DATA = {
   // "Bring me, please, ..." — the item goes on the end in its acc form.
   questLine: { uk: "Принеси мені, будь ласка, %s.", en: "Bring me, please, %s." },
   // Villagers' errands: they offer to pay (6 ₴, the errand reward).
-  payLine: { uk: "Я з радістю заплачу тобі шість гривень за %s.", en: "I'll gladly pay you 6 ₴ for %s." },
+  payLine: { uk: "Я з радістю заплачу тобі шість гривень за %s.", en: "I'll gladly pay you 6 hryvnias (Ukrainian money) for %s." },
 
   // Prices are spoken by Oksana. Ukrainian counts money in three ways: 2-4 гривні, 5+ гривень.
   prices: {
