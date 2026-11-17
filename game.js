@@ -76,6 +76,41 @@ function textOf(id) {
   if (k === 'q') return W[b] ? D.questLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
   return '';
 }
+function enOf(id) {
+  const [k, a, ...rest] = id.split('_');
+  const b = rest.join('_');
+  if (k === 'w') return W[id.slice(2)] ? W[id.slice(2)].en : '';
+  if (k === 'p') return PH[id.slice(2)] ? PH[id.slice(2)].en : '';
+  if (k === 'c') { const ct = (D.cats || []).find(x => x.id === id.slice(2)); return ct ? ct.lineEn : ''; }
+  if (k === 's') return D.story && D.story[+a] ? D.story[+a].en : '';
+  if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].en : '';
+  if (k === 'qp') return W[b] ? D.payLine.en.replace('%s', W[b].en) : '';
+  if (k === 'q') return W[b] && D.questLine.en ? D.questLine.en.replace('%s', W[b].en) : '';
+  return '';
+}
+// Live subtitles on the talking cards: what is being said right now, the words lighting up as they're
+// spoken, the last line staying up afterwards so you can read it. Shown or hidden with the button under the
+// card; the choice is remembered on this device.
+let subsOn = false, subNow = null;
+try { subsOn = localStorage.getItem('kd-subs') === 'on'; } catch (e) {}
+function subsHTML() {
+  return `<div class="subs"><div id="subline"${subsOn ? '' : ' style="display:none"'}></div><button class="subt" data-a="subs">💬 ${subsOn ? 'Сховати субтитри' : 'Показати субтитри'}${stage() < 3 ? `<small>${subsOn ? 'Hide subtitles' : 'Show subtitles'}</small>` : ''}</button></div>`;
+}
+function subStart(id, a) {
+  const uk = textOf(id); if (!uk) return;
+  subNow = { uk, en: enOf(id), a, t0: performance.now() };
+  subPaint();
+}
+function subPaint() {
+  const el = document.getElementById('subline'); if (!el || !subNow) return;
+  const words = subNow.uk.split(' '), a = subNow.a;
+  let f = 1;
+  if (a && !a.paused && !a.ended && a.duration > 0) f = Math.min(1, (a.currentTime + 0.15) / (a.duration * 0.92));
+  else if (!a) f = Math.min(1, (performance.now() - subNow.t0) / (words.length * 420));
+  const n = Math.ceil(f * words.length);
+  el.innerHTML = `<div class="su">${words.map((w, i) => `<span${i < n ? '' : ' class="later"'}>${w}</span>`).join(' ')}</div>${subNow.en ? `<div class="se">${xl(subNow.en)}</div>` : ''}`;
+  if (f < 1) requestAnimationFrame(subPaint);
+}
 function speakFallback(text) {
   return new Promise(res => {
     try {
@@ -92,7 +127,8 @@ function playClip(id) {
     let done = false;
     const fin = () => { if (done) return; done = true; a.onended = a.onerror = null; res(); };
     a.onended = fin;
-    a.onerror = () => { speakFallback(textOf(id)).then(fin); };
+    a.onerror = () => { subStart(id, null); speakFallback(textOf(id)).then(fin); };
+    a.onplaying = () => subStart(id, a);
     try { a.currentTime = 0; } catch (e) {}
     const p = a.play();
     if (p && p.catch) p.catch(() => fin());
@@ -1926,6 +1962,7 @@ let onClose = null, acts = [], cur = {}, sheetAt = 0;
 function openSheet(html, closer) {
   if (onClose) { const f = onClose; onClose = null; f(); }
   sheet.classList.remove('fixed'); clearTimeout(closeT); sheet.classList.remove('closing'); veil.classList.remove('closing');
+  if (html.includes('class="dlg"')) { html += subsHTML(); subNow = null; }
   sheet.innerHTML = html; sheet.classList.add('show'); veil.classList.add('show'); sheet.scrollTop = 0; sheetAt = Date.now();
   onClose = closer || null;
 }
@@ -3787,6 +3824,11 @@ const A = {
   exitHome,
   enterHome,
   hear(v) { say(v); },
+  subs() {
+    subsOn = !subsOn; try { localStorage.setItem('kd-subs', subsOn ? 'on' : 'off'); } catch (e) {}
+    const box = sheet.querySelector('.subs'); if (box) box.outerHTML = subsHTML();
+    subPaint();
+  },
   hear2(v) { say('w_' + v, 'p_bud_laska'); },
   hearItem(v) { learn(v); say('w_' + v); },
   hearWord(v) { say('w_' + v); toast(`${W[v].uk} — ${W[v].en}`); },
