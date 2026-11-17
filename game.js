@@ -88,13 +88,13 @@ function enOf(id) {
   if (k === 'q') return W[b] && D.questLine.en ? D.questLine.en.replace('%s', W[b].en) : '';
   return '';
 }
-// Live subtitles on the talking cards: what is being said right now, the words lighting up as they're
-// spoken, the last line staying up afterwards so you can read it. Shown or hidden with the button under the
+// Live subtitles on the talking cards: always in English (that's what they're for), what is being said right
+// now, the words lighting up as they're spoken, the last line staying up afterwards so you can read it. Shown or hidden with the button under the
 // card; the choice is remembered on this device.
 let subsOn = false, subNow = null;
 try { subsOn = localStorage.getItem('kd-subs') === 'on'; } catch (e) {}
 function subsHTML() {
-  return `<div class="subs"><div id="subline"${subsOn ? '' : ' style="display:none"'}></div><button class="subt" data-a="subs">💬 ${subsOn ? 'Сховати субтитри' : 'Показати субтитри'}${stage() < 3 ? `<small>${subsOn ? 'Hide subtitles' : 'Show subtitles'}</small>` : ''}</button></div>`;
+  return `<div class="subs"><div id="subline"${subsOn ? '' : ' style="display:none"'}></div><button class="subt" data-a="subs">💬 ${subsOn ? 'Сховати субтитри' : 'Показати субтитри'}<small>${subsOn ? 'Hide English subtitles' : 'Show English subtitles'}</small></button></div>`;
 }
 function subStart(id, a) {
   const uk = textOf(id); if (!uk) return;
@@ -103,12 +103,12 @@ function subStart(id, a) {
 }
 function subPaint() {
   const el = document.getElementById('subline'); if (!el || !subNow) return;
-  const words = subNow.uk.split(' '), a = subNow.a;
+  const words = (subNow.en || subNow.uk).split(' '), a = subNow.a;
   let f = 1;
   if (a && !a.paused && !a.ended && a.duration > 0) f = Math.min(1, (a.currentTime + 0.15) / (a.duration * 0.92));
   else if (!a) f = Math.min(1, (performance.now() - subNow.t0) / (words.length * 420));
   const n = Math.ceil(f * words.length);
-  el.innerHTML = `<div class="su">${words.map((w, i) => `<span${i < n ? '' : ' class="later"'}>${w}</span>`).join(' ')}</div>${subNow.en ? `<div class="se">${xl(subNow.en)}</div>` : ''}`;
+  el.innerHTML = `<div class="su">${words.map((w, i) => `<span${i < n ? '' : ' class="later"'}>${w}</span>`).join(' ')}</div>`;
   if (f < 1) requestAnimationFrame(subPaint);
 }
 function speakFallback(text) {
