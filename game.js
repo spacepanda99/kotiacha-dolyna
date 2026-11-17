@@ -1914,7 +1914,7 @@ function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; hud(); save(); }
 // Your own farm: hens (up to four) and a cow scratch and graze in the yard below your cottage, and a butter
 // churn stands by your door once you've bought one. They're added to the world when bought and on loading.
 const FARM_MAX = { kurka: 4, korova: 1 };
-const HEN_SPOTS = [[11.1, 16.0], [12.0, 16.5], [10.8, 16.9], [12.7, 15.95]], COW_SPOT = [14.0, 16.5];   // on the grass below the road
+const HEN_SPOTS = [[9.7, 12.95], [10.3, 12.4], [12.7, 12.45], [13.2, 13.0]], COW_SPOT = [11.5, 12.75];   // in front of the cottage fence, between it and the road
 const farmN = k => (S.farm && S.farm[k]) || 0;
 let churnUntil = 0;
 function farmEnts() {
@@ -3062,7 +3062,7 @@ function update(dt, t, rdt = dt) {
               if (i < 5 && Math.random() < 0.7 && (dx > 0 ? -1 : 1) !== e.face) continue;   // mostly keep going the way it faces
               let ny = e.hy + rnd(-1, 1) * e.r * 0.5; ny = e.y + Math.max(-0.45 * Math.abs(dx), Math.min(0.45 * Math.abs(dx), ny - e.y));
               if (!(e.water ? inPond(nx, ny, -0.5) : !solid[Math.floor(ny)][Math.floor(nx)])) continue;
-              if (!e.water && e.an !== 'cat' && e.an !== 'dog' && nearRoad(nx, ny, 0.45)) continue;   // farm animals keep to the grass
+              if (!e.water && e.an !== 'cat' && e.an !== 'dog' && nearRoad(nx, ny, 0.55)) continue;   // farm animals keep to the grass
               e.gx = nx; e.gy = ny; e.st = 'walk'; e.walkT = 0; e.face = dx > 0 ? -1 : 1; e.act = 'look'; break;
             }
           }
