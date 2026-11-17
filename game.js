@@ -2682,8 +2682,16 @@ function bagSheet() {
   const b = Object.keys(S.seeds).filter(k => S.seeds[k] > 0).map(k => cell(k, S.seeds[k], '🌱'));
   const c = [...Object.keys(S.home).filter(k => S.home[k] > 0).map(k => cell(k, S.home[k], '🏠')), ...Object.keys(S.gear).filter(k => S.gear[k]).map(k => cell(k, '', '🎣'))];
   const all = [...a, ...b, ...c];
+  // Seeds carry the vegetable's own picture, so they get their own labelled shelf: a carrot seed packet
+  // isn't a carrot Grandma forgot to take.
+  const st = stage(), head = (ic, uk, en) => `<div style="text-align:left;font-weight:800;margin:10px 0 6px">${ic} ${uk}${st < 3 ? ` <small style="font-weight:600;color:var(--soft)">· ${en}</small>` : ''}</div>`;
+  const shelves = (b.length || c.length)
+    ? (a.length ? head('🧺', W.koshyk.uk, 'what you carry') + `<div class="grid">${a.join('')}</div>` : '')
+      + (b.length ? head('🌱', W.nasinnia.uk, 'seeds to plant in your garden, not food') + `<div class="grid">${b.join('')}</div>` : '')
+      + (c.length ? head('🏠', D.ui.decor[0], 'things for your cottage') + `<div class="grid">${c.join('')}</div>` : '')
+    : `<div class="grid">${a.join('')}</div>`;
   learn('koshyk');
-  openSheet(`<h3><span><span class="uk">${W.koshyk.uk}</span> ${stage() < 2 ? `<small>${W.koshyk.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>${all.length ? `<div class="grid">${all.join('')}</div>` : `<div class="muted">${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`}`);
+  openSheet(`<h3><span><span class="uk">${W.koshyk.uk}</span> ${stage() < 2 ? `<small>${W.koshyk.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>${all.length ? shelves : `<div class="muted">${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`}`);
 }
 function wordsSheet() {
   const ids = Object.keys(S.words).sort((a, b) => S.words[a].l - S.words[b].l);
