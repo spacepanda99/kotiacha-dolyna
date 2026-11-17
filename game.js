@@ -1330,20 +1330,23 @@ const QUAD = {
   pig: { k: 1, L: 44, B: 27, G: 11, col: '#f6b0b8', far: '#e39aa6', dark: '#d77f90', neck: [3, -2], head: [12, 11], hrot: 0.1, tail: 'curl', snout: true, ear: 'flop', hoof: '#b8697b', rest: true, doze: true, amp: 0.3 },
   dog: { k: 1, L: 36, B: 17, G: 16, col: '#c98a4a', far: '#a56c34', dark: '#7a4b22', neck: [6, 8], head: [9.5, 8], hrot: 0.1, tail: 'wag', ear: 'flop', patches: [[-8, -2, 7]], muzzle: '#fff3e0', nose: true, rest: true },
 };
-// The six cats of the valley. Each also has a sitting portrait (see cat() by the title screen).
+// The eight cats of the valley. Each also has a sitting portrait (see cat() by the title screen).
 const VAR = {
   rudyi: { col: '#f0a24c', far: '#d98a36', dark: '#c26f22', eye: '#7bc47f', stripes: true },
   chornyi: { col: '#3d373c', far: '#2c272b', dark: '#1d191c', eye: '#f2c230' },
   bilyi: { col: '#fffdf8', far: '#e2dbcf', dark: '#cfc7b8', eye: '#5aa9e6' },
   siryi: { col: '#9a9aa2', far: '#80808a', dark: '#66666f', eye: '#e6b43a' },
   smuhastyi: { col: '#b89a74', far: '#9c805c', dark: '#5e4830', eye: '#7bc47f', stripes: true },
+  rudobilyi: { col: '#fffdf8', far: '#e2dbcf', dark: '#cfc7b8', eye: '#7bc47f', patches: [[-7, -3, 7, '#f0a24c'], [8, 1, 5, '#f0a24c']], headPatch: '#f0a24c' },
+  chornobila: { col: '#3d373c', far: '#2c272b', dark: '#1d191c', eye: '#7bc47f', patches: [[3, 5, 6, '#fffdf8']], muzzle: '#fffdf8' },
   trykolirna: { col: '#fffdf8', far: '#e2dbcf', dark: '#cfc7b8', eye: '#e6b43a', patches: [[-7, -3, 6, '#f0a24c'], [6, 2, 5, '#3d373c']], headPatch: '#f0a24c' },
 };
 const catQuad = v => Object.assign({ k: 1, L: 30, B: 13, G: 12, neck: [4, 6], head: [8, 7.5], hrot: 0, tail: 'cat', ear: 'point', nose: true, hoof: null, rest: true, doze: true }, VAR[v]);
 function sitPal(v) {
-  const V = VAR[v], tri = v === 'trykolirna';
+  const V = VAR[v], tri = v === 'trykolirna', rb = v === 'rudobilyi';
+  if (rb) return { body: V.col, a: '#f0a24c', b: '#f0a24c', eye: V.eye, chub: 1, fluffy: false, bib: false, tail: '#f0a24c', earR: 'a', pb: [[-12, -38, 11, 'a'], [12, -24, 7, 'a']], ph: [[-9, -80, 10, 'a'], [11, -82, 6, 'a']] };
   return {
-    body: V.col, a: tri ? '#f0a24c' : V.dark, b: tri ? '#3d373c' : V.dark, eye: V.eye, chub: 1, fluffy: false, bib: false, tail: V.col, earR: tri ? 'b' : 'body',
+    body: V.col, a: tri ? '#f0a24c' : V.dark, b: tri ? '#3d373c' : V.dark, eye: V.eye, chub: 1, fluffy: false, bib: v === 'chornobila', tail: V.col, earR: tri ? 'b' : 'body',
     pb: tri ? [[-10, -36, 10, 'a'], [10, -22, 8, 'b']] : V.stripes ? [[-16, -40, 5, 'a'], [-4, -48, 5, 'a'], [10, -44, 5, 'a'], [18, -30, 5, 'a']] : [],
     ph: tri ? [[-10, -78, 8, 'a'], [10, -76, 7, 'b']] : V.stripes ? [[-6, -90, 3.5, 'a'], [0, -92, 3.5, 'a'], [6, -90, 3.5, 'a']] : [],
   };
@@ -1658,6 +1661,40 @@ const catFriends = () => D.cats.filter(ct => S.cats[ct.id]).length;
 // ------------------------------------------------------------------ walking
 // x, y: where you really are. rx, ry: where you are drawn, which glides after it so corners are round.
 const P = { x: S.x, y: S.y, rx: S.x, ry: S.y, path: [], moving: false, face: 1, fs: 1, wk: 0, step: 0, sp: 0, dust: 0, goal: null };
+// Cats roam the whole village: mostly off somewhere further away, sometimes just across the way. The route
+// goes tile by tile round houses, fences and the pond (a breadth-first search over the walkable tiles).
+function catRoute(sx, sy, tx, ty) {
+  const s0 = sy * MW + sx, goal = ty * MW + tx, prev = new Int32Array(MW * MH).fill(-2), q = [s0]; prev[s0] = -1;
+  for (let h = 0; h < q.length && prev[goal] === -2; h++) {
+    const cur = q[h], cx = cur % MW, cy = (cur / MW) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nx = cx + dx, ny = cy + dy;
+      if (nx < 1 || ny < 1 || nx >= MW - 1 || ny >= MH - 1 || solid[ny][nx] || inPond(nx + 0.5, ny + 0.5, -0.3)) continue;
+      if (dx && dy && (solid[cy][nx] || solid[ny][cx])) continue;
+      const ni = ny * MW + nx; if (prev[ni] !== -2) continue;
+      prev[ni] = cur; q.push(ni);
+    }
+  }
+  if (prev[goal] === -2) return null;
+  const path = []; for (let i = goal; i !== s0 && i >= 0; i = prev[i]) path.unshift(i);
+  // keep only the corners, so the walk is a few straight legs rather than a staircase of tiles
+  const pts = path.map(i => ({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 }));
+  return pts.filter((p, k) => k === pts.length - 1 || k === 0 || (pts[k + 1].x - p.x !== p.x - pts[k - 1].x || pts[k + 1].y - p.y !== p.y - pts[k - 1].y));
+}
+function catRoam(e) {
+  const sx = Math.floor(e.x), sy = Math.floor(e.y), far = Math.random() < 0.7, R = far ? 11 : 3;
+  for (let i = 0; i < 12; i++) {
+    const tx = Math.floor(e.x + rnd(-R, R)), ty = Math.floor(e.y + rnd(-R * 0.7, R * 0.7));
+    if (tx < 1 || ty < 1 || tx >= MW - 1 || ty >= MH - 1 || solid[ty][tx] || inPond(tx + 0.5, ty + 0.5, -0.3)) continue;
+    if (Math.abs(tx - sx) + Math.abs(ty - sy) < 2) continue;
+    const r = catRoute(sx, sy, tx, ty); if (!r || !r.length || r.length > 40) continue;
+    const last = r[r.length - 1]; last.x += rnd(-0.3, 0.3); last.y += rnd(-0.3, 0.3);
+    e.route = r; const n = e.route.shift(); e.gx = n.x; e.gy = n.y; e.st = 'walk'; e.walkT = 0; e.act = 'look';
+    if (Math.abs(n.x - e.x) > 0.05) e.face = n.x > e.x ? -1 : 1;
+    return true;
+  }
+  return false;
+}
 function findPath(tx, ty, ent) {
   const sx = Math.floor(P.x), sy = Math.floor(P.y);
   const dist = new Int16Array(MW * MH).fill(-1), prev = new Int32Array(MW * MH).fill(-1);
@@ -2954,9 +2991,10 @@ function update(dt, t, rdt = dt) {
       if (e.st === 'walk') {
         const dx = e.gx - e.x, dy = e.gy - e.y, d = Math.hypot(dx, dy);
         const turned = Math.abs(e.fs - e.face) < 0.4;
-        const want = turned ? sp * Math.min(1, d / 0.3 + 0.12) : 0;
+        const want = turned ? sp * (e.route && e.route.length ? 1 : Math.min(1, d / 0.3 + 0.12)) : 0;
         e.vel += (want - e.vel) * (1 - Math.exp(-dt * 3.5));
-        if (d < 0.04 || (e.walkT += dt) > 30) { e.st = 'idle'; e.tw = rnd(idle[0], idle[1]); const k = Math.random(); e.act = (QUAD[e.an] || {}).rest || e.an === 'cat' ? (k < 0.35 && e.tw > 6 ? 'rest' : k < 0.75 ? 'graze' : 'look') : (k < 0.65 ? 'graze' : 'look'); }
+        if (d < 0.1 && e.route && e.route.length) { const n = e.route.shift(); e.gx = n.x; e.gy = n.y; e.walkT = 0; if (Math.abs(n.x - e.x) > 0.08) e.face = n.x > e.x ? -1 : 1; }   // next corner of a cat's route
+        else if (d < 0.04 || (e.walkT += dt) > 30) { e.st = 'idle'; e.tw = rnd(idle[0], idle[1]); const k = Math.random(); e.act = (QUAD[e.an] || {}).rest || e.an === 'cat' ? (k < 0.35 && e.tw > 6 ? 'rest' : k < 0.75 ? 'graze' : 'look') : (k < 0.65 ? 'graze' : 'look'); }
         else { const m = Math.min(d, e.vel * dt); e.x += dx / d * m; e.y += dy / d * m; e.step = (e.step || 0) + m; }
       } else {
         e.vel += (0 - e.vel) * (1 - Math.exp(-dt * 6));
@@ -2965,7 +3003,7 @@ function update(dt, t, rdt = dt) {
           if (e.act === 'rest') { e.act = 'look'; e.tw = 1.6; }           // get up first
           else {
             e.tw = 1.5;
-            for (let i = 0; i < 8; i++) {
+            if (!(e.an === 'cat' && catRoam(e))) for (let i = 0; i < 8; i++) {
               const nx = e.hx + rnd(-1, 1) * e.r, dx = nx - e.x;
               if (Math.abs(dx) < Math.min(0.5, e.r * 0.45)) continue;                       // a walk worth taking
               if (i < 5 && Math.random() < 0.7 && (dx > 0 ? -1 : 1) !== e.face) continue;   // mostly keep going the way it faces
@@ -3588,5 +3626,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { FETCH, OKS, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();

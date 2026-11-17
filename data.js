@@ -46,6 +46,8 @@ window.DATA = {
     { id: "siryi_kit", uk: "сірий кіт", tr: "SI-ryi kit", en: "grey cat", ic: "@cat_siryi" },
     { id: "smuhastyi_kit", uk: "смугастий кіт", tr: "smu-HAS-tyi kit", en: "striped cat", ic: "@cat_smuhastyi" },
     { id: "trykolirna_kishka", uk: "триколірна кішка", tr: "try-ko-LIR-na KISH-ka", en: "calico cat", ic: "@cat_trykolirna" },
+    { id: "rudo_bilyi_kit", uk: "рудо-білий кіт", tr: "RU-do BI-lyi kit", en: "ginger-and-white cat", ic: "@cat_rudobilyi" },
+    { id: "chorno_bila_kishka", uk: "чорно-біла кішка", tr: "CHOR-no BI-la KISH-ka", en: "black-and-white cat", ic: "@cat_chornobila" },
     // --- food
     { id: "khlib", uk: "хліб", tr: "khlib", en: "bread", ic: "🍞", fact: { uk: "Хліб — усьому голова.", en: "'Bread is the head of everything,' the saying goes. Bread is treated with great respect." } },
     { id: "moloko", uk: "молоко", tr: "mo-lo-KO", en: "milk", ic: "🥛" },
@@ -268,7 +270,9 @@ window.DATA = {
     { id: "snizhok", v: "bilyi", word: "bilyi_kit", name: "Сніжок", wants: "syr", x: 17.2, y: 20.8, line: "Білий кіт хоче сир.", lineEn: "The white cat wants cheese." },
     { id: "dymok", v: "siryi", word: "siryi_kit", name: "Димок", wants: "voda", x: 26.4, y: 17.6, line: "Сірий кіт хоче воду.", lineEn: "The grey cat wants water." },
     { id: "smuhastyk", v: "smuhastyi", word: "smuhastyi_kit", name: "Смугастик", wants: "yaitse", x: 10.2, y: 21.4, line: "Смугастий кіт хоче яйце.", lineEn: "The striped cat wants an egg." },
-    { id: "murka", v: "trykolirna", word: "trykolirna_kishka", name: "Мурка", wants: "maslo", x: 27.4, y: 8.2, line: "Триколірна кішка хоче масло.", lineEn: "The calico cat wants butter." }
+    { id: "murka", v: "trykolirna", word: "trykolirna_kishka", name: "Мурка", wants: "maslo", x: 27.4, y: 8.2, line: "Триколірна кішка хоче масло.", lineEn: "The calico cat wants butter." },
+    { id: "bublyk", v: "rudobilyi", word: "rudo_bilyi_kit", name: "Бублик", wants: "varenyky", x: 12.4, y: 13.2, line: "Рудо-білий кіт хоче вареники.", lineEn: "The ginger-and-white cat wants varenyky." },
+    { id: "zirka", v: "chornobila", word: "chorno_bila_kishka", name: "Зірка", wants: "pyrih", x: 24.5, y: 19.6, line: "Чорно-біла кішка хоче пиріг.", lineEn: "The black-and-white cat wants a pie." }
   ],
 
   // Grandma Olia's letter on the title screen: the valley's story, and how to play.
