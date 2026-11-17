@@ -1102,7 +1102,6 @@ function add(e) {
   for (const [x, y] of [[3.4, 7.5], [15.3, 7.4], [26.4, 5.4], [13.3, 26.3], [32.8, 26.3]]) add({ w: 'hryb', x, y, s: 0.7, give: 'hryb', cd: 120, hide: true });
   for (const [x, y] of [[12, 8], [26, 15.5], [8, 16.5]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x });
   // Villagers.
-  add({ w: 'khata', k: 'n_olia', x: 24.5, y: 12.7, kind: 'npc', npc: 'olia', s: 1.3 });
   add({ w: 'khata', k: 'n_oksana', x: 19.5, y: 18.1, kind: 'npc', npc: 'oksana', s: 1.3 });
   add({ w: 'khata', k: 'n_taras', x: 25.3, y: 21.2, kind: 'npc', npc: 'taras', s: 1.3 });
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
@@ -1655,6 +1654,7 @@ function interact(e) {
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); return shop(); }
+  if (e.k === 'oliaHome') return wordCard('khata', { note: `🏠 <b>Хата баби Олі</b>${stage() < 3 ? " · Grandma Olia's cottage. She is inside, cooking." : ''}`, acts: [{ k: 'enter', fn: enterOlia }] });
   if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${stage() < 3 ? ' · This is your cottage.' : ''}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
   if (e.w === 'krynytsia') {
     const have = S.bag.voda || 0;
@@ -2009,7 +2009,7 @@ function talk(npc) {
 // ------------------------------------------------------------------ the guide (gentle tutorial, then your errands)
 const TUT = [
   { p: 'i_explore', ev: 'word', need: 5, en: 'Tap things around you to learn their names.' },
-  { p: 'i_talk', ev: 'olia', en: 'Follow the road east to the other cottage.' },
+  { p: 'i_talk', ev: 'olia', en: 'Follow the road east to the other cottage, tap it and go in.' },
   { p: 'i_plant', ev: 'plant', en: 'Tap a garden bed beside your cottage.' },
   { p: 'i_water', ev: 'water', en: 'Tap the bed again. Each watering uses one 💧; refill at the well.' },
   { p: 'i_harvest', ev: 'harvest', en: 'Give it a moment, then tap the bed.' },
@@ -2149,7 +2149,7 @@ function enterHome() { closeSheet(); fadeThen(enterHomeNow); }
 function exitHome() { fadeThen(exitHomeNow); }
 function enterHomeNow() {
   mode = 'home';
-  $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#homebar').style.display = 'flex';
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#decorBtn').style.display = ''; $('#homebar').style.display = 'flex';
   const mid = DECOR.stil.x * roomW() - cv.width / 2;
   roomX = mid; clampPan();
   // The first few times in, the view glides from one end of the room to the other and settles at the table,
@@ -2299,6 +2299,313 @@ function drawHome(t) {
     c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
   }
+  c.restore();
+}
+
+// ------------------------------------------------------------------ inside Grandma Olia's cottage
+// Grandma cooks indoors. Her room is drawn like yours (swipe to look around) but it is all hers: the піч
+// with her cat asleep on top, a counter where the ingredients for today's dish line up with how many she
+// has of each, and the table, which stays bare until everything is gathered and then holds the hot dish.
+// Tap anything to hear its name; tap Grandma to talk.
+const OX = { stove: 0.085, rack: 0.335, olia: 0.478, clock: 0.537, win: 0.618, table: 0.738, chest: 0.822, bed: 0.898 };
+const OLIA_PETS = ['Мурчик', 'Пушок'];
+let oliaHits = [];
+const recipeReady = R => recipeTotal(R) >= R.needs.length * NEED;
+function enterOlia() { closeSheet(); fadeThen(enterOliaNow); }
+function enterOliaNow() {
+  mode = 'olia';
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
+  // Open on the counter and Grandma; once the dish is ready, on the table.
+  const mid = (recipeReady(curRecipe()) ? OX.table : 0.372) * roomW() - cv.width / 2;
+  roomX = mid; clampPan();
+  if (panMax() > 10 && (S.oliaTours || 0) < 2) { S.oliaTours = (S.oliaTours || 0) + 1; save(); tour = { t0: nowT, mid: roomX }; roomX = 0; }
+  blip(520);
+}
+function oliaTap(sx, py) {
+  const px = sx + roomX;
+  for (let i = oliaHits.length - 1; i >= 0; i--) { const r = oliaHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return r.fn(); } }
+  blip(560, 0.05);
+}
+function drawOlia(t) {
+  const h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56, R = curRecipe(), ready = recipeReady(R), st = stage();
+  if (tour) {
+    const a = t - tour.t0, ease = k => k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2, max = panMax();
+    if (a < 0.5) roomX = 0;
+    else if (a < 2.6) roomX = ease((a - 0.5) / 2.1) * max;
+    else if (a < 3.0) roomX = max;
+    else if (a < 4.2) roomX = max + ease((a - 3.0) / 1.2) * (tour.mid - max);
+    else { roomX = tour.mid; tour = null; }
+  }
+  clampPan();
+  oliaHits = [];
+  const hit = (x, y, ww, hh, fn) => oliaHits.push({ x, y, w: ww, h: hh, fn });
+  const word = (id, o) => () => { if (W[id]) wordCard(id, o); };
+  const icon = (id, x, y, s, o) => { drawIcon(c, W[id].ic, x, y, s); hit(x - s * 0.45, y - s, s * 0.9, s * 1.03, word(id, o)); };
+  const shadow = (x, y, rx) => { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, x, y, rx, rx * 0.17); };
+  const flower = (x, y, r, col, mid) => { c.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k * 1.2566 - 1.57; circ(c, x + Math.cos(a) * r, y + Math.sin(a) * r, r * 0.72); } c.fillStyle = mid || '#f2c230'; circ(c, x, y, r * 0.55); };
+  const leaf = (x, y, r, rot) => { c.save(); c.translate(x, y); c.rotate(rot); c.fillStyle = '#5fa046'; ell(c, r, 0, r, r * 0.42); c.restore(); };
+  c.save(); c.translate(-roomX, 0);
+
+  // ---- whitewashed wall, the dark ceiling beam (сволок), and a painted Petrykivka garland under it
+  const beamT = Math.max(h * 0.075, wallB - u * 0.88), beamB = beamT + u * 0.05;
+  c.fillStyle = '#fdf5e4'; c.fillRect(0, 0, RW, wallB);
+  c.fillStyle = 'rgba(190,150,100,.05)'; for (let i = 0; i < 46; i++) ell(c, ((i * 0.618) % 1) * RW, beamB + ((i * 0.377) % 1) * (wallB - beamB), u * 0.2, u * 0.05);
+  c.fillStyle = '#efe2c8'; c.fillRect(0, 0, RW, beamT);
+  c.fillStyle = 'rgba(120,80,40,.10)'; for (let x = 0; x < RW; x += u * 0.16) c.fillRect(x, 0, u * 0.006 + 1, beamT);
+  c.fillStyle = '#7a4e26'; c.fillRect(0, beamT, RW, beamB - beamT);
+  c.fillStyle = '#5e3a1b'; c.fillRect(0, beamB - u * 0.009, RW, u * 0.009);
+  c.fillStyle = 'rgba(255,230,190,.14)'; c.fillRect(0, beamT, RW, u * 0.007);
+  c.strokeStyle = 'rgba(60,35,15,.25)'; c.lineWidth = 1; for (let x = u * 0.1; x < RW; x += u * 0.37) { c.beginPath(); c.moveTo(x, beamT + u * 0.02); c.lineTo(x + u * 0.2, beamT + u * 0.024); c.stroke(); }
+  const fk = u * 0.026, fy = beamB + fk * 2.1, vine = x => fy + Math.sin(x / fk * 0.5) * fk * 0.55;
+  c.strokeStyle = '#4f8f3a'; c.lineWidth = fk * 0.2; c.beginPath(); for (let x = 0; x <= RW; x += fk) { if (x) c.lineTo(x, vine(x)); else c.moveTo(x, vine(x)); } c.stroke();
+  for (let i = 0, x = fk * 3; x < RW; x += fk * 6.28, i++) {
+    const y = vine(x);
+    leaf(x - fk * 0.7, y, fk * 0.8, Math.PI + 0.5); leaf(x + fk * 0.7, y, fk * 0.8, -0.5);
+    if (i % 2) { c.fillStyle = '#3d7cc2'; circ(c, x - fk * 0.5, y - fk * 0.5, fk * 0.36); circ(c, x + fk * 0.4, y - fk * 0.7, fk * 0.36); circ(c, x, y - fk * 0.05, fk * 0.4); }
+    else flower(x, y - fk * 0.25, fk * 0.58, '#d43a3a');
+    c.fillStyle = '#e2a23a'; circ(c, x + fk * 3.14, vine(x + fk * 3.14) + fk * 0.5, fk * 0.26);
+  }
+
+  // ---- the window: lace along the top, the рушник draped over it, geraniums and a pysanka on the sill
+  const wx = OX.win * RW, ww = u * 0.3, wb = wallB - u * 0.17, wt = wb - u * 0.27;
+  c.save(); c.beginPath(); c.rect(wx - ww / 2, wt, ww, wb - wt); c.clip();
+  let g = c.createLinearGradient(0, wt, 0, wb); g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e8f7ff'); c.fillStyle = g; c.fillRect(wx - ww / 2, wt, ww, wb - wt);
+  c.fillStyle = '#a6dc7c'; ell(c, wx - ww * 0.2, wb, ww * 0.5, (wb - wt) * 0.3); c.fillStyle = '#8fcf6a'; ell(c, wx + ww * 0.3, wb, ww * 0.5, (wb - wt) * 0.24);
+  c.fillStyle = '#fff'; ell(c, wx - ww * 0.1 + Math.sin(t * 0.2) * ww * 0.1, wt + (wb - wt) * 0.3, ww * 0.14, (wb - wt) * 0.07);
+  for (let i = 0; i < 3; i++) sunflower(c, wx - ww * 0.3 + i * ww * 0.3, wb + 2, (wb - wt) * 0.34, t, i + 2);
+  c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i <= 8; i++) circ(c, wx - ww / 2 + i * ww / 8, wt, ww / 14);
+  c.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < 8; i++) circ(c, wx - ww / 2 + (i + 0.5) * ww / 8, wt + ww / 13, ww / 26);
+  c.restore();
+  c.strokeStyle = '#3d7cc2'; c.lineWidth = u * 0.022; c.strokeRect(wx - ww / 2, wt, ww, wb - wt);
+  c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(wx, wt); c.lineTo(wx, wb); c.moveTo(wx - ww / 2, (wt + wb) / 2); c.lineTo(wx + ww / 2, (wt + wb) / 2); c.stroke();
+  c.fillStyle = '#c08a55'; rr(c, wx - ww / 2 - u * 0.03, wb, ww + u * 0.06, u * 0.025, 4);
+  windowRushnyk(c, wx, ww, wt, wb, u);
+  hit(wx - ww * 0.75, wt - u * 0.05, ww * 1.5, (wb - wt) * 0.7, word('rushnyk'));
+  for (const [dx, col] of [[-0.085, '#e2574c'], [0.07, '#ff7aa8']]) {   // geraniums (калачики) in clay pots
+    const px = wx + dx * u, pw = u * 0.028;
+    c.fillStyle = '#b5653a'; poly(c, [[px - pw, wb - u * 0.045], [px + pw, wb - u * 0.045], [px + pw * 0.75, wb], [px - pw * 0.75, wb]]); c.fillStyle = '#9c5530'; c.fillRect(px - pw * 1.1, wb - u * 0.05, pw * 2.2, u * 0.012);
+    for (const [lx, ly, rot] of [[-0.9, -0.058, 2.6], [0.9, -0.06, 0.5], [0, -0.075, -1.57]]) leaf(px + lx * pw * 0.3, wb + ly * u, u * 0.02, rot);
+    for (const [fx, fyy] of [[-0.7, -0.092], [0.6, -0.1], [0, -0.115]]) flower(px + fx * pw, wb + fyy * u + Math.sin(t * 1.2 + fx) * 0.6, u * 0.011, col);
+  }
+  icon('pysanka', wx - u * 0.005, wb + 1, u * 0.06);
+
+  // ---- the floor, and sunlight from the window lying across it
+  c.fillStyle = '#c4935c'; c.fillRect(0, wallB, RW, h - wallB);
+  c.strokeStyle = 'rgba(120,80,40,.28)'; c.lineWidth = Math.max(2, h * 0.003);
+  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
+  c.fillStyle = '#4a90d9'; c.fillRect(0, wallB - h * 0.012, RW, h * 0.014);
+  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(0, wallB, RW, h * 0.05);
+  c.fillStyle = 'rgba(255,238,170,.17)'; poly(c, [[wx - ww * 0.45, wallB + h * 0.03], [wx + ww * 0.45, wallB + h * 0.03], [wx + ww * 0.1, wallB + h * 0.2], [wx - ww * 1.0, wallB + h * 0.2]]);
+  // the woven runner (доріжка) along the floor
+  const ry = h * 0.855, rh = Math.min(h * 0.075, u * 0.13), rx0 = RW * 0.19, rx1 = RW * 0.965, band = u * 0.021;
+  const rc = ['#c23b2f', '#c23b2f', '#fffdf5', '#2d2d2d', '#fffdf5', '#c23b2f', '#c23b2f', '#e0a93b', '#3f8a3a', '#3f8a3a', '#e0a93b'];
+  c.fillStyle = 'rgba(60,40,20,.14)'; c.fillRect(rx0, ry + rh, rx1 - rx0, h * 0.006);
+  for (let x = rx0, i = 0; x < rx1; x += band, i++) { c.fillStyle = rc[i % rc.length]; c.fillRect(x, ry, Math.min(band + 1, rx1 - x), rh); }
+  c.fillStyle = 'rgba(255,255,255,.10)'; c.fillRect(rx0, ry, rx1 - rx0, rh * 0.18); c.fillStyle = 'rgba(60,30,10,.12)'; c.fillRect(rx0, ry + rh * 0.82, rx1 - rx0, rh * 0.18);
+  c.strokeStyle = '#f3e6c8'; c.lineWidth = 1.5; for (let y = ry + 2; y < ry + rh; y += 4) { c.beginPath(); c.moveTo(rx0, y); c.lineTo(rx0 - u * 0.016, y); c.moveTo(rx1, y); c.lineTo(rx1 + u * 0.016, y); c.stroke(); }
+
+  // ---- the піч, its fire glowing, firewood and a clay pot beside it, and Мурчик asleep on top
+  const sx = OX.stove * RW, sby = h * 0.585, ss = u * 0.6;
+  shadow(sx, sby, ss * 0.42);
+  icon('pich', sx, sby, ss);
+  const fl = 0.75 + Math.sin(t * 9) * 0.12 + Math.sin(t * 5.3) * 0.1;
+  g = c.createRadialGradient(sx, sby - ss * 0.08, 0, sx, sby - ss * 0.08, ss * 0.55); g.addColorStop(0, `rgba(255,170,70,${0.3 * fl})`); g.addColorStop(1, 'rgba(255,170,70,0)'); c.fillStyle = g; c.fillRect(sx - ss, sby - ss * 0.7, ss * 2, ss * 1.1);
+  for (const [dx, dy, col] of [[-0.27, -0.3, '#d43a3a'], [0.27, -0.3, '#d43a3a']]) { leaf(sx + dx * ss - ss * 0.03, sby + dy * ss + ss * 0.03, ss * 0.028, 2.4); leaf(sx + dx * ss + ss * 0.03, sby + dy * ss + ss * 0.03, ss * 0.028, 0.7); flower(sx + dx * ss, sby + dy * ss, ss * 0.022, col); }
+  const mcx = sx + ss * 0.2, mcy = sby - ss * 0.835, mcs = u * 0.2;
+  sleepingCat(c, mcx, mcy, mcs, CATS[1], t);
+  hit(mcx - mcs * 0.45, mcy - mcs * 0.55, mcs * 0.9, mcs * 0.6, word('kit', { note: `❤️ <b>${OLIA_PETS[0]}</b>${st < 3 ? " · Grandma's cat. He sleeps on the warm stove." : ''}` }));
+  // firewood
+  const wxl = sx + ss * 0.56, wy = sby + u * 0.012;
+  shadow(wxl, wy, u * 0.075);
+  for (const [dx, dy] of [[-0.036, 0], [0, 0], [0.036, 0], [-0.018, -0.031], [0.018, -0.031], [0, -0.062]]) { c.fillStyle = '#8a5a2b'; circ(c, wxl + dx * u, wy - u * 0.018 + dy * u, u * 0.018); c.fillStyle = '#d9b07a'; circ(c, wxl + dx * u, wy - u * 0.018 + dy * u, u * 0.012); c.strokeStyle = '#b98a52'; c.lineWidth = 1; c.beginPath(); c.arc(wxl + dx * u, wy - u * 0.018 + dy * u, u * 0.006, 0, 7); c.stroke(); }
+  // the oven fork (рогач) leaning on the wall
+  c.strokeStyle = '#6b4422'; c.lineWidth = u * 0.008; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx + ss * 0.47, sby); c.lineTo(sx + ss * 0.43, sby - u * 0.36); c.stroke();
+  c.strokeStyle = '#3b3b40'; c.lineWidth = u * 0.007; c.beginPath(); c.arc(sx + ss * 0.43, sby - u * 0.385, u * 0.025, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
+  shadow(sx + ss * 0.78, sby + u * 0.03, u * 0.05);
+  icon('hlechyk', sx + ss * 0.78, sby + u * 0.035, u * 0.14);
+
+  // ---- hanging from the beam: garlic, onions, herbs, red peppers, and a string of dried mushrooms
+  const hang = (x, len, fn) => { c.strokeStyle = '#a58a5e'; c.lineWidth = Math.max(1, u * 0.003); c.beginPath(); c.moveTo(x, beamB); c.lineTo(x, beamB + len * 0.25); c.stroke(); fn(x, beamB + len * 0.2, len * 0.8); };
+  const hx0 = sx + ss * 0.52, hgap = u * 0.066;
+  hang(hx0, u * 0.24, (x, y, L) => { for (let i = 0; i < 6; i++) { c.fillStyle = '#f6f0e2'; circ(c, x + (i % 2 ? 1 : -1) * u * 0.011, y + i * L / 6, u * 0.016); c.fillStyle = '#d9cdb4'; circ(c, x + (i % 2 ? 1 : -1) * u * 0.011, y + i * L / 6 + u * 0.006, u * 0.006); } });
+  hit(hx0 - u * 0.03, beamB, u * 0.06, u * 0.24, word('chasnyk'));
+  hang(hx0 + hgap, u * 0.27, (x, y, L) => { for (let i = 0; i < 5; i++) { c.fillStyle = '#d99a3a'; circ(c, x + (i % 2 ? 1 : -1) * u * 0.013, y + i * L / 5, u * 0.021); c.fillStyle = '#f0c36a'; circ(c, x + (i % 2 ? 1 : -1) * u * 0.013 - u * 0.006, y + i * L / 5 - u * 0.006, u * 0.007); } });
+  hit(hx0 + hgap - u * 0.03, beamB, u * 0.06, u * 0.27, word('tsybulia'));
+  hang(hx0 + hgap * 2, u * 0.2, (x, y, L) => { c.strokeStyle = '#6f9a4a'; c.lineWidth = u * 0.006; for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + i * u * 0.008, y + L); c.stroke(); } c.fillStyle = '#9b6bd6'; for (let i = -3; i <= 3; i++) circ(c, x + i * u * 0.008, y + L, u * 0.006); c.fillStyle = '#c23b2f'; c.fillRect(x - u * 0.008, y + L * 0.12, u * 0.016, u * 0.008); });
+  hang(hx0 + hgap * 3, u * 0.22, (x, y, L) => { for (let i = 0; i < 6; i++) { c.save(); c.translate(x, y + i * L / 6.5); c.rotate((i % 2 ? 1 : -1) * 0.7); c.fillStyle = '#c8322b'; ell(c, 0, u * 0.014, u * 0.008, u * 0.02); c.fillStyle = '#4f8f3a'; circ(c, 0, -u * 0.003, u * 0.005); c.restore(); } });
+  const mx0 = OX.rack * RW + u * 0.36, mx1 = OX.clock * RW - u * 0.2;
+  c.strokeStyle = '#a58a5e'; c.lineWidth = Math.max(1, u * 0.003); c.beginPath(); c.moveTo(mx0, beamB); c.quadraticCurveTo((mx0 + mx1) / 2, beamB + u * 0.13, mx1, beamB); c.stroke();
+  for (let i = 1; i < 8; i++) { const k = i / 8, x = mx0 + (mx1 - mx0) * k, y = beamB + u * 0.13 * 2 * k * (1 - k) + u * 0.004; c.fillStyle = '#e8dcc0'; c.fillRect(x - u * 0.004, y, u * 0.008, u * 0.016); c.fillStyle = i % 2 ? '#9a6a3c' : '#b98452'; c.beginPath(); c.arc(x, y + u * 0.004, u * 0.014, Math.PI, 0); c.fill(); }
+  hit(mx0, beamB, mx1 - mx0, u * 0.1, word('hryb'));
+
+  // ---- the counter under the plate rack: today's ingredients in a row, each with how many Grandma has
+  const cx = OX.rack * RW, cw = u * 0.72, cby = h * 0.6, chh = u * 0.19, ctop = cby - chh, cl = cx - cw / 2;
+  // the plate rack (мисник): painted plates on top, jugs and jars of jam and pickles below
+  const b1 = ctop - u * 0.185, b2 = b1 - u * 0.14, rw = u * 0.6;
+  c.fillStyle = '#8a5a2b'; c.fillRect(cx - rw / 2 - u * 0.012, b2 - u * 0.135, u * 0.014, b1 - b2 + u * 0.155); c.fillRect(cx + rw / 2 - u * 0.002, b2 - u * 0.135, u * 0.014, b1 - b2 + u * 0.155);
+  c.fillStyle = 'rgba(138,90,43,.16)'; c.fillRect(cx - rw / 2, b2 - u * 0.13, rw, b1 - b2 + u * 0.13);
+  for (let i = 0; i < 4; i++) icon('tarilka', cx - rw * 0.36 + i * rw * 0.24, b2, u * 0.115);
+  const jar = (x, col, lid) => { c.fillStyle = 'rgba(255,255,255,.55)'; rr(c, x - u * 0.021, b1 - u * 0.062, u * 0.042, u * 0.062, u * 0.008); c.fillStyle = col; rr(c, x - u * 0.018, b1 - u * 0.048, u * 0.036, u * 0.045, u * 0.006); c.fillStyle = lid; rr(c, x - u * 0.02, b1 - u * 0.072, u * 0.04, u * 0.014, u * 0.004); c.fillStyle = '#fffdf5'; c.fillRect(x - u * 0.012, b1 - u * 0.036, u * 0.024, u * 0.014); };
+  icon('hlechyk', cx - rw * 0.37, b1 + u * 0.004, u * 0.1);
+  jar(cx - rw * 0.2, '#b3243a', '#d43a3a'); jar(cx - rw * 0.11, '#c0392b', '#fffdf5'); jar(cx - rw * 0.02, '#7fa83c', '#e0a93b'); jar(cx + rw * 0.07, '#e0a93b', '#fffdf5');
+  hit(cx + rw * 0.03, b1 - u * 0.075, u * 0.08, u * 0.075, word('med'));
+  icon('hlechyk', cx + rw * 0.2, b1 + u * 0.004, u * 0.085);
+  c.fillStyle = '#fffdf5'; for (let i = 0; i < 3; i++) { rr(c, cx + rw * 0.3 + i * u * 0.004, b1 - u * 0.03 - i * u * 0.012, u * 0.07 - i * u * 0.008, u * 0.012, u * 0.004); } c.fillStyle = '#3d7cc2'; c.fillRect(cx + rw * 0.3, b1 - u * 0.024, u * 0.07, u * 0.003);
+  for (const y of [b1, b2]) { c.fillStyle = '#a06a34'; rr(c, cx - rw / 2 - u * 0.02, y, rw + u * 0.04, u * 0.02, u * 0.005); c.fillStyle = '#fffdf5'; for (let x = cx - rw / 2; x < cx + rw / 2; x += u * 0.024) { poly(c, [[x, y + u * 0.02], [x + u * 0.024, y + u * 0.02], [x + u * 0.012, y + u * 0.038]]); } c.fillStyle = '#d43a3a'; for (let x = cx - rw / 2 + u * 0.012; x < cx + rw / 2; x += u * 0.024) circ(c, x, y + u * 0.027, u * 0.003); }
+  // the counter itself: three painted doors under a thick wooden top
+  shadow(cx, cby, cw * 0.55);
+  c.fillStyle = '#9a6a3a'; rr(c, cl, ctop, cw, chh, u * 0.012);
+  c.fillStyle = '#7d5429'; c.fillRect(cl, cby - u * 0.018, cw, u * 0.018);
+  const dw = (cw - u * 0.08) / 3;
+  for (let i = 0; i < 3; i++) {
+    const dx = cl + u * 0.02 + i * (dw + u * 0.02), dy = ctop + u * 0.055, dh = chh - u * 0.085;
+    c.fillStyle = '#b6824c'; rr(c, dx, dy, dw, dh, u * 0.008); c.strokeStyle = '#8a5a2b'; c.lineWidth = Math.max(1, u * 0.004); c.strokeRect(dx + u * 0.012, dy + u * 0.012, dw - u * 0.024, dh - u * 0.024);
+    leaf(dx + dw / 2 - u * 0.012, dy + dh / 2 + u * 0.016, u * 0.016, 2.5); leaf(dx + dw / 2 + u * 0.012, dy + dh / 2 + u * 0.016, u * 0.016, 0.6); flower(dx + dw / 2, dy + dh / 2 - u * 0.004, u * 0.013, i % 2 ? '#3d7cc2' : '#d43a3a');
+    c.fillStyle = '#5e3a1b'; circ(c, dx + dw - u * 0.022, dy + dh * 0.3, u * 0.006);
+  }
+  c.fillStyle = '#e0b272'; rr(c, cl - u * 0.016, ctop - u * 0.024, cw + u * 0.032, u * 0.034, u * 0.008);
+  c.fillStyle = '#c4935c'; c.fillRect(cl - u * 0.016, ctop + u * 0.002, cw + u * 0.032, u * 0.008);
+  const n = R.needs.length, sp = Math.min(u * 0.102, (cw - u * 0.19) / n), is = Math.min(u * 0.1, sp * 0.95), ix0 = cl + u * 0.02 + sp / 2, top = ctop - u * 0.022;
+  R.needs.forEach((id, i) => {
+    const have = recipeHave(id), full = have >= NEED, x = ix0 + i * sp;
+    c.fillStyle = 'rgba(60,40,20,.14)'; ell(c, x, top, is * 0.36, is * 0.06);
+    c.globalAlpha = have ? 1 : 0.34; drawIcon(c, W[id].ic, x, top + 1, is); c.globalAlpha = 1;
+    const pw = Math.min(u * 0.074, sp * 0.86), ph = u * 0.04, py = ctop + u * 0.012;
+    c.font = `800 ${Math.round(u * 0.03)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = 'rgba(60,40,20,.2)'; rr(c, x - pw / 2, py + 2, pw, ph, ph / 2);
+    c.fillStyle = full ? '#3f8a3a' : '#fff8ea'; rr(c, x - pw / 2, py, pw, ph, ph / 2);
+    c.fillStyle = full ? '#fff' : '#4a2c1a'; c.fillText(full ? '✓' : `${have}/${NEED}`, x, py + ph / 2 + 1);
+    hit(x - sp / 2, top - is, sp, is + ph + u * 0.04, word(id, { note: `🥣 <b>${have} / ${NEED}</b>${full ? '' : `<br><small>${(S.seeds[id] || 0) > 0 ? '🌱 ' + D.ui.plantit[0] : sourceHint(id)}</small>`}` }));
+  });
+  // her mixing bowl (макітра) at the end of the counter, the wooden spoon going round
+  const bx = cl + cw - u * 0.085, bt = top - u * 0.075, stir = Math.sin(t * 3.4);
+  c.strokeStyle = '#9b6b3c'; c.lineWidth = u * 0.009; c.lineCap = 'round'; c.beginPath(); c.moveTo(bx + u * 0.03 + stir * u * 0.02, bt - u * 0.075); c.lineTo(bx + stir * u * 0.012, bt + u * 0.03); c.stroke();
+  c.fillStyle = '#9b6b3c'; ell(c, bx + u * 0.031 + stir * u * 0.02, bt - u * 0.078, u * 0.011, u * 0.008);
+  c.fillStyle = '#a8562f'; c.beginPath(); c.moveTo(bx - u * 0.07, bt); c.quadraticCurveTo(bx - u * 0.06, top, bx - u * 0.03, top); c.lineTo(bx + u * 0.03, top); c.quadraticCurveTo(bx + u * 0.06, top, bx + u * 0.07, bt); c.closePath(); c.fill();
+  c.fillStyle = '#c56a3c'; ell(c, bx, bt, u * 0.07, u * 0.013); c.fillStyle = '#f3e3c4'; ell(c, bx, bt + u * 0.001, u * 0.058, u * 0.008);
+  c.strokeStyle = '#f3e6c8'; c.lineWidth = u * 0.004; c.beginPath(); for (let i = 0; i <= 12; i++) { const x = bx - u * 0.055 + i * u * 0.0092, y = bt + u * 0.035 + (i % 2 ? -1 : 1) * u * 0.006; if (i) c.lineTo(x, y); else c.moveTo(x, y); } c.stroke();
+
+  // ---- the cuckoo clock (ходики) with its pine-cone weights, and a tear-off calendar
+  const kx = OX.clock * RW, ky = wallB - u * 0.5, kr = u * 0.042, now2 = new Date(), swing = Math.sin(t * 3) * 0.3;
+  c.strokeStyle = '#8a7a5a'; c.lineWidth = Math.max(1, u * 0.003);
+  for (const [dx, len] of [[-0.022, 0.2], [0.022, 0.26]]) { c.beginPath(); c.moveTo(kx + dx * u, ky + kr); c.lineTo(kx + dx * u, ky + len * u); c.stroke(); c.fillStyle = '#7a4e26'; ell(c, kx + dx * u, ky + len * u + u * 0.018, u * 0.011, u * 0.02); }
+  c.save(); c.translate(kx, ky + kr); c.rotate(swing); c.strokeStyle = '#8a5a2b'; c.lineWidth = u * 0.005; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, u * 0.12); c.stroke(); c.fillStyle = '#e0a93b'; circ(c, 0, u * 0.125, u * 0.016); c.restore();
+  c.fillStyle = '#7a4e26'; poly(c, [[kx - kr * 1.55, ky - kr * 0.9], [kx, ky - kr * 2.2], [kx + kr * 1.55, ky - kr * 0.9]]);
+  c.fillStyle = '#9a6a3a'; rr(c, kx - kr * 1.25, ky - kr * 1.05, kr * 2.5, kr * 2.3, u * 0.008);
+  c.fillStyle = '#3b2f2a'; rr(c, kx - kr * 0.22, ky - kr * 1.72, kr * 0.44, kr * 0.5, kr * 0.2);
+  c.fillStyle = '#fffdf5'; circ(c, kx, ky + kr * 0.1, kr * 0.92); c.strokeStyle = '#5e3a1b'; c.lineWidth = u * 0.004; c.beginPath(); c.arc(kx, ky + kr * 0.1, kr * 0.92, 0, 7); c.stroke();
+  c.fillStyle = '#5e3a1b'; for (let i = 0; i < 12; i++) circ(c, kx + Math.sin(i * 0.5236) * kr * 0.74, ky + kr * 0.1 - Math.cos(i * 0.5236) * kr * 0.74, i % 3 ? u * 0.0025 : u * 0.0045);
+  const hand = (a, len, lw) => { c.strokeStyle = '#3b2f2a'; c.lineWidth = lw; c.beginPath(); c.moveTo(kx, ky + kr * 0.1); c.lineTo(kx + Math.sin(a) * len, ky + kr * 0.1 - Math.cos(a) * len); c.stroke(); };
+  hand((now2.getHours() % 12 + now2.getMinutes() / 60) * 0.5236, kr * 0.45, u * 0.007); hand(now2.getMinutes() * 0.10472, kr * 0.68, u * 0.005);
+  hit(kx - kr * 1.6, ky - kr * 2.2, kr * 3.2, kr * 4.4, word('hodynnyk'));
+  const qx = kx - u * 0.125, qy = ky - u * 0.02, qw = u * 0.07;
+  c.fillStyle = 'rgba(60,40,20,.15)'; c.fillRect(qx - qw / 2 + 2, qy + 3, qw, qw * 1.25);
+  c.fillStyle = '#d43a3a'; c.fillRect(qx - qw / 2, qy, qw, qw * 0.34); c.fillStyle = '#fffdf5'; c.fillRect(qx - qw / 2, qy + qw * 0.34, qw, qw * 0.9);
+  c.fillStyle = '#d43a3a'; c.font = `900 ${Math.round(qw * 0.6)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(now2.getDate()), qx, qy + qw * 0.82);
+  c.fillStyle = '#8a7a5a'; circ(c, qx, qy - u * 0.004, u * 0.005);
+
+  // ---- old family photographs with a рушник draped over them
+  const fx = OX.table * RW, fyy = wallB - u * 0.44;
+  for (const [dx, tone] of [[-0.062, '#d8c3a0'], [0.062, '#cdb893']]) {
+    const px = fx + dx * u;
+    c.fillStyle = '#6b4422'; ell(c, px, fyy, u * 0.05, u * 0.064); c.fillStyle = '#e0a93b'; ell(c, px, fyy, u * 0.044, u * 0.058); c.fillStyle = tone; ell(c, px, fyy, u * 0.038, u * 0.052);
+    c.save(); c.beginPath(); c.ellipse(px, fyy, u * 0.038, u * 0.052, 0, 0, 7); c.clip();
+    c.fillStyle = '#8f7558'; circ(c, px, fyy - u * 0.012, u * 0.016); ell(c, px, fyy + u * 0.045, u * 0.03, u * 0.032);
+    if (dx < 0) { c.fillStyle = '#6f5a44'; c.beginPath(); c.arc(px, fyy - u * 0.014, u * 0.018, Math.PI, 0); c.fill(); }   // her headscarf
+    else { c.fillStyle = '#6f5a44'; c.fillRect(px - u * 0.012, fyy - u * 0.003, u * 0.024, u * 0.004); }                   // his moustache
+    c.restore();
+  }
+  const dl = fx - u * 0.155, dr = fx + u * 0.155, dt = fyy - u * 0.105, linen = '#fffdf5', red = '#d43a3a';
+  c.fillStyle = linen; c.beginPath(); c.moveTo(dl, dt); c.quadraticCurveTo(fx, dt + u * 0.045, dr, dt); c.lineTo(dr, dt + u * 0.03); c.quadraticCurveTo(fx, dt + u * 0.075, dl, dt + u * 0.03); c.closePath(); c.fill();
+  c.strokeStyle = red; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(dl, dt + u * 0.02); c.quadraticCurveTo(fx, dt + u * 0.065, dr, dt + u * 0.02); c.stroke();
+  for (const ex of [dl - u * 0.02, dr - u * 0.02]) {
+    c.fillStyle = linen; c.fillRect(ex, dt - u * 0.004, u * 0.04, u * 0.2);
+    c.fillStyle = red; c.fillRect(ex, dt + u * 0.13, u * 0.04, u * 0.012); c.fillRect(ex, dt + u * 0.168, u * 0.04, u * 0.008);
+    c.fillStyle = '#2d2d2d'; c.fillRect(ex, dt + u * 0.15, u * 0.04, u * 0.004);
+    c.fillStyle = red; poly(c, [[ex + u * 0.02, dt + u * 0.085], [ex + u * 0.032, dt + u * 0.1], [ex + u * 0.02, dt + u * 0.115], [ex + u * 0.008, dt + u * 0.1]]);
+    c.strokeStyle = '#e8dcc6'; c.lineWidth = 1; for (let x = ex + 2; x < ex + u * 0.04; x += 3) { c.beginPath(); c.moveTo(x, dt + u * 0.196); c.lineTo(x, dt + u * 0.212); c.stroke(); }
+  }
+  c.fillStyle = '#8a5a2b'; circ(c, dl, dt, u * 0.006); circ(c, dr, dt, u * 0.006);
+  hit(dl - u * 0.02, dt - u * 0.01, dr - dl + u * 0.04, u * 0.22, word('rushnyk'));
+
+  // ---- a wreath, the wall carpet over the bed, the bed with its pillow pyramid, and slippers
+  icon('vinok', (OX.chest - 0.012) * RW, wallB - u * 0.36, u * 0.13);
+  const bedx = OX.bed * RW, bedy = h * 0.585;
+  c.fillStyle = '#6b4422'; rr(c, bedx - u * 0.26, wallB - u * 0.615, u * 0.52, u * 0.014, u * 0.005);
+  drawIcon(c, W.kylym.ic, bedx, wallB - u * 0.37, u * 0.5); hit(bedx - u * 0.26, wallB - u * 0.6, u * 0.52, u * 0.22, word('kylym'));
+  shadow(bedx, bedy, u * 0.3);
+  icon('lizhko', bedx, bedy, u * 0.58);
+  for (const dx of [-0.03, 0.012]) { const lx = bedx - u * 0.12 + dx * u, ly = bedy + u * 0.05; c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, lx, ly + u * 0.004, u * 0.022, u * 0.008); c.fillStyle = '#8f2f2a'; ell(c, lx, ly, u * 0.02, u * 0.01); c.fillStyle = '#c23b2f'; ell(c, lx + u * 0.006, ly - u * 0.004, u * 0.014, u * 0.009); c.fillStyle = '#fffdf5'; circ(c, lx + u * 0.012, ly - u * 0.008, u * 0.005); }
+
+  // ---- the bench under the window with its woven cover, the didukh, the dowry chest and the doll on it
+  const lx0 = wx - u * 0.18, lw = u * 0.36, lty = h * 0.585 - u * 0.12;
+  shadow(wx, h * 0.585, lw * 0.5);
+  c.fillStyle = '#7a4e26'; c.fillRect(lx0 + u * 0.02, lty, u * 0.022, u * 0.12); c.fillRect(lx0 + lw - u * 0.042, lty, u * 0.022, u * 0.12);
+  c.fillStyle = '#a06a34'; rr(c, lx0, lty, lw, u * 0.026, u * 0.006);
+  for (let x = lx0 + u * 0.03, i = 0; x < lx0 + lw - u * 0.03; x += u * 0.017, i++) { c.fillStyle = ['#c23b2f', '#fffdf5', '#2d2d2d', '#fffdf5', '#c23b2f', '#e0a93b'][i % 6]; c.fillRect(x, lty - u * 0.006, Math.min(u * 0.018, lx0 + lw - u * 0.03 - x), u * 0.05); }
+  shadow(fx - u * 0.1, h * 0.585, u * 0.08);
+  icon('didukh', fx - u * 0.1, h * 0.585, u * 0.34);
+  const chx = OX.chest * RW, chy = h * 0.6;
+  shadow(chx, chy, u * 0.14);
+  icon('skrynia', chx, chy, u * 0.3);
+  icon('motanka', chx + u * 0.03, chy - u * 0.2, u * 0.15);
+
+  // ---- Grandma Olia at her counter, in her apron
+  const ox = OX.olia * RW, oy = h * 0.6 + u * 0.055, sc = u * 0.0046, npcS = S.npc.olia;
+  person(c, ox, oy, NPC.olia.look, t, false, sc);
+  c.save(); c.translate(ox, oy); c.scale(sc, sc);
+  c.fillStyle = '#fffdf5'; rr(c, -9.5, -31, 19, 22, 3); c.fillStyle = '#d43a3a'; c.fillRect(-9.5, -13, 19, 2); c.fillRect(-9.5, -31, 19, 1.6);
+  flower(0, -21, 2.6, '#d43a3a'); c.fillStyle = '#4f8f3a'; ell(c, -4.5, -18, 2.2, 1); ell(c, 4.5, -18, 2.2, 1);
+  c.restore();
+  const bob = Math.sin(t * 2.5) * u * 0.006, btop = oy - u * 0.465 + bob, bR = u * 0.05;
+  const bub = npcS && npcS.mad ? '😠' : ready ? '🍽️' : npcS && npcS.q && st < 2 ? W[npcS.q].ic : npcS && npcS.q ? '❔' : '💬';
+  bubble(c, ox, btop, bR); drawIcon(c, bub, ox, btop + bR * 0.62, bR * 1.4);
+  hit(ox - u * 0.11, btop - bR, u * 0.22, oy - btop + bR, () => talk(NPC.olia));
+
+  // ---- the table with its embroidered cloth: bare until everything is gathered, then the dish, steaming
+  const tx = fx, tby = h * 0.8, tw = u * 0.6, th = u * 0.25, ttop = tby - th;
+  shadow(tx, tby, tw * 0.55);
+  for (const side of [-1, 1]) {   // a stool at each end
+    const qx2 = tx + side * (tw / 2 + u * 0.085), qy2 = tby - u * 0.012;
+    shadow(qx2, qy2, u * 0.07);
+    c.fillStyle = '#7a4e26'; c.fillRect(qx2 - u * 0.05, qy2 - u * 0.13, u * 0.016, u * 0.13); c.fillRect(qx2 + u * 0.034, qy2 - u * 0.13, u * 0.016, u * 0.13);
+    c.fillStyle = '#b6824c'; rr(c, qx2 - u * 0.065, qy2 - u * 0.15, u * 0.13, u * 0.026, u * 0.008);
+    c.fillStyle = '#c23b2f'; rr(c, qx2 - u * 0.055, qy2 - u * 0.163, u * 0.11, u * 0.018, u * 0.008);
+  }
+  c.fillStyle = '#7a4e26'; c.fillRect(tx - tw / 2 + u * 0.03, ttop, u * 0.03, th); c.fillRect(tx + tw / 2 - u * 0.06, ttop, u * 0.03, th);
+  c.fillStyle = '#a06a34'; rr(c, tx - tw / 2, ttop, tw, u * 0.03, u * 0.008);
+  const cl2 = tx - tw / 2 - u * 0.012, cw2 = tw + u * 0.024, drop = u * 0.105;
+  c.fillStyle = '#fffdf5'; rr(c, cl2, ttop - u * 0.012, cw2, drop + u * 0.012, u * 0.006);
+  c.fillStyle = '#f1e9d6'; c.fillRect(cl2, ttop + u * 0.012, cw2, u * 0.004);
+  c.fillStyle = '#d43a3a'; c.fillRect(cl2, ttop + drop - u * 0.03, cw2, u * 0.008); c.fillStyle = '#2d2d2d'; c.fillRect(cl2, ttop + drop - u * 0.017, cw2, u * 0.003);
+  for (let x = cl2 + u * 0.022, i = 0; x < cl2 + cw2 - u * 0.01; x += u * 0.044, i++) { c.fillStyle = i % 2 ? '#2d2d2d' : '#d43a3a'; poly(c, [[x, ttop + drop - u * 0.062], [x + u * 0.013, ttop + drop - u * 0.048], [x, ttop + drop - u * 0.034], [x - u * 0.013, ttop + drop - u * 0.048]]); }
+  c.fillStyle = '#fffdf5'; for (let x = cl2 + u * 0.008; x < cl2 + cw2; x += u * 0.016) circ(c, x, ttop + drop, u * 0.008);
+  if (ready) {
+    const ds = u * 0.3, dy = ttop - u * 0.004;
+    for (const side of [-1, 1]) { const px = tx + side * tw * 0.33; c.fillStyle = 'rgba(60,40,20,.12)'; ell(c, px, dy + u * 0.004, u * 0.06, u * 0.012); c.fillStyle = '#fffdf5'; ell(c, px, dy - u * 0.004, u * 0.058, u * 0.014); c.strokeStyle = '#3d7cc2'; c.lineWidth = u * 0.004; c.beginPath(); c.ellipse(px, dy - u * 0.004, u * 0.046, u * 0.01, 0, 0, 7); c.stroke(); c.strokeStyle = '#9b6b3c'; c.lineWidth = u * 0.007; c.lineCap = 'round'; c.beginPath(); c.moveTo(px + side * u * 0.07, dy - u * 0.004); c.lineTo(px + side * u * 0.105, dy - u * 0.012); c.stroke(); }
+    c.fillStyle = 'rgba(60,40,20,.14)'; ell(c, tx, dy + u * 0.004, ds * 0.36, ds * 0.05);
+    drawIcon(c, W[R.dish].ic, tx, dy + u * 0.006, ds);
+    for (let i = 0; i < 5; i++) { const f = (t * 0.42 + i / 5) % 1; c.fillStyle = `rgba(255,255,255,${0.6 * (1 - f) * Math.min(1, f * 5)})`; circ(c, tx + Math.sin(f * 6 + i * 2.1) * u * 0.03 + (i - 2) * u * 0.018, dy - ds * 0.62 - f * u * 0.22, u * 0.018 + f * u * 0.03); }
+    const mb = dy - ds - u * 0.13 + Math.sin(t * 2.5 + 1) * u * 0.006;
+    bubble(c, tx, mb, bR); drawIcon(c, '🍽️', tx, mb + bR * 0.62, bR * 1.4);
+  }
+  hit(cl2, ttop - (ready ? u * 0.55 : u * 0.03), cw2, th + (ready ? u * 0.55 : u * 0.03), ready ? () => talk(NPC.olia) : word('stil'));
+
+  // ---- her knitting basket, and the kitten Пушок with a ball of wool
+  const yx = (OX.olia + 0.06) * RW, yy = h * 0.915;
+  shadow(yx, yy, u * 0.09);
+  for (const [dx, dy, col] of [[-0.03, -0.085, '#d43a3a'], [0.03, -0.09, '#3d7cc2'], [0, -0.105, '#e0a93b']]) { c.fillStyle = col; circ(c, yx + dx * u, yy + dy * u, u * 0.032); c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1.2; for (let i = -1; i <= 1; i++) { c.beginPath(); c.arc(yx + dx * u, yy + dy * u + i * u * 0.02, u * 0.03, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke(); } }
+  c.strokeStyle = '#d8d2c4'; c.lineWidth = u * 0.005; c.lineCap = 'round'; c.beginPath(); c.moveTo(yx - u * 0.05, yy - u * 0.15); c.lineTo(yx + u * 0.03, yy - u * 0.05); c.moveTo(yx + u * 0.06, yy - u * 0.15); c.lineTo(yx - u * 0.02, yy - u * 0.05); c.stroke();
+  c.fillStyle = '#b98452'; c.beginPath(); c.moveTo(yx - u * 0.075, yy - u * 0.07); c.lineTo(yx + u * 0.075, yy - u * 0.07); c.quadraticCurveTo(yx + u * 0.065, yy, yx + u * 0.045, yy); c.lineTo(yx - u * 0.045, yy); c.quadraticCurveTo(yx - u * 0.065, yy, yx - u * 0.075, yy - u * 0.07); c.fill();
+  c.strokeStyle = '#8a5a2b'; c.lineWidth = 1.2; for (let i = 1; i < 4; i++) { c.beginPath(); c.moveTo(yx - u * 0.07, yy - u * 0.07 + i * u * 0.017); c.lineTo(yx + u * 0.07, yy - u * 0.07 + i * u * 0.017); c.stroke(); }
+  c.fillStyle = '#9a6a3a'; rr(c, yx - u * 0.08, yy - u * 0.08, u * 0.16, u * 0.016, u * 0.008);
+  const px2 = yx + u * 0.21, bat = Math.sin(t * 2.2), ballx = yx + u * 0.115 + bat * u * 0.012;
+  c.strokeStyle = '#d43a3a'; c.lineWidth = u * 0.004; c.beginPath(); c.moveTo(yx + u * 0.02, yy - u * 0.08); c.quadraticCurveTo(yx + u * 0.07, yy + u * 0.02, ballx, yy - u * 0.02); c.stroke();
+  c.fillStyle = 'rgba(60,40,20,.14)'; ell(c, ballx, yy + u * 0.004, u * 0.026, u * 0.006);
+  c.fillStyle = '#d43a3a'; circ(c, ballx, yy - u * 0.024, u * 0.025); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.2; c.beginPath(); c.arc(ballx, yy - u * 0.024, u * 0.016, bat, bat + 2.4); c.stroke();
+  cat(c, px2, yy, u * 0.17, CATS[0], t, 0.7, -1);
+  hit(px2 - u * 0.08, yy - u * 0.19, u * 0.16, u * 0.2, word('kit', { note: `❤️ <b>${OLIA_PETS[1]}</b>${st < 3 ? " · Grandma's kitten. He loves her wool." : ''}` }));
+
   c.restore();
 }
 
@@ -2503,7 +2810,12 @@ function drawWorld(t) {
     }
     const wd = S.words[e.w];
     if (e.kind === 'home') { homeSign(c, x, y - e.s * T * 0.5, t); if (near) label(c, 'Моя хата' + (stage() < 3 ? ' · My cottage' : ''), x, y + 16); }
-    else if (e.k === 'oliaHome') { if (near) label(c, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''), x, y + 16); }
+    else if (e.k === 'oliaHome') {
+      if (near) label(c, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''), x, y + 16);
+      const n = S.npc.olia, top = y - T * 1.55 + Math.sin(t * 2.5 + e.x) * 3;   // over her door
+      const bub = n && n.mad ? '😠' : recipeReady(curRecipe()) ? '🍽️' : n && n.q && stage() < 2 ? W[n.q].ic : n && n.q ? '❔' : '💬';
+      bubble(c, x, top, 19); drawIcon(c, bub, x, top + 12, 27);
+    }
     else if (wd && near && isFresh(e.w) && e.w !== 'soniashnyk') label(c, W[e.w].uk, e.labelX ? e.labelX * T : x, y + 16);
     else if (wd && near && isFresh(e.w) && e.w === 'soniashnyk' && Math.hypot(e.x - P.x, e.y - P.y) < 1) label(c, W[e.w].uk, x, y + 16);
     if (isFresh(e.w) && (e.w !== 'soniashnyk' || (Math.floor(e.x) + Math.floor(e.y)) % 5 === 0)) {
@@ -2709,6 +3021,7 @@ function frame(ms) {
   musicTick(dt);
   if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
+  else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
 }
@@ -2732,7 +3045,7 @@ cv.addEventListener('pointerdown', ev => { tour = null; peeking = false; down = 
 cv.addEventListener('pointermove', ev => {
   if (!down || sheetOpen()) return;
   const k = cv.width / innerWidth;
-  if (mode === 'home') { roomX = down.rx - (ev.clientX - down.x) * k; clampPan(); return; }
+  if (mode !== 'world') { roomX = down.rx - (ev.clientX - down.x) * k; clampPan(); return; }
   // Outdoors: drag to look around.
   if (!running) return;
   if (!peeking && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 12) peeking = true;
@@ -2752,6 +3065,7 @@ cv.addEventListener('pointerup', ev => {
   if (moved > 18) return;
   const k = cv.width / innerWidth, px = ev.clientX * k, py = ev.clientY * k;
   if (mode === 'home') return homeTap(px, py);
+  if (mode === 'olia') return oliaTap(px, py);
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
   blip(e ? 700 : 560, 0.05); fxTap(e && e.kind !== 'pond' ? e.x : wx, e && e.kind !== 'pond' ? e.y : wy, !!e);
@@ -2933,5 +3247,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
