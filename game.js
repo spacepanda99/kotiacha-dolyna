@@ -1045,16 +1045,24 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   c.fillStyle = L.skirt;
   if (L.dress) { poly(c, [[-10, -32 + bob], [10, -32 + bob], [14, -8 + bob], [-13, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-13, -12 + bob, 27, 2.5); }
   else rr(c, -10, -31 + bob, 20, 22, 6);
+  // shirt from the side: embroidered collar and hem, no front placket (that faces away from us)
   c.fillStyle = L.shirt; rr(c, -9, -51 + bob, 18, 26, 7);
-  c.fillStyle = L.trim; c.fillRect(4, -49 + bob, 3, 18); c.fillRect(-9, -30 + bob, 18, 3);
-  for (let i = 0; i < 3; i++) c.fillRect(1, -46 + i * 6 + bob, 2, 2);
-  c.fillStyle = L.skin; circ(c, 1, -63 + bob, 13.6); circ(c, 14, -61 + bob, 2.4);   // head and nose
-  c.fillStyle = L.hair; c.beginPath(); c.arc(0, -64 + bob, 14.6, Math.PI * 0.55, Math.PI * 1.9); c.lineTo(5, -69 + bob); c.lineTo(-1, -58 + bob); c.closePath(); c.fill();
-  if (L.long) rr(c, -15, -66 + bob, 7, 24, 3.5);
-  if (L.long) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.beginPath(); c.arc(0, -64 + bob, 13.8, Math.PI * 1.12, Math.PI * 1.83); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10, -73 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -6, -76.5 + bob, 2.6); }
-  c.fillStyle = '#3b2f2a'; if (blink) c.fillRect(5.5, -62.6 + bob, 4, 1.3); else { circ(c, 7.5, -62 + bob, 1.8); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, 8.1, -62.7 + bob, 0.6); }
-  c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.6; c.beginPath(); c.arc(9.5, -58.5 + bob, 2.8, 0.1 * Math.PI, 0.65 * Math.PI); c.stroke();
-  c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, 5, -58 + bob, 2.6);
+  c.fillStyle = L.trim; c.fillRect(-9, -30 + bob, 18, 3); c.fillRect(-2, -51 + bob, 9, 2.5);
+  for (let i = 0; i < 3; i++) c.fillRect(-4 + i * 4, -27 + bob, 2, 1.5);
+  // The head, storybook-style: a round head that is mostly hair, with the face as a soft oval on the front
+  // third. Just an eye, a blush and a hint of a nose bump in the outline; no mouth.
+  const hy = -63 + bob;
+  c.fillStyle = L.skin; circ(c, 0, hy, 14);
+  c.save(); c.beginPath(); c.arc(0, hy, 14, 0, 7); c.clip();
+  c.fillStyle = L.hair; c.fillRect(-16, hy - 16, 32, 32);                    // hair everywhere...
+  c.fillStyle = L.skin; ell(c, 8, hy + 3.5, 9.5, 11.5);                       // ...except the face
+  c.fillStyle = L.hair; ell(c, 4, hy - 9.5, 12, 5.5);                          // fringe over the forehead
+  c.restore();
+  c.fillStyle = L.skin; circ(c, 13.6, hy + 1.2, 1.7);                          // nose, just breaking the outline
+  if (L.long) { c.fillStyle = L.hair; rr(c, -15, hy - 2, 8, 24, 4); }         // the long hair falling behind
+  if (L.long) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.lineCap = 'butt'; c.beginPath(); c.arc(0, hy, 14.2, Math.PI * 1.08, Math.PI * 1.72); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10.5, hy - 9.5, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -7, hy - 12.5, 2.6); }
+  c.fillStyle = '#3b2f2a'; if (blink) c.fillRect(6.5, hy + 0.6, 4, 1.3); else { ell(c, 8.5, hy + 1, 1.7, 2.1); c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, 9.1, hy + 0.2, 0.6); }
+  c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, 7, hy + 6, 2.6);
   if (!L.noArms) limb(arm, false);
   c.restore();
 }
