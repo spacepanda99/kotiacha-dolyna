@@ -2771,7 +2771,7 @@ function homeTap(sx, py) {
 // toy, once you have one), one sleeps in the middle of your bed (or a cat bed), one washes itself on the
 // windowsill (or up on the cat tree). The rest take the other cat beds and toys, curl up on the warm stove,
 // and any left over sit about or nap on the floor.
-const BED_CAT = [-0.06, 0.39];   // where on the bed the sleeper lies (the middle), as a share of the bed's size
+const BED_CAT = [-0.06, 0.33];   // where on the bed the sleeper lies (the middle), as a share of the bed's size
 const STOVE_CAT = [0.33, 0.825];  // the sleeper on top of the stove, as a share of the stove's size
 // The toy a cat is batting gets knocked a little each swat.
 const toyNudge = t => -Math.max(0, Math.sin(t * 4 - 0.5)) * roomU() * 0.02;
