@@ -1757,7 +1757,7 @@ function dialog(npc, steps, i = 0) {
   const face = st.me ? faceURL(ME) : faceURL(npc.look);
   const who = st.me ? (s < 3 ? 'Ти · You' : 'Ти') : npc.name + (s < 2 ? ` · ${npc.nameEn}` : '');
   const en = s < 2 ? `<div class="en">${st.en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}</button>`;
-  const choices = st.choices ? `<div class="choices">${st.choices.map((c, k) => `<button class="b ghost" data-a="choose" data-v="${k}">${c.uk}${s < 2 ? `<small>${c.en}</small>` : ''}</button>`).join('')}</div>` : '';
+  const choices = st.choices ? `<div class="choices">${st.choices.map((c, k) => `<button class="b ghost" data-a="choose" data-v="${k}">${c.uk}<small class="cen"${s < 2 ? '' : ' style="display:none"'}>${c.en}</small></button>`).join('')}</div>` : '';
   openSheet(`<div class="dlg"><img class="face" src="${face}" alt=""><div style="flex:1"><div class="who">${who}</div>
     <div class="line">${st.uk}</div>${s < 2 ? `<div class="tr">${translit(st.uk)}</div>` : ''}<div id="en">${en}</div></div></div>
     ${st.hint ? `<div class="hint">${st.hint}</div>` : ''}${choices}
@@ -1809,7 +1809,7 @@ function talkOlia(npc, n, steps) {
 // The meal: Olia's dish on the table, she calls you to eat, you say it's delicious.
 function mealScene(R) {
   const npc = NPC.olia, st = stage();
-  cur = { meal: R.id };
+  cur = { meal: R.id, en: npc.lines['ready_' + R.id].en };
   openSheet(`<div class="card">
     <div class="tag">🍽️ ${PH.smachnoho ? PH.smachnoho.uk : 'Смачного!'}</div>
     <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;margin:4px 0">
@@ -1818,8 +1818,8 @@ function mealScene(R) {
       <img src="${faceURL(ME)}" style="width:76px;height:76px;border-radius:18px;background:#e8f4d9" alt="">
     </div>
     <div class="word" style="font-size:30px">${npc.lines['ready_' + R.id].uk}</div>
-    ${st < 3 ? `<div class="en">${npc.lines['ready_' + R.id].en}</div>` : ''}
-    <div class="row">${btn('hear', 'v_olia_ready_' + R.id, '🔊', 'round blue')}${btn('eatMeal', '', `${PH.duzhe_smachno.uk}${st < 3 ? `<small>${PH.duzhe_smachno.en}</small>` : ''}`)}</div></div>`);
+    <div id="en">${st < 3 ? `<div class="en">${npc.lines['ready_' + R.id].en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}</button>`}</div>
+    <div class="row">${btn('hear', 'v_olia_ready_' + R.id, '🔊', 'round blue')}${btn('eatMeal', '', `${PH.duzhe_smachno.uk}<small class="cen"${st < 3 ? '' : ' style="display:none"'}>${PH.duzhe_smachno.en}</small>`)}</div></div>`);
   say('v_olia_ready_' + R.id);
 }
 
@@ -3168,7 +3168,7 @@ const A = {
   hearItem(v) { learn(v); say('w_' + v); },
   hearWord(v) { say('w_' + v); toast(`${W[v].uk} — ${W[v].en}`); },
   peek() { cur.peeked = true; $('#en').innerHTML = `<div class="en">${W[cur.id].en}</div>`; },
-  peekLine() { $('#en').innerHTML = `<div class="en">${cur.en}</div>`; },
+  peekLine() { $('#en').innerHTML = `<div class="en">${cur.en}</div>`; for (const el of document.querySelectorAll('#sheet .cen')) el.style.display = ''; },
   act(v) { const a = acts[+v]; if (a) a.fn(); },
   next() { const d = dlg; if (!d) return closeSheet(); const st = d.steps[d.i]; dialog(d.npc, d.steps, d.i + 1); if (st.after) st.after(); },
   choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg !== d) return; if (c.fn) { closeSheet(); c.fn(); } else if (c.then) dialog(d.npc, [...d.steps.slice(0, d.i + 1), ...c.then], d.i + 1); else dialog(d.npc, d.steps, d.i + 1); }, 1500); },
