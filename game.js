@@ -2215,7 +2215,7 @@ function helpRound(n) {
   openSheet(shopHead() + `<div class="dlg"><img class="face" src="${faceURL(NPC.oksana.look)}" alt=""><div><div class="who">${NPC.oksana.name} · ${n + 1}/5</div>
     <div class="line">${hide ? '🔊 …' : '«' + cap(w.uk) + ', будь ласка!»'}</div>${stage() < 2 ? `<div class="en">"${cap(w.en)}, please!"</div>` : ''}</div></div>
     <div class="grid" style="margin-top:14px;grid-template-columns:repeat(4,1fr)">${opts.map(k => `<button class="it" data-a="hand" data-v="${k}" style="min-height:76px"><img src="${iconURL(k)}" alt="">${stage() < 2 ? `<div class="e">${W[k].uk}</div>` : ''}</button>`).join('')}</div>
-    <div class="row">${btn('hear2', target, '🔊', 'round blue')}${btn('tab', 'food', '← ' + lab('back'), 'ghost')}</div>`);
+    <div class="row">${btn('hear2', target, '🔊', 'round blue')}</div>`);
   shopTabsKeep(keepX);
   say('w_' + target, 'p_bud_laska');
 }
