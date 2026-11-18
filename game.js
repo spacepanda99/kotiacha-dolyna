@@ -3854,7 +3854,7 @@ function enterHomeNow() {
 }
 function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
 function homeTap(sx, py) {
-  if (bed) return;
+  if (bed) { bed.tap = true; return; }
   const px = sx + roomX;
   const friends = homeCats().map(h => h.ct);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
@@ -3985,9 +3985,13 @@ function sleepingCat(c, x, y, s, C, t) {
   c.globalAlpha = 1;
   c.restore();
 }
-// Bedtime: the cats get their supper (a bowl each, hearts as you stroke them), the lights go down, she
-// sleeps, and the next morning comes up with its own weather. About eight seconds.
 let bed = null;
+// Bedtime, in four parts (about twelve seconds; tap to hurry the morning along):
+//   1. indoors, the cats' supper (and in winter the stove, lit or cold),
+//   2. the valley at night: the moon up, stars, the village windows going dark one by one, «Добраніч!»,
+//   3. the night passing: the moon sets, the sky goes pink, the sun climbs over the hills,
+//   4. morning: «Доброго ранку!», the day's weather on a little card (and a new season's banner), then
+//      back into the cottage.
 function bedText(c, uk, en, y, a) {
   if (!(a > 0)) return;   // canvas ignores a negative alpha, so a faded-out line would come back at full strength
   a = Math.min(1, a);
@@ -3997,11 +4001,80 @@ function bedText(c, uk, en, y, a) {
   if (en && stage() < 3) { c.font = `700 ${Math.round(size * 0.42)}px system-ui, sans-serif`; c.lineWidth = size * 0.1; c.strokeText(en, cv.width / 2, y + size * 0.75); c.fillText(en, cv.width / 2, y + size * 0.75); }
   c.restore();
 }
+// A soft card for the morning's weather: rounded, glassy, an icon, the word and its English.
+function bedCard(c, x, y, ic, uk, en, a, u) {
+  if (!(a > 0)) return; a = Math.min(1, a);
+  const W0 = u * 0.62, H0 = u * 0.2, s = 0.9 + 0.1 * Math.min(1, a * 1.2);
+  c.save(); c.globalAlpha = a; c.translate(x, y); c.scale(s, s);
+  c.fillStyle = 'rgba(0,0,0,.18)'; rr(c, -W0 / 2 + 4, -H0 / 2 + 6, W0, H0, H0 * 0.3);
+  c.fillStyle = 'rgba(255,250,238,.92)'; rr(c, -W0 / 2, -H0 / 2, W0, H0, H0 * 0.3);
+  c.strokeStyle = 'rgba(212,58,58,.5)'; c.lineWidth = 2; c.setLineDash([6, 5]); c.beginPath(); c.roundRect ? c.roundRect(-W0 / 2 + 7, -H0 / 2 + 7, W0 - 14, H0 - 14, H0 * 0.24) : c.rect(-W0 / 2 + 7, -H0 / 2 + 7, W0 - 14, H0 - 14); c.stroke(); c.setLineDash([]);
+  drawIcon(c, ic, -W0 * 0.3, H0 * 0.3, H0 * 0.62);
+  c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = INK; c.font = cozyFont(Math.round(H0 * 0.34)); c.fillText(uk, -W0 * 0.12, en && stage() < 3 ? -H0 * 0.1 : 0);
+  if (en && stage() < 3) { c.fillStyle = '#8a7566'; c.font = `700 ${Math.round(H0 * 0.18)}px system-ui, sans-serif`; c.fillText(en, -W0 * 0.12, H0 * 0.22); }
+  c.restore();
+}
+// The valley from the cottage window, from night (p = 0) through dawn to morning (p = 1).
+const BED_WIN = Array.from({ length: 9 }, (_, i) => ({ x: 0.08 + i * 0.105 + ((i * 37) % 7) * 0.006, off: 0.4 + ((i * 53) % 9) * 0.28 }));
+function bedValley(c, w, h, p, t, nightA, wx) {
+  const mix = (A, B, q) => { const a = parseInt(A.slice(1), 16), b = parseInt(B.slice(1), 16), r = (s) => Math.round(((a >> s) & 255) + ((((b >> s) & 255) - ((a >> s) & 255)) * q)); return `rgb(${r(16)},${r(8)},${r(0)})`; };
+  const key = (stops) => { for (let i = 1; i < stops.length; i++) if (p <= stops[i][0]) { const [p0, A] = stops[i - 1], [p1, B] = stops[i]; return mix(A, B, (p - p0) / (p1 - p0)); } return stops[stops.length - 1][1]; };
+  const top = key([[0, '#070b24'], [0.45, '#2a2d66'], [0.62, '#7a6aa8'], [0.8, '#8fc8ef'], [1, '#8fd3f4']]);
+  const low = key([[0, '#1d2552'], [0.45, '#5a4a86'], [0.62, '#f29a7a'], [0.8, '#ffd9a0'], [1, '#fdf1d6']]);
+  const sea = season(), dim = Math.max(0, 1 - p * 1.25);
+  let g = c.createLinearGradient(0, 0, 0, h * 0.72); g.addColorStop(0, top); g.addColorStop(1, low); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  // stars, twinkling, gone by morning; now and then a shooting star
+  if (dim > 0) { for (const [dx, dy, dr] of DOTS) { c.globalAlpha = dim * (0.35 + 0.65 * Math.abs(Math.sin(t * 1.2 + dx * 30))); c.fillStyle = '#fff'; circ(c, dx * w, dy * h * 0.55, 0.8 + dr * 1.8); } c.globalAlpha = 1;
+    const sq = (t * 0.35) % 1; if (sq < 0.18 && p < 0.4) { const q = sq / 0.18, sx = w * (0.2 + q * 0.4), sy = h * (0.08 + q * 0.12); c.strokeStyle = `rgba(255,255,255,${1 - q})`; c.lineWidth = 2; c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx - w * 0.08, sy - h * 0.04); c.stroke(); } }
+  // the moon goes down the sky as the night passes; the sun comes up over the hills
+  const mq = Math.min(1, p / 0.6), mx = w * (0.25 + mq * 0.55), my = h * (0.22 + Math.pow(mq, 1.6) * 0.42);
+  if (p < 0.7) { const mg2 = c.createRadialGradient(mx, my, 0, mx, my, w * 0.2); mg2.addColorStop(0, `rgba(255,248,214,${0.35 * dim})`); mg2.addColorStop(1, 'rgba(255,248,214,0)'); c.fillStyle = mg2; c.fillRect(mx - w * 0.2, my - w * 0.2, w * 0.4, w * 0.4);
+    c.fillStyle = '#fff6d8'; const mr = Math.min(w, h) * 0.07; circ(c, mx, my, mr); c.fillStyle = top; circ(c, mx + mr * 0.45, my - mr * 0.22, mr * 0.9); }   // a crescent
+  const sq2 = Math.max(0, (p - 0.5) / 0.5), sx2 = w * 0.62, sy2 = h * (0.66 - sq2 * 0.42);
+  if (sq2 > 0) { const sg = c.createRadialGradient(sx2, sy2, 0, sx2, sy2, w * 0.45); sg.addColorStop(0, 'rgba(255,214,120,.65)'); sg.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = sg; c.fillRect(0, 0, w, h);
+    c.save(); c.translate(sx2, sy2); c.rotate(t * 0.15); c.fillStyle = 'rgba(255,230,150,.35)'; for (let i = 0; i < 12; i++) { c.rotate(Math.PI / 6); poly(c, [[w * 0.07, -w * 0.012], [w * 0.16, 0], [w * 0.07, w * 0.012]]); } c.restore();
+    const sr = Math.min(w, h) * 0.09; c.fillStyle = '#ffd23f'; circ(c, sx2, sy2, sr); c.fillStyle = '#ffe98a'; circ(c, sx2 - sr * 0.2, sy2 - sr * 0.2, sr * 0.62); }
+  // clouds for a cloudy or rainy morning
+  if (p > 0.6 && (wx === 'cloud' || wx === 'rain')) { c.globalAlpha = Math.min(1, (p - 0.6) * 3); c.fillStyle = wx === 'rain' ? '#9aa7b8' : '#ffffff'; for (const [cx, cy, s] of [[0.2, 0.15, 1], [0.6, 0.1, 1.3], [0.85, 0.2, 0.9]]) { const x = (cx * w + t * 12) % (w * 1.2) - w * 0.1; ell(c, x, cy * h, w * 0.12 * s, h * 0.035 * s); ell(c, x + w * 0.06 * s, cy * h - h * 0.025 * s, w * 0.08 * s, h * 0.035 * s); ell(c, x - w * 0.06 * s, cy * h - h * 0.012 * s, w * 0.06 * s, h * 0.03 * s); } c.globalAlpha = 1; }
+  // three rolling hills, the far ones paler; the near meadow by the season
+  const GRASS = { lito: ['#7fc25a', '#5a9c3d'], vesna: ['#8fd46a', '#63ad44'], osin: ['#d9a64a', '#a87a2f'], zyma: ['#eef3fa', '#cfdcee'] }[sea];
+  const shade = (col, k2) => mix(col, '#0e1330', k2);
+  const hill = (y0, amp, ph, col) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, h); for (let i = 0; i <= 24; i++) { const x = i / 24 * w; c.lineTo(x, h * y0 - Math.sin(i / 24 * Math.PI * 2 + ph) * h * amp - Math.sin(i / 24 * Math.PI * 5 + ph * 2) * h * amp * 0.3); } c.lineTo(w, h); c.fill(); };
+  hill(0.62, 0.03, 1.2, shade(sea === 'zyma' ? '#dfe8f4' : '#9cc6a0', 0.75 * dim + 0.1));
+  // the village on the middle hill: cottages and the church, windows lit until each one's bedtime
+  hill(0.7, 0.025, 2.6, shade(sea === 'zyma' ? '#e6edf7' : GRASS[0], 0.7 * dim + 0.05));
+  for (const [i, Wn] of BED_WIN.entries()) {
+    const x = Wn.x * w, y = h * 0.69 - Math.sin(Wn.x * Math.PI * 2 + 2.6) * h * 0.025, s = Math.min(w, h) * (0.07 + (i % 3) * 0.012), wall = shade('#f4efe2', 0.65 * dim), roof = shade(sea === 'zyma' ? '#ffffff' : '#c9a86a', 0.65 * dim);
+    if (i === 4) {   // the church, with its domes
+      c.fillStyle = wall; c.fillRect(x - s * 0.5, y - s * 1.2, s, s * 1.2); c.fillStyle = shade('#3f8a3a', 0.6 * dim); ell(c, x, y - s * 1.35, s * 0.32, s * 0.32); poly(c, [[x - s * 0.18, y - s * 1.55], [x, y - s * 1.9], [x + s * 0.18, y - s * 1.55]]);
+      c.strokeStyle = shade('#e8c35a', 0.5 * dim); c.lineWidth = 2; c.beginPath(); c.moveTo(x, y - s * 1.9); c.lineTo(x, y - s * 2.15); c.moveTo(x - s * 0.08, y - s * 2.06); c.lineTo(x + s * 0.08, y - s * 2.06); c.stroke();
+    } else {
+      c.fillStyle = wall; c.fillRect(x - s * 0.5, y - s * 0.6, s, s * 0.6); c.fillStyle = roof; poly(c, [[x - s * 0.62, y - s * 0.58], [x, y - s * 1.05], [x + s * 0.62, y - s * 0.58]]);
+      if (p > 0.55 || i % 2) { c.fillStyle = `rgba(230,230,240,${0.35})`; for (let q = 0; q < 3; q++) { const f = (t * 0.25 + q / 3 + i * 0.1) % 1; circ(c, x + s * 0.3 + Math.sin(f * 5 + i) * 3, y - s * 1 - f * s * 1.2, s * (0.08 + f * 0.12)); } }   // chimney smoke
+    }
+    const lit = nightA < Wn.off && p < 0.5;   // windows go dark one by one as the village goes to bed
+    c.fillStyle = lit ? '#ffd27a' : shade('#7a8aa0', 0.6 * dim); c.fillRect(x - s * 0.15, y - s * 0.42, s * 0.3, s * 0.24);
+    if (lit) { const gl = c.createRadialGradient(x, y - s * 0.3, 0, x, y - s * 0.3, s * 0.8); gl.addColorStop(0, 'rgba(255,200,110,.35)'); gl.addColorStop(1, 'rgba(255,200,110,0)'); c.fillStyle = gl; c.fillRect(x - s, y - s * 1.1, s * 2, s * 1.6); }
+  }
+  hill(0.83, 0.02, 4.1, shade(GRASS[0], 0.72 * dim));
+  g = c.createLinearGradient(0, h * 0.8, 0, h); g.addColorStop(0, shade(GRASS[0], 0.72 * dim)); g.addColorStop(1, shade(GRASS[1], 0.72 * dim)); c.fillStyle = g; c.fillRect(0, h * 0.86, w, h * 0.14);
+  // sunflowers along the near fence in summer (heads up once the sun's out)
+  if (sea === 'lito' || sea === 'osin') for (let i = 0; i < 7; i++) { const x = w * (0.06 + i * 0.14), y = h * 0.9, up = Math.min(1, Math.max(0, (p - 0.5) * 2)); c.strokeStyle = shade('#4f8f3a', 0.7 * dim); c.lineWidth = 3; c.beginPath(); c.moveTo(x, h); c.lineTo(x, y - h * 0.06); c.stroke(); c.save(); c.translate(x, y - h * 0.07); c.rotate(-0.6 * (1 - up)); c.fillStyle = shade('#ffcc1a', 0.7 * dim); for (let q = 0; q < 10; q++) { const a = q * 0.628; ell(c, Math.cos(a) * h * 0.018, Math.sin(a) * h * 0.018, h * 0.012, h * 0.006); } c.fillStyle = shade('#6b4422', 0.7 * dim); circ(c, 0, 0, h * 0.012); c.restore(); }
+  // the wattle fence in front
+  c.strokeStyle = shade('#8a5a2b', 0.7 * dim); c.lineWidth = 3; for (let i = 0; i < 16; i++) { const x = i / 15 * w; c.beginPath(); c.moveTo(x, h); c.lineTo(x, h * 0.9); c.stroke(); }
+  for (const yy of [0.93, 0.96]) { c.lineWidth = 4; c.beginPath(); for (let i = 0; i <= 30; i++) { const x = i / 30 * w; c[i ? 'lineTo' : 'moveTo'](x, h * yy + Math.sin(i * 1.7) * 2); } c.stroke(); }
+  // fireflies on a summer night; birds in the morning; snow or rain if that's the weather
+  if (dim > 0.4 && sea === 'lito') for (let i = 0; i < 14; i++) { const on = Math.max(0, Math.sin(t * 1.8 + i * 2.1)); c.globalAlpha = on * dim; c.fillStyle = '#e6ff9a'; circ(c, (Math.sin(t * 0.2 + i * 7) * 0.5 + 0.5) * w, h * (0.7 + Math.sin(t * 0.3 + i) * 0.1), 2.5); c.globalAlpha = 1; }
+  if (p > 0.75 && wx !== 'rain' && wx !== 'snow') { c.strokeStyle = 'rgba(60,50,60,.7)'; c.lineWidth = 2; for (let i = 0; i < 4; i++) { const bx = ((t * 40 + i * 70) % (w + 100)) - 50, by = h * (0.2 + i * 0.05) + Math.sin(t * 2 + i) * 6, fl = Math.sin(t * 9 + i) * 5; c.beginPath(); c.moveTo(bx - 8, by - fl); c.quadraticCurveTo(bx - 3, by - 5, bx, by); c.quadraticCurveTo(bx + 3, by - 5, bx + 8, by - fl); c.stroke(); } }
+  if (wx === 'snow' || (sea === 'zyma' && p < 0.6)) { c.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 60; i++) circ(c, ((i * 83.3 + Math.sin(t * 0.8 + i) * 20) % w + w) % w, (i * 151.7 + t * 40) % h, 1.4 + (i % 3)); }
+  if (wx === 'rain' && p > 0.6) { c.strokeStyle = 'rgba(210,225,255,.5)'; c.lineWidth = 1.5; c.beginPath(); for (let i = 0; i < 70; i++) { const x = ((i * 97.3 + t * 60) % (w + 60)) - 30, y = ((i * 211.7 + t * 800) % (h + 80)) - 40; c.moveTo(x, y); c.lineTo(x - w * 0.012, y + h * 0.03); } c.stroke(); }
+}
 function drawBed(t) {
-  if (bed.t0 == null) bed.t0 = t;   // start timing on the first frame drawn
-  const c = ctx, a = t - bed.t0, d = bed.done, h = cv.height, w = cv.width, once = (k, fn) => { if (!d[k]) { d[k] = 1; fn(); } };
+  if (bed.t0 == null) { bed.t0 = t; document.body.classList.add('bedtime'); }   // start timing on the first frame drawn; the coin bar and goal line step aside
+  const c = ctx, h = cv.height, w = cv.width, d = bed.done, once = (k, fn) => { if (!d[k]) { d[k] = 1; fn(); } }, u = roomU();
+  let a = t - bed.t0;
   const cats = homeCats(), fade = (x0, x1) => Math.max(0, Math.min(1, (a - x0) / (x1 - x0)));
-  // the winter stove is lit (or not) whether or not there are cats to feed
+  // --- 1. supper indoors
   if (winter() && a > 0.4 && a < 3.6) once('warm', () => { bed.warm = (S.bag.drova || 0) >= 2; if (bed.warm) S.bag.drova -= 2; hud(); save(); if (!cats.length) say(bed.warm ? 'p_zatopy_pich' : 'p_kholodno'); });
   if ((cats.length || winter()) && a > 0.4 && a < 3.6) {
     if (cats.length) once('feed', () => say(...(winter() ? [bed.warm ? 'p_zatopy_pich' : 'p_kholodno'] : []), 'p_yizhte_kotyky'));
@@ -4011,18 +4084,38 @@ function drawBed(t) {
       const q = ((a - 0.4) * 0.8 + i * 0.23) % 1; c.globalAlpha = Math.sin(q * Math.PI); drawIcon(c, '❤️', p.x - roomX, p.y - p.s * (0.8 + q * 0.5), p.s * 0.22); c.globalAlpha = 1; });
     if (cats.length) bedText(c, PH.yizhte_kotyky.uk, PH.yizhte_kotyky.en, h * 0.2, Math.min(1, (a - 0.4) * 3, (3.6 - a) * 3));
   }
-  const night = cats.length || winter() ? 3.4 : 0.6;
-  if (a > night) { once('night', () => say('p_dobranich')); c.fillStyle = `rgba(14,14,34,${fade(night, night + 2) * 0.96})`; c.fillRect(0, 0, w, h); bedText(c, PH.dobranich.uk, PH.dobranich.en, h * 0.4, Math.min(1, (a - night) * 2, (night + 3 - a) * 2)); }
-  if (a > night + 1.2 && a < night + 3) { c.fillStyle = INK; c.font = cozyFont(Math.round(roomU() * 0.06)); c.textAlign = 'center'; for (let i = 0; i < 3; i++) { const q = ((a * 0.6) + i / 3) % 1; c.globalAlpha = Math.sin(q * Math.PI) * 0.9; c.fillStyle = '#fff8ea'; c.fillText('z', w * 0.5 + q * w * 0.12, h * 0.55 - q * h * 0.08); } c.globalAlpha = 1; }
-  if (a > night + 3) {
-    once('morning', () => { newDay(); say('p_dobroho_ranku', 'w_' + WX[S.wx].w, ...(bed.season ? ['w_' + bed.season] : [])); });
-    if (bed.season) bedText(c, `${SEASON_IC[bed.season]} ${W[bed.season].uk}`, `${W[bed.season].en} is here!`, h * 0.58, Math.min(1, (a - night - 4.2) * 2, (night + 6.5 - a) * 2));
-    c.fillStyle = `rgba(14,14,34,${0.96 * (1 - fade(night + 3, night + 4.5))})`; c.fillRect(0, 0, w, h);
-    const wx = WX[S.wx];
-    bedText(c, PH.dobroho_ranku.uk, PH.dobroho_ranku.en, h * 0.3, Math.min(1, (a - night - 3) * 2, (night + 6.5 - a) * 2));
-    bedText(c, `${wx.ic} ${W[wx.w].uk}`, W[wx.w].en, h * 0.44, Math.min(1, (a - night - 3.6) * 2, (night + 6.5 - a) * 2));
+  const N = cats.length || winter() ? 3.4 : 0.6;   // when the night outside begins
+  const T1 = N + 4.2, T2 = T1 + 3, T3 = T2 + 4.2;    // night, the night passing, morning, then back indoors
+  if (bed.tap) { bed.tap = false; if (a > T2 + 1 && a < T3 - 0.8) { bed.t0 -= T3 - 0.8 - a; a = T3 - 0.8; } }   // a tap in the morning: on with the day
+  if (a > N) {
+    // --- 2.–4. the valley, faded in over the room and out again at the end
+    const inA = fade(N, N + 1.1), outA = 1 - fade(T3 - 0.8, T3);
+    const p = a < T1 ? 0 : a < T2 ? (a - T1) / (T2 - T1) : 1;
+    if (a > T1 + 0.6) once('morning', () => newDay());   // the new day (and its weather) begins as the sky turns
+    const wx = d.morning ? S.wx : null;
+    c.save(); c.globalAlpha = inA * outA; bedValley(c, w, h, p, t, a - N, wx); c.restore();
+    // the window frame of the cottage around the view, as if you're looking out
+    c.save(); c.globalAlpha = inA * outA; c.strokeStyle = '#6b4422'; c.lineWidth = u * 0.04; c.strokeRect(u * 0.02, u * 0.02, w - u * 0.04, h - u * 0.04); c.lineWidth = u * 0.016; c.strokeStyle = 'rgba(107,68,34,.5)'; c.beginPath(); c.moveTo(w / 2, 0); c.lineTo(w / 2, h * 0.08); c.stroke(); c.restore();
+    // good night
+    if (a < T1 + 0.5) {
+      once('night', () => say('p_dobranich'));
+      const ta = Math.min(fade(N + 0.6, N + 1.4), 1 - fade(T1 - 0.4, T1 + 0.4));
+      c.save(); c.globalAlpha = Math.max(0, ta); c.font = cozyFont(Math.round(u * 0.05)); c.fillStyle = '#fff8ea'; c.textAlign = 'center';
+      for (let i = 0; i < 3; i++) { const q = ((a * 0.5) + i / 3) % 1; c.globalAlpha = Math.max(0, ta) * Math.sin(q * Math.PI); c.fillText('z', w * 0.72 + q * w * 0.1, h * 0.42 - q * h * 0.1); }
+      c.restore();
+      bedText(c, '🌙 ' + PH.dobranich.uk, PH.dobranich.en, h * 0.3, ta);
+    }
+    // good morning, the weather, a new season
+    if (d.morning) {
+      once('hello', () => say('p_dobroho_ranku', 'w_' + WX[S.wx].w, ...(bed.season ? ['w_' + bed.season] : [])));
+      const ma = Math.min(fade(T2 - 0.4, T2 + 0.4), outA), wxd = WX[S.wx];
+      bedText(c, '☀️ ' + PH.dobroho_ranku.uk, PH.dobroho_ranku.en, h * 0.26, ma);
+      bedCard(c, w / 2, h * 0.43, wxd.ic, W[wxd.w].uk, W[wxd.w].en, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u);
+      if (bed.season) bedCard(c, w / 2, h * 0.58, SEASON_IC[bed.season], W[bed.season].uk, `${W[bed.season].en} is here!`, Math.min(fade(T2 + 0.9, T2 + 1.5), outA), u);
+      if (a > T2 + 1.6 && a < T3 - 0.9 && stage() < 3) { c.save(); c.globalAlpha = 0.6 + 0.3 * Math.sin(t * 3); c.fillStyle = '#fff8ea'; c.font = `700 ${Math.round(u * 0.035)}px system-ui`; c.textAlign = 'center'; c.fillText('Tap to start the day', w / 2, h * 0.92); c.restore(); }
+    }
   }
-  if (a > night + 6.5) { bed = null; $('#homebar').style.display = 'flex'; }
+  if (a > T3) { bed = null; document.body.classList.remove('bedtime'); $('#homebar').style.display = 'flex'; }
 }
 function drawHome(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
@@ -4454,6 +4547,13 @@ function dayTick(dt) {
   C.ev = C.ev || {};
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
   if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
+  // Out after dark: two reminders to go home to bed, then she walks home by herself.
+  if (C.t >= 0.86) {
+    C.nightT = (C.nightT || 0) + dt;
+    if (C.nightT > 25 && !C.ev.rem1) { C.ev.rem1 = 1; say('p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · It’s late: go home to sleep 🏠' : ' 🏠'}`, 3600); }
+    if (C.nightT > 50 && !C.ev.rem2) { C.ev.rem2 = 1; say('w_nich', 'p_chas_spaty'); toast(`😴 ${PH.chas_spaty.uk}${stage() < 3 ? ' · She’s very sleepy. Home to bed soon!' : ''}`, 3600); }
+    if (C.nightT > 70 && !C.ev.home && !fishFx && mode === 'world') { C.ev.home = 1; toast(`🏠 ${PH.dobranich.uk}${stage() < 3 ? ' · Too sleepy: she heads home to bed.' : ''}`, 3000); P.path = []; setTimeout(() => { if (mode === 'world' && running) { const hm = ents.find(e => e.kind === 'home'); if (hm) { P.x = P.rx = hm.x; P.y = P.ry = hm.y + 1; S.x = P.x; S.y = P.y; } fadeThen(enterHomeNow); } }, 1400); }
+  }
   if (S.wx === 'rain') {   // the rain waters every bed that's planted
     let n = 0; for (const p of S.plots) if (p.c && !p.wet) { p.wet = true; p.ready = now() + 50e3; n++; }
     if (n && !C.ev.rained) { C.ev.rained = 1; learn('doshch'); toast(`🌧️ ${W.doshch.uk}${stage() < 3 ? ' · the rain watered your garden' : ''}`, 2600); save(); }
@@ -5349,7 +5449,7 @@ const A = {
     // A browser tab in full screen also reports display-mode "fullscreen", so that alone does not mean an installed app.
     const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
     const inApp = matchMedia('(display-mode: standalone), (display-mode: minimal-ui)').matches || navigator.standalone || (!inFs && matchMedia('(display-mode: fullscreen)').matches);
-    const toTitle = () => { try { festMusic.pause(); } catch (e) {} fest = null; bed = null; mg = null; chop = null; ck = null; running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
+    const toTitle = () => { try { festMusic.pause(); } catch (e) {} fest = null; bed = null; document.body.classList.remove('bedtime'); mg = null; chop = null; ck = null; running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
     if (inApp) {
       toTitle();
       try { window.close(); } catch (e) {}

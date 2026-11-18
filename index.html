@@ -183,6 +183,7 @@
   .cookline { display:flex; gap:10px; align-items:center; text-align:left; margin:6px 0; }
   .cookline img { width:58px; height:58px; border-radius:16px; background:#e8f4d9; flex:none; }
   .vchip { font-size:16px; margin:2px 0 8px; } .vchip small { color:var(--soft); font-weight:600; }
+  body.bedtime #hud, body.bedtime #guide { opacity:0; pointer-events:none; transition:opacity .6s; }
   .cookpad { position:relative; height:210px; border-radius:20px; background:radial-gradient(circle at 50% 55%, #fbecd3, #e3c395); touch-action:none; overflow:hidden; user-select:none; -webkit-user-select:none; transition:box-shadow .3s; }
   .cookpad #ckFood { position:absolute; left:50%; top:52%; width:120px; height:120px; transform:translate(-50%,-50%); pointer-events:none; transition:transform .12s; }
   .cookpad.heat { box-shadow:inset 0 -36px 44px rgba(255,110,30,.5); }
@@ -231,12 +232,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v135</div>
+  <div class="ver">v136</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '135';</script>
-<script src="data.js?v=135"></script>
-<script src="game.js?v=135"></script>
+<script>window.APP_VERSION = '136';</script>
+<script src="data.js?v=136"></script>
+<script src="game.js?v=136"></script>
 </body>
 </html>
