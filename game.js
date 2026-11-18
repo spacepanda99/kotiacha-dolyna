@@ -183,7 +183,7 @@ try { musicOn = localStorage.getItem('kd-music') !== 'off'; } catch (e) {}
 function musicBtn() { for (const b of document.querySelectorAll('[data-a="music"]')) b.textContent = musicOn ? '🎵' : '🔇'; }
 // The theme starts on the title screen. An installed app is allowed to play sound straight away;
 // in a browser tab, Chrome waits for the first tap anywhere, so every tap tries again until it's playing.
-function startMusic() { if (musicOn && music.paused && !document.hidden) music.play().catch(() => {}); }
+function startMusic() { if (mode === 'fest') return; if (musicOn && music.paused && !document.hidden) music.play().catch(() => {}); }   // the festival plays its own song
 document.addEventListener('pointerdown', startMusic, true);
 document.addEventListener('keydown', startMusic, true);
 addEventListener('load', () => { musicBtn(); startMusic(); });
@@ -193,7 +193,7 @@ function musicTick(dt) {
   try { music.volume = Math.max(0, Math.min(1, musicVol)); } catch (e) {}
   if (!musicOn && musicVol < 0.01 && !music.paused) music.pause();
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) music.pause(); else startMusic(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { music.pause(); try { festMusic.pause(); } catch (e) {} } else if (mode === 'fest' && fest && fest.phase !== 'greet' && musicOn) festMusic.play().catch(() => {}); else startMusic(); });
 let actx = null;
 function blip(f = 660, d = 0.08) {
   try {
@@ -1528,7 +1528,8 @@ const REEDS = [3.55, 3.8, 4.75, 5.0, 5.85, 1.75, 2.05].map(a => { const w = pond
 // The same meadow under snow, or turned golden in autumn (made once, then reused).
 let groundW = null, groundA = null;
 function tintGround(op, col, over) { const g = document.createElement('canvas'); g.width = ground.width; g.height = ground.height; const c = g.getContext('2d'); c.drawImage(ground, 0, 0); c.globalCompositeOperation = op; c.fillStyle = col; c.fillRect(0, 0, g.width, g.height); c.globalCompositeOperation = 'source-over'; if (over) { c.fillStyle = over; c.fillRect(0, 0, g.width, g.height); } return g; }
-function seasonGround() { const s = season(); if (s === 'zyma') return groundW || (groundW = tintGround('screen', 'rgb(176,186,210)', 'rgba(248,251,255,.55)')); if (s === 'osin') return groundA || (groundA = tintGround('multiply', 'rgb(255,218,156)', null)); return ground; }
+function seasonGround() { const s = season(); if (s !== 'zyma') groundW = null; if (s !== 'osin') groundA = null;   // a phone shouldn't hold big ground copies it isn't using
+  if (s === 'zyma') return groundW || (groundW = tintGround('screen', 'rgb(176,186,210)', 'rgba(248,251,255,.55)')); if (s === 'osin') return groundA || (groundA = tintGround('multiply', 'rgb(255,218,156)', null)); return ground; }
 // Winter: the pond freezes over, and the flowers, wheat, butterflies, bees, frogs and ducks are gone (the
 // stork and the swallows have flown south).
 const WINTER_GONE = new Set(['kvitka', 'soniashnyk', 'mak', 'pshenytsia', 'hryb', 'malva', 'chornobryvtsi', 'metelyk', 'bdzhola', 'ryba', 'zhaba', 'kachka', 'lastivka', 'leleka']);
@@ -2451,6 +2452,8 @@ function helpRound(n) {
 // ------------------------------------------------------------------ villagers
 function sourceHint(id) {
   if (stage() >= 3) return '';
+  if (id === 'drova') return '🪓 Chop firewood at the block by your cottage.';
+  if (winter() && D.shop.veg[id]) return '❄️ Nothing grows in winter: buy it at the market («Овочі»).';
   if (D.shop.seeds[id]) return '🌱 Grow it in your garden. Seeds are at the market.';
   if (D.shop.food[id]) return '🧺 Oksana sells it at the market.';
   if (id === 'kalyna') return '🌿 Kalyna bushes grow in the valley.';
@@ -2618,6 +2621,7 @@ const mgPre = () => winter() ? 'mgw_' : 'mg_';
 let mg = null;
 function mgInvite(npc) {
   if (sheetOpen()) return;
+  S.cd['mg_' + npc.id] = Math.max(S.cd['mg_' + npc.id] || 0, now() + 60e3);
   const L = npc.lines[mgPre() + 'invite'], st = stage();
   openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     <div class="row">${btn('hear', `v_${npc.id}_${mgPre()}invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>`);
@@ -3068,6 +3072,7 @@ function talk(npc) {
   if (npc.id === 'olia') return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
   const quest = id => ({ uk: D.payLine.uk.replace('%s', W[id].acc || W[id].uk), en: D.payLine.en.replace('%s', (MASS.includes(id) ? 'some ' : 'a ') + W[id].en).replace('a a', 'an a').replace('a o', 'an o').replace('a e', 'an e'), clip: `qp_${npc.id}_${id}`, hint: (stage() < 2 ? `<img src="${iconURL(id)}" style="width:34px;height:34px;vertical-align:middle" alt=""> ` : '') + sourceHint(id) });
+  if (n.q && winter() && WINTER_GONE.has(n.q) && !(S.bag[n.q] > 0)) { n.q = 'drova'; learn('drova'); }
   if (n.q) {
     if ((S.bag[n.q] || 0) > 0) {
       const item = n.q;
@@ -3867,6 +3872,7 @@ const WX = { snow: { w: 'snih', ic: '❄️' }, sun: { w: 'sontse', ic: '☀️'
 const DAY_RATE = 0.6 / 600;   // morning to night in about ten minutes of play
 let clockSave = 0;
 function dayTick(dt) {
+  if (winter() && S.wx === 'rain') S.wx = 'snow'; else if (!winter() && S.wx === 'snow') S.wx = 'cloud';
   const C = S.clock, was = C.t;
   C.t = Math.min(0.97, C.t + dt * DAY_RATE);
   if ((clockSave += dt) > 5) { clockSave = 0; save(); }
@@ -4253,10 +4259,22 @@ function drawWorld(t) {
 // Each season has its festival: Kupala in summer, Obzhynky in autumn, Christmas Eve in winter, Easter in spring.
 const FEST_OF = ['kupala', 'obzhynky', 'sviatvechir', 'velykden'];
 const festKey = () => Math.floor(((S.clock.day || 1) - 1) / (SEASON_DAYS * 4)) * 4 + seasonIx();
-function festSync() { const k = festKey(); if (S.fest.key === undefined) S.fest.key = k; else if (S.fest.key !== k) S.fest = { i: S.fest.i || 0, key: k, have: {} }; }
+// What's been brought for each season's festival, kept per season (S.fest.k[key] = { have, done }), so a
+// season change or a ?season= preview never wipes what you've already handed over.
+function festNow() {
+  if (!S.fest.k) {   // an older save: its progress belongs to the real season (never a ?season= preview)
+    const real = Math.floor(((S.clock.day || 1) - 1) / (SEASON_DAYS * 4)) * 4 + Math.floor(((S.clock.day || 1) - 1) / SEASON_DAYS) % 4;
+    S.fest = { k: { [S.fest.key !== undefined ? S.fest.key : real]: { have: S.fest.have || {}, done: S.fest.done !== undefined && S.fest.done === S.fest.key } } };
+    save();
+  }
+  const k = festKey();
+  if (!S.fest.k[k]) { S.fest.k[k] = { have: {}, done: false }; for (const old of Object.keys(S.fest.k)) if (+old < k - 8) delete S.fest.k[old]; }
+  return S.fest.k[k];
+}
+const festSync = () => festNow();
 const curFest = () => { festSync(); return D.festivals.find(f => f.id === FEST_OF[seasonIx()]); };
-const festDoneNow = () => { festSync(); return S.fest.done === S.fest.key; };
-const festHave = id => Math.min(curFest().needs[id], S.fest.have[id] || 0);
+const festDoneNow = () => festNow().done;
+const festHave = id => Math.min(curFest().needs[id], festNow().have[id] || 0);
 const festReady = () => !festDoneNow() && Object.keys(curFest().needs).every(id => festHave(id) >= curFest().needs[id]);
 // A compact card (no scrolling on a phone): the festival's name, what's still needed, one line about it,
 // and the buttons.
@@ -4281,7 +4299,7 @@ function boardCard() {
 }
 function boardGive() {
   const F = curFest(); let n = 0;
-  for (const id of Object.keys(F.needs)) { const g = Math.min(S.bag[id] || 0, F.needs[id] - festHave(id)); if (g > 0) { S.bag[id] -= g; S.fest.have[id] = festHave(id) + g; n += g; useWord(id, true); } }
+  for (const id of Object.keys(F.needs)) { const g = Math.min(S.bag[id] || 0, F.needs[id] - festHave(id)); if (g > 0) { S.bag[id] -= g; festNow().have[id] = festHave(id) + g; n += g; useWord(id, true); } }
   hud(); save(); blip(880, 0.1); toast(`📋 −${n}  ${festReady() ? '🎉' : ''}`); boardCard();
 }
 let fest = null;
@@ -4325,7 +4343,7 @@ function festTap() {
 function festDone() {
   const F = fest.F, owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0;
   S.hearts += 5; if (owned) S.coins += 15; else S.home[F.reward] = (S.home[F.reward] || 0) + 1;
-  S.fest = { i: (S.fest.i || 0) + 1, key: S.fest.key, have: {}, done: S.fest.key };
+  festNow().done = true;
   closeSheet(); fest = null; mode = 'world'; hud(); save();
   try { festMusic.pause(); } catch (e) {} startMusic();   // back to the village theme
   toast(`🎉 +5 ❤️ ${owned ? ' +15 ₴' : ' · ' + W[F.reward].uk + (stage() < 3 ? ' (in your basket: place it at home)' : '')}`, 3200);
@@ -4742,7 +4760,7 @@ const A = {
     if (S.refunded && !S.refundTold) { S.refundTold = 1; save(); setTimeout(() => toast(`🛏️ Меблі вже в хаті! +${S.refunded} ₴`), 1500); } },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
-    musicBtn(); if (musicOn) { musicVol = 0; music.play().catch(() => {}); } toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
+    musicBtn(); if (mode === 'fest') { if (musicOn && fest && fest.phase !== 'greet') festMusic.play().catch(() => {}); else festMusic.pause(); } else if (musicOn) { musicVol = 0; music.play().catch(() => {}); } toast(musicOn ? '🎵 Музика · Music on' : '🔇 Тиша · Music off');
   },
   // Exit: the installed app closes completely; in a browser tab it leaves full screen and goes back to the title.
   quit() {
@@ -4750,7 +4768,7 @@ const A = {
     // A browser tab in full screen also reports display-mode "fullscreen", so that alone does not mean an installed app.
     const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
     const inApp = matchMedia('(display-mode: standalone), (display-mode: minimal-ui)').matches || navigator.standalone || (!inFs && matchMedia('(display-mode: fullscreen)').matches);
-    const toTitle = () => { running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
+    const toTitle = () => { try { festMusic.pause(); } catch (e) {} fest = null; bed = null; mg = null; chop = null; ck = null; running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
     if (inApp) {
       toTitle();
       try { window.close(); } catch (e) {}
