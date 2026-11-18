@@ -1704,6 +1704,8 @@ function smoke(c, x, y, t, k) {
 // Positions are in tiles.
 const fx = [];
 // Optional finery. On a slow phone the game turns these off by itself to stay smooth (see frame()).
+// A soft round shadow (drawn once, then stretched under everything that stands on the grass).
+const SOFT_SHADOW = (() => { const k = document.createElement('canvas'); k.width = 128; k.height = 64; const c = k.getContext('2d'), g = c.createRadialGradient(64, 32, 0, 64, 32, 64); g.addColorStop(0, 'rgba(30,40,20,.9)'); g.addColorStop(0.55, 'rgba(30,40,20,.45)'); g.addColorStop(1, 'rgba(30,40,20,0)'); c.save(); c.scale(1, 0.5); c.fillStyle = g; c.fillRect(0, 0, 128, 128); c.restore(); return k; })();
 const GFX = window.__gfx = { cloud: 1, water: 1, smoke: 1, motes: 1, sway: 1 };
 function fxAdd(o) { if (fx.length < 160) fx.push(Object.assign({ a: 0, life: 0.6, vx: 0, vy: 0, g: 0, s: 6, d: 0 }, o)); }
 function fxDust(x, y) { for (let i = 0; i < 2; i++) fxAdd({ k: 'dust', x: x + rnd(-0.1, 0.1), y: y - 0.02, vx: rnd(-0.25, 0.25), vy: rnd(-0.35, -0.1), life: rnd(0.35, 0.55), s: rnd(4, 7) }); }
@@ -1712,7 +1714,11 @@ function fxBurst(x, y, ic) {
   if (ic) fxAdd({ k: 'icon', ic, x, y, vy: -1.2, life: 1.1, s: 36 });
 }
 function fxHearts(x, y) { for (let i = 0; i < 6; i++) fxAdd({ k: 'icon', ic: '❤️', x: x + rnd(-0.4, 0.4), y: y - rnd(0, 0.4), vx: rnd(-0.3, 0.3), vy: rnd(-1.4, -0.8), life: rnd(0.8, 1.3), s: rnd(15, 23), d: i * 0.07 }); }
-function fxTap(x, y, hit) { fxAdd({ k: 'ring', x, y, life: 0.45, s: hit ? 34 : 24 }); }
+function fxTap(x, y, hit) {
+  fxAdd({ k: 'ring', x, y, life: 0.45, s: hit ? 34 : 24 });
+  for (let i = 0; i < (hit ? 6 : 3); i++) { const a = i / (hit ? 6 : 3) * Math.PI * 2 + Math.random() * 0.5; fxAdd({ k: 'dust', x, y, vx: Math.cos(a) * 1.6, vy: Math.sin(a) * 0.8 - 0.3, life: 0.45, s: 4 }); }   // a little puff
+  if (hit) for (let i = 0; i < 3; i++) fxAdd({ k: 'star', x: x + (Math.random() - 0.5) * 0.8, y: y - 0.4 - Math.random() * 0.6, vy: -0.8, life: 0.55, s: 5, col: ['#ffd23f', '#ffffff', '#ffb6c8'][i] });
+}
 function fxUpdate(dt) {
   for (let i = fx.length - 1; i >= 0; i--) { const p = fx[i]; if (p.d > 0) { p.d -= dt; continue; } p.a += dt; if (p.a >= p.life) { fx.splice(i, 1); continue; } p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
 }
@@ -4655,9 +4661,10 @@ let bed = null;
 function bedText(c, uk, en, y, a) {
   if (!(a > 0)) return;   // canvas ignores a negative alpha, so a faded-out line would come back at full strength
   a = Math.min(1, a);
-  const u = roomU(), size = Math.round(u * 0.085);
+  const u = roomU(); let size = Math.round(u * 0.085);
   c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
-  c.font = cozyFont(size); c.strokeStyle = INK; c.lineWidth = size * 0.2; c.strokeText(uk, cv.width / 2, y); c.fillStyle = '#fff8ea'; c.fillText(uk, cv.width / 2, y);
+  c.font = cozyFont(size); { const tw = c.measureText(uk).width; if (tw > cv.width * 0.9) { size = Math.floor(size * cv.width * 0.9 / tw); c.font = cozyFont(size); } }   // long lines shrink to fit the screen
+  c.strokeStyle = INK; c.lineWidth = size * 0.2; c.strokeText(uk, cv.width / 2, y); c.fillStyle = '#fff8ea'; c.fillText(uk, cv.width / 2, y);
   if (en && stage() < 3) { c.font = `700 ${Math.round(size * 0.42)}px system-ui, sans-serif`; c.lineWidth = size * 0.1; c.strokeText(en, cv.width / 2, y + size * 0.75); c.fillText(en, cv.width / 2, y + size * 0.75); }
   c.restore();
 }
@@ -5227,8 +5234,14 @@ function skyLight(tt) {
   return { dark, warm, dawn };
 }
 // Night, dusk and weather painted over a finished scene, in screen pixels. lights: [[x, y, r], …] warm glows.
+let vignetteSpr = null, vignetteKey = '';
 function paintSky(c, w, h, t, lights, outdoors) {
   const L = skyLight(S.clock.t), wx = S.wx;
+  if (outdoors) {
+    if (wx === 'sun' && L.dark < 0.5) { c.save(); c.globalCompositeOperation = 'soft-light'; const sg = c.createLinearGradient(0, 0, w, h); sg.addColorStop(0, `rgba(255,236,186,${0.55 * (1 - L.dark * 2)})`); sg.addColorStop(0.6, 'rgba(255,236,186,0)'); c.fillStyle = sg; c.fillRect(0, 0, w, h); c.restore(); }   // warm light from the sun, top left
+    if (vignetteKey !== w + 'x' + h) { vignetteKey = w + 'x' + h; vignetteSpr = document.createElement('canvas'); vignetteSpr.width = Math.max(1, w >> 2); vignetteSpr.height = Math.max(1, h >> 2); const vc = vignetteSpr.getContext('2d'), vw2 = vignetteSpr.width, vh2 = vignetteSpr.height, vg = vc.createRadialGradient(vw2 / 2, vh2 * 0.48, Math.min(vw2, vh2) * 0.42, vw2 / 2, vh2 * 0.48, Math.max(vw2, vh2) * 0.75); vg.addColorStop(0, 'rgba(40,30,20,0)'); vg.addColorStop(1, 'rgba(40,30,20,.32)'); vc.fillStyle = vg; vc.fillRect(0, 0, vw2, vh2); }
+    c.drawImage(vignetteSpr, 0, 0, w, h);   // a gentle darkening at the edges draws the eye in
+  }
   if (outdoors && wx !== 'sun') { c.fillStyle = wx === 'snow' ? 'rgba(200,210,228,.14)' : wx === 'rain' ? 'rgba(70,86,112,.26)' : 'rgba(110,118,135,.16)'; c.fillRect(0, 0, w, h); }
   c.save();
   c.globalCompositeOperation = 'multiply';
@@ -5463,8 +5476,15 @@ function drawWorld(t) {
   const list = ents.filter(e => !(e.hide && !ready(e)) && !goneNow(e) && e.x * T > camX - 200 && e.x * T < camX + vw + 200 && e.y * T > camY - 100 && e.y * T < camY + vh + 320);
   list.push({ me: true, y: P.ry, x: P.rx });
   list.sort((a, b) => (a.flat ? -1e3 : 0) + a.y - ((b.flat ? -1e3 : 0) + b.y));
+  let bounced = false;
+  const sunDx = (S.clock.t - 0.52) * 2, shA = 0.2 * (1 - skyLight(S.clock.t).dark * 0.85) * (S.wx === 'sun' ? 1 : 0.6);
   for (const e of list) {
+    if (bounced) { c.restore(); bounced = false; }
     const x = e.x * T, y = e.y * T;
+    // a soft shadow on the grass, thrown away from the sun: long in the morning and evening, short at noon
+    if (!e.flat && !e.lift && e.kind !== 'pond' && e.kind !== 'fly' && e.kind !== 'plot' && shA > 0.02) { const s0 = (e.me ? 1 : e.s || 1) * T, rx = s0 * (0.34 + Math.abs(sunDx) * 0.3); c.globalAlpha = shA; c.drawImage(SOFT_SHADOW, x - rx + sunDx * s0 * 0.3, y - s0 * 0.1, rx * 2, s0 * 0.2); c.globalAlpha = 1; }
+    // tapped things give a little squash-and-bounce
+    if (e.tapT && nowT - e.tapT < 0.4) { const q = (nowT - e.tapT) / 0.4, b = Math.sin(q * Math.PI) * (1 - q * 0.4); c.save(); c.translate(x, y); c.scale(1 + b * 0.08, 1 - b * 0.1 + Math.sin(q * Math.PI * 2) * 0.04); c.translate(-x, -y); bounced = true; }
     if (e.me) {
       // Draw whichever of the four views she is closest to; between views she narrows and lifts a little,
       // so each change of view reads as a turn rather than a swap.
@@ -5565,6 +5585,7 @@ function drawWorld(t) {
       c.globalAlpha = a; drawIcon(c, '✨', x + e.s * T * 0.3, y - e.s * T * (e.flat ? 0.2 : 0.75), 24); c.globalAlpha = 1;
     }
   }
+  if (bounced) { c.restore(); bounced = false; }
   if (tag) label(c, tag.text, tag.x, tag.y);
   if (P.path.length) { const g = P.path[P.path.length - 1], pu = 0.5 + 0.5 * Math.sin(t * 7); c.strokeStyle = `rgba(255,255,255,${0.55 + 0.3 * pu})`; c.lineWidth = 3; c.beginPath(); c.ellipse(g.x * T, g.y * T, 13 + pu * 3, 7 + pu * 1.6, 0, 0, 7); c.stroke(); c.fillStyle = 'rgba(255,255,255,.4)'; ell(c, g.x * T, g.y * T, 5, 2.7); }
   // cloud shadows drifting over everything (heavier on a cloudy or rainy day)
@@ -5667,7 +5688,7 @@ function startFest() {
 function festReply() {
   if (!fest) return;
   say('p_' + fest.F.reply); closeSheet();
-  const F = fest.F; fest.beats = Array.from({ length: 14 }, (_, i) => ({ t: (F.first || 0) + (i + 3) * (F.beat || 0.8), hit: 0 }));   // three beats to get going
+  const F = fest.F; fest.beats = Array.from({ length: 28 }, (_, i) => ({ t: (F.first || 0) + (i + 3) * (F.beat || 0.8), hit: 0 }));   // three beats to get going
   fest.phase = 'dance'; fest.danceT = nowT; fest.tune = false;
   try { music.pause(); if (!festMusic.src.endsWith(F.tune + '.mp3')) festMusic.src = 'music/' + F.tune + '.mp3'; festMusic.currentTime = 0; festMusic.volume = 0.6; if (musicOn) festMusic.play().then(() => { if (fest) { fest.tune = true; fest.danceT = nowT - festMusic.currentTime; } }).catch(() => {}); } catch (e) {}
   setTimeout(() => { if (fest) say('w_tantsiui'); learn('tantsiui'); }, 1300);
@@ -5678,16 +5699,25 @@ function festTap() {
     const ft = festClock(); let best = null; for (const b of f.beats) if (!b.hit && Math.abs(ft - b.t) < 0.3 && (!best || Math.abs(ft - b.t) < Math.abs(ft - best.t))) best = b;
     f.stepT = nowT; f.boost += best ? 0 : 1; festAct('tantsiui');   // every tap: the circle steps round, everyone hops, «Танцюй!»
     if (best) { best.hit = Math.abs(ft - best.t) < 0.12 ? 2 : 1; f.hits++; f.boost += 2.4; f.combo = (f.combo || 0) + 1; f.best = Math.max(f.best || 0, f.combo); f.hitT = nowT; f.sparks = (f.sparks || []).concat(Array.from({ length: best.hit === 2 ? 14 : 8 }, (_, i) => ({ a: i / (best.hit === 2 ? 14 : 8) * Math.PI * 2 + Math.random() * 0.3, t0: nowT }))); f.pop = { t: nowT, txt: best.hit === 2 ? PH.chudovo.uk : PH.molodets.uk }; blip(best.hit === 2 ? 990 : 820, 0.07); }
+  } else if (f.phase === 'farewell' && nowT - f.fwT > 2) { festFinish();   // a tap once the goodbye is up: on to the village
   } else if (f.phase === 'finale' && !f.jumpT) {
     f.jumpT = nowT; useWord(f.F.finale, true); f.fl = { v: f.F.finale, t: nowT }; actSub(f.F.finale, null);
     if (f.F.finale === 'spivai') say('w_spivai', 'p_koliadka'); else { say('w_stryby'); blip(660, 0.1); }
   }
 }
+const FAREWELL = { kupala: 'zi_sviatom', obzhynky: 'zi_sviatom', sviatvechir: 'z_rizdvom', velykden: 'z_velykodnem' };
 function festDone() {
+  if (!fest || fest.phase === 'farewell') return;
   const F = fest.F, owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0, dev = fest.dev;
   if (!dev) { S.hearts += 5; if (owned) S.coins += 15; else S.home[F.reward] = (S.home[F.reward] || 0) + 1; festNow().done = true; }
-  closeSheet(); fest = null; mode = 'world'; document.body.classList.remove('scene'); hud(); save();
-  try { festMusic.pause(); } catch (e) {} startMusic();   // back to the village theme
+  closeSheet(); hud(); save();
+  fest.phase = 'farewell'; fest.fwT = nowT; fest.fwToast = { dev, owned }; fest.burst = [];
+  say('p_' + (FAREWELL[F.id] || 'zi_sviatom'), 'p_do_zustrichi');
+}
+// The end of the farewell: back to the village with its theme.
+function festFinish() {
+  const f = fest; if (!f || f.finishing) return; f.finishing = true; const F = f.F, { dev, owned } = f.fwToast || {};
+  fadeThen(() => { fest = null; mode = 'world'; document.body.classList.remove('scene'); hud(); save(); try { festMusic.pause(); } catch (e) {} startMusic(); });
   toast(dev ? '🛠️ ' + W[F.id].uk : `🎉 +5 ❤️ ${owned ? ' +15 ₴' : ' · ' + W[F.reward].uk + (stage() < 3 ? ' (in your basket: place it at home)' : '')}`, 3200);
 }
 // A crackling bonfire: logs, three tongues of flame and sparks.
@@ -5850,6 +5880,11 @@ function drawFest(t) {
   const dark = F.sky === 'night' || F.sky === 'snow';
   if (dark) { for (const [dx, dy, dr] of DOTS) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.3 + dx * 20)); c.fillStyle = '#fff'; circ(c, dx * w, dy * h * 0.45, 0.8 + dr * 1.6); } c.globalAlpha = 1; c.fillStyle = '#fff6d8'; circ(c, w * 0.82, h * 0.13, u * 0.05); }
   else { c.fillStyle = 'rgba(255,255,255,.85)'; ell(c, w * 0.25 + Math.sin(t * 0.1) * 20, h * 0.14, u * 0.12, u * 0.035); ell(c, w * 0.72, h * 0.2, u * 0.09, u * 0.028); }
+  {   // far hills, paler with distance, and a slow high cloud layer behind the nearer clouds
+    const HZ = { night: ['#22305e', '#2c3c70', '#36497e'], snow: ['#3a5584', '#4d6b98', '#6584ad'], gold: ['#e8b26a', '#d9a05a', '#c98f4c'], spring: ['#b8dcef', '#9fd0b8', '#86c49a'] }[F.sky] || ['#b8dcef', '#9fd0b8', '#86c49a'];
+    if (!dark) { c.fillStyle = 'rgba(255,255,255,.45)'; for (let i = 0; i < 3; i++) { const x = ((i * 0.41 + t * 0.004) % 1.3 - 0.15) * w; ell(c, x, h * (0.08 + i * 0.03), u * 0.22, u * 0.025); } }
+    HZ.forEach((col, i) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, h * 0.5); for (let j = 0; j <= 16; j++) { const x = j / 16 * w; c.lineTo(x, h * (0.43 + i * 0.022) - Math.sin(j / 16 * Math.PI * (2 + i) + i * 1.7) * h * (0.025 - i * 0.005)); } c.lineTo(w, h * 0.5); c.fill(); });
+  }
   for (const [px, sc] of [[0.14, 0.33], [0.88, 0.3], [0.5, 0.24]]) drawIcon(c, px === 0.5 ? W.tserkva.ic : W.khata.ic, w * px, h * 0.5, u * sc);
   const groundCol = F.sky === 'snow' ? ['#e8f0fb', '#cfdcee'] : dark ? ['#2f5a3a', '#244a30'] : ['#9bd673', '#7fc25a'];
   g = c.createLinearGradient(0, h * 0.47, 0, h); g.addColorStop(0, groundCol[0]); g.addColorStop(1, groundCol[1]); c.fillStyle = g; c.fillRect(0, h * 0.47, w, h * 0.53);
@@ -5870,7 +5905,7 @@ function drawFest(t) {
   const hop = f.stepT ? Math.max(0, 1 - (t - f.stepT) / 0.35) : 0;   // your tap: everyone hops
   for (const d of dancers) { d.sc = (u / 390) * 1.45 * (0.86 + 0.16 * Math.sin(d.a)); d.bob = (Math.abs(Math.sin(t * 6 + d.i)) * 4 + pulse * 5 + Math.sin(hop * Math.PI) * 12) * d.sc; }
   const WREATH = F.id === 'kupala' || F.id === 'velykden' || F.id === 'obzhynky';
-  const drawD = d => { const sc = d.sc; person(c, d.x, d.y - d.bob, d.L, t, true, sc);
+  const drawD = d => { const sc = d.sc; person(c, d.x, d.y - d.bob, f.phase === 'farewell' ? Object.assign({}, d.L, { armR: -2.5 + Math.sin(t * 9 + d.i) * 0.45 }) : d.L, t, f.phase !== 'farewell', sc);
     if (WREATH) { const hy = d.y - d.bob - sc * 76; for (let q = 0; q < 9; q++) { const a = Math.PI + q / 8 * Math.PI; c.fillStyle = ['#d43a3a', '#ffd23f', '#3d7cc2', '#ff7aa8'][q % 4]; circ(c, d.x + Math.cos(a) * sc * 13, hy + Math.sin(a) * sc * 5, sc * 3.2); } c.fillStyle = '#3f8a3a'; for (const s of [-1, 1]) ell(c, d.x + s * sc * 15, hy + sc * 2, sc * 4, sc * 2); }
     if (d.me) drawIcon(c, '❤️', d.x, d.y - sc * 88 - d.bob, u * 0.045); };
   // joined hands: an arm from each dancer to the next one round the circle
@@ -5878,14 +5913,15 @@ function drawFest(t) {
   for (let i = 0; i < ring.length; i++) { const A = ring[i], B = ring[(i + 1) % ring.length]; if (Math.abs(A.i - B.i) > 1 && !(A.i === looks.length - 1 && B.i === 0)) continue; arms.push({ A, B, back: Math.sin(A.a) + Math.sin(B.a) < 0 }); }
   const drawArm = ({ A, B }) => { const ay = A.y - A.bob - A.sc * 40, by2 = B.y - B.bob - B.sc * 40, dir = B.x > A.x ? 1 : -1, x1 = A.x + dir * A.sc * 12, x2 = B.x - dir * B.sc * 12, my = (ay + by2) / 2 + u * 0.012 + Math.sin(t * 6) * 2; c.strokeStyle = '#f3cfb0'; c.lineWidth = Math.max(2, (A.sc + B.sc) * 2.6); c.lineCap = 'round'; c.beginPath(); c.moveTo(x1, ay); c.quadraticCurveTo((x1 + x2) / 2, my, x2, by2); c.stroke(); c.fillStyle = '#f3cfb0'; circ(c, (x1 + x2) / 2, my - u * 0.005, Math.max(2, (A.sc + B.sc) * 2.4)); };
   dancers.filter(d => Math.sin(d.a) < 0).sort((a, b) => a.y - b.y).forEach(drawD);
-  arms.filter(m => m.back).forEach(drawArm);
+  const waving = f.phase === 'farewell';
+  if (!waving) arms.filter(m => m.back).forEach(drawArm);
   const S0 = u * 0.3;
   if (F.center === 'fire') bonfire(c, cx, cy, S0 * 0.75, t);
   else if (F.center === 'star') { carolStar(c, cx + S0 * 0.55, cy, S0 * 0.8, t); c.fillStyle = '#fffdf5'; rr(c, cx - S0 * 0.7, cy - S0 * 0.28, S0 * 1.1, S0 * 0.28, 6); drawIcon(c, W.kutia.ic, cx - S0 * 0.38, cy - S0 * 0.24, S0 * 0.5); drawIcon(c, W.didukh.ic, cx - S0 * 0.95, cy, S0 * 0.75); drawIcon(c, W.svichka.ic, cx, cy - S0 * 0.24, S0 * 0.32); }
   else if (F.center === 'harvest') { c.fillStyle = '#fffdf5'; rr(c, cx - S0 * 0.75, cy - S0 * 0.3, S0 * 1.5, S0 * 0.3, 6); c.fillStyle = '#d43a3a'; c.fillRect(cx - S0 * 0.75, cy - S0 * 0.12, S0 * 1.5, S0 * 0.05); drawIcon(c, W.korovai.ic, cx + S0 * 0.2, cy - S0 * 0.26, S0 * 0.6); drawIcon(c, W.didukh.ic, cx - S0 * 0.45, cy - S0 * 0.2, S0 * 0.85); }
   else { c.fillStyle = '#c99463'; ell(c, cx, cy - S0 * 0.08, S0 * 0.6, S0 * 0.18); drawIcon(c, W.paska.ic, cx, cy - S0 * 0.12, S0 * 0.62); for (let i = 0; i < 5; i++) drawIcon(c, W.pysanka.ic, cx - S0 * 0.5 + i * S0 * 0.25, cy + S0 * 0.02, S0 * 0.22); }
   dancers.filter(d => Math.sin(d.a) >= 0).sort((a, b) => a.y - b.y).forEach(drawD);
-  arms.filter(m => !m.back).forEach(drawArm);
+  if (!waving) arms.filter(m => !m.back).forEach(drawArm);
   // your cats watch from the front
   houseCats().slice(0, 3).forEach((ct, i) => cat(c, [w * 0.12, w * 0.88, w * 0.27][i], h * [0.95, 0.95, 0.99][i], u * 0.15, sitPal(ct.v), t, i, i === 1 ? -1 : 1, null));
   festScenery(c, w, h, u, t, F, 'front', 0);
@@ -5946,9 +5982,24 @@ function drawFest(t) {
         <img class="big" src="${iconURL(owned ? 'koshyk' : F.reward)}" alt="">
         <div class="hint">❤️ +5${owned ? ' · 💰 +15 ₴' : ` · ${W[F.reward].uk}${stage() < 3 ? ' for your cottage' : ''}`}</div>
         <div class="row">${btn('festDone', '', lab('backvillage'), 'blue')}</div></div>`);
-    } else if (f.done.card && !sheetOpen()) festDone();   // the reward card swiped away: still take it home
+    } else if (f.done.card && !sheetOpen() && f.phase === 'end') festDone();   // the reward card swiped away: still take it home
   }
   if (f.phase === 'greet' && f.greetAt && !sheetOpen() && nowT - f.greetAt > 0.6) f.greetCard();   // never left with no way to answer
+  if (f.phase === 'farewell') {
+    const q = t - f.fwT, k2 = u / 390;
+    // the season's send-off: confetti and sparkles (Kupala sparks, Christmas snow and stars, Easter petals, harvest gold)
+    const COLS = { kupala: ['#ffd23f', '#ff7a1f', '#ff3d3d', '#fff2b0'], obzhynky: ['#e8c35a', '#d43a3a', '#ffe07a', '#8a5a2b'], sviatvechir: ['#ffffff', '#ffd23f', '#d43a3a', '#bfe0ff'], velykden: ['#ffc2d6', '#ffffff', '#ffd23f', '#9b6bd6'] }[F.id] || ['#ffd23f', '#d43a3a', '#3d7cc2'];
+    if (Math.random() < 0.5 && f.burst.length < 14) { const bx = w * (0.15 + Math.random() * 0.7), by = h * (0.12 + Math.random() * 0.3); f.burst.push({ x: bx, y: by, t0: t, col: COLS[f.burst.length % COLS.length] }); }
+    f.burst = f.burst.filter(b => t - b.t0 < 1.4);
+    for (const b of f.burst) { const p = (t - b.t0) / 1.4; for (let i = 0; i < 14; i++) { const an = i / 14 * Math.PI * 2, r = u * 0.12 * Math.sqrt(p); c.globalAlpha = Math.max(0, 1 - p); c.fillStyle = b.col; circ(c, b.x + Math.cos(an) * r, b.y + Math.sin(an) * r + p * p * u * 0.05, (2.4 - p * 1.4) * k2 * 1.6); } } c.globalAlpha = 1;
+    for (let i = 0; i < 40; i++) { const x = ((i * 97.3 + Math.sin(t * 0.7 + i) * 30) % w + w) % w, y = (i * 63.7 + q * (60 + (i % 5) * 20) * k2 * 1.5) % h; c.save(); c.translate(x, y); c.rotate(t * 2 + i); c.fillStyle = COLS[i % COLS.length]; c.fillRect(-3 * k2 * 1.5, -1.5 * k2 * 1.5, 6 * k2 * 1.5, 3 * k2 * 1.5); c.restore(); }
+    // the greeting and the goodbye
+    const ga = Math.min(1, q * 1.5), gid = FAREWELL[F.id] || 'zi_sviatom';
+    bedText(c, '🎉 ' + PH[gid].uk, PH[gid].en, h * 0.3, ga);
+    bedText(c, PH.do_zustrichi.uk, PH.do_zustrichi.en, h * 0.44, Math.min(1, (q - 1.2) * 1.5));
+    if (q > 2.2 && stage() < 3) { c.save(); c.globalAlpha = 0.55 + 0.3 * Math.sin(t * 3); c.font = `700 ${Math.round(u * 0.034)}px system-ui`; c.textAlign = 'center'; c.fillStyle = '#fff8ea'; c.fillText('Tap to go back to the village', w / 2, h * 0.56); c.restore(); }
+    if (q > 7.5) festFinish();
+  }
   festFlash(c, w, h, u, t);
   canvasSub(c, w, h);
 }
@@ -6278,7 +6329,7 @@ cv.addEventListener('pointerup', ev => {
   if (mode === 'fest') return;   // the festival takes its taps on pointerdown, for the beat
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
-  blip(e ? 700 : 560, 0.05); fxTap(e && e.kind !== 'pond' ? e.x : wx, e && e.kind !== 'pond' ? e.y : wy, !!e);
+  blip(e ? 700 : 560, 0.05); fxTap(e && e.kind !== 'pond' ? e.x : wx, e && e.kind !== 'pond' ? e.y : wy, !!e); if (e) e.tapT = nowT;
   if (e) walkTo(e.x, e.kind === 'pond' ? wy : e.y, e); else walkTo(wx, wy, null);
 });
 
