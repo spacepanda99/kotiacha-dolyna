@@ -33,6 +33,12 @@ window.DATA = {
     { id: "korova", uk: "корова", tr: "ko-RO-va", en: "cow", ic: "🐄" },
     { id: "maslobiika", uk: "маслобійка", tr: "mas-lo-BII-ka", en: "butter churn", ic: "@maslobiika", fact: { uk: "У маслобійці довго збивають вершки, і виходить масло.", en: "In a churn you beat cream for a long time, and it turns into butter." } },
     { id: "zhorna", uk: "жорна", tr: "ZHOR-na", en: "hand mill", ic: "@zhorna", fact: { uk: "Жорна — це два круглі камені. Верхній крутять за ручку, і зерно стає борошном.", en: "Zhorna are two round millstones. You turn the top one by its handle, and the grain between them becomes flour." } },
+    { id: "ranok", uk: "ранок", tr: "RA-nok", en: "morning", ic: "🌅" },
+    { id: "vechir", uk: "вечір", tr: "VE-chir", en: "evening", ic: "🌇" },
+    { id: "nich", uk: "ніч", tr: "nich", en: "night", ic: "🌙" },
+    { id: "sontse", uk: "сонце", tr: "SON-tse", en: "sun", ic: "☀️" },
+    { id: "khmara", uk: "хмара", tr: "KHMA-ra", en: "cloud", ic: "☁️" },
+    { id: "doshch", uk: "дощ", tr: "doshch", en: "rain", ic: "🌧️" },
     { id: "kin", uk: "кінь", tr: "kin", en: "horse", ic: "🐎", fact: { uk: "Кінь був вірним другом козака.", en: "A horse was a Cossack's faithful friend. Old songs and tales are full of them." } },
     { id: "koza", uk: "коза", tr: "ko-ZA", en: "goat", ic: "🐐", fact: { uk: "На Новий рік колядники водять «козу».", en: "At New Year, carol singers go from house to house with someone dressed as a goat, to wish a good harvest." } },
     { id: "kachka", uk: "качка", tr: "KACH-ka", en: "duck", ic: "🦆" },
@@ -138,6 +144,10 @@ window.DATA = {
   // Phrases in the teacher's voice: things you say, and the guide's instructions.
   phrases: [
     { id: "pryvit", uk: "Привіт!", en: "Hi!" },
+    { id: "dobroho_ranku", uk: "Доброго ранку!", en: "Good morning!" },
+    { id: "dobranich", uk: "Добраніч!", en: "Good night!" },
+    { id: "chas_spaty", uk: "Час спати.", en: "Time for bed." },
+    { id: "yizhte_kotyky", uk: "Їжте, котики!", en: "Eat up, kitties!" },
     { id: "dobryi_den", uk: "Добрий день!", en: "Good day!" },
     { id: "diakuiu", uk: "Дякую!", en: "Thank you!" },
     { id: "bud_laska", uk: "Будь ласка.", en: "Please. / You're welcome." },

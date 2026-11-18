@@ -45,6 +45,11 @@ if (!S.recipe) S.recipe = { i: 0, have: {}, started: -1 };
 // Older saves counted each ingredient once; those that were already handed over count as complete.
 if (!S.recipe.have) { S.recipe.have = {}; for (const id of S.recipe.got || []) S.recipe.have[id] = 6; delete S.recipe.got; }
 if (!S.say) S.say = {};
+// The village day: S.clock.t runs from morning (0.27) through evening (0.78) to night (0.86+), only while
+// you're out and about with no card open. Night lasts until you go home and sleep. Each morning has its
+// own weather (S.wx): sunny, cloudy or rain, and rain waters the garden for you.
+if (!S.clock) S.clock = { day: 1, t: 0.3, ev: {} };
+if (!S.wx) S.wx = 'sun';
 if (!S.gear) S.gear = {};
 let saveT = 0;
 // Grandma cooks one dish after another and starts over from the first once she has made them all.
@@ -2827,11 +2832,13 @@ function enterHomeNow() {
   roomX = mid; clampPan();
   // The first few times in, the view glides from one end of the room to the other and settles at the table,
   // so it's clear there's more to see. Touching the screen stops it.
-  if (panMax() > 10 && (S.tours || 0) < 3) { S.tours = (S.tours || 0) + 1; save(); roomX = 0; tour = { t0: nowT, mid }; }
+  if (S.clock.t >= 0.8) { bed = { t0: null, done: {} }; $('#homebar').style.display = 'none'; }   // night: feed the cats and go to bed
+  else if (panMax() > 10 && (S.tours || 0) < 3) { S.tours = (S.tours || 0) + 1; save(); roomX = 0; tour = { t0: nowT, mid }; }
   blip(520);
 }
 function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
 function homeTap(sx, py) {
+  if (bed) return;
   const px = sx + roomX;
   const friends = homeCats().map(h => h.ct);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
@@ -2962,6 +2969,41 @@ function sleepingCat(c, x, y, s, C, t) {
   c.globalAlpha = 1;
   c.restore();
 }
+// Bedtime: the cats get their supper (a bowl each, hearts as you stroke them), the lights go down, she
+// sleeps, and the next morning comes up with its own weather. About eight seconds.
+let bed = null;
+function bedText(c, uk, en, y, a) {
+  if (!(a > 0)) return;   // canvas ignores a negative alpha, so a faded-out line would come back at full strength
+  a = Math.min(1, a);
+  const u = roomU(), size = Math.round(u * 0.085);
+  c.save(); c.globalAlpha = a; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+  c.font = cozyFont(size); c.strokeStyle = INK; c.lineWidth = size * 0.2; c.strokeText(uk, cv.width / 2, y); c.fillStyle = '#fff8ea'; c.fillText(uk, cv.width / 2, y);
+  if (en && stage() < 3) { c.font = `700 ${Math.round(size * 0.42)}px system-ui, sans-serif`; c.lineWidth = size * 0.1; c.strokeText(en, cv.width / 2, y + size * 0.75); c.fillText(en, cv.width / 2, y + size * 0.75); }
+  c.restore();
+}
+function drawBed(t) {
+  if (bed.t0 == null) bed.t0 = t;   // start timing on the first frame drawn
+  const c = ctx, a = t - bed.t0, d = bed.done, h = cv.height, w = cv.width, once = (k, fn) => { if (!d[k]) { d[k] = 1; fn(); } };
+  const cats = homeCats(), fade = (x0, x1) => Math.max(0, Math.min(1, (a - x0) / (x1 - x0)));
+  if (cats.length && a > 0.4 && a < 3.6) {
+    once('feed', () => say('p_yizhte_kotyky'));
+    cats.forEach((_, i) => { const p = catSpot(i), bx = p.x - roomX + p.s * 0.42, by = p.y;   // a bowl by each cat, and hearts
+      c.fillStyle = '#d43a3a'; ell(c, bx, by - p.s * 0.03, p.s * 0.16, p.s * 0.06); c.fillStyle = '#c99463'; ell(c, bx, by - p.s * 0.07, p.s * 0.12, p.s * 0.03);
+      const q = ((a - 0.4) * 0.8 + i * 0.23) % 1; c.globalAlpha = Math.sin(q * Math.PI); drawIcon(c, '❤️', p.x - roomX, p.y - p.s * (0.8 + q * 0.5), p.s * 0.22); c.globalAlpha = 1; });
+    bedText(c, PH.yizhte_kotyky.uk, PH.yizhte_kotyky.en, h * 0.2, Math.min(1, (a - 0.4) * 3, (3.6 - a) * 3));
+  }
+  const night = cats.length ? 3.4 : 0.6;
+  if (a > night) { once('night', () => say('p_dobranich')); c.fillStyle = `rgba(14,14,34,${fade(night, night + 2) * 0.96})`; c.fillRect(0, 0, w, h); bedText(c, PH.dobranich.uk, PH.dobranich.en, h * 0.4, Math.min(1, (a - night) * 2, (night + 3 - a) * 2)); }
+  if (a > night + 1.2 && a < night + 3) { c.fillStyle = INK; c.font = cozyFont(Math.round(roomU() * 0.06)); c.textAlign = 'center'; for (let i = 0; i < 3; i++) { const q = ((a * 0.6) + i / 3) % 1; c.globalAlpha = Math.sin(q * Math.PI) * 0.9; c.fillStyle = '#fff8ea'; c.fillText('z', w * 0.5 + q * w * 0.12, h * 0.55 - q * h * 0.08); } c.globalAlpha = 1; }
+  if (a > night + 3) {
+    once('morning', () => { newDay(); say('p_dobroho_ranku', 'w_' + WX[S.wx].w); });
+    c.fillStyle = `rgba(14,14,34,${0.96 * (1 - fade(night + 3, night + 4.5))})`; c.fillRect(0, 0, w, h);
+    const wx = WX[S.wx];
+    bedText(c, PH.dobroho_ranku.uk, PH.dobroho_ranku.en, h * 0.3, Math.min(1, (a - night - 3) * 2, (night + 6.5 - a) * 2));
+    bedText(c, `${wx.ic} ${W[wx.w].uk}`, W[wx.w].en, h * 0.44, Math.min(1, (a - night - 3.6) * 2, (night + 6.5 - a) * 2));
+  }
+  if (a > night + 6.5) { bed = null; $('#homebar').style.display = 'flex'; }
+}
 function drawHome(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
   if (tour) {
@@ -3015,6 +3057,13 @@ function drawHome(t) {
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
   }
   c.restore();
+  {   // evening and night indoors: the lamp, candle and stove glow
+    const lights = [];
+    for (const id of ['lampa', 'svichka']) if (S.decor[id]) { const r = decorRect(id); lights.push([r.cx - roomX, r.by - r.sz * (id === 'lampa' ? 0.82 : 0.6), u * 0.9]); }
+    { const r = decorRect('pich'); lights.push([r.cx - roomX, r.by - r.sz * 0.25, u * 0.55]); }
+    paintSky(c, w, h, t, lights, false);
+  }
+  if (bed) drawBed(t);
 }
 
 // ------------------------------------------------------------------ inside Grandma Olia's cottage
@@ -3374,7 +3423,64 @@ function resize() {
 addEventListener('resize', resize); resize();
 
 // dt: game time (0 while a card is open). rdt: real time, for the camera and the smoothing.
+const WX = { sun: { w: 'sontse', ic: '☀️' }, cloud: { w: 'khmara', ic: '☁️' }, rain: { w: 'doshch', ic: '🌧️' } };
+const DAY_RATE = 0.6 / 600;   // morning to night in about ten minutes of play
+let clockSave = 0;
+function dayTick(dt) {
+  const C = S.clock, was = C.t;
+  C.t = Math.min(0.97, C.t + dt * DAY_RATE);
+  if ((clockSave += dt) > 5) { clockSave = 0; save(); }
+  C.ev = C.ev || {};
+  if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
+  if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
+  if (S.wx === 'rain') {   // the rain waters every bed that's planted
+    let n = 0; for (const p of S.plots) if (p.c && !p.wet) { p.wet = true; p.ready = now() + 50e3; n++; }
+    if (n && !C.ev.rained) { C.ev.rained = 1; learn('doshch'); toast(`🌧️ ${W.doshch.uk}${stage() < 3 ? ' · the rain watered your garden' : ''}`, 2600); save(); }
+  }
+}
+// How the light looks at a time of day: dark (0 day .. 1 night), warm (golden evening), dawn (pink morning).
+function skyLight(tt) {
+  const k = (a, b, x) => Math.max(0, Math.min(1, (x - a) / (b - a)));
+  const dawn = 1 - k(0.25, 0.33, tt), warm = k(0.7, 0.79, tt) * (1 - k(0.82, 0.88, tt)), dark = k(0.79, 0.88, tt);
+  return { dark, warm, dawn };
+}
+// Night, dusk and weather painted over a finished scene, in screen pixels. lights: [[x, y, r], …] warm glows.
+function paintSky(c, w, h, t, lights, outdoors) {
+  const L = skyLight(S.clock.t), wx = S.wx;
+  if (outdoors && wx !== 'sun') { c.fillStyle = wx === 'rain' ? 'rgba(70,86,112,.26)' : 'rgba(110,118,135,.16)'; c.fillRect(0, 0, w, h); }
+  c.save();
+  c.globalCompositeOperation = 'multiply';
+  if (L.dawn > 0) { c.globalAlpha = L.dawn * 0.35; c.fillStyle = 'rgb(255,190,200)'; c.fillRect(0, 0, w, h); }
+  if (L.warm > 0) { c.globalAlpha = L.warm * 0.55; c.fillStyle = 'rgb(255,186,120)'; c.fillRect(0, 0, w, h); }
+  if (L.dark > 0) { c.globalAlpha = L.dark; c.fillStyle = outdoors ? 'rgb(64,74,140)' : 'rgb(96,90,150)'; c.fillRect(0, 0, w, h); }
+  c.globalCompositeOperation = 'lighter';
+  const glow = Math.max(L.dark, L.warm * 0.35);
+  if (glow > 0.02) for (const [x, y, r] of lights) {
+    const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(255,196,110,${0.55 * glow})`); g.addColorStop(1, 'rgba(255,196,110,0)');
+    c.globalAlpha = 1; c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  if (outdoors && L.dark > 0.3) for (let i = 0; i < 16; i++) {   // fireflies
+    const fx = (Math.sin(t * 0.21 + i * 7.1) * 0.5 + 0.5) * w, fy = (Math.sin(t * 0.17 + i * 3.3) * 0.45 + 0.52) * h, on = Math.max(0, Math.sin(t * 1.9 + i * 2.3));
+    c.globalAlpha = on * L.dark; c.fillStyle = 'rgba(222,255,140,1)'; circ(c, fx, fy, 2.4 + on * 1.4);
+    c.globalAlpha = on * L.dark * 0.3; circ(c, fx, fy, 8);
+  }
+  c.restore();
+  if (outdoors && wx === 'rain') {
+    c.strokeStyle = 'rgba(210,225,255,.42)'; c.lineWidth = Math.max(1, w / 420); c.beginPath();
+    for (let i = 0; i < 90; i++) { const x = ((i * 97.3 + t * 60) % (w + 60)) - 30, y = ((i * 211.7 + t * 900) % (h + 80)) - 40; c.moveTo(x, y); c.lineTo(x - w * 0.012, y + h * 0.035); }
+    c.stroke();
+    c.fillStyle = 'rgba(220,232,255,.35)'; for (let i = 0; i < 12; i++) { const p = (t * 2.2 + i * 0.37) % 1; ell(c, ((i * 331.7) % w), ((i * 517.3) % h), 3 + p * 9, (3 + p * 9) * 0.35); }
+  }
+}
+// Morning: a new day with new weather.
+function newDay() {
+  const r = Math.random();
+  S.wx = r < 0.5 ? 'sun' : r < 0.78 ? 'cloud' : 'rain';
+  S.clock = { day: (S.clock.day || 1) + 1, t: 0.27, ev: {} };
+  learn('ranok'); learn(WX[S.wx].w); homeList = null; save();
+}
 function update(dt, t, rdt = dt) {
+  if (dt > 0) dayTick(dt);
   // Walk along the path: ease up to full speed, and slow into the last step.
   let step = 0; P.moving = false;
   if (P.path.length && dt > 0) {
@@ -3651,13 +3757,19 @@ function drawWorld(t) {
   }
   if (tag) label(c, tag.text, tag.x, tag.y);
   if (P.path.length) { const g = P.path[P.path.length - 1], pu = 0.5 + 0.5 * Math.sin(t * 7); c.strokeStyle = `rgba(255,255,255,${0.55 + 0.3 * pu})`; c.lineWidth = 3; c.beginPath(); c.ellipse(g.x * T, g.y * T, 13 + pu * 3, 7 + pu * 1.6, 0, 0, 7); c.stroke(); c.fillStyle = 'rgba(255,255,255,.4)'; ell(c, g.x * T, g.y * T, 5, 2.7); }
-  // cloud shadows drifting over everything
-  c.globalAlpha = 0.17;
+  // cloud shadows drifting over everything (heavier on a cloudy or rainy day)
+  c.globalAlpha = S.wx === 'sun' ? 0.17 : 0.3;
   if (GFX.cloud) for (let i = 0; i < 3; i++) { const w = 900 + i * 220, x = ((t * 14 + i * 1150) % (MW * T + w * 2)) - w, y = (1 + i * 9.5) * T - 120; if (x + w > camX && x < camX + vw && y + w * 0.5 > camY && y < camY + vh) c.drawImage(cloudSpr, x, y, w, w * 0.5); }
   c.globalAlpha = 1;
   c.setTransform(1, 0, 0, 1, 0, 0);
+  {   // evening, night and weather; windows glow once the light goes
+    const lights = [], sx = x => (x * T - camX) * zoom, sy = y => (y * T - camY) * zoom;
+    for (const e of list) if (e.kind === 'home' || e.k === 'oliaHome' || (e.w === 'khata' && e.kind !== 'npc')) lights.push([sx(e.x), sy(e.y - (e.s || 1) * 0.35), (e.s || 1) * T * zoom * 0.75]);
+    lights.push([sx(P.rx), sy(P.ry - 0.4), T * zoom * 1.2]);   // her little lantern
+    paintSky(c, cv.width, cv.height, t, lights, true);
+  }
   // specks of pollen drifting on the air
-  if (GFX.motes) for (let i = 0; i < 14; i++) {
+  if (GFX.motes && S.wx !== 'rain' && skyLight(S.clock.t).dark < 0.3) for (let i = 0; i < 14; i++) {
     const sp = 14 + (i % 5) * 6, mw = cv.width + 80, mh = cv.height + 80;
     let mx = (i * 173.3 + t * sp - camX * zoom * 0.5) % mw, my = (i * 311.7 + t * sp * 0.35 + Math.sin(t * 0.8 + i) * 20 - camY * zoom * 0.5) % mh;
     if (mx < 0) mx += mw; if (my < 0) my += mh;
