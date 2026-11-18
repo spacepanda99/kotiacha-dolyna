@@ -274,6 +274,15 @@ const DRAW = {
     if (!back) handle();
     if (going) { c.fillStyle = 'rgba(255,250,235,.85)'; const p = (now() / 300) % 1; for (const [dx, k] of [[-31, 0], [31, 0.5]]) { const q = (p + k) % 1; circ(c, dx + Math.sign(dx) * q * 6, -32 + q * 8, 2.6 * (1 - q) + 0.6); } }
   },
+  // An ice auger: a crank handle on top, the shaft, and the spiral bit with its cutting blades.
+  lodobur(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 18, 4);
+    c.strokeStyle = '#8d939a'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, -4); c.lineTo(0, -78); c.stroke();
+    c.strokeStyle = '#5b6470'; c.lineWidth = 5; c.beginPath(); c.moveTo(0, -78); c.lineTo(24, -78); c.lineTo(24, -68); c.stroke();
+    c.fillStyle = '#d43a3a'; rr(c, 18, -70, 12, 22, 5); rr(c, -14, -84, 14, 12, 5);
+    c.strokeStyle = '#c9ced4'; c.lineWidth = 4; c.beginPath(); for (let i = 0; i <= 16; i++) { const y = -40 + i * 2.4, x = Math.sin(i * 1.1) * 9; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+    c.fillStyle = '#e6e9ec'; poly(c, [[-9, -2], [9, -2], [0, 4]]);
+  },
   // A chopping block (a thick round of trunk) with the axe stuck in it and a little stack of split logs.
   koloda(c) {
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 34, 6);
@@ -2282,11 +2291,21 @@ function take(e) {
 const ready = e => !(S.cd[e.k] > now());
 
 function fishCard(e) {
-  if (winter()) return wordCard('lid', { note: `❄️ <b>${W.stavok.uk}: ${W.lid.uk}</b>${xl('<br>The pond is frozen. Taras fishes through a hole in the ice: talk to him!')}` });
+  if (winter()) {   // a frozen pond: with an ice auger of your own you can bore a hole and fish through it
+    if (S.gear.lodobur) return wordCard('lid', { note: `❄️ <b>${W.stavok.uk}: ${W.lid.uk}</b>${xl('<br>Bore a hole with your ice auger and fish through it.')}`, acts: [{ k: 'fish', fn: iceFishStart }] });
+    return wordCard('lid', { note: `❄️ <b>${W.stavok.uk}: ${W.lid.uk}</b>${xl(`<br>The pond is frozen. Buy an ice auger («${W.lodobur.uk}») at the market («${D.ui.tools[0]}») to fish through the ice, or talk to Taras.`)}` });
+  }
   const has = !!S.gear.vudka, st = stage();
   wordCard(e.w, has
     ? { acts: [{ k: 'fish', fn: startFishing }] }
     : { note: `🎣 <b>${PH.need_rod.uk}</b>${xl(`<br>${PH.need_rod.en} Buy one at the market («${D.ui.tools[0]}» tab).`)}`, clips: ['p_need_rod'] });
+}
+// Fishing through the ice with your own auger (the same game as Taras's, with him beside you to help), once a minute.
+function iceFishStart() {
+  closeSheet();
+  if (S.cd.icefish > now()) { toast(stage() < 3 ? '🐟 Риба ще не клює · Not biting yet. Try again soon.' : '🐟 Риба ще не клює.'); return; }
+  S.cd.icefish = now() + 60e3; learn('lodobur'); save();
+  setTimeout(() => mgStart('taras', 'taras_w'), 150);
 }
 // Fishing: cast the float onto the water, wait for a bite, then reel the fish out in an arc.
 let fishFx = null;
@@ -2395,7 +2414,8 @@ let shopTab = 'food', shopSel = null;
 // Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
 const catThings = k => (S.home[k] || 0) + nPlaced(k);
 const owned = k => shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : shopTab === 'cats' && MULTI[k] ? catThings(k) >= MULTI[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
-const sellPrice = id => { if (id === 'ryba') return 4;   // a fish takes a rod and some patience
+const sellPrice = id => { if (id === 'ryba') return winter() ? 8 : 4;   // a fish takes a rod and some patience (and in winter, a hole in the ice)
+  if (id === 'kalyna' && winter()) return 4;   // the red berries are about the only thing to pick in winter
   for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
 let shopShown = null;   // the tab the shop was last drawn on
 // The shop's title and its row of tabs, shown above every tab (Oksana's helping game too, so you can always
@@ -2465,7 +2485,7 @@ function sourceHint(id) {
   if (id === 'pshenytsia') return '🌾 Wheat grows in a strip by the pond, on the east side.';
   if (id === 'mak') return '🌺 Poppies grow beside the sunflower field.';
   if (D.shop.home[id]) return '🧺 Oksana sells it at the market, for your cottage.';
-  return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: S.gear && S.gear.vudka ? '🎣 Catch one in the pond.' : '🎣 Buy a fishing rod (вудка) at the market, then fish in the pond.' }[id] || '';
+  return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: winter() ? (S.gear && S.gear.lodobur ? '🧊 Fish through the ice on the pond with your ice auger.' : '🧊 Buy an ice auger (льодобур) at the market, then fish through the ice.') : S.gear && S.gear.vudka ? '🎣 Catch one in the pond.' : '🎣 Buy a fishing rod (вудка) at the market, then fish in the pond.' }[id] || '';
 }
 let dlg = null;
 function dialog(npc, steps, i = 0) {
@@ -3770,13 +3790,13 @@ let chop = null;
 function chopStart() {
   if (S.cd.chop > now()) return wordCard('koloda', { note: `🪓 ${W.drova.uk}: ${S.bag.drova || 0}${xl(' · Your arms need a rest. Come back in a minute.')}` });
   learn('koloda'); learn('drova'); learn('rubai');
-  chop = { n: 0, logs: 3, axe: { x: 0.78, y: 0.55, held: false, vy: 0, ang: 0.9 }, armed: false, split: null, chips: [], logIn: nowT, fl: null };
+  chop = { n: 0, logs: 3, axe: { x: 0.8, y: 0.62, held: false, vy: 0, ang: 0.9 }, armed: false, split: null, chips: [], logIn: nowT, fl: null };
   const st = stage();
   openSheet(`<div class="card gamecard"><div class="tag">🪓 ${W.koloda.uk}${st < 3 ? ' · ' + W.koloda.en : ''}</div>
     <div class="word" style="font-size:28px"><span class="verb">${PH.rubai_drova.uk.split(' ')[0]}</span> ${PH.rubai_drova.uk.split(' ').slice(1).join(' ')}</div>${st < 3 ? `<div class="en">${PH.rubai_drova.en}</div>` : ''}
     <div class="vchip"><span class="verb">${W.rubai.uk}</span> ${st < 3 ? '= ' + W.rubai.en : xl('= ' + W.rubai.en)} <small>· дієслово${st < 3 ? ' (verb)' : ''}</small></div>
     <canvas id="chopPad" class="cookpad" style="width:100%;display:block;height:250px"></canvas>
-    <div class="muted" style="min-height:2.6em">${st < 3 ? 'Візьми сокиру, підніми й рубай · Take the axe, lift it high and bring it down' : 'Візьми сокиру, підніми й рубай'}</div>
+    <div class="muted" style="min-height:2.6em">${st < 3 ? 'Візьми сокиру, підніми високо й різко опусти · Take the axe, lift it high, then bring it down fast' : 'Візьми сокиру, підніми високо й різко опусти'}</div>
     <div class="row">${btn('hear', 'p_rubai_drova', '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say('p_rubai_drova');
   const pad = $('#chopPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = chop;
@@ -3785,17 +3805,25 @@ function chopStart() {
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
   const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
   pad.addEventListener('pointerdown', e => { e.preventDefault(); if (chop !== me) return; try { pad.setPointerCapture(e.pointerId); } catch (er) {} const [x, y] = at(e), A = chop.axe; if (Math.hypot(A.x - x, (A.y - y) * 0.66) < 0.22) { A.held = true; A.ox = A.x - x; A.oy = A.y - y; A.lt = performance.now(); blip(520, 0.03); } else chop.miss = nowT; });
-  pad.addEventListener('pointermove', e => { if (chop !== me || !chop.axe.held) return; const [x, y] = at(e), A = chop.axe, now2 = performance.now(), dtm = Math.max(1, now2 - A.lt) / 1000; const ny = Math.max(0.12, Math.min(0.6, y + A.oy)); A.vy = (ny - A.y) / dtm; A.x = Math.max(0.3, Math.min(0.85, x + A.ox)); A.y = ny; A.lt = now2; chopSwing(); });
+  pad.addEventListener('pointermove', e => { if (chop !== me || !chop.axe.held) return; const [x, y] = at(e), A = chop.axe, now2 = performance.now(), dtm = Math.max(1, now2 - A.lt) / 1000; const ny = Math.max(0.33, Math.min(0.66, y + A.oy)); A.vy = (ny - A.y) / dtm; A.x = Math.max(0.45, Math.min(0.92, x + A.ox)); A.y = ny; A.lt = now2; if (A.vy > 0.45) A.fastT = nowT; });
   const up = () => { if (chop === me) chop.axe.held = false; };
   for (const ev of ['pointerup', 'pointercancel']) pad.addEventListener(ev, up);
   requestAnimationFrame(() => chopFrame(me));
 }
 // The axe head is above the grip; raise it high to get ready, then a fast stroke down splits the log.
-function chopSwing() {
-  const A = chop.axe;
-  if (A.y < 0.32) chop.armed = true;
-  if (chop.armed && !chop.split && chop.n < chop.logs && A.y >= 0.5 && A.vy > 0.6 && Math.abs(A.x - 0.08 - 0.5) < 0.16 && nowT - chop.logIn > 0.4) chopHit();
-  else if (chop.armed && A.y >= 0.5 && A.vy <= 0.6 && !chop.split) { chop.armed = false; blip(220, 0.04); chop.bonk = nowT; }   // too gentle: the axe just bonks the log
+// Where the axe head is (pad pixels), from the grip and the handle's angle: it's drawn rotated by -ang about
+// the grip, the head at (-0.095 w, -0.31 h) along the handle.
+function axeHead(A, w, h) { const th = -A.ang, lx = -w * 0.095, ly = -h * 0.31; return [A.x * w + lx * Math.cos(th) - ly * Math.sin(th), A.y * h + lx * Math.sin(th) + ly * Math.cos(th)]; }
+// Lift the axe high (that readies the swing), then bring it down fast: the head swings forward and down, and
+// if it meets the log while it's still moving fast the log splits; brought down slowly it only bonks.
+function chopSwing(w, h) {
+  const A = chop.axe, [hx, hy] = axeHead(A, w, h), logTop = h * 0.52, overLog = Math.abs(hx - w * 0.5) < w * 0.11;
+  if (A.held && A.y < 0.4) chop.armed = true;
+  if (!chop.armed || chop.split || chop.n >= chop.logs || nowT - chop.logIn < 0.4) return;
+  if (overLog && hy >= logTop - h * 0.02) {
+    if (A.fastT && nowT - A.fastT < 0.3) chopHit();
+    else { chop.armed = false; blip(220, 0.04); chop.bonk = nowT; }   // too gentle: the axe just bonks the log
+  }
 }
 function chopHit() {
   if (!chop || chop.split) return;
@@ -3847,15 +3875,22 @@ function chopFrame(me) {
   }
   chop.chips = chop.chips.filter(p => t - p.t0 < 0.8); for (const p of chop.chips) { p.vy += dt * 2.4; p.x += p.vx * dt * 0.5; p.y += p.vy * dt * 0.5; c.fillStyle = '#d9b27a'; c.save(); c.translate(p.x * w, p.y * h); c.rotate(p.r + t * 10); c.fillRect(-3 * k, -1.5 * k, 6 * k, 3 * k); c.restore(); }
   // the axe: a long handle you hold near its end, the head above; it tips forward as you bring it down
-  if (!A.held) { A.y += (0.55 - A.y) * Math.min(1, dt * 4); A.vy = 0; }
-  const goalAng = A.held ? (A.vy > 0.5 ? 0.15 : A.y < 0.32 ? 1.2 : 0.7) : 0.9; A.ang += (goalAng - A.ang) * Math.min(1, dt * 14);
+  if (!A.held) { A.y += (0.62 - A.y) * Math.min(1, dt * 4); A.vy = 0; }
+  // the handle's angle: upright with the head high when you lift it, swinging forward and down on a fast
+  // stroke (the head comes round onto the log), resting at a lean otherwise
+  const fast = A.held && A.fastT && nowT - A.fastT < 0.25;
+  const goalAng = !A.held ? 0.9 : fast ? 1.45 : A.y < 0.4 ? 0.2 : 0.2 + (A.y - 0.4) / 0.26 * 0.9;
+  A.ang += (goalAng - A.ang) * Math.min(1, dt * (fast ? 26 : 12));
+  if (A.held && !chop.split) chopSwing(w, h);
+  // the head can't pass through the log: hold it on top
+  { const [hx, hy] = axeHead(A, w, h); if (!chop.split && chop.n < chop.logs && Math.abs(hx - w * 0.5) < w * 0.11 && hy > h * 0.52) A.y -= (hy - h * 0.52) / h; }
   const gx = A.x * w, gy = A.y * h;
   c.save(); c.translate(gx, gy); c.rotate(-A.ang);
   c.fillStyle = '#9b6b3c'; rr(c, -4 * k, -h * 0.34, 8 * k, h * 0.38, 4 * k); c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(-2 * k, -h * 0.33, 2 * k, h * 0.36);
   c.fillStyle = '#7a8088'; poly(c, [[-5 * k, -h * 0.34], [-5 * k, -h * 0.26], [-w * 0.09, -h * 0.24], [-w * 0.1, -h * 0.37]]); c.fillStyle = '#c9ced4'; poly(c, [[-w * 0.085, -h * 0.245], [-w * 0.1, -h * 0.37], [-w * 0.105, -h * 0.365], [-w * 0.092, -h * 0.24]]);
   c.restore();
   if (!A.held && (chop.miss && t - chop.miss < 0.8 || t - (chop.logIn) < 2.5 && chop.n === 0)) { c.strokeStyle = 'rgba(255,210,63,.7)'; c.lineWidth = 3 * k; c.beginPath(); c.arc(gx, gy, 30 * k, 0, 7); c.stroke(); }
-  if (A.held && chop.armed && !chop.split) { c.fillStyle = 'rgba(255,255,255,.85)'; c.font = `800 ${Math.round(12 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⬇', bx, h * 0.45); }
+  if (A.held && chop.armed && !chop.split && A.y < 0.45) { c.fillStyle = 'rgba(255,255,255,.85)'; c.font = `800 ${Math.round(12 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⬇', bx, h * 0.45); }
   // the word, flashed on each split
   if (chop.fl) { const q = (t - chop.fl) / 1.6; if (q >= 0 && q <= 1) { const a = flashA(q), sc = flashS(q); c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
   c.setTransform(1, 0, 0, 1, 0, 0);

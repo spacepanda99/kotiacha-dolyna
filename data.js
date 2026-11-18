@@ -187,6 +187,7 @@ window.DATA = {
     // --- tools and things you carry
     { id: "nasinnia", uk: "насіння", tr: "na-SIN-nia", en: "seeds", ic: "🌱" },
     { id: "vudka", uk: "вудка", tr: "VUD-ka", en: "fishing rod", ic: "@rod", acc: "вудку" },
+    { id: "lodobur", uk: "льодобур", tr: "lo-do-BUR", en: "ice auger", ic: "@lodobur", fact: { uk: "Льодобуром свердлять лунку в льоду, щоб рибалити взимку.", en: "With an ice auger you drill a hole in the ice, so you can fish in winter." } },
     { id: "liika", uk: "лійка", tr: "LIY-ka", en: "watering can", ic: "@can", acc: "лійку" },
     { id: "koshyk", uk: "кошик", tr: "KO-shyk", en: "basket", ic: "@koshyk" },
     { id: "hroshi", uk: "гроші", tr: "HRO-shi", en: "money", ic: "💰" }
@@ -456,7 +457,7 @@ window.DATA = {
     // Toys and furniture for the cat friends (they use them).
     // In winter nothing grows, so the market sells vegetables instead of seeds.
     veg: { kartoplia: 4, kapusta: 4, buriak: 3, morkva: 3, tsybulia: 3, chasnyk: 3, pomidor: 4, yabluko: 3, pshenytsia: 3, mak: 3 },
-    tools: { vudka: 6, maslobiika: 10, zhorna: 12 },
+    tools: { vudka: 6, lodobur: 15, maslobiika: 10, zhorna: 12 },
     // Animals of your own: they live by your cottage, and you collect their eggs and milk.
     farm: { kurka: 15, korova: 40 },
     cats: { kihtetochka: 30, lezhanka: 16, miachyk: 6, myshka: 6 },
