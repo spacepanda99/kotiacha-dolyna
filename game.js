@@ -3072,7 +3072,7 @@ function talk(npc) {
   if (npc.id === 'olia') return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
   const quest = id => ({ uk: D.payLine.uk.replace('%s', W[id].acc || W[id].uk), en: D.payLine.en.replace('%s', (MASS.includes(id) ? 'some ' : 'a ') + W[id].en).replace('a a', 'an a').replace('a o', 'an o').replace('a e', 'an e'), clip: `qp_${npc.id}_${id}`, hint: (stage() < 2 ? `<img src="${iconURL(id)}" style="width:34px;height:34px;vertical-align:middle" alt=""> ` : '') + sourceHint(id) });
-  if (n.q && winter() && WINTER_GONE.has(n.q) && !(S.bag[n.q] > 0)) { n.q = 'drova'; learn('drova'); }
+  if (n.q && winter() && (WINTER_GONE.has(n.q) || (D.shop.seeds[n.q] && !D.shop.veg[n.q])) && !(S.bag[n.q] > 0)) { n.q = 'drova'; learn('drova'); }
   if (n.q) {
     if ((S.bag[n.q] || 0) > 0) {
       const item = n.q;
@@ -3425,18 +3425,17 @@ function drawBed(t) {
   if (bed.t0 == null) bed.t0 = t;   // start timing on the first frame drawn
   const c = ctx, a = t - bed.t0, d = bed.done, h = cv.height, w = cv.width, once = (k, fn) => { if (!d[k]) { d[k] = 1; fn(); } };
   const cats = homeCats(), fade = (x0, x1) => Math.max(0, Math.min(1, (a - x0) / (x1 - x0)));
-  if (cats.length && a > 0.4 && a < 3.6) {
-    once('feed', () => {
-      if (winter()) { bed.warm = (S.bag.drova || 0) >= 2; if (bed.warm) S.bag.drova -= 2; hud(); save(); }
-      say(...(winter() ? [bed.warm ? 'p_zatopy_pich' : 'p_kholodno'] : []), 'p_yizhte_kotyky');
-    });
+  // the winter stove is lit (or not) whether or not there are cats to feed
+  if (winter() && a > 0.4 && a < 3.6) once('warm', () => { bed.warm = (S.bag.drova || 0) >= 2; if (bed.warm) S.bag.drova -= 2; hud(); save(); if (!cats.length) say(bed.warm ? 'p_zatopy_pich' : 'p_kholodno'); });
+  if ((cats.length || winter()) && a > 0.4 && a < 3.6) {
+    if (cats.length) once('feed', () => say(...(winter() ? [bed.warm ? 'p_zatopy_pich' : 'p_kholodno'] : []), 'p_yizhte_kotyky'));
     if (winter()) bedText(c, bed.warm ? '🔥 ' + PH.zatopy_pich.uk : '🥶 ' + PH.kholodno.uk, bed.warm ? PH.zatopy_pich.en + ' (−2 ' + W.drova.en + ')' : PH.kholodno.en + ' Chop wood at the block by your cottage.', h * 0.31, Math.min(1, (a - 0.4) * 3, (3.6 - a) * 3));
     cats.forEach((_, i) => { const p = catSpot(i), bx = p.x - roomX + p.s * 0.42, by = p.y;   // a bowl by each cat, and hearts
       c.fillStyle = '#d43a3a'; ell(c, bx, by - p.s * 0.03, p.s * 0.16, p.s * 0.06); c.fillStyle = '#c99463'; ell(c, bx, by - p.s * 0.07, p.s * 0.12, p.s * 0.03);
       const q = ((a - 0.4) * 0.8 + i * 0.23) % 1; c.globalAlpha = Math.sin(q * Math.PI); drawIcon(c, '❤️', p.x - roomX, p.y - p.s * (0.8 + q * 0.5), p.s * 0.22); c.globalAlpha = 1; });
-    bedText(c, PH.yizhte_kotyky.uk, PH.yizhte_kotyky.en, h * 0.2, Math.min(1, (a - 0.4) * 3, (3.6 - a) * 3));
+    if (cats.length) bedText(c, PH.yizhte_kotyky.uk, PH.yizhte_kotyky.en, h * 0.2, Math.min(1, (a - 0.4) * 3, (3.6 - a) * 3));
   }
-  const night = cats.length ? 3.4 : 0.6;
+  const night = cats.length || winter() ? 3.4 : 0.6;
   if (a > night) { once('night', () => say('p_dobranich')); c.fillStyle = `rgba(14,14,34,${fade(night, night + 2) * 0.96})`; c.fillRect(0, 0, w, h); bedText(c, PH.dobranich.uk, PH.dobranich.en, h * 0.4, Math.min(1, (a - night) * 2, (night + 3 - a) * 2)); }
   if (a > night + 1.2 && a < night + 3) { c.fillStyle = INK; c.font = cozyFont(Math.round(roomU() * 0.06)); c.textAlign = 'center'; for (let i = 0; i < 3; i++) { const q = ((a * 0.6) + i / 3) % 1; c.globalAlpha = Math.sin(q * Math.PI) * 0.9; c.fillStyle = '#fff8ea'; c.fillText('z', w * 0.5 + q * w * 0.12, h * 0.55 - q * h * 0.08); } c.globalAlpha = 1; }
   if (a > night + 3) {
@@ -3905,7 +3904,7 @@ function paintSky(c, w, h, t, lights, outdoors) {
     const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(255,196,110,${0.55 * glow})`); g.addColorStop(1, 'rgba(255,196,110,0)');
     c.globalAlpha = 1; c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2);
   }
-  if (outdoors && L.dark > 0.3) for (let i = 0; i < 16; i++) {   // fireflies
+  if (outdoors && L.dark > 0.3 && (season() === 'lito' || season() === 'vesna')) for (let i = 0; i < 16; i++) {   // fireflies (not on autumn or winter nights)
     const fx = (Math.sin(t * 0.21 + i * 7.1) * 0.5 + 0.5) * w, fy = (Math.sin(t * 0.17 + i * 3.3) * 0.45 + 0.52) * h, on = Math.max(0, Math.sin(t * 1.9 + i * 2.3));
     c.globalAlpha = on * L.dark; c.fillStyle = 'rgba(222,255,140,1)'; circ(c, fx, fy, 2.4 + on * 1.4);
     c.globalAlpha = on * L.dark * 0.3; circ(c, fx, fy, 8);
@@ -4243,7 +4242,7 @@ function drawWorld(t) {
     paintSky(c, cv.width, cv.height, t, lights, true);
   }
   // specks of pollen drifting on the air
-  if (GFX.motes && S.wx !== 'rain' && skyLight(S.clock.t).dark < 0.3) for (let i = 0; i < 14; i++) {
+  if (GFX.motes && !winter() && S.wx !== 'rain' && skyLight(S.clock.t).dark < 0.3) for (let i = 0; i < 14; i++) {
     const sp = 14 + (i % 5) * 6, mw = cv.width + 80, mh = cv.height + 80;
     let mx = (i * 173.3 + t * sp - camX * zoom * 0.5) % mw, my = (i * 311.7 + t * sp * 0.35 + Math.sin(t * 0.8 + i) * 20 - camY * zoom * 0.5) % mh;
     if (mx < 0) mx += mw; if (my < 0) my += mh;
@@ -4313,14 +4312,19 @@ function startFest() {
   fest = { F, phase: 'greet', ang: 0, boost: 0, lastT: nowT, beats: [], hits: 0, pop: null, t0: nowT, endT: 0, jumpT: 0, done: {} };
   mode = 'fest'; learn(F.id); learn('horovod');
   const faces = ['olia', 'taras', 'oksana', 'andriiko', 'bohdan'].map(id => `<img src="${faceURL(NPC[id].look)}" style="width:54px;height:54px;border-radius:14px;background:#e8f4d9" alt="">`).join('');
-  setTimeout(() => {
+  const me = fest;
+  // drawFest opens it again if it's swiped away or tapped off, since only the answer starts the dance
+  me.greetCard = () => {
+    if (fest !== me) return;
+    me.greetAt = nowT;
     openSheet(`<div class="card"><div class="tag">🎉 ${W[F.id].uk}${stage() < 3 ? ' · ' + W[F.id].en : ''}</div>
       <div style="display:flex;gap:6px;justify-content:center;margin:8px 0">${faces}</div>
       <div class="word" style="font-size:32px">«${PH[F.greet].uk}»</div>${stage() < 3 ? `<div class="en">${PH[F.greet].en}</div>` : ''}
       <div class="muted" style="padding:6px 0 0">${stage() < 3 ? 'Answer them:' : ''}</div>
       <div class="row">${btn('hear', 'p_' + F.greet, '🔊', 'round blue')}${btn('festReply', '', `${PH[F.reply].uk}<small class="cen"${stage() < 3 ? '' : ' style="display:none"'}>${PH[F.reply].en}</small>`)}</div></div>`);
     say('p_' + F.greet);
-  }, 900);
+  };
+  setTimeout(me.greetCard, 900);
 }
 function festReply() {
   if (!fest) return;
@@ -4444,8 +4448,9 @@ function drawFest(t) {
         <img class="big" src="${iconURL(owned ? 'koshyk' : F.reward)}" alt="">
         <div class="hint">❤️ +5${owned ? ' · 💰 +15 ₴' : ` · ${W[F.reward].uk}${stage() < 3 ? ' for your cottage' : ''}`}</div>
         <div class="row">${btn('festDone', '', lab('backvillage'), 'blue')}</div></div>`);
-    }
+    } else if (f.done.card && !sheetOpen()) festDone();   // the reward card swiped away: still take it home
   }
+  if (f.phase === 'greet' && f.greetAt && !sheetOpen() && nowT - f.greetAt > 0.6) f.greetCard();   // never left with no way to answer
 }
 
 // ------------------------------------------------------------------ the title screen, drawn
