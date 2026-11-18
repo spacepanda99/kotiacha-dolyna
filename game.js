@@ -113,7 +113,7 @@ function subsOnNow() {
 }
 function subsHTML() {
   const subsOn = subsOnNow();
-  return `<div class="subs"><div id="subline"${subsOn ? '' : ' style="display:none"'}></div><button class="subt" data-a="subs">💬 ${subsOn ? 'Сховати субтитри' : 'Показати субтитри'}<small>${subsOn ? 'Hide English subtitles' : 'Show English subtitles'}</small></button></div>`;
+  return `<div class="subs"><div id="subline"${subsOn ? '' : ' style="display:none"'}></div><button class="subt" data-a="subs">💬 ${subsOn ? 'Hide English subtitles' : 'Show English subtitles'}</button></div>`;
 }
 function subStart(id, a) {
   const uk = textOf(id); if (!uk) return;
@@ -2560,6 +2560,180 @@ function cookDone() {
   }, 1300);
 }
 
+// ------------------------------------------------------------------ the neighbours' games
+// After a chat, Mr. Bohdan, Andriiko and Taras each ask you to join in with what they're doing. Each game
+// teaches two verbs and uses them every round, so you hear them again and again:
+//   Bohdan's bees: дмухай (hold to puff smoke and calm the bees), збирай (tap the honeycomb) → honey
+//   Andriiko's dog: кидай (flick the ball up), неси (tell Brovko to bring it back) → a heart
+//   Taras's fishing: закидай (flick to cast), wait for the bite, тягни (tap!) → fish
+const MG = { bohdan: { verbs: ['dmukhai', 'zbyrai'], rounds: 2 }, andriiko: { verbs: ['kydai', 'nesy'], rounds: 3 }, taras: { verbs: ['zakydai', 'tiahny'], rounds: 3 } };
+let mg = null;
+function mgInvite(npc) {
+  if (sheetOpen()) return;
+  const L = npc.lines.mg_invite, st = stage();
+  openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
+    <div class="row">${btn('hear', `v_${npc.id}_mg_invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>`);
+  say(`v_${npc.id}_mg_invite`);
+}
+function mgStart(id) {
+  const npc = NPC[id], G = MG[id];
+  mg = { id, npc, G, round: 1, phase: '', t0: nowT, lastT: nowT, puffs: [], down: null, score: 0 };
+  for (const v of G.verbs) learn(v);
+  openSheet(`<div class="card"><div class="tag" id="mgTag"></div>
+    <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" id="mgLine" style="font-size:26px"></div><div class="en" id="mgEn"></div></div></div>
+    <div class="vchip" id="mgChip"></div>
+    <canvas id="mgPad" class="cookpad" style="width:100%;display:block"></canvas>
+    <div class="muted" id="mgHow"></div>
+    <div class="row" id="mgRow"></div></div>`);
+  const pad = $('#mgPad'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); mg.k = dpr;
+  for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
+  const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr]; };
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); try { pad.setPointerCapture(e.pointerId); } catch (er) {} const [x, y] = at(e); mg.down = { x, y, x0: x, y0: y, t: nowT }; mgPress(x, y); });
+  pad.addEventListener('pointermove', e => { if (!mg || !mg.down) return; const [x, y] = at(e); mg.down.x = x; mg.down.y = y; });
+  const up = e => { if (!mg || !mg.down) return; const d = mg.down; mg.down = null; mgRelease(d); };
+  for (const ev of ['pointerup', 'pointercancel']) pad.addEventListener(ev, up);
+  mgBegin('a');
+  requestAnimationFrame(mgFrame);
+}
+// Set the neighbour's current line (verb highlighted), the verb chip, the how-to, and say it.
+function mgLine(key, verb, how, extra = '') {
+  const L = mg.npc.lines[key], st = stage();
+  $('#mgTag').textContent = `🎮 ${mg.npc.name} · ${Math.min(mg.round, mg.G.rounds)}/${mg.G.rounds}`;
+  $('#mgLine').innerHTML = verb ? L.uk.replace(new RegExp('(' + W[verb].uk + ')', 'i'), '<span class="verb">$1</span>') : L.uk;
+  $('#mgEn').textContent = st < 3 ? L.en : '';
+  $('#mgChip').innerHTML = verb ? `<span class="verb">${W[verb].uk}</span> ${st < 3 ? '= ' + W[verb].en : xl('= ' + W[verb].en)} <small>· дієслово${st < 3 ? ' (verb)' : ''}</small>` : '';
+  $('#mgHow').textContent = how ? how[0] + (st < 3 ? ' · ' + how[1] : '') : '';
+  $('#mgRow').innerHTML = btn('hear', `v_${mg.npc.id}_${key}`, '🔊', 'round blue') + extra + btn('close', '', lab('close'), 'ghost');
+  say(`v_${mg.npc.id}_${key}`);
+}
+// Each game's steps: 'a' is the first verb, 'b' the second.
+function mgBegin(step) {
+  const id = mg.id, W0 = (mg.k || 1);
+  mg.phase = step; mg.pt = nowT;
+  if (id === 'bohdan') {
+    if (step === 'a') { mg.bees = Array.from({ length: 7 }, (_, i) => ({ ph: i * 0.9, calm: 0 })); mg.cells = []; mgLine('mg_dmukhai', 'dmukhai', ['Тримай пальцем на бджолах', 'Press and hold on the bees']); }
+    else { mg.cells = Array.from({ length: 10 }, (_, i) => ({ i, full: 1 })); mgLine('mg_zbyrai', 'zbyrai', ['Торкайся сот', 'Tap each honeycomb cell']); }
+  } else if (id === 'andriiko') {
+    if (step === 'a') { mg.ball = { st: 'hand' }; mg.dog = { x: 0.62, y: 0.78, face: 1, wk: 0, step: 0, st: 'sit' }; mgLine('mg_kydai', 'kydai', ['Махни пальцем угору', 'Flick upwards to throw']); }
+    else mgLine('mg_nesy', 'nesy', ['Натисни «Неси!»', 'Press «Неси!»'], btn('mgNesy', '', lab('nesy'), 'blue'));
+  } else {
+    if (step === 'a') { mg.float = null; mg.fish = null; mgLine('mg_zakydai', 'zakydai', ['Махни пальцем угору', 'Flick upwards to cast']); }
+    else { mgLine('mg_tiahny', 'tiahny', ['Торкнися зараз!', 'Tap now!']); }
+  }
+}
+function mgPress(x, y) {
+  if (!mg) return;   // a tap landing just as the game ends
+  const w = $('#mgPad').width, h = $('#mgPad').height;
+  if (mg.id === 'bohdan' && mg.phase === 'b') {
+    for (const c of mg.cells) { const [cx, cy, r] = cellPos(c.i, w, h); if (c.full && Math.hypot(x - cx, y - cy) < r * 1.1) { c.full = 0; blip(700 + c.i * 30, 0.05); useWord('med', false); break; } }
+    if (mg.cells.every(c => !c.full)) mgRoundDone();
+  }
+  if (mg.id === 'taras' && mg.phase === 'wait') { if (mg.float && mg.float.bite) mgCatch(); else { mgLine('mg_wait', null, ['Чекай', 'Wait for the float to dip']); } }
+  if (mg.id === 'taras' && mg.phase === 'b') mgCatch();
+}
+function mgRelease(d) {
+  if (!mg) return;
+  const flick = d.y0 - d.y > 40 * (mg.k || 1) && nowT - d.t < 0.8;
+  if (mg.id === 'andriiko' && mg.phase === 'a' && flick && mg.ball.st === 'hand') {
+    const w = $('#mgPad').width; const tx = Math.max(0.15, Math.min(0.85, 0.5 + (d.x - d.x0) / w * 1.4));
+    mg.ball = { st: 'fly', t0: nowT, tx, ty: 0.32 }; blip(620, 0.06); useWord('kydai', true);
+  }
+  if (mg.id === 'taras' && mg.phase === 'a' && flick && !mg.float) {
+    const w = $('#mgPad').width; mg.float = { x: Math.max(0.2, Math.min(0.8, 0.45 + (d.x - d.x0) / w)), y: 0.4, t0: nowT, land: nowT + 0.7, bite: false, biteAt: nowT + 2 + Math.random() * 2.5 };
+    blip(560, 0.06); useWord('zakydai', true); mg.phase = 'wait';
+  }
+}
+function mgCatch() {
+  if (!mg.float || !mg.float.bite) return;
+  useWord('tiahny', true); blip(990, 0.1); say('p_molodets');
+  mg.fish = { t0: nowT, x: mg.float.x, y: mg.float.y }; mg.float = null; mg.phase = 'catch';
+  setTimeout(() => { if (mg && mg.phase === 'catch') mgRoundDone(); }, 1300);
+}
+function mgRoundDone() {
+  mg.score++;
+  if (mg.round >= mg.G.rounds) return mgFinish();
+  mg.round++; mg.phase = 'pause';
+  setTimeout(() => { if (mg && $('#mgPad')) mgBegin('a'); }, 900);
+}
+function mgFinish() {
+  const id = mg.id, npc = mg.npc, st = stage();
+  const gift = id === 'bohdan' ? 'med' : id === 'taras' ? 'ryba' : null;
+  if (gift) give(gift, id === 'taras' ? 2 : 1); S.hearts += 1; S.cd['mg_' + id] = now() + 120e3; hud(); save();
+  const L = npc.lines.mg_done; mg = null;
+  openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
+    ${gift ? `<img class="big" src="${iconURL(gift)}" alt=""><div class="hint">+${id === 'taras' ? 2 : 1} ${W[gift].uk} · ❤️ +1</div>` : `<div class="hint">❤️ +1</div>`}
+    <div class="row">${btn('close', '', lab('close'))}</div></div>`);
+  say(`v_${id}_mg_done`);
+}
+const cellPos = (i, w, h) => { const r = Math.min(w, h) * 0.075, col = i % 5, row = Math.floor(i / 5); return [w * 0.5 + (col - 2) * r * 1.8 + (row % 2) * r * 0.9, h * 0.55 + (row - 0.5) * r * 1.6, r]; };
+function bee(c, x, y, s, t) {
+  c.fillStyle = 'rgba(255,255,255,.75)'; const fl = Math.sin(t * 40) * 0.3; ell(c, x - s * 0.2, y - s * 0.55, s * 0.4, s * (0.25 + fl * 0.1)); ell(c, x + s * 0.25, y - s * 0.55, s * 0.4, s * (0.25 - fl * 0.1));
+  c.fillStyle = '#f5c518'; ell(c, x, y, s * 0.7, s * 0.48); c.fillStyle = '#3a2a1a'; for (const dx of [-0.2, 0.15]) c.fillRect(x + dx * s - s * 0.08, y - s * 0.45, s * 0.16, s * 0.9); circ(c, x + s * 0.62, y, s * 0.2);
+}
+function mgFrame() {
+  if (!mg) return;
+  const pad = $('#mgPad'); if (!pad) { mg = null; return; }
+  const c = pad.getContext('2d'), w = pad.width, h = pad.height, t = nowT, k = mg.k || 1;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
+  if (mg.id === 'bohdan') {
+    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfeefc'); g.addColorStop(1, '#a6dc7c'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    // the open hive frame
+    c.fillStyle = '#b5824e'; rr(c, w * 0.18, h * 0.3, w * 0.64, h * 0.5, 10 * k); c.fillStyle = '#e8c98e'; rr(c, w * 0.21, h * 0.34, w * 0.58, h * 0.42, 6 * k);
+    for (let i = 0; i < 10; i++) { const [cx, cy, r] = cellPos(i, w, h), full = mg.phase === 'a' || (mg.cells[i] && mg.cells[i].full); c.fillStyle = full ? '#f2a81d' : '#fff3d6'; const pts = []; for (let q = 0; q < 6; q++) { const a = q * Math.PI / 3 + Math.PI / 6; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } poly(c, pts); if (full) { c.fillStyle = 'rgba(255,255,255,.35)'; circ(c, cx - r * 0.3, cy - r * 0.3, r * 0.22); } }
+    if (mg.phase === 'a') {
+      if (mg.down) { if (Math.random() < 0.5) mg.puffs.push({ x: mg.down.x, y: mg.down.y, t0: t }); for (const b of mg.bees) { const bx = w * 0.5 + Math.cos(t * 1.7 + b.ph) * w * 0.3, by = h * 0.5 + Math.sin(t * 2.3 + b.ph * 2) * h * 0.25; if (Math.hypot(bx - mg.down.x, by - mg.down.y) < w * 0.28) b.calm = Math.min(1, b.calm + 0.025); } }
+      for (const b of mg.bees) { const bx = w * 0.5 + Math.cos(t * 1.7 + b.ph) * w * 0.3 + b.calm * w * 0.6 * Math.sign(Math.cos(b.ph)), by = h * 0.5 + Math.sin(t * 2.3 + b.ph * 2) * h * 0.25 - b.calm * h * 0.5; c.globalAlpha = 1 - b.calm; bee(c, bx, by, 16 * k, t + b.ph); c.globalAlpha = 1; }
+      if (mg.bees.every(b => b.calm >= 1)) { useWord('dmukhai', true); blip(880, 0.08); mgBegin('b'); }
+    }
+    mg.puffs = mg.puffs.filter(p => t - p.t0 < 1.2);
+    for (const p of mg.puffs) { const q = (t - p.t0) / 1.2; c.fillStyle = `rgba(235,235,240,${0.6 * (1 - q)})`; circ(c, p.x + q * 20 * k, p.y - q * 50 * k, (10 + q * 30) * k); }
+    if (!mg.down || mg.phase !== 'a') { c.fillStyle = '#8a8a92'; rr(c, w * 0.04, h * 0.7, w * 0.12, h * 0.22, 6 * k); c.fillStyle = '#6b4422'; c.fillRect(w * 0.06, h * 0.64, w * 0.08, h * 0.07); }   // the smoker, waiting
+  } else if (mg.id === 'andriiko') {
+    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#bfe8fb'); g.addColorStop(0.35, '#dff3e1'); g.addColorStop(0.36, '#9bd673'); g.addColorStop(1, '#7fc25a'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    person(c, w * 0.16, h * 0.95, NPC.andriiko.look, t, false, 1.35 * k);
+    const b = mg.ball, d = mg.dog, sp = 0.9;
+    // the dog runs to wherever the ball is
+    let gx = d.x, gy = d.y;
+    if (b.st === 'ground' || b.st === 'fly') { gx = b.tx; gy = b.ty + 0.06; }
+    if (b.st === 'carried') { gx = mg.phase === 'home' ? 0.42 : d.x; gy = mg.phase === 'home' ? 0.86 : d.y; }
+    const dx = gx - d.x, dy = gy - d.y, dd = Math.hypot(dx, dy), dt = Math.min(0.05, t - mg.lastT);
+    if (dd > 0.02 && (b.st !== 'fly' || t - b.t0 > 0.3)) { const m = Math.min(dd, sp * dt); d.x += dx / dd * m; d.y += dy / dd * m; d.step += m * 9; d.wk = Math.min(1, d.wk + dt * 5); d.face = dx > 0 ? -1 : 1; } else d.wk = Math.max(0, d.wk - dt * 5);
+    if (b.st === 'ground' && dd < 0.04) { b.st = 'carried'; blip(740, 0.05); mgBegin('b'); }
+    if (mg.phase === 'home' && dd < 0.03) { mg.phase = 'pause'; b.st = 'hand'; mgRoundDone(); }
+    const e = { face: d.face, fs: d.face, wk: d.wk, step: d.step, hx: 1, dip: 0, rest: 0, an: 'dog' };
+    c.save(); c.translate(d.x * w, d.y * h); c.scale(2.2 * k * (0.7 + d.y * 0.4), 2.2 * k * (0.7 + d.y * 0.4)); quad(c, 0, 0, QUAD.dog, t, e); c.restore();
+    // the ball
+    let bx, by, bz = 0;
+    if (b.st === 'hand') { bx = 0.3; by = 0.84; }
+    else if (b.st === 'fly') { const q = Math.min(1, (t - b.t0) / 0.9); bx = 0.3 + (b.tx - 0.3) * q; by = 0.84 + (b.ty - 0.84) * q; bz = Math.sin(q * Math.PI) * 0.3; if (q >= 1) b.st = 'ground'; }
+    else if (b.st === 'ground') { bx = b.tx; by = b.ty; }
+    else { bx = d.x + (d.face > 0 ? -0.07 : 0.07); by = d.y - 0.07; }
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, bx * w, by * h + 4 * k, 9 * k, 3 * k);
+    c.fillStyle = '#e8463c'; circ(c, bx * w, (by - bz) * h, 9 * k); c.fillStyle = '#ffd23f'; c.fillRect(bx * w - 9 * k, (by - bz) * h - 2 * k, 18 * k, 4 * k);
+  } else {
+    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#7cc4ef'); g.addColorStop(1, '#3f8fc9'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2 * k; for (let i = 0; i < 7; i++) { const yy = h * (0.15 + i * 0.12), xx = ((i * 137 + t * 20) % (w + 80)) - 40; c.beginPath(); c.ellipse(xx, yy, 30 * k, 4 * k, 0, 0, Math.PI); c.stroke(); }
+    c.fillStyle = '#6fb04a'; c.fillRect(0, h * 0.88, w, h * 0.12);
+    const tipX = w * 0.8, tipY = h * 0.35;
+    c.strokeStyle = '#6b4422'; c.lineWidth = 5 * k; c.beginPath(); c.moveTo(w * 0.98, h * 0.98); c.lineTo(tipX, tipY); c.stroke();
+    const f = mg.float;
+    if (f) {
+      const q = Math.min(1, (t - f.t0) / 0.7), fx = tipX + (f.x * w - tipX) * q, fy = tipY + (f.y * h - tipY) * q - Math.sin(q * Math.PI) * h * 0.2;
+      if (t >= f.biteAt && !f.bite && !f.missAt) { f.bite = true; f.missAt = t + 1.3; mgBegin('b'); mg.phase = 'wait'; }
+      if (f.bite && t > f.missAt) { f.bite = false; f.missAt = 0; f.biteAt = t + 1.5 + Math.random() * 2; mgLine('mg_wait', null, ['Чекай', 'Wait for the float to dip']); }
+      const bob = f.bite ? Math.abs(Math.sin(t * 14)) * 7 * k : Math.sin(t * 2) * 2 * k;
+      c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(tipX, tipY); c.lineTo(fx, fy); c.stroke();
+      if (q >= 1) { c.strokeStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(fx, fy + 6 * k, (10 + (f.bite ? Math.sin(t * 14) * 4 : 0)) * k, 3 * k, 0, 0, 7); c.stroke(); }
+      c.fillStyle = '#fff'; circ(c, fx, fy + bob, 7 * k); c.fillStyle = '#e8463c'; c.beginPath(); c.arc(fx, fy + bob, 7 * k, Math.PI, 0); c.fill();
+      if (f.bite) { c.font = `900 ${Math.round(26 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.textAlign = 'center'; c.fillText('!', fx, fy - 14 * k); }
+    }
+    if (mg.fish) { const q = Math.min(1, (t - mg.fish.t0) / 1.0); drawIcon(c, W.ryba.ic, mg.fish.x * w + (tipX - mg.fish.x * w) * q, mg.fish.y * h - Math.sin(q * Math.PI) * h * 0.35 + (tipY - mg.fish.y * h) * q, 40 * k); }
+  }
+  mg && (mg.lastT = t);
+  requestAnimationFrame(mgFrame);
+}
+
 // ------------------------------------------------------------------ speaking
 // Say a word, and Gemini (through a small server that holds the key) gives a generous score. Chrome on Android.
 const SPEECH_URL = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/kdScoreSpeech';
@@ -2742,6 +2916,7 @@ function talk(npc) {
     steps.push(quest(item));
   }
   save();
+  if (MG[npc.id] && !(S.cd['mg_' + npc.id] > now())) { const last = steps[steps.length - 1], f = last.after; last.after = () => { if (f) f(); setTimeout(() => mgInvite(npc), 350); }; }
   dialog(npc, steps);
 }
 
@@ -3871,24 +4046,30 @@ function drawWorld(t) {
 const curFest = () => D.festivals[S.fest.i % D.festivals.length];
 const festHave = id => Math.min(curFest().needs[id], S.fest.have[id] || 0);
 const festReady = () => Object.keys(curFest().needs).every(id => festHave(id) >= curFest().needs[id]);
+// A compact card (no scrolling on a phone): the festival's name, what's still needed, one line about it,
+// and the buttons.
 function boardCard() {
-  const F = curFest(), st = stage(); learn('doshka');
-  const canGive = Object.keys(F.needs).filter(id => festHave(id) < F.needs[id] && (S.bag[id] || 0) > 0), ready = festReady();
-  const list = `<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">${Object.entries(F.needs).map(([id, n]) => { const h = festHave(id), full = h >= n; return `<span style="text-align:center;opacity:${h ? 1 : 0.5}"><img src="${iconURL(id)}" style="width:40px;height:40px" alt=""><br><b style="font-size:13px">${full ? '✓' : h + '/' + n}</b><br><small>${W[id].uk}</small></span>`; }).join('')}</div>`;
-  wordCard(F.id, {
-    note: `📋 <b>${W.doshka.uk}</b>${xl(' · notice board')}<br>${ready ? `🎉 <b>${PH.zi_sviatom.uk}</b>${xl(' · Everything is ready. Start the festival!')}` : `${st < 3 ? 'The village needs these for the festival. Bring them here:' : '🧺'}`}${list}`,
-    acts: ready ? [{ k: 'festgo', fn: () => { closeSheet(); startFest(); } }] : canGive.length ? [{ k: 'handover', fn: () => {
-      let n = 0; for (const id of canGive) { const g = Math.min(S.bag[id], F.needs[id] - festHave(id)); S.bag[id] -= g; S.fest.have[id] = festHave(id) + g; n += g; useWord(id, true); }
-      hud(); save(); blip(880, 0.1); toast(`📋 −${n}  ${festReady() ? '🎉' : ''}`); boardCard();
-    } }] : [],
-  });
+  const F = curFest(), st = stage(), first = learn(F.id); learn('doshka');
+  const canGive = Object.keys(F.needs).some(id => festHave(id) < F.needs[id] && (S.bag[id] || 0) > 0), ready = festReady();
+  const list = `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">${Object.entries(F.needs).map(([id, n]) => { const h = festHave(id), full = h >= n; return `<span style="text-align:center;min-width:54px;opacity:${h ? 1 : 0.55}"><img src="${iconURL(id)}" style="width:34px;height:34px" alt=""><br><b style="font-size:13px">${full ? '✓' : h + '/' + n}</b><br><small style="font-size:11px">${W[id].uk}</small></span>`; }).join('')}</div>`;
+  const fact = W[F.id].fact;
+  openSheet(`<div class="card">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:center"><img src="${iconURL(F.id)}" style="width:48px;height:48px" alt=""><div style="text-align:left"><div class="word" style="font-size:28px">${W[F.id].uk}</div>${st < 3 ? `<div class="en" style="font-size:14px">${W[F.id].en}</div>` : ''}</div></div>
+    <div class="hint" style="margin-top:6px;padding:6px 10px">📋 ${W.doshka.uk}${xl(' · notice board')} · ${ready ? `🎉 <b>${PH.zi_sviatom.uk}</b>${xl(' Everything is ready!')}` : xl('The village needs:')}${list}</div>
+    ${fact ? `<div class="muted" style="font-size:13px;padding:6px 2px 0;line-height:1.35">🌾 ${fact.uk}${st < 3 ? `<br><span style="opacity:.8">${fact.en}</span>` : ''}</div>` : ''}
+    <div class="row">${btn('hear', 'w_' + F.id, '🔊', 'round blue')}${ready ? btn('festGo', '', lab('festgo')) : canGive ? btn('boardGive', '', lab('handover')) : ''}${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+  if (first) say('w_' + F.id);
+}
+function boardGive() {
+  const F = curFest(); let n = 0;
+  for (const id of Object.keys(F.needs)) { const g = Math.min(S.bag[id] || 0, F.needs[id] - festHave(id)); if (g > 0) { S.bag[id] -= g; S.fest.have[id] = festHave(id) + g; n += g; useWord(id, true); } }
+  hud(); save(); blip(880, 0.1); toast(`📋 −${n}  ${festReady() ? '🎉' : ''}`); boardCard();
 }
 let fest = null;
-// The festival's own dance tune (75 beats a minute, first beat 0.081 s in). The dance beats are timed by the
+// Each festival's own dance song (F.tune), with its measured beat (F.beat) and first beat (F.first). The dance beats are timed by the
 // tune itself, so the drum rings land on its beat; with the music off they keep the same time by the clock.
-const festMusic = new Audio('music/festival.mp3');
+const festMusic = new Audio();
 festMusic.loop = true; festMusic.preload = 'none';
-const FEST_BEAT = 0.8, FEST_FIRST = 0.081;
 const festClock = () => fest && fest.tune && !festMusic.paused ? festMusic.currentTime : fest ? nowT - fest.danceT : 0;
 function startFest() {
   const F = curFest();
@@ -3907,9 +4088,9 @@ function startFest() {
 function festReply() {
   if (!fest) return;
   say('p_' + fest.F.reply); closeSheet();
-  fest.beats = Array.from({ length: 14 }, (_, i) => ({ t: FEST_FIRST + (i + 3) * FEST_BEAT, hit: 0 }));   // three beats to get going
+  const F = fest.F; fest.beats = Array.from({ length: 14 }, (_, i) => ({ t: (F.first || 0) + (i + 3) * (F.beat || 0.8), hit: 0 }));   // three beats to get going
   fest.phase = 'dance'; fest.danceT = nowT; fest.tune = false;
-  try { music.pause(); festMusic.currentTime = 0; festMusic.volume = 0.6; if (musicOn) festMusic.play().then(() => { if (fest) { fest.tune = true; fest.danceT = nowT - festMusic.currentTime; } }).catch(() => {}); } catch (e) {}
+  try { music.pause(); if (!festMusic.src.endsWith(F.tune + '.mp3')) festMusic.src = 'music/' + F.tune + '.mp3'; festMusic.currentTime = 0; festMusic.volume = 0.6; if (musicOn) festMusic.play().then(() => { if (fest) { fest.tune = true; fest.danceT = nowT - festMusic.currentTime; } }).catch(() => {}); } catch (e) {}
   setTimeout(() => { if (fest) say('w_tantsiui'); learn('tantsiui'); }, 1300);
 }
 function festTap() {
@@ -4375,6 +4556,10 @@ const A = {
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
   festReply() { festReply(); },
+  boardGive() { boardGive(); },
+  festGo() { closeSheet(); startFest(); },
+  mgGo(v) { closeSheet(); setTimeout(() => mgStart(v), 120); },
+  mgNesy() { if (!mg || mg.id !== 'andriiko' || mg.phase !== 'b') return; say('w_nesy'); useWord('nesy', true); mg.phase = 'home'; blip(880, 0.06); },
   festDone() { festDone(); },
   spGo() { const R = sp && sp.R; sp = null; if (R) cookScene(R); },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },

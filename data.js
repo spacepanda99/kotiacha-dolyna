@@ -60,6 +60,13 @@ window.DATA = {
     { id: "tantsiui", uk: "танцюй", tr: "tan-TSIUI", en: "dance!", ic: "💃", verb: true },
     { id: "stryby", uk: "стрибай", tr: "stry-BAI", en: "jump!", ic: "🦘", verb: true },
     { id: "spivai", uk: "співай", tr: "spi-VAI", en: "sing!", ic: "🎶", verb: true },
+    // Verbs the neighbours teach in their little games, two each, heard every round.
+    { id: "dmukhai", uk: "дмухай", tr: "dmu-KHAI", en: "blow!", ic: "💨", verb: true },
+    { id: "zbyrai", uk: "збирай", tr: "zby-RAI", en: "collect! gather!", ic: "🧺", verb: true },
+    { id: "kydai", uk: "кидай", tr: "ky-DAI", en: "throw!", ic: "🎾", verb: true },
+    { id: "nesy", uk: "неси", tr: "ne-SY", en: "fetch! bring it!", ic: "🐕", verb: true },
+    { id: "zakydai", uk: "закидай", tr: "za-ky-DAI", en: "cast! (a fishing line)", ic: "🎣", verb: true },
+    { id: "tiahny", uk: "тягни", tr: "tiah-NY", en: "pull!", ic: "💪", verb: true },
     // Festivals and the village notice board
     { id: "doshka", uk: "дошка оголошень", tr: "DOSH-ka o-ho-LO-shen", en: "notice board", ic: "@doshka" },
     { id: "horovod", uk: "хоровод", tr: "kho-ro-VOD", en: "round dance", ic: "💃", fact: { uk: "У хороводі всі тримаються за руки й танцюють по колу.", en: "In a khorovod everyone holds hands and dances round in a circle." } },
@@ -286,6 +293,11 @@ window.DATA = {
       look: { skin: "#eec39a", shirt: "#f7f3e8", trim: "#2c5fa8", skirt: "#3d5a80", hair: "#5a3a22", hat: "straw", hatCol: "#e8c66a" },
       lines: {
         greet: { uk: "Привіт! Гарний день, правда?", en: "Hi! A lovely day, isn't it?" },
+        mg_invite: { uk: "Порибалимо разом?", en: "Shall we go fishing together?" },
+        mg_zakydai: { uk: "Закидай вудку!", en: "Cast the line!" },
+        mg_tiahny: { uk: "Тягни!", en: "Pull!" },
+        mg_wait: { uk: "Ще ні! Чекай.", en: "Not yet! Wait." },
+        mg_done: { uk: "Гарний улов!", en: "A fine catch!" },
         intro: { uk: "Мене звати Тарас. Я ловлю рибу.", en: "My name is Taras. I catch fish." },
         how: { uk: "Як справи?", en: "How are you?" },
         good: { uk: "Це добре!", en: "That's good!" },
@@ -299,6 +311,10 @@ window.DATA = {
       look: { skin: "#f6d2b3", shirt: "#ffffff", trim: "#2e9e5b", skirt: "#3a7d44", hair: "#e0b34c", hat: "none", hatCol: "#000", small: true },
       lines: {
         greet: { uk: "Привіт! Пограймося?", en: "Hi! Shall we play?" },
+        mg_invite: { uk: "Пограймося з Бровком?", en: "Shall we play with Brovko?" },
+        mg_kydai: { uk: "Кидай м'ячик!", en: "Throw the ball!" },
+        mg_nesy: { uk: "Скажи йому: «Неси!»", en: "Tell him: «Fetch!»" },
+        mg_done: { uk: "Бровко тебе любить!", en: "Brovko loves you!" },
         intro: { uk: "Я — Андрійко. А це мій собака Бровко.", en: "I'm Andriiko. And this is my dog Brovko." },
         how: { uk: "Як справи?", en: "How are you?" },
         good: { uk: "Це добре!", en: "That's good!" },
@@ -312,6 +328,10 @@ window.DATA = {
       look: { skin: "#eabf98", shirt: "#fff8e6", trim: "#c98a1a", skirt: "#6b4f2a", hair: "#8a8a8a", hat: "straw", hatCol: "#f1dfa0" },
       lines: {
         greet: { uk: "Добрий день! Радий тебе бачити.", en: "Good day! Glad to see you." },
+        mg_invite: { uk: "Допоможеш мені з бджолами?", en: "Will you help me with the bees?" },
+        mg_dmukhai: { uk: "Дмухай димом на бджіл!", en: "Blow smoke on the bees!" },
+        mg_zbyrai: { uk: "Збирай мед!", en: "Collect the honey!" },
+        mg_done: { uk: "Дякую! Ось тобі мед.", en: "Thank you! Here is some honey for you." },
         intro: { uk: "Я — пан Богдан. Це мої бджоли.", en: "I'm Mr. Bohdan. These are my bees." },
         how: { uk: "Як справи?", en: "How are you?" },
         good: { uk: "Це добре!", en: "That's good!" },
@@ -338,11 +358,12 @@ window.DATA = {
   // Grandma Olia's cooking. She asks for each ingredient in turn, then cooks the dish and you eat together.
   // The village's festivals, in turn. The notice board lists what the village still needs; bring it all and
   // the festival begins: greetings, a round dance, and a festival finish.
+  // Each festival has its own song (music/fest-<id>.mp3); beat and first are the dance beat measured from it, in seconds.
   festivals: [
-    { id: "obzhynky", needs: { pshenytsia: 5, khlib: 2, yabluko: 4, kvitka: 3 }, greet: "zi_sviatom", reply: "zi_sviatom", center: "harvest", sky: "gold", reward: "didukh" },
-    { id: "kupala", needs: { kvitka: 5, kalyna: 3, soniashnyk: 2 }, greet: "zi_sviatom", reply: "zi_sviatom", center: "fire", sky: "night", reward: "vinok", finale: "stryby" },
-    { id: "sviatvechir", needs: { kutia: 1, uzvar: 1, med: 2, mak: 3 }, greet: "khrystos_narodyvsia", reply: "slavimo", center: "star", sky: "snow", reward: "svichka", finale: "spivai" },
-    { id: "velykden", needs: { paska: 1, yaitse: 6, maslo: 2, syr: 2 }, greet: "khrystos_voskres", reply: "voistynu", center: "basket", sky: "spring", reward: "pysanka" }
+    { id: "obzhynky", tune: "fest-obzhynky", beat: 0.8, first: 0.081, needs: { pshenytsia: 5, khlib: 2, yabluko: 4, kvitka: 3 }, greet: "zi_sviatom", reply: "zi_sviatom", center: "harvest", sky: "gold", reward: "didukh" },
+    { id: "kupala", tune: "fest-kupala", beat: 0.7895, first: 0.035, needs: { kvitka: 5, kalyna: 3, soniashnyk: 2 }, greet: "zi_sviatom", reply: "zi_sviatom", center: "fire", sky: "night", reward: "vinok", finale: "stryby" },
+    { id: "sviatvechir", tune: "fest-sviatvechir", beat: 0.8122, first: 0.07, needs: { kutia: 1, uzvar: 1, med: 2, mak: 3 }, greet: "khrystos_narodyvsia", reply: "slavimo", center: "star", sky: "snow", reward: "svichka", finale: "spivai" },
+    { id: "velykden", tune: "fest-velykden", beat: 0.7895, first: 0.093, needs: { paska: 1, yaitse: 6, maslo: 2, syr: 2 }, greet: "khrystos_voskres", reply: "voistynu", center: "basket", sky: "spring", reward: "pysanka" }
   ],
   recipes: [
     { id: "borshch", dish: "borshch", needs: ["buriak", "kapusta", "kartoplia", "morkva", "tsybulia", "pomidor"], steps: [{"v":"pochyst","w":"buriak","line":"do_pochyst_buriak","g":"tap","n":5},{"v":"porizh","w":"kapusta","line":"do_porizh_kapusta","g":"tap","n":6},{"v":"nalyi","w":"voda","line":"do_nalyi_voda","g":"hold","n":0},{"v":"zvary","w":"borshch","line":"do_zvary_borshch","g":"hold","n":0},{"v":"posoly","w":"sil","line":"do_posoly_sil","g":"tap","n":3},{"v":"pomishai","w":"borshch","line":"do_pomishai_borshch","g":"stir","n":0},{"v":"sprobui","w":"borshch","line":"do_sprobui_borshch","g":"tap","n":1}] },
@@ -416,7 +437,7 @@ window.DATA = {
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
-    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], handover: ["Віддати", "Hand over"], festgo: ["Почати свято", "Start the festival"], backvillage: ["До села", "Back to the village"], back: ["Назад", "Back"],
+    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], handover: ["Віддати", "Hand over"], festgo: ["Почати свято", "Start the festival"], backvillage: ["До села", "Back to the village"], mgyes: ["Так!", "Yes!"], mglater: ["Пізніше", "Later"], nesy: ["Неси!", "Fetch!"], back: ["Назад", "Back"],
     take: ["Взяти", "Take"], enter: ["Зайти", "Go in"], exit: ["Вийти", "Go out"], buy: ["Купити", "Buy"],
     sell: ["Продати", "Sell"], plant: ["Посадити", "Plant"], water: ["Полити", "Water"], harvest: ["Зібрати", "Harvest"],
     next: ["Далі", "Next"], close: ["Добре", "OK"], give: ["Дати", "Give"], putaway: ["Прибрати", "Put away"],
