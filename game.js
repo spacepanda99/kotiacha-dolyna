@@ -129,6 +129,8 @@ function subsHTML() {
   const subsOn = subsOnNow();
   return `<div class="subs"><div id="subline"${subsOn ? '' : ' style="display:none"'}></div><button class="subt" data-a="subs">💬 ${subsOn ? 'Hide English subtitles' : 'Show English subtitles'}</button></div>`;
 }
+// The action word in the subtitles, exactly as it's flashed on the pad, with its English.
+function actSub(v, a) { const W0 = W[v].uk; subNow = { uk: W0[0].toUpperCase() + W0.slice(1) + '!', en: W[v].en, a, t0: performance.now(), both: true }; subPaint(); }
 function subStart(id, a) {
   const uk = textOf(id); if (!uk) return;
   subNow = { uk, en: enOf(id), a, t0: performance.now() };
@@ -136,6 +138,7 @@ function subStart(id, a) {
 }
 function subPaint() {
   const el = document.getElementById('subline'); if (!el || !subNow) return;
+  if (subNow.both) { el.innerHTML = `<div class="su">${subNow.uk}</div>${subNow.en ? `<div class="se">${subNow.en}</div>` : ''}`; return; }   // an action word: the Ukrainian as flashed, its English under it
   const words = (subNow.en || subNow.uk).split(' '), a = subNow.a;
   let f = 1;
   if (a && !a.paused && !a.ended && a.duration > 0) f = Math.min(1, (a.currentTime + 0.15) / (a.duration * 0.92));
@@ -2698,13 +2701,13 @@ function cookProg(d) {
 // being said while you keep at it.
 function cookAct(beat) {
   const s = ck.s, t = nowT;
-  if ((beat && (!s.flash || t - s.flash > 0.35)) || !s.flash || t - s.flash > 1.1) s.flash = t;
+  if ((beat && (!s.flash || t - s.flash > 0.35)) || !s.flash || t - s.flash > 1.6) { s.flash = t; actSub(s.st.v, s.vo); }
   s.lastAct = performance.now();
   if (!s.vo) {
     s.vo = new Audio('audio/w_' + s.st.v + '.mp3'); const vo = s.vo, me = ck;
-    vo.onended = () => { duck = 1; if (ck === me && ck.s && ck.s.vo === vo && !ck.done && performance.now() - ck.s.lastAct < 600) setTimeout(() => { if (ck === me && ck.s && ck.s.vo === vo && performance.now() - ck.s.lastAct < 700) { duck = 0.3; vo.play().catch(() => {}); } }, 90); };
+    vo.onended = () => { duck = 1; if (ck === me && ck.s && ck.s.vo === vo && !ck.done && performance.now() - ck.s.lastAct < 600) setTimeout(() => { if (ck === me && ck.s && ck.s.vo === vo && performance.now() - ck.s.lastAct < 700) { duck = 0.3; vo.play().catch(() => {}); actSub(ck.s.st.v, vo); ck.s.flash = nowT; } }, 90); };
   }
-  if (s.vo.paused) { stopSay(); duck = 0.3; try { s.vo.currentTime = 0; } catch (e) {} s.vo.play().catch(() => {}); }
+  if (s.vo.paused) { stopSay(); duck = 0.3; try { s.vo.currentTime = 0; } catch (e) {} s.vo.play().catch(() => {}); actSub(s.st.v, s.vo); s.flash = t; }
 }
 function cookStopVoice(s) { if (s && s.vo) { try { s.vo.pause(); } catch (e) {} s.vo.onended = null; duck = 1; } }
 // Drawing helpers for the kitchen.
@@ -2724,7 +2727,7 @@ function ckKnife(c, x, y, s, k, rot) {   // handle at (x, y), the blade reaching
   c.restore();
 }
 function ckFlash(c, w, h, k, t) {   // the action word, popping up big and fading fast
-  const s = ck.s; if (!s.flash) return; const q = (t - s.flash) / 1.1; if (q > 1) return;
+  const s = ck.s; if (!s.flash) return; const q = (t - s.flash) / 1.6; if (q > 1) return;
   const W0 = W[s.st.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = flashA(q), sc = flashS(q);
   c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.2); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(txt, 0, 0); c.fillStyle = '#ffd27a'; c.fillText(txt, 0, 0); c.restore();
@@ -2829,14 +2832,18 @@ function cookFrame(me) {
     const FILL = { borshch: '#a33c2c', kutia: '#9c7a4c', rys: '#f3ecd8', syr: '#fbf6ea' }[st.w] || '#c9a86a';
     c.fillStyle = FILL; ell(c, cx, cy, rx, ry);
     c.save(); c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, 7); c.clip();
-    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 3 * k; for (let i = 0; i < 3; i++) { c.beginPath(); for (let q = 0; q <= 24; q++) { const a = s.swirl + i * 2.1 + q * 0.18, r = 0.15 + q / 24 * 0.8; const x = cx + Math.cos(a) * rx * r, y = cy + Math.sin(a) * ry * r; q ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
-    for (let i = 0; i < 6; i++) { const a = s.swirl * 0.9 + i * 1.05, r = 0.35 + (i % 3) * 0.2; drawIcon(c, W[st.w].ic, cx + Math.cos(a) * rx * r, cy + Math.sin(a) * ry * r + h * 0.03, h * 0.07); }
+    // the pieces in it sit still (a gentle drift where the spoon has been), with the swirl the spoon leaves
+    const BITS = { borshch: ['#7a1f3d', '#ff8a1f', '#f3e0a0', '#9fd27a'], kutia: ['#d9b27a', '#2a2a2a', '#f2a81d'], rys: ['#fffdf5', '#ff8a1f'], syr: ['#fffdf5', '#f3e0a0', '#fff3c4'] }[st.w] || ['#d9b27a', '#f3e0a0'];
+    for (let i = 0; i < 22; i++) { const a0 = i * 2.39, r = 0.18 + ((i * 0.37) % 0.72), dr = s.swirl * 0.03 * (1 - r * 0.5); c.fillStyle = BITS[i % BITS.length]; c.save(); c.translate(cx + Math.cos(a0 + dr) * rx * r, cy + Math.sin(a0 + dr) * ry * r); c.rotate(i + dr * 2); ell(c, 0, 0, (3 + i % 3) * k, (2 + i % 2) * k); c.restore(); }   // chopped bits: beetroot, carrot, potato, cabbage (or grains, rice, curd)
+    s.wake = (s.wake || []).filter(p => t - p.t < 1.1); if (T.held && (!s.wakeT || t - s.wakeT > 0.05)) { s.wakeT = t; s.wake.push({ x: T.x, y: T.y, t }); }
+    for (const p of s.wake) { const q = (t - p.t) / 1.1; c.strokeStyle = `rgba(255,255,255,${0.45 * (1 - q)})`; c.lineWidth = 2 * k; c.beginPath(); c.ellipse(p.x * w, p.y * h, (4 + q * 16) * k, (2 + q * 7) * k, 0, 0, 7); c.stroke(); }
     c.restore();
-    // the spoon: its bowl down in the food at your finger, the handle leaning up and out of the bowl
-    const tx = T.x * w, ty = T.y * h, hx = tx + w * 0.12 + (T.x - 0.5) * w * 0.25, hy = ty - h * 0.5;
-    c.strokeStyle = '#9b6b3c'; c.lineWidth = 7 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(tx, ty - h * 0.02); c.lineTo(hx, hy); c.stroke();
-    c.strokeStyle = '#b5824e'; c.lineWidth = 3 * k; c.beginPath(); c.moveTo(tx + 1 * k, ty - h * 0.04); c.lineTo(hx + 1 * k, hy + 2 * k); c.stroke();
-    c.fillStyle = 'rgba(155,107,60,.85)'; ell(c, tx, ty, w * 0.03, h * 0.025);
+    // the wooden spoon: its bowl down in the food where your finger is, the long handle leaning up out of the pot
+    const tx = T.x * w, ty = T.y * h, hx = tx + w * 0.1 + (T.x - 0.5) * w * 0.3, hy = ty - h * 0.55;
+    c.fillStyle = 'rgba(0,0,0,.18)'; ell(c, tx + 3 * k, ty + 3 * k, w * 0.04, h * 0.028);
+    c.strokeStyle = '#8a5a2b'; c.lineWidth = 9 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(tx, ty - h * 0.015); c.lineTo(hx, hy); c.stroke();
+    c.strokeStyle = '#c99463'; c.lineWidth = 3.5 * k; c.beginPath(); c.moveTo(tx + 1.5 * k, ty - h * 0.04); c.lineTo(hx + 1.5 * k, hy + 3 * k); c.stroke();
+    c.fillStyle = '#9b6b3c'; ell(c, tx, ty, w * 0.04, h * 0.03); c.fillStyle = 'rgba(0,0,0,.25)'; ell(c, tx, ty + h * 0.006, w * 0.03, h * 0.016);
     ring(tx, ty, 30 * k);
   } else if (kind === 'add') {
     const potX = w * 0.62, potY = h * 0.92, pS = w * 0.42;
@@ -2943,7 +2950,6 @@ function mgLine(key, verb, how, extra = '') {
   $('#mgChip').innerHTML = verb ? `<span class="verb">${W[verb].uk}</span> ${st < 3 ? '= ' + W[verb].en : xl('= ' + W[verb].en)} <small>· дієслово${st < 3 ? ' (verb)' : ''}</small>` : '';
   $('#mgHow').textContent = how ? how[0] + (st < 3 ? ' · ' + how[1] : '') : '';
   $('#mgRow').innerHTML = btn('hear', `v_${mg.npc.id}_${key}`, '🔊', 'round blue') + extra + btn('close', '', lab('close'), 'ghost');
-  { const p = $('#mgPad'), k = mg.k || 1, H = p.clientHeight; fitPad(p, 240); if (p.clientHeight !== H || !p.width) { p.width = Math.round(p.clientWidth * k); p.height = Math.round(p.clientHeight * k); } }   // new words can change the card's height
   say(`v_${mg.npc.id}_${key}`);
 }
 // Each game's steps: 'a' is the first verb, 'b' the second.
@@ -3151,7 +3157,7 @@ function fetchFrame(c, w, h, t, k, dt) {
   const items = [{ y: d.y, f: () => dogDraw(c, d.x * w, d.y * h - d.z, 1.15 * k * feScale(d.y), d, t, b.st === 'carried' || b.st === 'caught') }, { y: P ? FE.ay : b.y, f: drawBall }];
   items.sort((a, z) => a.y - z.y).forEach(o => o.f());
   if (P) { c.fillStyle = `rgba(255,255,255,${0.5 + P.f * 0.4})`; rr(c, w * 0.04, h * 0.06, w * 0.2, 7 * k, 4 * k); c.fillStyle = '#ffd23f'; rr(c, w * 0.04, h * 0.06, w * 0.2 * P.f, 7 * k, 4 * k); }
-  if (mg.pop && t - mg.pop.t < 1) { const q = (t - mg.pop.t); c.save(); c.globalAlpha = Math.max(0, 1 - q); c.font = `900 ${Math.round(24 * k)}px system-ui`; c.textAlign = 'center'; c.lineWidth = 5 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.fillStyle = '#ffd23f'; c.fillText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.restore(); }
+  if (mg.pop && t - mg.pop.t < 1.8) { const q = (t - mg.pop.t) / 1.8; c.save(); c.globalAlpha = Math.max(0, q < 0.7 ? 1 : 1 - (q - 0.7) / 0.3); c.font = `900 ${Math.round(24 * k)}px system-ui`; c.textAlign = 'center'; c.lineWidth = 5 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.fillStyle = '#ffd23f'; c.fillText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.restore(); }
   c.font = `800 ${Math.round(13 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🎯 ${mg.hits || 0}`, w - 10 * k, 20 * k);
 }
 const fxTick = () => blip(1040, 0.04);
@@ -3372,20 +3378,20 @@ function fitPad(pad, base) {
 // said over and over, each time to the end of the word, stopping once you stop.
 function mgAct(v, beat) {
   if (!mg) return; const t = nowT;
-  if ((beat && (!mg.fl || t - mg.fl.t > 0.35)) || !mg.fl || mg.fl.v !== v || t - mg.fl.t > 1.1) mg.fl = { v, t };
+  if ((beat && (!mg.fl || t - mg.fl.t > 0.35)) || !mg.fl || mg.fl.v !== v || t - mg.fl.t > 1.6) { mg.fl = { v, t }; actSub(v, mg.vo && mg.vo.v === v ? mg.vo : null); }
   mg.lastAct = performance.now();
   if (!mg.vo || mg.vo.v !== v) {
     mgStopVoice(); const vo = new Audio('audio/w_' + v + '.mp3'), me = mg; vo.v = v; mg.vo = vo;
-    vo.onended = () => { duck = 1; setTimeout(() => { if (mg === me && mg.vo === vo && performance.now() - mg.lastAct < 650) { duck = 0.3; vo.play().catch(() => {}); } }, 90); };
+    vo.onended = () => { duck = 1; setTimeout(() => { if (mg === me && mg.vo === vo && performance.now() - mg.lastAct < 650) { duck = 0.3; vo.play().catch(() => {}); actSub(v, vo); if (mg.fl) mg.fl = { v, t: nowT }; } }, 90); };
   }
-  if (mg.vo.paused) { stopSay(); duck = 0.3; try { mg.vo.currentTime = 0; } catch (e) {} mg.vo.play().catch(() => {}); }
+  if (mg.vo.paused) { stopSay(); duck = 0.3; try { mg.vo.currentTime = 0; } catch (e) {} mg.vo.play().catch(() => {}); actSub(v, mg.vo); mg.fl = { v, t }; }
 }
 // The flash's fade and size over its life q (0..1): in fast, held, then fading; it grows a little throughout.
-const flashA = q => q < 0.12 ? q / 0.12 : q < 0.65 ? 1 : 1 - (q - 0.65) / 0.35;
-const flashS = q => q < 0.12 ? 0.7 + q / 0.12 * 0.45 : 1.15 + (q - 0.12) * 0.15;
+const flashA = q => q < 0.1 ? q / 0.1 : q < 0.75 ? 1 : 1 - (q - 0.75) / 0.25;
+const flashS = q => q < 0.1 ? 0.7 + q / 0.1 * 0.45 : 1.15 + (q - 0.1) * 0.12;
 function mgStopVoice() { if (mg && mg.vo) { try { mg.vo.pause(); } catch (e) {} mg.vo.onended = null; mg.vo = null; duck = 1; } }
 function mgFlash(c, w, h, k, t) {
-  const f = mg && mg.fl; if (!f) return; const q = (t - f.t) / 1.1; if (q > 1 || q < 0) return;
+  const f = mg && mg.fl; if (!f) return; const q = (t - f.t) / 1.6; if (q > 1 || q < 0) return;
   const W0 = W[f.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = flashA(q), sc = flashS(q);
   c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(28 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(txt, 0, 0); c.fillStyle = '#ffd27a'; c.fillText(txt, 0, 0); c.restore();
@@ -3634,84 +3640,125 @@ const SNOWMAN = {
 // until the hole opens. Then the line goes down with a worm on the hook. Wait while the float bobs and
 // twitches; when it's pulled under, тягни: pull the line up and out comes a fish onto the ice.
 const ICE = {
+  // The pond seen in a cutaway: the snowy ice on top (SURF), the slab of ice, and the water underneath where
+  // you can watch the lure and the fish.
+  SURF: 0.38, BOT: 0.52, HX: 0.5,
   begin(step) {
-    if (step === 'a') { mg.drill = 0; mg.ang = null; mg.chips = []; mg.hole = 0; mg.fishy = null; mg.fish = null; mg.tool = { x: 0.6, y: 0.3 }; mgLine('mgw_sverdly', 'sverdly', ['Візьми ручку й крути по колу', 'Take the handle and wind it round']); }
-    else mgLine('mg_tiahny', 'tiahny', ['Тягни вгору!', 'Pull it up!']);
+    if (step === 'a') {
+      mg.drill = 0; mg.ang = null; mg.chips = []; mg.hole = 0; mg.fishy = null; mg.fish = null; mg.jig = 0; mg.lure = 0.66;
+      mg.tool = { x: ICE.HX + 0.13, y: 0.16 }; mg.rod = null;
+      mgLine('mgw_sverdly', 'sverdly', ['Візьми ручку й крути по колу', 'Take the handle and wind it round']);
+    } else mgLine('mg_tiahny', 'tiahny', ['Тягни вудку вгору!', 'Pull the rod up, now!']);
   },
   press(x, y) {
-    const T = mg.tool;
-    if (mg.phase === 'a' && mgNear(T, x, y, 0.2)) { T.held = true; blip(520, 0.03); mg.ang = null; }
-    else if (mg.phase === 'wait' && mg.hole >= 1) { if (mg.fishy && mg.fishy.st === 'bite') { mg.pull = { y0: y }; } else { mgLine('mg_wait', null, ['Чекай', 'Wait until the float goes under']); } }
-    else mg.miss = nowT;
+    if (mg.phase === 'a' && mgNear(mg.tool, x, y, 0.2)) { mg.tool.held = true; mg.ang = null; blip(520, 0.03); return; }
+    const R = mg.rod;
+    if (R && mgNear(R, x, y, 0.24)) { R.held = true; R.ox = R.x - x; R.oy = R.y - y; R.hist = [[performance.now(), R.y]]; blip(520, 0.03); return; }
+    mg.miss = nowT;
   },
   move(x, y) {
-    if (mg.phase === 'a' && mg.tool.held) {   // winding: the crank's angle round the auger's top follows the finger
-      const a = Math.atan2((y - 0.3) * 0.66, x - 0.45); mg.tool.x = 0.45 + Math.cos(a) * 0.15; mg.tool.y = 0.3 + Math.sin(a) * 0.15 / 0.66 * 0.4;
-      if (mg.ang != null) { let da = a - mg.ang; if (da > Math.PI) da -= Math.PI * 2; if (da < -Math.PI) da += Math.PI * 2; mg.drill = Math.min(1, mg.drill + Math.abs(da) / (Math.PI * 2 * 3)); if (Math.abs(da) > 0.01) { mgAct('sverdly'); if (Math.random() < 0.5) mg.chips.push({ x: 0.45 + (Math.random() - 0.5) * 0.06, y: 0.7, vx: (Math.random() - 0.5) * 0.6, vy: -0.3 - Math.random() * 0.4, t0: nowT }); } }
+    if (mg.phase === 'a' && mg.tool.held) {   // winding: the crank goes round the top of the auger with your finger
+      const cx = ICE.HX, cy = 0.16, a = Math.atan2((y - cy) / 0.06, (x - cx) / 0.13);
+      mg.tool.x = cx + Math.cos(a) * 0.13; mg.tool.y = cy + Math.sin(a) * 0.06;
+      if (mg.ang != null) { let da = a - mg.ang; if (da > Math.PI) da -= Math.PI * 2; if (da < -Math.PI) da += Math.PI * 2;
+        mg.drill = Math.min(1, mg.drill + Math.abs(da) / (Math.PI * 2 * 3));
+        if (Math.abs(da) > 0.01) { mgAct('sverdly'); if (Math.random() < 0.6) mg.chips.push({ x: ICE.HX + (Math.random() - 0.5) * 0.05, y: ICE.SURF, vx: (Math.random() - 0.5) * 0.7, vy: -0.3 - Math.random() * 0.5, t0: nowT }); } }
       mg.ang = a;
-      if (mg.drill >= 1) { mg.tool.held = false; mg.hole = 1; mg.holeT = nowT; useWord('sverdly', true); blip(880, 0.08); mg.phase = 'wait'; }
+      if (mg.drill >= 1) { mg.tool.held = false; mg.hole = 1; mg.holeT = nowT; useWord('sverdly', true); blip(880, 0.08); mg.phase = 'wait';
+        mg.rod = { x: 0.8, y: 0.24 }; mg.fishy = { st: 'far', x: Math.random() < 0.5 ? 0.06 : 0.94, y: 0.78, t0: nowT, vx: 0 };
+        setTimeout(() => { if (mg && mg.id === 'taras_w' && mg.phase === 'wait') mgLine('mg_wait', null, ['Візьми вудку й поводи вгору-вниз', 'Take the rod and jig it gently up and down']); }, 700); }
+      return;
     }
-    if (mg.pull && mg.fishy && mg.fishy.st === 'bite' && mg.pull.y0 - y > 0.12) ICE.catch();
+    const R = mg.rod; if (!R || !R.held) return;
+    const py = R.y; R.x = Math.max(0.62, Math.min(0.92, x + R.ox)); R.y = Math.max(0.1, Math.min(0.36, y + R.oy));
+    mg.jig = Math.min(1.5, mg.jig + Math.abs(R.y - py) * 6);
+    const tnow = performance.now(); R.hist.push([tnow, R.y]); while (R.hist.length && tnow - R.hist[0][0] > 350) R.hist.shift();
+    const rise = R.hist.length ? R.hist[0][1] - R.y : 0;   // how far the rod came up in the last third of a second
+    if (rise > 0.09) { const F = mg.fishy; R.hist = [[tnow, R.y]];
+      if (F && F.st === 'bite') ICE.catch();
+      else if (F && (F.st === 'nibble' || F.st === 'come')) { F.st = 'flee'; F.t0 = nowT; mgLine('mg_wait', null, ['Ще рано! Чекай', 'Too soon! Wait for the tip to bend']); blip(300, 0.05); }
+    }
   },
-  release() { if (mg.tool) mg.tool.held = false; if (mg.pull && mg.fishy && mg.fishy.st === 'bite') ICE.catch(); mg.pull = null; },
+  release() { if (mg.tool) mg.tool.held = false; if (mg.rod) mg.rod.held = false; },
   catch() {
-    mg.pull = null; useWord('tiahny', true); mgAct('tiahny', true); blip(990, 0.1);
-    mg.fish = { t0: nowT }; mg.fishy = null; mg.phase = 'catch';
-    setTimeout(() => { if (mg && mg.phase === 'catch') mgRoundDone(); }, 1700);
+    useWord('tiahny', true); mgAct('tiahny', true); blip(990, 0.1);
+    mg.fish = { t0: nowT, x: ICE.HX, y: mg.lure }; mg.fishy = null; mg.phase = 'catch';
+    setTimeout(() => { if (mg && mg.phase === 'catch') mgRoundDone(); }, 2000);
   },
   frame(c, w, h, t, k, dt) {
-    // the frozen pond: a snowy bank, the ice with its cracks and sheen
-    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#dfe9f5'); g.addColorStop(0.35, '#f6f9fd'); g.addColorStop(0.36, '#d6eaf8'); g.addColorStop(1, '#b6d6ee'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-    c.fillStyle = '#f6f9fd'; ell(c, w * 0.15, h * 0.36, w * 0.3, h * 0.05); ell(c, w * 0.85, h * 0.37, w * 0.3, h * 0.05);
-    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(w * (0.05 + i * 0.2), h * (0.5 + (i % 2) * 0.2)); c.lineTo(w * (0.15 + i * 0.2), h * (0.58 + (i % 2) * 0.2)); c.stroke(); }
-    c.strokeStyle = 'rgba(140,175,205,.5)'; c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(w * 0.7, h * 0.5); c.lineTo(w * 0.78, h * 0.62); c.lineTo(w * 0.9, h * 0.6); c.moveTo(w * 0.78, h * 0.62); c.lineTo(w * 0.8, h * 0.8); c.stroke();
-    // Taras's box seat and bucket
-    c.fillStyle = '#8a5a2b'; rr(c, w * 0.06, h * 0.66, w * 0.14, h * 0.16, 4 * k); c.fillStyle = '#a06a35'; c.fillRect(w * 0.06, h * 0.66, w * 0.14, 4 * k);
-    c.fillStyle = '#8a9099'; poly(c, [[w * 0.82, h * 0.7], [w * 0.94, h * 0.7], [w * 0.925, h * 0.86], [w * 0.835, h * 0.86]]); c.fillStyle = '#5b6470'; ell(c, w * 0.88, h * 0.7, w * 0.06, h * 0.02);
-    c.fillStyle = '#c9d8b8'; for (let i = 0; i < Math.min(4, mg.score); i++) ell(c, w * (0.86 + i * 0.012), h * (0.69 - (i % 2) * 0.01), 6 * k, 2.5 * k);
-    const hx = w * 0.45, hy = h * 0.7;
-    // the hole, opening as the auger bores through
-    const op = mg.hole > 0 ? Math.min(1, (t - mg.holeT) / 0.4) : mg.drill * 0.5;
-    if (op > 0) { c.fillStyle = '#ffffff'; ell(c, hx, hy, w * 0.11 * Math.max(0.4, op), h * 0.045 * Math.max(0.4, op)); c.fillStyle = '#1f4f78'; ell(c, hx, hy, w * 0.09 * op, h * 0.034 * op); }
-    mg.chips = (mg.chips || []).filter(p => t - p.t0 < 0.7); c.fillStyle = '#ffffff'; for (const p of mg.chips) { p.vy += dt * 1.4; p.x += p.vx * dt * 0.4; p.y += p.vy * dt * 0.4; c.fillRect(p.x * w, p.y * h, 3 * k, 2 * k); }
-    if (mg.phase === 'a' || (mg.hole > 0 && t - mg.holeT < 0.6)) {
-      // the ice auger: a spiral bit going down into the ice, the shaft, and the crank you wind
-      const lift = mg.hole > 0 ? (t - mg.holeT) / 0.6 * h * 0.5 : 0, depth = mg.drill * h * 0.1;
-      const topY = h * 0.3 - lift + depth;
-      c.save(); c.beginPath(); c.rect(0, 0, w, hy - lift * 0); c.clip();
-      c.strokeStyle = '#8d939a'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(hx, topY); c.lineTo(hx, hy + depth - lift); c.stroke();
-      c.strokeStyle = '#b9bec4'; c.lineWidth = 3 * k; c.beginPath(); for (let i = 0; i <= 20; i++) { const yy = hy - h * 0.12 + depth - lift + i * h * 0.006, xx = hx + Math.sin(i * 0.9 + mg.drill * 40) * 7 * k; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
-      c.restore();
-      // the crank: an offset handle on a bar
-      const cx2 = mg.tool.x * w, cy2 = mg.tool.y * h - lift + depth;
-      c.strokeStyle = '#5b6470'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(hx, topY); c.lineTo(cx2, cy2); c.stroke();
-      c.fillStyle = '#d43a3a'; rr(c, cx2 - 5 * k, cy2 - 12 * k, 10 * k, 18 * k, 4 * k);
-      c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.5 * k; c.setLineDash([4 * k, 4 * k]); c.beginPath(); c.ellipse(hx, topY, w * 0.15, h * 0.15 * 0.4 / 0.66 * 0.66, 0, 0, 7); c.stroke(); c.setLineDash([]);
-      if (mg.phase === 'a') mgRing(c, cx2, cy2, 22 * k, k, t);
+    const S0 = ICE.SURF * h, B0 = ICE.BOT * h, hx = ICE.HX * w;
+    // sky and the far snowy bank
+    let g = c.createLinearGradient(0, 0, 0, S0); g.addColorStop(0, '#cfdcee'); g.addColorStop(1, '#f2f6fb'); c.fillStyle = g; c.fillRect(0, 0, w, S0);
+    c.fillStyle = '#e6edf7'; ell(c, w * 0.2, S0 - h * 0.04, w * 0.35, h * 0.06); ell(c, w * 0.85, S0 - h * 0.035, w * 0.3, h * 0.05);
+    for (let i = 0; i < 4; i++) { const x = w * (0.06 + i * 0.29); c.fillStyle = 'rgba(80,120,80,.45)'; poly(c, [[x - 9 * k, S0 - h * 0.05], [x, S0 - h * 0.2], [x + 9 * k, S0 - h * 0.05]]); c.fillStyle = '#fff'; poly(c, [[x - 5 * k, S0 - h * 0.13], [x, S0 - h * 0.2], [x + 5 * k, S0 - h * 0.13]]); }
+    // the water under the ice, darker deeper down, with light coming through the hole
+    g = c.createLinearGradient(0, B0, 0, h); g.addColorStop(0, '#2f6a99'); g.addColorStop(1, '#173a5c'); c.fillStyle = g; c.fillRect(0, B0, w, h - B0);
+    if (mg.hole) { const lg = c.createLinearGradient(0, B0, 0, h); lg.addColorStop(0, 'rgba(190,225,255,.35)'); lg.addColorStop(1, 'rgba(190,225,255,0)'); c.fillStyle = lg; poly(c, [[hx - w * 0.04, B0], [hx + w * 0.04, B0], [hx + w * 0.14, h], [hx - w * 0.14, h]]); }
+    c.fillStyle = 'rgba(70,120,70,.6)'; for (let i = 0; i < 7; i++) { const x = w * (0.05 + i * 0.15), sw = Math.sin(t * 1.2 + i) * 4 * k; c.beginPath(); c.moveTo(x, h); c.quadraticCurveTo(x + sw, h * 0.9, x + sw * 1.6, h * (0.8 + (i % 3) * 0.04)); c.lineTo(x + 4 * k + sw * 1.6, h * (0.8 + (i % 3) * 0.04)); c.quadraticCurveTo(x + 4 * k + sw, h * 0.9, x + 6 * k, h); c.fill(); }   // waterweed
+    c.fillStyle = 'rgba(255,255,255,.35)'; for (let i = 0; i < 8; i++) { const q = (t * 0.15 + i / 8) % 1; circ(c, w * ((i * 0.13 + 0.07) % 1), h - q * (h - B0), (1 + i % 2) * k); }
+    // the slab of ice in section, with snow on top
+    g = c.createLinearGradient(0, S0, 0, B0); g.addColorStop(0, '#e9f5fd'); g.addColorStop(1, '#a9d2ee'); c.fillStyle = g; c.fillRect(0, S0, w, B0 - S0);
+    c.fillStyle = '#ffffff'; c.fillRect(0, S0 - 3 * k, w, 4 * k); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1 * k; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(w * (0.06 + i * 0.17), S0 + 4 * k); c.lineTo(w * (0.1 + i * 0.17), B0 - 3 * k); c.stroke(); }
+    // the hole bored through the slab (part-way while drilling)
+    const cut = mg.hole ? 1 : mg.drill;
+    if (cut > 0) { c.fillStyle = mg.hole ? '#2f6a99' : '#7fb3d8'; c.fillRect(hx - w * 0.035, S0 - 2 * k, w * 0.07, (B0 - S0) * cut + 2 * k); c.fillStyle = '#ffffff'; ell(c, hx, S0, w * 0.06, h * 0.012); c.fillStyle = mg.hole ? '#1f4f78' : '#a9d2ee'; ell(c, hx, S0, w * 0.035, h * 0.008); }
+    if (mg.hole && t - mg.holeT < 0.8) { const q = (t - mg.holeT) / 0.8; c.fillStyle = `rgba(255,255,255,${0.8 * (1 - q)})`; for (let i = 0; i < 8; i++) circ(c, hx + Math.sin(i * 2.3) * w * 0.03, B0 + h * 0.05 - q * h * 0.1 - i * 3 * k, (2 + i % 3) * k); }
+    // Taras's box and the bucket on the ice
+    c.fillStyle = '#8a5a2b'; rr(c, w * 0.05, S0 - h * 0.13, w * 0.13, h * 0.13, 4 * k); c.fillStyle = '#a06a35'; c.fillRect(w * 0.05, S0 - h * 0.13, w * 0.13, 4 * k);
+    c.fillStyle = '#8a9099'; poly(c, [[w * 0.2, S0 - h * 0.11], [w * 0.31, S0 - h * 0.11], [w * 0.295, S0], [w * 0.215, S0]]); c.fillStyle = '#5b6470'; ell(c, w * 0.255, S0 - h * 0.11, w * 0.055, h * 0.015);
+    c.fillStyle = '#c9d8b8'; for (let i = 0; i < Math.min(4, mg.score); i++) ell(c, w * (0.235 + i * 0.012), S0 - h * (0.115 + (i % 2) * 0.01), 6 * k, 2.5 * k);
+    mg.chips = (mg.chips || []).filter(p => t - p.t0 < 0.7); c.fillStyle = '#ffffff'; for (const p of mg.chips) { p.vy += dt * 1.6; p.x += p.vx * dt * 0.4; p.y += p.vy * dt * 0.4; c.fillRect(p.x * w, p.y * h, 3 * k, 2 * k); }
+    if (!mg.hole || t - mg.holeT < 0.7) {
+      // the ice auger: the spiral bit boring down into the slab, the shaft, the crank on top
+      const lift = mg.hole ? (t - mg.holeT) / 0.7 * h * 0.5 : 0, tip = S0 + (B0 - S0) * mg.drill - lift, top = h * 0.16 - lift;
+      c.strokeStyle = '#8d939a'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(hx, top); c.lineTo(hx, tip - h * 0.08); c.stroke();
+      c.strokeStyle = '#c9ced4'; c.lineWidth = 3 * k; c.beginPath(); for (let i = 0; i <= 18; i++) { const yy = tip - h * 0.1 + i * h * 0.0055, xx = hx + Math.sin(i * 1.0 + mg.drill * 50) * 6 * k; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      const T = mg.tool, cx2 = T.x * w, cy2 = T.y * h - lift;
+      c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.5 * k; c.setLineDash([4 * k, 4 * k]); c.beginPath(); c.ellipse(hx, h * 0.16 - lift, w * 0.13, h * 0.06, 0, 0, 7); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = '#5b6470'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(hx, top); c.lineTo(cx2, cy2); c.stroke();
+      c.fillStyle = '#d43a3a'; rr(c, cx2 - 6 * k, cy2 - 14 * k, 12 * k, 20 * k, 5 * k);
+      if (!mg.hole) mgRing(c, cx2, cy2, 24 * k, k, t);
     }
-    if (mg.hole > 0) {
-      // the little ice rod by the hole, its line going down, the float bobbing in the water
-      c.strokeStyle = '#6b4422'; c.lineWidth = 3 * k; c.beginPath(); c.moveTo(w * 0.22, h * 0.7); c.lineTo(hx - w * 0.04, h * 0.5); c.stroke();
-      if (!mg.fishy && !mg.fish && t - mg.holeT > 0.7) mg.fishy = { st: 'wait', biteAt: t + 2 + Math.random() * 2.5 };
-      const F = mg.fishy;
+    if (mg.hole && mg.rod) {
+      const R = mg.rod; mg.jig *= Math.exp(-dt * 1.5);
+      // the fish: far off, coming to a dancing lure, nibbling, biting, or darting off if you pull too soon
+      const F = mg.fishy, lx = hx, ly = mg.lure * h;
       if (F) {
-        if (F.st === 'wait' && t > F.biteAt - 1.2) F.st = 'nibble';
-        else if (F.st === 'nibble' && t > F.biteAt) { F.st = 'bite'; F.t0 = t; mgBegin('b'); mg.phase = 'wait'; blip(420, 0.08); }
-        else if (F.st === 'bite' && t - F.t0 > 1.6) { F.st = 'wait'; F.biteAt = t + 2 + Math.random() * 2; mgLine('mg_wait', null, ['Чекай', 'Too late! Wait for the next one']); }
+        if (F.st === 'far' && (mg.jig > 0.25 || t - F.t0 > 5)) { F.st = 'come'; F.t0 = t; }
+        if (F.st === 'come') { const sp = 0.06 + Math.min(1, mg.jig) * 0.12, dx = ICE.HX - F.x, dy = mg.lure + 0.03 - F.y, d = Math.hypot(dx, dy); if (d < 0.04) { F.st = 'nibble'; F.t0 = t; F.biteAt = t + 1 + Math.random(); } else { F.x += dx / d * sp * dt; F.y += dy / d * sp * dt; } }
+        else if (F.st === 'nibble') { F.x = ICE.HX + Math.sin(t * 9) * 0.01; F.y = mg.lure + 0.03; if (t > F.biteAt) { F.st = 'bite'; F.t0 = t; mgBegin('b'); mg.phase = 'wait'; blip(420, 0.08); } }
+        else if (F.st === 'bite') { F.x = ICE.HX; F.y = mg.lure + 0.02; if (t - F.t0 > 1.7) { F.st = 'flee'; F.t0 = t; mgLine('mg_wait', null, ['Запізно! Чекай наступну', 'Too late! Wait for the next one']); } }
+        else if (F.st === 'flee') { F.x += (F.x < 0.5 ? -1 : 1) * 0.35 * dt; F.y += 0.05 * dt; if (t - F.t0 > 1.6) { F.st = 'far'; F.t0 = t; F.x = Math.random() < 0.5 ? 0.04 : 0.96; F.y = 0.78; } }
+        const dir = F.st === 'flee' ? (F.x < 0.5 ? -1 : 1) : (ICE.HX >= F.x ? 1 : -1);
+        if (F.st !== 'far' || true) fishArt(c, F.x * w - dir * 10 * k, F.y * h, 1.15 * k, Math.sin(t * 3) * 0.08 + (F.st === 'bite' ? -0.5 * dir : 0), t * (F.st === 'flee' ? 2 : 1), false, dir);
       }
-      const sink = F && F.st === 'bite' ? 5 * k + Math.abs(Math.sin(t * 16)) * 4 * k : F && F.st === 'nibble' ? Math.max(0, Math.sin(t * 22)) * 3 * k : Math.sin(t * 2) * 1 * k;
-      if (!mg.fish) {
-        c.strokeStyle = 'rgba(60,60,60,.8)'; c.lineWidth = 1 * k; c.beginPath(); c.moveTo(hx - w * 0.04, h * 0.5); c.quadraticCurveTo(hx - w * 0.01, h * 0.6, hx, hy + sink - 4 * k); c.stroke();
-        c.fillStyle = '#fff'; circ(c, hx, hy + sink - 3 * k, 4 * k); c.fillStyle = '#e2392f'; c.beginPath(); c.arc(hx, hy + sink - 3 * k, 4 * k, Math.PI, 0); c.fill();
-        if (F && F.st === 'bite') { c.font = `900 ${Math.round(24 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = 4 * k; c.textAlign = 'center'; c.strokeText('!', hx, hy - 18 * k); c.fillText('!', hx, hy - 18 * k); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(hx, hy + 14 * k); c.lineTo(hx, hy - 40 * k); c.stroke(); }
-      } else {
-        // the fish pulled up out of the hole, flopping onto the ice, then sliding to the bucket
-        const q = Math.min(1, (t - mg.fish.t0) / 1.4), up = Math.min(1, q / 0.35), x = q < 0.35 ? hx : hx + (w * 0.88 - hx) * ((q - 0.35) / 0.65), y = q < 0.35 ? hy - up * h * 0.25 : hy - h * 0.25 + ((q - 0.35) / 0.65) * h * 0.2 - Math.sin(((q - 0.35) / 0.65) * Math.PI) * h * 0.1;
-        c.strokeStyle = 'rgba(60,60,60,.8)'; c.lineWidth = 1 * k; if (q < 0.35) { c.beginPath(); c.moveTo(hx - w * 0.04, h * 0.5); c.lineTo(x, y - 8 * k); c.stroke(); }
-        if (q < 1) fishArt(c, x, y, 1.2 * k, q < 0.35 ? -1.4 + Math.sin(t * 22) * 0.3 : Math.sin(t * 18) * 0.4, t, false, 1);
-        c.fillStyle = 'rgba(200,230,250,.9)'; for (let i = 0; i < 6; i++) { const dq = (t - mg.fish.t0) * 1.6 - i * 0.05; if (dq < 0 || dq > 0.6) continue; circ(c, hx + (i - 3) * 6 * k * dq * 3, hy - Math.sin(dq * 4) * 24 * k + dq * dq * 30 * k, 2 * k); }
+      // the rod: a short winter rod in your hand; the line from its tip down through the hole to the lure.
+      // Moving the rod up and down makes the lure dance; the springy tip (the кивок) nods when a fish touches it.
+      const bend = F && F.st === 'bite' ? 0.55 + Math.sin(t * 18) * 0.08 : F && F.st === 'nibble' ? Math.max(0, Math.sin(t * 20)) * 0.25 : mg.phase === 'catch' && mg.fish && t - mg.fish.t0 < 0.6 ? 0.6 : 0;
+      const gx = R.x * w, gy = R.y * h, tx = hx + w * 0.04, ty = gy - h * 0.02;
+      mg.lure += ((0.58 + (R.y - 0.1) * 1.2) - mg.lure) * Math.min(1, dt * 6);
+      const nx = tx - w * 0.05, ny = ty + h * 0.02 + bend * h * 0.1;   // the nod's tip
+      if (!mg.fish || t - mg.fish.t0 > 0.5) { c.strokeStyle = 'rgba(40,40,40,.75)'; c.lineWidth = 1 * k; c.beginPath(); c.moveTo(nx, ny); c.lineTo(hx, S0); c.lineTo(lx, ly); c.stroke(); }
+      if (!mg.fish) {   // the lure: a little bead with the worm on its hook
+        c.fillStyle = '#e8b33a'; circ(c, lx, ly, 3 * k); c.strokeStyle = '#e8828f'; c.lineWidth = 2.4 * k; c.beginPath(); for (let i = 0; i <= 6; i++) { const q = i / 6; c.lineTo(lx + Math.sin(t * 7 + q * 5) * 2.5 * k * q, ly + 3 * k + q * 8 * k); } c.stroke();
+        if (F && F.st === 'bite') { c.font = `900 ${Math.round(22 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = 4 * k; c.textAlign = 'center'; c.strokeText('!', nx - 8 * k, ny - 10 * k); c.fillText('!', nx - 8 * k, ny - 10 * k); }
       }
-      if (mg.phase === 'wait' && F && F.st === 'bite') mgRing(c, hx, hy, 30 * k, k, t);
+      c.strokeStyle = '#6b4422'; c.lineWidth = 5 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(tx, ty); c.stroke();
+      c.strokeStyle = '#c8a46a'; c.lineWidth = 8 * k; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx - (gx - tx) * 0.25, gy - (gy - ty) * 0.25); c.stroke();   // the cork grip
+      c.fillStyle = '#5b6470'; circ(c, gx - (gx - tx) * 0.32, gy - (gy - ty) * 0.32 + 4 * k, 4 * k);   // the little reel
+      c.strokeStyle = '#d43a3a'; c.lineWidth = 1.6 * k; c.beginPath(); c.moveTo(tx, ty); c.quadraticCurveTo(tx - w * 0.03, ty, nx, ny); c.stroke(); c.fillStyle = '#d43a3a'; circ(c, nx, ny, 2 * k);
+      if (!R.held && !mg.fish) mgRing(c, gx, gy, 26 * k, k, t);
+      // the catch: drawn up the line through the hole, out onto the ice, a flop or two, then into the bucket
+      if (mg.fish) {
+        const q = Math.min(1, (t - mg.fish.t0) / 1.8);
+        let x, y, a;
+        if (q < 0.35) { const u2 = q / 0.35; x = hx; y = ly + (S0 - h * 0.06 - ly) * u2; a = -Math.PI / 2 + Math.sin(t * 24) * 0.3; }
+        else if (q < 0.65) { const u2 = (q - 0.35) / 0.3; x = hx - u2 * w * 0.12; y = S0 - h * 0.06 - Math.abs(Math.sin(u2 * Math.PI * 2)) * h * 0.08; a = Math.sin(t * 20) * 0.6; }
+        else { const u2 = (q - 0.65) / 0.35; x = hx - w * 0.12 + (w * 0.255 - (hx - w * 0.12)) * u2; y = S0 - h * 0.06 - Math.sin(u2 * Math.PI) * h * 0.12 - u2 * h * 0.05; a = u2 * 3; }
+        if (q < 0.35) { c.strokeStyle = 'rgba(40,40,40,.75)'; c.lineWidth = 1 * k; c.beginPath(); c.moveTo(nx, ny); c.lineTo(hx, S0); c.lineTo(x, y + 8 * k); c.stroke(); }
+        if (q < 1) fishArt(c, x, y, 1.25 * k, a, t, false, -1);
+        if (q > 0.3 && q < 0.5) { c.fillStyle = 'rgba(200,230,250,.9)'; for (let i = 0; i < 7; i++) circ(c, hx + (i - 3) * 5 * k * (q - 0.3) * 8, S0 - Math.sin((q - 0.3) * 15) * 20 * k, 2 * k); }
+      }
     }
   },
 };
@@ -3753,7 +3800,7 @@ function chopSwing() {
 function chopHit() {
   if (!chop || chop.split) return;
   chop.armed = false; chop.split = nowT; chop.shake = nowT; blip(160, 0.12); setTimeout(() => blip(520, 0.05), 60); useWord('rubai', true);
-  chop.fl = nowT; chopVoice();
+  chop.fl = nowT; chopVoice(); actSub('rubai', chop.vo);
   for (let i = 0; i < 12; i++) chop.chips.push({ x: 0.5, y: 0.6, vx: (Math.random() - 0.5) * 1.4, vy: -0.4 - Math.random() * 0.8, r: Math.random() * 6, t0: nowT });
   setTimeout(() => {
     if (!chop) return;
@@ -3810,7 +3857,7 @@ function chopFrame(me) {
   if (!A.held && (chop.miss && t - chop.miss < 0.8 || t - (chop.logIn) < 2.5 && chop.n === 0)) { c.strokeStyle = 'rgba(255,210,63,.7)'; c.lineWidth = 3 * k; c.beginPath(); c.arc(gx, gy, 30 * k, 0, 7); c.stroke(); }
   if (A.held && chop.armed && !chop.split) { c.fillStyle = 'rgba(255,255,255,.85)'; c.font = `800 ${Math.round(12 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⬇', bx, h * 0.45); }
   // the word, flashed on each split
-  if (chop.fl) { const q = (t - chop.fl) / 1.1; if (q >= 0 && q <= 1) { const a = flashA(q), sc = flashS(q); c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
+  if (chop.fl) { const q = (t - chop.fl) / 1.6; if (q >= 0 && q <= 1) { const a = flashA(q), sc = flashS(q); c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.font = `800 ${Math.round(15 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🪵 ${chop.n}/${chop.logs}`, w - 12 * k, 24 * k);
   requestAnimationFrame(() => chopFrame(me));
@@ -4453,10 +4500,11 @@ function drawBed(t) {
       bedText(c, '☀️ ' + PH.dobroho_ranku.uk, PH.dobroho_ranku.en, h * 0.26, ma);
       bedCard(c, w / 2, h * 0.43, wxd.ic, W[wxd.w].uk, W[wxd.w].en, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u);
       if (bed.season) bedCard(c, w / 2, h * 0.58, SEASON_IC[bed.season], W[bed.season].uk, `${W[bed.season].en} is here!`, Math.min(fade(T2 + 0.9, T2 + 1.5), outA), u);
-      if (a > T2 + 1.6 && a < T3 - 0.9 && stage() < 3) { c.save(); c.globalAlpha = 0.6 + 0.3 * Math.sin(t * 3); c.fillStyle = '#fff8ea'; c.font = `700 ${Math.round(u * 0.035)}px system-ui`; c.textAlign = 'center'; c.fillText('Tap to start the day', w / 2, h * 0.92); c.restore(); }
+      if (a > T2 + 1.6 && a < T3 - 0.9 && stage() < 3) { c.save(); c.globalAlpha = 0.6 + 0.3 * Math.sin(t * 3); c.fillStyle = '#fff8ea'; c.font = `700 ${Math.round(u * 0.035)}px system-ui`; c.textAlign = 'center'; c.fillText('Tap to start the day', w / 2, h * 0.8); c.restore(); }
     }
   }
   if (a > T3) { bed = null; document.body.classList.remove('bedtime'); $('#homebar').style.display = 'flex'; }
+  canvasSub(c, w, h);
 }
 function drawHome(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
@@ -5389,6 +5437,22 @@ function carolStar(c, x, y, s, t) {
   c.fillStyle = '#ffd23f'; poly(c, pts); c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); pts.forEach(([px, py], i) => i ? c.lineTo(px, py) : c.moveTo(px, py)); c.closePath(); c.stroke();
   c.fillStyle = '#d43a3a'; circ(c, 0, 0, s * 0.1); c.restore();
 }
+// Live subtitles drawn on the screen itself (the festival and bedtime have no card to put them in): what's
+// being said right now, in English, on a dark strip near the bottom.
+function canvasSub(c, w, h) {
+  if (!subNow || !subsOnNow()) return;
+  const a = subNow.a, playing = a && !a.paused && !a.ended, age = (performance.now() - subNow.t0) / 1000;
+  if (!playing && age > 3.2) return;
+  const u = roomU(), txt = subNow.both ? subNow.uk + (subNow.en ? '  ·  ' + subNow.en : '') : (subNow.en || subNow.uk), fs2 = Math.round(u * 0.042);
+  c.save(); c.font = `700 ${fs2}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  const words = txt.split(' '), lines = []; let cur = '';
+  for (const wd of words) { const tryL = cur ? cur + ' ' + wd : wd; if (c.measureText(tryL).width > w * 0.84 && cur) { lines.push(cur); cur = wd; } else cur = tryL; }
+  if (cur) lines.push(cur);
+  const lh = fs2 * 1.3, bh = lines.length * lh + fs2 * 0.8, by = h * 0.965 - bh, bw = Math.min(w * 0.92, Math.max(...lines.map(l => c.measureText(l).width)) + fs2 * 1.6);
+  c.globalAlpha = Math.min(1, playing ? 1 : (3.2 - age) * 2); c.fillStyle = 'rgba(47,42,38,.88)'; rr(c, (w - bw) / 2, by, bw, bh, fs2 * 0.6);
+  c.fillStyle = '#ffffff'; lines.forEach((l, i) => c.fillText(l, w / 2, by + fs2 * 0.4 + lh * (i + 0.5)));
+  c.restore();
+}
 function drawFest(t) {
   const f = fest, c = ctx, w = cv.width, h = cv.height, u = roomU(), F = f ? f.F : curFest();
   if (!f) { c.fillStyle = '#8fd169'; c.fillRect(0, 0, w, h); return; }
@@ -5487,6 +5551,7 @@ function drawFest(t) {
     } else if (f.done.card && !sheetOpen()) festDone();   // the reward card swiped away: still take it home
   }
   if (f.phase === 'greet' && f.greetAt && !sheetOpen() && nowT - f.greetAt > 0.6) f.greetCard();   // never left with no way to answer
+  canvasSub(c, w, h);
 }
 
 

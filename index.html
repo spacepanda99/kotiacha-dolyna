@@ -196,6 +196,10 @@
   .gamecard .cookline { margin:2px 0; gap:8px; } .gamecard .cookline img { width:44px; height:44px; border-radius:12px; }
   .gamecard .cookline .word { font-size:21px !important; line-height:1.15; } .gamecard .cookline .en { font-size:14px; }
   .gamecard .vchip { font-size:14px; margin:0 0 4px; }
+  /* fixed heights for everything that changes mid-game, so the play area never moves */
+  .gamecard #mgLine { height:2.3em; overflow:hidden; } .gamecard #mgEn { height:2.5em; overflow:hidden; } .gamecard #mgChip { height:1.45em; overflow:hidden; white-space:nowrap; }
+  .gamecard #mgHow { height:2.6em; min-height:0 !important; overflow:hidden; font-size:12.5px; } .gamecard #mgRow { height:44px; flex-wrap:nowrap; }
+  .gamecard + .subs #subline { height:2.9em; overflow:hidden; box-sizing:content-box; display:flex; flex-direction:column; justify-content:center; } .gamecard + .subs #subline .se { font-size:13px; opacity:.75; }
   .gamecard .muted { font-size:13px; min-height:0 !important; padding:2px 0 0; line-height:1.25; }
   .gamecard .cookbar { margin:6px 0 2px; height:9px; }
   .gamecard .row { margin-top:6px; gap:8px; } .gamecard .b { min-height:40px; padding:7px 14px; font-size:16px; } .gamecard .b.round { width:42px; height:42px; min-height:42px; padding:0; }
@@ -256,12 +260,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v140</div>
+  <div class="ver">v141</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '140';</script>
-<script src="data.js?v=140"></script>
-<script src="game.js?v=140"></script>
+<script>window.APP_VERSION = '141';</script>
+<script src="data.js?v=141"></script>
+<script src="game.js?v=141"></script>
 </body>
 </html>
