@@ -2917,7 +2917,7 @@ function mgStart(id) {
   openSheet(`<div class="card"><div class="tag" id="mgTag"></div>
     <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" id="mgLine" style="font-size:26px"></div><div class="en" id="mgEn"></div></div></div>
     <div class="vchip" id="mgChip"></div>
-    <canvas id="mgPad" class="cookpad" style="width:100%;display:block${kind === 'andriiko' || kind === 'taras' ? ';height:240px' : ''}"></canvas>
+    <canvas id="mgPad" class="cookpad" style="width:100%;display:block;height:240px"></canvas>
     <div class="muted" id="mgHow" style="min-height:2.6em"></div>
     <div class="row" id="mgRow"></div></div>${subsHTML()}`);
   subNow = null;
@@ -2926,7 +2926,7 @@ function mgStart(id) {
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
   const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) * pad.width / r.width, (e.clientY - r.top) * pad.height / r.height]; };   // the card can change height after the pad is sized
   pad.addEventListener('pointerdown', e => { e.preventDefault(); try { pad.setPointerCapture(e.pointerId); } catch (er) {} const [x, y] = at(e); mg.down = { x, y, x0: x, y0: y, t: nowT }; mgPress(x, y); });
-  pad.addEventListener('pointermove', e => { if (!mg || !mg.down) return; const [x, y] = at(e); mg.down.x = x; mg.down.y = y; });
+  pad.addEventListener('pointermove', e => { if (!mg || !mg.down) return; const [x, y] = at(e); mg.down.x = x; mg.down.y = y; if (GAMES[mg.id] && GAMES[mg.id].move) GAMES[mg.id].move(x / pad.width, y / pad.height); });
   const up = e => { if (!mg || !mg.down) return; const d = mg.down; mg.down = null; mgRelease(d); };
   for (const ev of ['pointerup', 'pointercancel']) pad.addEventListener(ev, up);
   mgBegin('a');
@@ -2947,6 +2947,7 @@ function mgLine(key, verb, how, extra = '') {
 function mgBegin(step) {
   const id = mg.id, W0 = (mg.k || 1);
   mg.phase = step; mg.pt = nowT;
+  if (GAMES[id]) return GAMES[id].begin(step);
   if (id === 'taras_w') {
     if (step === 'a') { mg.drill = 0; mg.float = null; mg.fish = null; mgLine('mgw_sverdly', 'sverdly', ['Тримай пальцем на льоду', 'Press and hold on the ice']); }
     else mgLine('mg_tiahny', 'tiahny', ['Торкнися зараз!', 'Tap now!']);
@@ -2970,6 +2971,7 @@ function mgBegin(step) {
 }
 function mgPress(x, y) {
   if (!mg) return;   // a tap landing just as the game ends
+  if (GAMES[mg.id]) { const p = $('#mgPad'); return GAMES[mg.id].press(x / p.width, y / p.height); }
   if (mg.id === 'andriiko') return fetchPress(x, y);
   if (mg.id === 'taras') return fishPress();
   const w = $('#mgPad').width, h = $('#mgPad').height;
@@ -2984,6 +2986,7 @@ function mgPress(x, y) {
 }
 function mgRelease(d) {
   if (!mg) return;
+  if (GAMES[mg.id]) return GAMES[mg.id].release(d);
   if (mg.id === 'andriiko') return fetchRelease(d);
   if (mg.id === 'taras') return fishRelease();
   const flick = d.y0 - d.y > 40 * (mg.k || 1) && nowT - d.t < 0.8;
@@ -3012,7 +3015,7 @@ function mgFinish() {
   const id = mg.npc.id, npc = mg.npc, st = stage(), done = mg.id.endsWith('_w') ? 'mgw_done' : 'mg_done';
   const gift = id === 'bohdan' ? 'med' : id === 'taras' ? 'ryba' : null;
   if (gift) give(gift, id === 'taras' ? 2 : 1); S.hearts += 1; S.cd['mg_' + id] = now() + 120e3; hud(); save();
-  const L = npc.lines[done]; mg = null;
+  const L = npc.lines[done]; mgStopVoice(); mg = null;
   openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     ${gift ? `<img class="big" src="${iconURL(gift)}" alt=""><div class="hint">+${id === 'taras' ? 2 : 1} ${W[gift].uk} · ❤️ +1</div>` : `<div class="hint">❤️ +1</div>`}
     <div class="row">${btn('close', '', lab('close'))}</div></div>${subsHTML()}`); subNow = null;
@@ -3063,7 +3066,7 @@ function fetchRelease(d) {
   const T = mg.tg, R = 0.075 * feScale(T.y);   // in or out of the target ring (an ellipse on the ground)
   const dd = Math.hypot((to.x - T.x) / R, (to.y - T.y) / (R * 0.42 * w / h));
   mg.ball.hit = dd <= 0.4 ? 2 : dd <= 1 ? 1 : 0;
-  blip(640, 0.06); useWord('kydai', true);
+  blip(640, 0.06); useWord('kydai', true); mgAct('kydai', true);
 }
 function fetchFrame(c, w, h, t, k, dt) {
   // the meadow
@@ -3236,11 +3239,11 @@ function fishRelease() {
   mg.rod.v += 9 + f * 7;   // the forward whip
   const tx = (0.42 + f * 0.48) * w, ty = (FI.wl + 0.04 + f * 0.04) * h;
   mg.cast = { t0: nowT, fx: tip[0], fy: tip[1], tx, ty, dur: 0.6 + f * 0.35, H: h * (0.25 + f * 0.25), landed: false };
-  blip(560, 0.06); useWord('zakydai', true); mg.pull = 0; mg.phase = 'wait';
+  blip(560, 0.06); useWord('zakydai', true); mgAct('zakydai', true); mg.pull = 0; mg.phase = 'wait';
 }
 function fishCatch() {
   const F = mg.fishy; if (!F || F.st !== 'bite') return;
-  useWord('tiahny', true); blip(990, 0.1); say('p_molodets');
+  useWord('tiahny', true); blip(990, 0.1); mgAct('tiahny', true);
   mg.rod.load = 1.4; mg.rod.v -= 5;
   mg.fish = { t0: nowT, x: mg.cast.tx, y: mg.cast.ty, size: 0.8 + Math.random() * 0.5 };
   mg.fishy = null; mg.cast = null; mg.phase = 'catch';
@@ -3337,62 +3340,6 @@ function fishFrame(c, w, h, t, k, dt) {
   c.font = `800 ${Math.round(13 * k)}px system-ui`; c.fillStyle = '#ffffff'; c.textAlign = 'right'; c.fillText(`🐟 ${mg.score}`, w - 10 * k, h - 10 * k);
 }
 
-// The three winter games, drawn on the same pad.
-function mgWinterFrame(c, w, h, t, k) {
-  const dt = Math.min(0.05, t - mg.lastT), snowBg = () => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfdcee'); g.addColorStop(0.4, '#eef3fa'); g.addColorStop(0.41, '#f6f9fd'); g.addColorStop(1, '#dde7f3'); c.fillStyle = g; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 26; i++) circ(c, (i * 83.3 + Math.sin(t + i) * 10) % w, (i * 151.7 + t * 30) % h, (1.2 + i % 3) * k); };
-  if (mg.id === 'taras_w') {
-    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#e6f1fa'); g.addColorStop(1, '#bcd7ec'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2 * k; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(w * (0.1 + i * 0.15), h * 0.2); c.lineTo(w * (0.18 + i * 0.15), h * 0.35); c.stroke(); }
-    const hx = w * 0.45, hy = h * 0.58;
-    if (mg.phase === 'a' && mg.down) { mg.drill = Math.min(1, mg.drill + dt / 1.8); if (Math.random() < 0.5) mg.puffs.push({ x: hx + (Math.random() - 0.5) * 40 * k, y: hy, t0: t }); if (mg.drill >= 1) { useWord('sverdly', true); blip(880, 0.08); mg.float = { x: 0.45, y: 0.58, t0: t - 1, bite: false, biteAt: t + 1.5 + Math.random() * 2 }; mg.phase = 'wait'; } }
-    const hr = 28 * k * Math.max(0.15, mg.phase === 'a' ? mg.drill : 1);
-    c.fillStyle = '#2f6a99'; ell(c, hx, hy, hr, hr * 0.42); c.strokeStyle = '#ffffff'; c.lineWidth = 3 * k; c.beginPath(); c.ellipse(hx, hy, hr, hr * 0.42, 0, 0, 7); c.stroke();
-    mg.puffs = mg.puffs.filter(p => t - p.t0 < 0.6); c.fillStyle = 'rgba(255,255,255,.95)'; for (const p of mg.puffs) { const q = (t - p.t0) / 0.6; circ(c, p.x + (p.x - hx) * q, p.y - q * 30 * k, 3 * k * (1 - q)); }
-    if (mg.phase === 'a') { c.save(); c.translate(hx, hy - 40 * k); c.rotate(mg.down ? t * 12 : 0); c.strokeStyle = '#6b4422'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(-18 * k, -30 * k); c.lineTo(18 * k, -30 * k); c.moveTo(0, -30 * k); c.lineTo(0, 36 * k); c.stroke(); c.restore(); }
-    const f = mg.float, tipX = w * 0.82, tipY = h * 0.3;
-    c.strokeStyle = '#6b4422'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(w * 0.97, h * 0.96); c.lineTo(tipX, tipY); c.stroke();
-    if (f) {
-      if (t >= f.biteAt && !f.bite && !f.missAt) { f.bite = true; f.missAt = t + 1.3; mgBegin('b'); mg.phase = 'wait'; }
-      if (f.bite && t > f.missAt) { f.bite = false; f.missAt = 0; f.biteAt = t + 1.5 + Math.random() * 2; mgLine('mg_wait', null, ['Чекай', 'Wait for the float to dip']); }
-      const bob = f.bite ? Math.abs(Math.sin(t * 14)) * 6 * k : Math.sin(t * 2) * 1.5 * k;
-      c.strokeStyle = 'rgba(80,80,90,.7)'; c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(tipX, tipY); c.lineTo(hx, hy + bob); c.stroke();
-      c.fillStyle = '#fff'; circ(c, hx, hy + bob, 6 * k); c.fillStyle = '#e8463c'; c.beginPath(); c.arc(hx, hy + bob, 6 * k, Math.PI, 0); c.fill();
-      if (f.bite) { c.font = `900 ${Math.round(26 * k)}px system-ui`; c.fillStyle = '#e8a33a'; c.textAlign = 'center'; c.fillText('!', hx, hy - 16 * k); }
-    }
-    if (mg.fish) { const q = Math.min(1, (t - mg.fish.t0) / 1.0); drawIcon(c, W.ryba.ic, hx + (tipX - hx) * q, hy - Math.sin(q * Math.PI) * h * 0.35 + (tipY - hy) * q, 40 * k); }
-  } else if (mg.id === 'andriiko_w') {
-    snowBg();
-    person(c, w * 0.13, h * 0.95, NPC.andriiko.look, t, false, 1.3 * k);
-    const e = { face: 1, fs: 1, wk: 0, step: 0, hx: 1, dip: 0, rest: 0, an: 'dog' };
-    c.save(); c.translate(w * 0.86, h * 0.9 - (mg.balls.length >= 3 ? Math.abs(Math.sin(t * 8)) * 10 * k : 0)); c.scale(1.6 * k, 1.6 * k); quad(c, 0, 0, QUAD.dog, t, e); c.restore();
-    // the snowman so far
-    const R0 = h * 0.17, sx = w * 0.5; let y = h * 0.95;
-    for (const sz of mg.balls) { const r = R0 * sz; c.fillStyle = '#ffffff'; circ(c, sx, y - r, r); c.strokeStyle = '#b9c9dc'; c.lineWidth = 2 * k; c.beginPath(); c.arc(sx, y - r, r, 0, 7); c.stroke(); y -= r * 1.75; }
-    if (mg.balls.length >= 3) {   // done: coal eyes, a carrot nose, twig arms
-      const hy = y + R0 * 0.54 * 0.75, r = R0 * 0.54; c.fillStyle = '#2a2a2a'; circ(c, sx - r * 0.35, hy - r * 0.2, r * 0.1); circ(c, sx + r * 0.35, hy - r * 0.2, r * 0.1);
-      c.fillStyle = '#ff8a1f'; poly(c, [[sx, hy], [sx + r * 0.7, hy + r * 0.1], [sx, hy + r * 0.22]]);
-      c.strokeStyle = '#6b4422'; c.lineWidth = 3 * k; const my = h * 0.95 - R0 * 2.4; c.beginPath(); c.moveTo(sx - R0 * 0.7, my); c.lineTo(sx - R0 * 1.3, my - R0 * 0.4); c.moveTo(sx + R0 * 0.7, my); c.lineTo(sx + R0 * 1.3, my - R0 * 0.45); c.stroke();
-    }
-    if (mg.phase === 'a') {   // the ball you're rolling
-      if (mg.down) { const d = Math.hypot(mg.down.x - (mg.lx ?? mg.down.x), mg.down.y - (mg.ly ?? mg.down.y)); mg.cur = Math.min(1, mg.cur + d / (w * 2.2)); mg.lx = mg.down.x; mg.ly = mg.down.y; if (mg.cur >= 1) { useWord('kachai', true); blip(820, 0.06); mg.lx = mg.ly = undefined; mgBegin('b'); } } else { mg.lx = mg.ly = undefined; }
-      const r = R0 * [1, 0.74, 0.54][mg.balls.length] * mg.cur, bx = w * 0.72, by = h * 0.95 - r;
-      c.save(); c.translate(bx, by); c.rotate(mg.cur * 12); c.fillStyle = '#ffffff'; circ(c, 0, 0, r); c.strokeStyle = '#b9c9dc'; c.lineWidth = 2 * k; c.beginPath(); c.arc(0, 0, r, 0, 7); c.stroke(); c.fillStyle = '#d8e3f0'; circ(c, r * 0.4, -r * 0.2, r * 0.15); circ(c, -r * 0.3, r * 0.35, r * 0.12); c.restore();
-    } else if (mg.phase === 'b') { const r = R0 * [1, 0.74, 0.54][mg.balls.length], bob = Math.sin(t * 5) * 4 * k; c.fillStyle = '#ffffff'; circ(c, w * 0.72, h * 0.95 - r + bob, r); c.strokeStyle = '#ffd23f'; c.lineWidth = 3 * k; c.beginPath(); c.arc(w * 0.72, h * 0.95 - r + bob, r, 0, 7); c.stroke(); }
-  } else {   // bohdan_w: the hive under snow
-    snowBg();
-    const hx = w * 0.5, hy = h * 0.82, hw = w * 0.3, hh = h * 0.36;
-    c.fillStyle = '#d9a330'; rr(c, hx - hw / 2, hy - hh, hw, hh, 6 * k); c.fillStyle = '#b5824e'; c.fillRect(hx - hw / 2, hy - hh * 0.55, hw, 4 * k); c.fillRect(hx - hw / 2, hy - hh * 0.25, hw, 4 * k);
-    c.fillStyle = '#8a3b2b'; poly(c, [[hx - hw * 0.62, hy - hh], [hx, hy - hh * 1.35], [hx + hw * 0.62, hy - hh]]);
-    c.fillStyle = '#3a2a1a'; ell(c, hx, hy - hh * 0.12, hw * 0.12, hh * 0.06);
-    if (mg.phase === 'a' && mg.down) { const d = Math.hypot(mg.down.x - (mg.lx ?? mg.down.x), mg.down.y - (mg.ly ?? mg.down.y)); mg.snow = Math.max(0, mg.snow - d / (w * 2.4)); mg.lx = mg.down.x; mg.ly = mg.down.y; if (Math.random() < 0.4) mg.puffs.push({ x: mg.down.x, y: mg.down.y, t0: t }); if (mg.snow <= 0) { useWord('pochyst', true); blip(880, 0.08); mg.lx = mg.ly = undefined; mgBegin('b'); } }
-    else if (!mg.down) mg.lx = mg.ly = undefined;
-    const sn = mg.phase === 'a' ? mg.snow : 0;
-    if (sn > 0) { c.fillStyle = `rgba(255,255,255,${0.35 + sn * 0.65})`; ell(c, hx, hy - hh * 1.12, hw * 0.72, hh * 0.2 * (0.4 + sn)); ell(c, hx, hy - hh * 0.5, hw * 0.55 * sn, hh * 0.45 * sn); }
-    mg.puffs = mg.puffs.filter(p => t - p.t0 < 0.7); c.fillStyle = 'rgba(255,255,255,.95)'; for (const p of mg.puffs) { const q = (t - p.t0) / 0.7; circ(c, p.x + q * 25 * k, p.y + q * 30 * k, 4 * k * (1 - q)); }
-    if (mg.covered) { c.fillStyle = '#e8c35a'; rr(c, hx - hw * 0.66, hy - hh * 1.2, hw * 1.32, hh * 0.85, 10 * k); c.strokeStyle = '#c99a3a'; c.lineWidth = 1.5 * k; for (let i = 0; i < 14; i++) { c.beginPath(); c.moveTo(hx - hw * 0.62 + i * hw * 0.09, hy - hh * 1.18); c.lineTo(hx - hw * 0.6 + i * hw * 0.09, hy - hh * 0.38); c.stroke(); } }
-    drawIcon(c, '🐝', w * 0.86, h * 0.3 + Math.sin(t * 3) * 4 * k, 22 * k);
-  }
-}
 const cellPos = (i, w, h) => { const r = Math.min(w, h) * 0.075, col = i % 5, row = Math.floor(i / 5); return [w * 0.5 + (col - 2) * r * 1.8 + (row % 2) * r * 0.9, h * 0.55 + (row - 0.5) * r * 1.6, r]; };
 function bee(c, x, y, s, t) {
   c.fillStyle = 'rgba(255,255,255,.75)'; const fl = Math.sin(t * 40) * 0.3; ell(c, x - s * 0.2, y - s * 0.55, s * 0.4, s * (0.25 + fl * 0.1)); ell(c, x + s * 0.25, y - s * 0.55, s * 0.4, s * (0.25 - fl * 0.1));
@@ -3400,81 +3347,462 @@ function bee(c, x, y, s, t) {
 }
 function mgFrame() {
   if (!mg) return;
-  const pad = $('#mgPad'); if (!pad || !sheetOpen()) { mg = null; return; }   // the card was closed: the game stops (and stops talking)
+  const pad = $('#mgPad'); if (!pad || !sheetOpen()) { mgStopVoice(); mg = null; return; }   // the card was closed: the game stops (and stops talking)
   const c = pad.getContext('2d'), w = pad.width, h = pad.height, t = nowT, k = mg.k || 1;
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
-  if (mg.id.endsWith('_w')) mgWinterFrame(c, w, h, t, k);
-  else if (mg.id === 'bohdan') {
-    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfeefc'); g.addColorStop(1, '#a6dc7c'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-    // the open hive frame
-    c.fillStyle = '#b5824e'; rr(c, w * 0.18, h * 0.3, w * 0.64, h * 0.5, 10 * k); c.fillStyle = '#e8c98e'; rr(c, w * 0.21, h * 0.34, w * 0.58, h * 0.42, 6 * k);
-    for (let i = 0; i < 10; i++) { const [cx, cy, r] = cellPos(i, w, h), full = mg.phase === 'a' || (mg.cells[i] && mg.cells[i].full); c.fillStyle = full ? '#f2a81d' : '#fff3d6'; const pts = []; for (let q = 0; q < 6; q++) { const a = q * Math.PI / 3 + Math.PI / 6; pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]); } poly(c, pts); if (full) { c.fillStyle = 'rgba(255,255,255,.35)'; circ(c, cx - r * 0.3, cy - r * 0.3, r * 0.22); } }
-    if (mg.phase === 'a') {
-      if (mg.down) { if (Math.random() < 0.5) mg.puffs.push({ x: mg.down.x, y: mg.down.y, t0: t }); for (const b of mg.bees) { const bx = w * 0.5 + Math.cos(t * 1.7 + b.ph) * w * 0.3, by = h * 0.5 + Math.sin(t * 2.3 + b.ph * 2) * h * 0.25; if (Math.hypot(bx - mg.down.x, by - mg.down.y) < w * 0.28) b.calm = Math.min(1, b.calm + 0.025); } }
-      for (const b of mg.bees) { const bx = w * 0.5 + Math.cos(t * 1.7 + b.ph) * w * 0.3 + b.calm * w * 0.6 * Math.sign(Math.cos(b.ph)), by = h * 0.5 + Math.sin(t * 2.3 + b.ph * 2) * h * 0.25 - b.calm * h * 0.5; c.globalAlpha = 1 - b.calm; bee(c, bx, by, 16 * k, t + b.ph); c.globalAlpha = 1; }
-      if (mg.bees.every(b => b.calm >= 1)) { useWord('dmukhai', true); blip(880, 0.08); mgBegin('b'); }
-    }
-    mg.puffs = mg.puffs.filter(p => t - p.t0 < 1.2);
-    for (const p of mg.puffs) { const q = (t - p.t0) / 1.2; c.fillStyle = `rgba(235,235,240,${0.6 * (1 - q)})`; circ(c, p.x + q * 20 * k, p.y - q * 50 * k, (10 + q * 30) * k); }
-    if (!mg.down || mg.phase !== 'a') { c.fillStyle = '#8a8a92'; rr(c, w * 0.04, h * 0.7, w * 0.12, h * 0.22, 6 * k); c.fillStyle = '#6b4422'; c.fillRect(w * 0.06, h * 0.64, w * 0.08, h * 0.07); }   // the smoker, waiting
-  } else if (mg.id === 'andriiko') fetchFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
+  const dtF = Math.min(0.05, Math.max(0, t - mg.lastT));
+  if (GAMES[mg.id]) { GAMES[mg.id].frame(c, w, h, t, k, dtF);  } else if (mg.id === 'andriiko') fetchFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
   else fishFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
+  if (mg) mgFlash(c, w, h, k, t);
   mg && (mg.lastT = t);
   requestAnimationFrame(mgFrame);
 }
 
-// ------------------------------------------------------------------ chopping firewood
-// At the chopping block by your cottage: swipe down on the log to split it (рубай!), three logs at a go.
-// Firewood heats your stove on a winter night, Grandma needs it for her winter cooking, and the
-// neighbours and the market buy it.
+// ------------------------------------------------------------------ the action word, flashed and said
+// Every game action flashes its verb (it pops up, grows and fades fast), and while you keep at it the verb is
+// said over and over, each time to the end of the word, stopping once you stop.
+function mgAct(v, beat) {
+  if (!mg) return; const t = nowT;
+  if (beat || !mg.fl || mg.fl.v !== v || t - mg.fl.t > 0.65) mg.fl = { v, t };
+  mg.lastAct = performance.now();
+  if (!mg.vo || mg.vo.v !== v) {
+    mgStopVoice(); const vo = new Audio('audio/w_' + v + '.mp3'), me = mg; vo.v = v; mg.vo = vo;
+    vo.onended = () => { duck = 1; setTimeout(() => { if (mg === me && mg.vo === vo && performance.now() - mg.lastAct < 650) { duck = 0.3; vo.play().catch(() => {}); } }, 90); };
+  }
+  if (mg.vo.paused) { stopSay(); duck = 0.3; try { mg.vo.currentTime = 0; } catch (e) {} mg.vo.play().catch(() => {}); }
+}
+function mgStopVoice() { if (mg && mg.vo) { try { mg.vo.pause(); } catch (e) {} mg.vo.onended = null; mg.vo = null; duck = 1; } }
+function mgFlash(c, w, h, k, t) {
+  const f = mg && mg.fl; if (!f) return; const q = (t - f.t) / 0.5; if (q > 1 || q < 0) return;
+  const W0 = W[f.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = q < 0.2 ? q / 0.2 : 1 - (q - 0.2) / 0.8, sc = 0.75 + q * 0.6;
+  c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(28 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(txt, 0, 0); c.fillStyle = '#ffd27a'; c.fillText(txt, 0, 0); c.restore();
+}
+// A ring round the thing to take hold of, pulsing for the first moments of a step, and winking if you press
+// beside it.
+function mgRing(c, x, y, r, k, t) {
+  const m = mg; if (!m) return; const miss = m.miss && t - m.miss < 0.8, fresh = t - (m.pt || t) < 2.5;
+  if (!miss && !fresh) return;
+  c.strokeStyle = `rgba(255,210,63,${miss ? 0.5 + 0.5 * Math.sin((t - m.miss) * 20) : 0.35 + 0.3 * Math.sin(t * 6)})`; c.lineWidth = 3 * k; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+}
+// Taking hold of a tool: within reach of it (pad fractions, with the pad's shape allowed for).
+const mgNear = (T, fx, fy, r = 0.17) => T && Math.hypot(T.x - fx, (T.y - fy) * 0.66) < r;
+
+// ------------------------------------------------------------------ Mr. Bohdan's bees
+// дмухай: take the smoker and puff smoke over the swarm; a bee in the smoke grows sleepy and goes home.
+// збирай: he lifts out a frame of honeycomb; run the wooden honey dipper over the cells to collect the honey
+// into the jar.
+const BEE = {
+  begin(step) {
+    if (step === 'a') {
+      mg.bees = Array.from({ length: 8 }, (_, i) => ({ x: 0.45 + Math.random() * 0.35, y: 0.25 + Math.random() * 0.3, ph: i * 1.7, calm: 0, home: 0 }));
+      mg.smoke = []; mg.tool = { x: 0.84, y: 0.74 }; mg.puffT = 0; mg.beeStep = 'a';
+      mgLine('mg_dmukhai', 'dmukhai', ['Візьми димар і дмухай на бджіл', 'Take the smoker and puff smoke over the bees']);
+    } else {
+      mg.cells = []; for (let r = 0; r < 4; r++) for (let q = 0; q < 7; q++) mg.cells.push({ r, q, full: 1, t: 0 });
+      mg.jar = 0; mg.tool = { x: 0.86, y: 0.78 }; mg.drips = []; mg.beeStep = 'b';
+      mgLine('mg_zbyrai', 'zbyrai', ['Веди ложкою по сотах', 'Run the honey dipper over the honeycomb']);
+    }
+  },
+  press(x, y) { const T = mg.tool; if (mgNear(T, x, y)) { T.held = true; T.ox = T.x - x; T.oy = T.y - y; blip(520, 0.03); } else mg.miss = nowT; },
+  move(x, y) { const T = mg.tool; if (!T || !T.held) return; T.x = Math.max(0.05, Math.min(0.95, x + T.ox)); T.y = Math.max(0.12, Math.min(0.92, y + T.oy)); },
+  release() { if (mg.tool) mg.tool.held = false; },
+  cell(cl, w, h) { const r = Math.min(w * 0.05, h * 0.075), x0 = w * 0.5 - r * 1.75 * 3 - r * 0.43, y0 = h * 0.42; return [x0 + cl.q * r * 1.75 + (cl.r % 2) * r * 0.87, y0 + cl.r * r * 1.5, r]; },
+  frame(c, w, h, t, k, dt) {
+    // a summer apiary: sky, a meadow, a painted hive on its stand
+    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#bfe8fb'); g.addColorStop(0.55, '#e9f7e0'); g.addColorStop(0.56, '#9bd673'); g.addColorStop(1, '#6fb34c'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 12; i++) { const x = w * ((i * 0.37 + 0.05) % 1), y = h * (0.62 + ((i * 0.61) % 1) * 0.32); c.fillStyle = ['#ffd23f', '#ffffff', '#ff7aa8', '#9b6bd6'][i % 4]; for (let p = 0; p < 5; p++) circ(c, x + Math.cos(p * 1.26) * 3 * k, y + Math.sin(p * 1.26) * 3 * k, 2 * k); c.fillStyle = '#f2b51d'; circ(c, x, y, 1.6 * k); }
+    const T = mg.tool;
+    if (mg.beeStep === 'a') {
+      const hx = w * 0.26, hy = h * 0.86, hw = w * 0.24, hh = h * 0.36;
+      c.fillStyle = '#7a4b22'; c.fillRect(hx - hw * 0.4, hy - 6 * k, 5 * k, 10 * k); c.fillRect(hx + hw * 0.4 - 5 * k, hy - 6 * k, 5 * k, 10 * k);
+      c.fillStyle = '#5d9ad3'; rr(c, hx - hw / 2, hy - hh, hw, hh * 0.92, 4 * k); c.fillStyle = '#ffd23f'; c.fillRect(hx - hw / 2, hy - hh * 0.52, hw, 4 * k);
+      c.fillStyle = '#fffdf5'; for (const dx of [-0.25, 0.25]) { circ(c, hx + dx * hw, hy - hh * 0.72, 4 * k); c.fillStyle = '#d43a3a'; circ(c, hx + dx * hw, hy - hh * 0.72, 2 * k); c.fillStyle = '#fffdf5'; }   // painted flowers
+      c.fillStyle = '#8a3b2b'; poly(c, [[hx - hw * 0.62, hy - hh * 0.92], [hx, hy - hh * 1.28], [hx + hw * 0.62, hy - hh * 0.92]]);
+      c.fillStyle = '#3a2a1a'; rr(c, hx - hw * 0.2, hy - hh * 0.2, hw * 0.4, 5 * k, 2 * k);   // the entrance slit
+      // the smoker puffs while you hold it; smoke drifts out from the nozzle and spreads
+      if (T.held && (mg.puffT += dt) > 0.16) { mg.puffT = 0; mg.smoke.push({ x: T.x - 0.03, y: T.y - 0.155, vx: -0.12 - Math.random() * 0.08, vy: -0.05 - Math.random() * 0.05, t0: t }); }
+      mg.smoke = mg.smoke.filter(s => t - s.t0 < 1.8);
+      for (const s of mg.smoke) { const q = (t - s.t0) / 1.8; s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= 0.985; s.r = 0.03 + q * 0.11; c.fillStyle = `rgba(214,214,222,${0.75 * (1 - q)})`; circ(c, s.x * w, s.y * h, s.r * w); }
+      // the bees: buzzing about angrily until smoked, then sleepy, drifting home to the hive
+      let smoking = false;
+      for (const b of mg.bees) {
+        if (b.home >= 1) continue;
+        for (const s of mg.smoke) if (Math.hypot(s.x - b.x, (s.y - b.y) * h / w) < s.r) { b.calm = Math.min(1, b.calm + dt * 1.1); smoking = true; }
+        if (b.calm >= 1) { b.x += (0.26 - b.x) * dt * 1.6; b.y += (0.79 - b.y) * dt * 1.6; if (Math.hypot(b.x - 0.26, b.y - 0.79) < 0.03) { b.home = 1; blip(880 + Math.random() * 200, 0.03); } }
+        else { const sp = 1 - b.calm * 0.8; b.x += Math.cos(t * 3.1 * sp + b.ph) * dt * 0.25 * sp + (0.6 - b.x) * dt * 0.3; b.y += Math.sin(t * 2.3 * sp + b.ph * 2) * dt * 0.2 * sp + (0.38 - b.y) * dt * 0.3 + b.calm * dt * 0.05; }
+        bee(c, b.x * w, b.y * h, 9 * k, t * (1 - b.calm * 0.7) + b.ph);
+        if (b.calm < 0.3) { c.fillStyle = '#d43a3a'; c.font = `900 ${Math.round(9 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('!', b.x * w + 7 * k, b.y * h - 7 * k); }
+        else if (b.calm < 1) { c.fillStyle = 'rgba(74,44,26,.7)'; c.font = `700 ${Math.round(8 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('z', b.x * w + 8 * k, b.y * h - 8 * k - Math.sin(t * 3) * 2 * k); }
+      }
+      if (smoking && T.held) mgAct('dmukhai');
+      if (mg.phase === 'a' && mg.bees.every(b => b.home >= 1)) { useWord('dmukhai', true); blip(990, 0.1); mgBegin('b'); }
+      // the smoker: a tin can with a nozzle on top and leather bellows that squeeze as it puffs
+      const sx = T.x * w, sy = T.y * h, sq = T.held ? Math.abs(Math.sin(t * 9)) : 0;
+      c.save(); c.translate(sx, sy); c.rotate(-0.25);
+      c.fillStyle = '#8a5a2b'; poly(c, [[w * 0.035, -h * 0.02], [w * 0.035 + w * (0.05 - sq * 0.02), -h * 0.06], [w * 0.035 + w * (0.05 - sq * 0.02), h * 0.06], [w * 0.035, h * 0.02]]);
+      c.strokeStyle = '#6b4422'; c.lineWidth = 1 * k; for (let i = 1; i < 4; i++) { const xx = w * 0.035 + i * w * (0.0125 - sq * 0.005); c.beginPath(); c.moveTo(xx, -h * 0.05); c.lineTo(xx, h * 0.05); c.stroke(); }
+      c.fillStyle = '#b9bec4'; rr(c, -w * 0.035, -h * 0.09, w * 0.07, h * 0.17, 3 * k); c.fillStyle = '#8d939a'; c.fillRect(-w * 0.035, -h * 0.03, w * 0.07, 2 * k);
+      c.fillStyle = '#9aa0a7'; poly(c, [[-w * 0.03, -h * 0.09], [w * 0.03, -h * 0.09], [w * 0.005, -h * 0.16], [-w * 0.01, -h * 0.16]]);
+      c.restore();
+      mgRing(c, sx, sy, 30 * k, k, t);
+    } else {
+      // the frame of honeycomb, held up out of the hive, and a jar filling below it
+      const fx = w * 0.5, fy = h * 0.55;
+      c.fillStyle = '#9b6b3c'; c.fillRect(fx - w * 0.36, h * 0.28, w * 0.72, 6 * k); c.fillRect(fx - w * 0.33, h * 0.3, 5 * k, h * 0.5); c.fillRect(fx + w * 0.33 - 5 * k, h * 0.3, 5 * k, h * 0.5); c.fillRect(fx - w * 0.33, h * 0.79, w * 0.66, 5 * k);
+      c.fillStyle = '#f3dca0'; c.fillRect(fx - w * 0.32, h * 0.31, w * 0.64, h * 0.48);
+      const D = T.held ? [T.x * w - 0.75 * 0.07 * h, T.y * h - 0.66 * 0.07 * h] : null;   // the dipper's grooved head
+      let got = false;
+      for (const cl of mg.cells) {
+        const [x, y, r] = BEE.cell(cl, w, h);
+        if (cl.full && D && Math.hypot(D[0] - x, D[1] - y) < r * 1.3) { cl.full = 0; cl.t = t; got = true; mg.drips.push({ x: x / w, y: y / h, t0: t }); blip(640 + cl.q * 40, 0.03); useWord('med', false); }
+        const pts = []; for (let q = 0; q < 6; q++) { const a = q * Math.PI / 3 + Math.PI / 6; pts.push([x + Math.cos(a) * r * 0.95, y + Math.sin(a) * r * 0.95]); }
+        c.fillStyle = cl.full ? '#f5c542' : '#fff3d6'; poly(c, pts);
+        if (cl.full) { c.fillStyle = 'rgba(255,255,255,.45)'; circ(c, x - r * 0.3, y - r * 0.3, r * 0.22); } else { c.fillStyle = 'rgba(242,168,29,.4)'; circ(c, x, y + r * 0.2, r * 0.35); }
+        c.strokeStyle = '#d6a23a'; c.lineWidth = 1 * k; c.beginPath(); pts.forEach(([px, py], i) => i ? c.lineTo(px, py) : c.moveTo(px, py)); c.closePath(); c.stroke();
+      }
+      if (got) mgAct('zbyrai');
+      // honey drips running down into the jar
+      const jx = w * 0.1, jy = h * 0.92, n = mg.cells.length, have = mg.cells.filter(cl => !cl.full).length;
+      mg.drips = mg.drips.filter(d => t - d.t0 < 0.8); c.fillStyle = '#f2a81d'; for (const d of mg.drips) { const q = (t - d.t0) / 0.8; ell(c, (d.x + (0.1 - d.x) * q) * w, (d.y + (0.8 - d.y) * q) * h, 2.5 * k, 4 * k); }
+      c.fillStyle = 'rgba(255,255,255,.55)'; rr(c, jx - w * 0.06, jy - h * 0.26, w * 0.12, h * 0.26, 6 * k);
+      c.fillStyle = '#f2a81d'; const lv = have / n; rr(c, jx - w * 0.055, jy - h * 0.25 * lv - 2 * k, w * 0.11, h * 0.25 * lv, 5 * k);
+      c.fillStyle = '#d43a3a'; c.fillRect(jx - w * 0.065, jy - h * 0.3, w * 0.13, h * 0.05); c.fillStyle = '#fffdf5'; for (let i = 0; i < 4; i++) circ(c, jx - w * 0.045 + i * w * 0.03, jy - h * 0.275, 1.6 * k);
+      // the wooden honey dipper: a handle and a grooved round head
+      const tx = T.x * w, ty = T.y * h;
+      c.save(); c.translate(tx, ty); c.rotate(-0.85);
+      c.fillStyle = '#9b6b3c'; rr(c, -3 * k, -h * 0.02, 6 * k, h * 0.18, 3 * k);
+      c.fillStyle = '#c99463'; ell(c, 0, -h * 0.07, 9 * k, 13 * k); c.strokeStyle = '#8a5a2b'; c.lineWidth = 1.5 * k; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(-9 * k, -h * 0.07 + i * 4 * k); c.lineTo(9 * k, -h * 0.07 + i * 4 * k); c.stroke(); }
+      if (have) { c.fillStyle = 'rgba(242,168,29,.85)'; ell(c, 0, -h * 0.07 + 8 * k, 7 * k, 5 * k); }
+      c.restore();
+      mgRing(c, tx, ty, 30 * k, k, t);
+      if (mg.phase === 'b' && have >= n) { useWord('zbyrai', true); mg.phase = 'pause'; blip(990, 0.1); say('p_molodets'); setTimeout(() => { if (mg && mg.id === 'bohdan') mgRoundDone(); }, 900); }
+    }
+  },
+};
+
+// ------------------------------------------------------------------ winter: covering Mr. Bohdan's hives
+// почисть: sweep the snow off the hive with the broom.  накрий: carry the straw mat over and wrap the hive.
+const HIVEW = {
+  begin(step) {
+    if (step === 'a') {
+      mg.snowB = []; const rs = seeded(7 + mg.round);   // a lumpy cap of snow on the roof, drifts down the sides and on the ledge
+      for (let i = 0; i < 30; i++) { const roof = i < 14, x = roof ? 0.33 + (i / 13) * 0.34 : (i % 2 ? 0.34 : 0.66) + (rs() - 0.5) * 0.04, y = roof ? 0.31 + Math.abs(i / 13 - 0.5) * 0.12 + (rs() - 0.5) * 0.03 : 0.42 + ((i - 14) >> 1) * 0.06; mg.snowB.push({ x: i >= 26 ? 0.4 + (i - 26) * 0.07 : x, y: i >= 26 ? 0.49 : y, rx: 0.035 + rs() * 0.025, ry: 0.04 + rs() * 0.03, on: 1 }); }
+      mg.flakes = []; mg.covered = 0; mg.tool = { x: 0.84, y: 0.6 };
+      mgLine('mgw_pochyst', 'pochyst', ['Візьми віник і змети сніг', 'Take the broom and sweep the snow off']);
+    } else { mg.tool = { x: 0.84, y: 0.78, mat: true }; mgLine('mgw_nakryi', 'nakryi', ['Неси солому на вулик', 'Carry the straw mat onto the hive']); }
+  },
+  press(x, y) { const T = mg.tool; if (mgNear(T, x, y, 0.2)) { T.held = true; T.ox = T.x - x; T.oy = T.y - y; blip(520, 0.03); } else mg.miss = nowT; },
+  move(x, y) { const T = mg.tool; if (!T || !T.held) return; const px = T.x, py = T.y; T.x = Math.max(0.05, Math.min(0.95, x + T.ox)); T.y = Math.max(0.1, Math.min(0.92, y + T.oy)); T.sp = Math.hypot(T.x - px, T.y - py); },
+  release() {
+    const T = mg.tool; if (!T) return; T.held = false;
+    if (mg.phase === 'b' && T.mat && Math.abs(T.x - 0.5) < 0.2 && T.y < 0.75 && !mg.covered) { mg.covered = nowT; mgAct('nakryi', true); useWord('nakryi', true); blip(760, 0.06); mg.phase = 'pause'; setTimeout(() => { if (mg && mg.id === 'bohdan_w') mgRoundDone(); }, 1400); }
+  },
+  frame(c, w, h, t, k, dt) {
+    snowScene(c, w, h, t, k);
+    const hx = w * 0.5, hy = h * 0.86, hw = w * 0.3, hh = h * 0.44;
+    c.fillStyle = '#7a4b22'; c.fillRect(hx - hw * 0.4, hy - 6 * k, 5 * k, 10 * k); c.fillRect(hx + hw * 0.4 - 5 * k, hy - 6 * k, 5 * k, 10 * k);
+    c.fillStyle = '#5d9ad3'; rr(c, hx - hw / 2, hy - hh * 0.9, hw, hh * 0.84, 4 * k); c.fillStyle = '#ffd23f'; c.fillRect(hx - hw / 2, hy - hh * 0.5, hw, 4 * k);
+    c.fillStyle = '#8a3b2b'; poly(c, [[hx - hw * 0.62, hy - hh * 0.88], [hx, hy - hh * 1.18], [hx + hw * 0.62, hy - hh * 0.88]]);
+    c.fillStyle = '#3a2a1a'; rr(c, hx - hw * 0.2, hy - hh * 0.18, hw * 0.4, 5 * k, 2 * k);
+    const T = mg.tool;
+    // snow lumps on the hive; the broom sweeps away any it passes over quickly enough
+    let swept = false;
+    if (mg.snowB) for (const b of mg.snowB) {
+      if (!b.on) continue;
+      if (T.held && !T.mat && T.sp > 0.004 && Math.hypot(T.x - 0.06 - b.x, (T.y + 0.12 - b.y) * 0.66) < 0.08) { b.on = 0; swept = true; for (let i = 0; i < 4; i++) mg.flakes.push({ x: b.x, y: b.y, vx: (Math.random() - 0.3) * 0.5, vy: -Math.random() * 0.4, t0: t }); }
+      c.fillStyle = 'rgba(190,206,228,.8)'; ell(c, b.x * w, b.y * h + h * 0.012, w * b.rx, h * b.ry * 0.8); c.fillStyle = '#ffffff'; ell(c, b.x * w, b.y * h, w * b.rx, h * b.ry); c.fillStyle = 'rgba(255,255,255,.8)'; ell(c, (b.x - b.rx * 0.3) * w, (b.y - b.ry * 0.3) * h, w * b.rx * 0.4, h * b.ry * 0.3);
+    }
+    if (swept) { mgAct('pochyst'); blip(500 + Math.random() * 200, 0.02); }
+    mg.flakes = (mg.flakes || []).filter(f => t - f.t0 < 0.8); c.fillStyle = 'rgba(255,255,255,.95)'; for (const f of mg.flakes) { f.vy += dt * 1.2; f.x += f.vx * dt; f.y += f.vy * dt; circ(c, f.x * w, f.y * h, 2.5 * k); }
+    if (mg.phase === 'a' && mg.snowB && mg.snowB.every(b => !b.on)) { useWord('pochyst', true); blip(990, 0.1); mgBegin('b'); }
+    // the straw mat, wrapped round the hive once it's laid on, tied with a red cord
+    if (mg.covered) {
+      const q = Math.min(1, (t - mg.covered) / 0.6);
+      c.fillStyle = '#e8c35a'; rr(c, hx - hw * 0.68, hy - hh * (0.2 + 1.0 * q), hw * 1.36, hh * (0.2 + 0.98 * q), 12 * k);
+      c.strokeStyle = '#c99a3a'; c.lineWidth = 1.5 * k; for (let i = 0; i < 16; i++) { c.beginPath(); c.moveTo(hx - hw * 0.62 + i * hw * 0.082, hy - hh * (0.18 + 0.98 * q)); c.lineTo(hx - hw * 0.6 + i * hw * 0.082, hy - hh * 0.05); c.stroke(); }
+      if (q >= 1) { c.strokeStyle = '#d43a3a'; c.lineWidth = 3 * k; c.beginPath(); c.moveTo(hx - hw * 0.68, hy - hh * 0.55); c.quadraticCurveTo(hx, hy - hh * 0.5, hx + hw * 0.68, hy - hh * 0.55); c.stroke(); c.fillStyle = '#d43a3a'; circ(c, hx + hw * 0.1, hy - hh * 0.52, 4 * k); }
+    }
+    if (T.mat && !mg.covered) {   // the mat waiting to be carried, rolled at the ends
+      const mx = T.x * w, my = T.y * h; c.fillStyle = '#e8c35a'; rr(c, mx - w * 0.13, my - h * 0.07, w * 0.26, h * 0.14, 6 * k);
+      c.strokeStyle = '#c99a3a'; c.lineWidth = 1.5 * k; for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(mx - w * 0.12 + i * w * 0.03, my - h * 0.065); c.lineTo(mx - w * 0.12 + i * w * 0.03, my + h * 0.065); c.stroke(); }
+      c.fillStyle = '#d9b04a'; for (const sg of [-1, 1]) ell(c, mx + sg * w * 0.13, my, w * 0.02, h * 0.07);
+      if (T.held && Math.abs(T.x - 0.5) < 0.2 && T.y < 0.75) { c.strokeStyle = 'rgba(255,210,63,.8)'; c.lineWidth = 3 * k; c.setLineDash([6 * k, 5 * k]); c.strokeRect(hx - hw * 0.66, hy - hh * 1.18, hw * 1.32, hh * 1.12); c.setLineDash([]); }
+      mgRing(c, mx, my, 34 * k, k, t);
+    } else if (!T.mat) {
+      // the besom: a long handle and a bunch of twigs, swishing as you sweep
+      const bx = T.x * w, by = T.y * h, sw = T.held ? Math.sin(t * 14) * 0.12 : 0;
+      c.save(); c.translate(bx, by); c.rotate(0.55 + sw);
+      c.fillStyle = '#9b6b3c'; rr(c, -3 * k, -h * 0.3, 6 * k, h * 0.3, 3 * k);
+      c.fillStyle = '#c99a3a'; poly(c, [[-5 * k, 0], [5 * k, 0], [16 * k, h * 0.2], [-16 * k, h * 0.2]]);
+      c.strokeStyle = '#a87a2f'; c.lineWidth = 1 * k; for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 1.2 * k, 0); c.lineTo(i * 5 * k, h * 0.2); c.stroke(); }
+      c.fillStyle = '#d43a3a'; c.fillRect(-6 * k, h * 0.01, 12 * k, 4 * k);
+      c.restore();
+      mgRing(c, bx, by, 30 * k, k, t);
+    }
+  },
+};
+// A snowy yard: pale sky, a line of white hills, snow falling.
+function snowScene(c, w, h, t, k) {
+  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfdcee'); g.addColorStop(0.45, '#eef3fa'); g.addColorStop(0.46, '#f6f9fd'); g.addColorStop(1, '#dde7f3'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#e6edf7'; ell(c, w * 0.25, h * 0.47, w * 0.4, h * 0.07); ell(c, w * 0.8, h * 0.48, w * 0.35, h * 0.06);
+  c.fillStyle = 'rgba(122,75,34,.7)'; for (let i = 0; i < 4; i++) { const x = w * (0.08 + i * 0.27); c.fillRect(x, h * 0.36, 3 * k, h * 0.1); c.fillStyle = 'rgba(80,120,80,.5)'; poly(c, [[x - 10 * k, h * 0.38], [x + 1.5 * k, h * 0.22], [x + 13 * k, h * 0.38]]); c.fillStyle = '#ffffff'; poly(c, [[x - 6 * k, h * 0.29], [x + 1.5 * k, h * 0.22], [x + 9 * k, h * 0.29]]); c.fillStyle = 'rgba(122,75,34,.7)'; }
+  c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 26; i++) circ(c, ((i * 83.3 + Math.sin(t + i) * 10) % w + w) % w, (i * 151.7 + t * 30) % h, (1.2 + i % 3) * k);
+}
+
+// ------------------------------------------------------------------ winter: Andriiko's snowman
+// качай: take the snowball and roll it back and forth across the snow until it's big enough (it leaves a
+// track). постав: lift it onto the snowman. Three balls, then the face, the carrot nose and the hat go on.
+const SNOWMAN = {
+  sizes: [1, 0.72, 0.5],
+  begin(step) {
+    mg.balls = mg.balls || [];
+    if (step === 'a') { mg.cur = { x: 0.24, y: 0.88, r: 0.25, rot: 0 }; mg.tool = mg.cur; mg.track = []; mgLine('mgw_kachai', 'kachai', ['Візьми сніжку й качай по снігу', 'Take the snowball and roll it back and forth']); }
+    else { mg.tool = mg.cur; mgLine('mgw_postav', 'postav', ['Підніми й постав на сніговика', 'Lift it up onto the snowman']); }
+    if (!mg.dog) mg.dog = { x: 0.74, y: 0.92, face: -1, ph: 0, sp: 0, pose: 'sit', z: 0 };
+  },
+  R0: h => h * 0.16,
+  press(x, y) { const T = mg.tool; if (T && Math.hypot(T.x - x, (T.y - y) * 0.66) < 0.2) { T.held = true; T.ox = T.x - x; T.oy = T.y - y; blip(520, 0.03); } else mg.miss = nowT; },
+  move(x, y) {
+    const T = mg.tool; if (!T || !T.held) return;
+    if (mg.phase === 'a') {   // rolling: along the ground only; it grows with the distance rolled
+      const nx = Math.max(0.08, Math.min(0.36, x + T.ox)), d = Math.abs(nx - T.x); T.x = nx; T.rot += d * 30;
+      const goal = SNOWMAN.sizes[mg.balls.length]; T.r = Math.min(goal, T.r + d * 0.55);
+      if (d > 0.002) { mgAct('kachai'); mg.track.push(T.x); if (mg.track.length > 80) mg.track.shift(); }
+      if (T.r >= goal) { T.held = false; useWord('kachai', true); blip(880, 0.06); mgBegin('b'); }
+    } else if (mg.phase === 'b') { T.x = Math.max(0.08, Math.min(0.92, x + T.ox)); T.y = Math.max(0.15, Math.min(0.9, y + T.oy)); }
+  },
+  release() {
+    const T = mg.tool; if (!T) return; T.held = false;
+    if (mg.phase !== 'b') return;
+    const top = SNOWMAN.topY();
+    if (Math.abs(T.x - 0.5) < 0.12 && Math.abs(T.y - top) < 0.15) {
+      mg.balls.push(T.r); mg.cur = null; mg.tool = null; mg.placeT = nowT; mgAct('postav', true); useWord('postav', true); blip(700, 0.06);
+      mg.phase = 'pause'; if (mg.balls.length >= 3) { mg.doneT = nowT; say('p_chudovo'); }
+      setTimeout(() => { if (mg && mg.id === 'andriiko_w') mgRoundDone(); }, mg.balls.length >= 3 ? 2200 : 700);
+    } else { T.y = 0.88; blip(300, 0.03); }   // not on the snowman: it drops back down
+  },
+  topY() { let y = 0.92; for (const r of mg.balls) y -= r * 0.16 * 1.72; return y; },   // where the next ball sits (its bottom), in pad fractions
+  frame(c, w, h, t, k, dt) {
+    snowScene(c, w, h, t, k);
+    const R0 = SNOWMAN.R0(h), sx = w * 0.5;
+    // the track the rolling ball has pressed into the snow
+    c.fillStyle = 'rgba(170,190,215,.35)'; for (const x of mg.track || []) ell(c, x * w, h * 0.92, 5 * k, 2.5 * k);
+    person(c, w * 0.9, h * 0.97, NPC.andriiko.look, t, false, 1.2 * k);
+    // the snowman so far
+    let y = h * 0.92;
+    mg.balls.forEach((r0, i) => { const r = R0 * r0, bounce = mg.placeT && i === mg.balls.length - 1 ? Math.max(0, 1 - (t - mg.placeT) / 0.4) * Math.sin((t - mg.placeT) * 25) * 4 * k : 0; c.fillStyle = 'rgba(0,0,0,.08)'; if (!i) ell(c, sx, y, r * 1.1, r * 0.2); c.fillStyle = '#ffffff'; circ(c, sx, y - r + bounce, r); c.strokeStyle = '#c3d2e4'; c.lineWidth = 2 * k; c.beginPath(); c.arc(sx, y - r + bounce, r, 0.2, Math.PI - 0.2); c.stroke(); c.fillStyle = '#e3ebf5'; circ(c, sx + r * 0.35, y - r * 1.35 + bounce, r * 0.18); y -= r * 1.72; });
+    // where the next ball goes
+    if (mg.phase === 'b' && mg.tool && mg.tool.held) { const r = R0 * mg.cur.r; c.strokeStyle = 'rgba(255,210,63,.8)'; c.lineWidth = 3 * k; c.setLineDash([6 * k, 5 * k]); c.beginPath(); c.arc(sx, y - r, r, 0, 7); c.stroke(); c.setLineDash([]); }
+    // the finished snowman: coal eyes and buttons, a carrot nose, twig arms, a bucket for a hat
+    if (mg.balls.length >= 3 && mg.doneT) {
+      const q = Math.min(1, (t - mg.doneT) / 0.8), r2 = R0 * mg.balls[2], hy = y + r2 * 0.72 + r2 * 0.0, hcy = h * 0.92 - R0 * (mg.balls[0] * 1.72 + mg.balls[1] * 1.72) - r2;
+      c.globalAlpha = q;
+      c.fillStyle = '#2a2a2a'; circ(c, sx - r2 * 0.35, hcy - r2 * 0.2, r2 * 0.1); circ(c, sx + r2 * 0.35, hcy - r2 * 0.2, r2 * 0.1);
+      for (let i = 0; i < 3; i++) circ(c, sx, h * 0.92 - R0 * mg.balls[0] * 1.72 - R0 * mg.balls[1] * (0.4 + i * 0.4), R0 * 0.06);
+      c.fillStyle = '#ff8a1f'; poly(c, [[sx, hcy], [sx + r2 * 0.75, hcy + r2 * 0.12], [sx, hcy + r2 * 0.22]]);
+      c.strokeStyle = '#6b4422'; c.lineWidth = 3 * k; const my = h * 0.92 - R0 * mg.balls[0] * 1.72 - R0 * mg.balls[1] * 0.9;
+      c.beginPath(); c.moveTo(sx - R0 * mg.balls[1] * 0.9, my); c.lineTo(sx - R0 * 1.4, my - R0 * 0.45); c.moveTo(sx - R0 * 1.2, my - R0 * 0.35); c.lineTo(sx - R0 * 1.35, my - R0 * 0.1); c.moveTo(sx + R0 * mg.balls[1] * 0.9, my); c.lineTo(sx + R0 * 1.4, my - R0 * 0.5 - Math.sin(t * 6) * R0 * 0.1); c.stroke();   // one arm waving
+      c.fillStyle = '#5d9ad3'; poly(c, [[sx - r2 * 0.55, hcy - r2 * 0.75], [sx + r2 * 0.55, hcy - r2 * 0.75], [sx + r2 * 0.42, hcy - r2 * 1.45], [sx - r2 * 0.42, hcy - r2 * 1.45]]); c.fillStyle = '#4a86b8'; c.fillRect(sx - r2 * 0.58, hcy - r2 * 0.82, r2 * 1.16, r2 * 0.12);
+      c.globalAlpha = 1;
+      for (let i = 0; i < 8; i++) { const a = (t - mg.doneT) * 2 + i * 0.8, rr2 = R0 * (1.2 + (t - mg.doneT) * 0.8); drawIcon(c, '✨', sx + Math.cos(a) * rr2, h * 0.5 + Math.sin(a) * rr2 * 0.5, 14 * k * (1 - q * 0.3)); }
+    }
+    // the ball you're rolling or carrying
+    const T = mg.cur;
+    if (T) { const r = R0 * T.r, bx = T.x * w, by = T.y * h - r; c.fillStyle = 'rgba(0,0,0,.1)'; ell(c, bx, T.y * h, r * 1.05, r * 0.2); c.save(); c.translate(bx, by); c.rotate(T.rot); c.fillStyle = '#ffffff'; circ(c, 0, 0, r); c.strokeStyle = '#c3d2e4'; c.lineWidth = 2 * k; c.beginPath(); c.arc(0, 0, r, 0, 7); c.stroke(); c.fillStyle = '#dbe5f2'; circ(c, r * 0.4, -r * 0.2, r * 0.16); circ(c, -r * 0.3, r * 0.35, r * 0.12); circ(c, -r * 0.1, -r * 0.5, r * 0.08); c.restore(); mgRing(c, bx, by, r + 10 * k, k, t); }
+    // Brovko bounding about in the snow, very pleased
+    const d = mg.dog; d.ph += dt * 8; const happy = mg.doneT || (mg.cur && mg.cur.held);
+    d.pose = happy ? 'stand' : 'sit'; d.sp = happy ? 0.6 : 0; d.z = happy ? Math.abs(Math.sin(t * 6)) * 10 * k : 0;
+    dogDraw(c, d.x * w, d.y * h - d.z, 1.05 * k, d, t, false);
+  },
+};
+
+// ------------------------------------------------------------------ winter: fishing through the ice with Taras
+// свердли: take the crank of the ice auger and wind it round; it bores down through the ice, chips flying,
+// until the hole opens. Then the line goes down with a worm on the hook. Wait while the float bobs and
+// twitches; when it's pulled under, тягни: pull the line up and out comes a fish onto the ice.
+const ICE = {
+  begin(step) {
+    if (step === 'a') { mg.drill = 0; mg.ang = null; mg.chips = []; mg.hole = 0; mg.fishy = null; mg.fish = null; mg.tool = { x: 0.6, y: 0.3 }; mgLine('mgw_sverdly', 'sverdly', ['Візьми ручку й крути по колу', 'Take the handle and wind it round']); }
+    else mgLine('mg_tiahny', 'tiahny', ['Тягни вгору!', 'Pull it up!']);
+  },
+  press(x, y) {
+    const T = mg.tool;
+    if (mg.phase === 'a' && mgNear(T, x, y, 0.2)) { T.held = true; blip(520, 0.03); mg.ang = null; }
+    else if (mg.phase === 'wait' && mg.hole >= 1) { if (mg.fishy && mg.fishy.st === 'bite') { mg.pull = { y0: y }; } else { mgLine('mg_wait', null, ['Чекай', 'Wait until the float goes under']); } }
+    else mg.miss = nowT;
+  },
+  move(x, y) {
+    if (mg.phase === 'a' && mg.tool.held) {   // winding: the crank's angle round the auger's top follows the finger
+      const a = Math.atan2((y - 0.3) * 0.66, x - 0.45); mg.tool.x = 0.45 + Math.cos(a) * 0.15; mg.tool.y = 0.3 + Math.sin(a) * 0.15 / 0.66 * 0.4;
+      if (mg.ang != null) { let da = a - mg.ang; if (da > Math.PI) da -= Math.PI * 2; if (da < -Math.PI) da += Math.PI * 2; mg.drill = Math.min(1, mg.drill + Math.abs(da) / (Math.PI * 2 * 3)); if (Math.abs(da) > 0.01) { mgAct('sverdly'); if (Math.random() < 0.5) mg.chips.push({ x: 0.45 + (Math.random() - 0.5) * 0.06, y: 0.7, vx: (Math.random() - 0.5) * 0.6, vy: -0.3 - Math.random() * 0.4, t0: nowT }); } }
+      mg.ang = a;
+      if (mg.drill >= 1) { mg.tool.held = false; mg.hole = 1; mg.holeT = nowT; useWord('sverdly', true); blip(880, 0.08); mg.phase = 'wait'; }
+    }
+    if (mg.pull && mg.fishy && mg.fishy.st === 'bite' && mg.pull.y0 - y > 0.12) ICE.catch();
+  },
+  release() { if (mg.tool) mg.tool.held = false; if (mg.pull && mg.fishy && mg.fishy.st === 'bite') ICE.catch(); mg.pull = null; },
+  catch() {
+    mg.pull = null; useWord('tiahny', true); mgAct('tiahny', true); blip(990, 0.1);
+    mg.fish = { t0: nowT }; mg.fishy = null; mg.phase = 'catch';
+    setTimeout(() => { if (mg && mg.phase === 'catch') mgRoundDone(); }, 1700);
+  },
+  frame(c, w, h, t, k, dt) {
+    // the frozen pond: a snowy bank, the ice with its cracks and sheen
+    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#dfe9f5'); g.addColorStop(0.35, '#f6f9fd'); g.addColorStop(0.36, '#d6eaf8'); g.addColorStop(1, '#b6d6ee'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#f6f9fd'; ell(c, w * 0.15, h * 0.36, w * 0.3, h * 0.05); ell(c, w * 0.85, h * 0.37, w * 0.3, h * 0.05);
+    c.strokeStyle = 'rgba(255,255,255,.9)'; c.lineWidth = 2 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(w * (0.05 + i * 0.2), h * (0.5 + (i % 2) * 0.2)); c.lineTo(w * (0.15 + i * 0.2), h * (0.58 + (i % 2) * 0.2)); c.stroke(); }
+    c.strokeStyle = 'rgba(140,175,205,.5)'; c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(w * 0.7, h * 0.5); c.lineTo(w * 0.78, h * 0.62); c.lineTo(w * 0.9, h * 0.6); c.moveTo(w * 0.78, h * 0.62); c.lineTo(w * 0.8, h * 0.8); c.stroke();
+    // Taras's box seat and bucket
+    c.fillStyle = '#8a5a2b'; rr(c, w * 0.06, h * 0.66, w * 0.14, h * 0.16, 4 * k); c.fillStyle = '#a06a35'; c.fillRect(w * 0.06, h * 0.66, w * 0.14, 4 * k);
+    c.fillStyle = '#8a9099'; poly(c, [[w * 0.82, h * 0.7], [w * 0.94, h * 0.7], [w * 0.925, h * 0.86], [w * 0.835, h * 0.86]]); c.fillStyle = '#5b6470'; ell(c, w * 0.88, h * 0.7, w * 0.06, h * 0.02);
+    c.fillStyle = '#c9d8b8'; for (let i = 0; i < Math.min(4, mg.score); i++) ell(c, w * (0.86 + i * 0.012), h * (0.69 - (i % 2) * 0.01), 6 * k, 2.5 * k);
+    const hx = w * 0.45, hy = h * 0.7;
+    // the hole, opening as the auger bores through
+    const op = mg.hole > 0 ? Math.min(1, (t - mg.holeT) / 0.4) : mg.drill * 0.5;
+    if (op > 0) { c.fillStyle = '#ffffff'; ell(c, hx, hy, w * 0.11 * Math.max(0.4, op), h * 0.045 * Math.max(0.4, op)); c.fillStyle = '#1f4f78'; ell(c, hx, hy, w * 0.09 * op, h * 0.034 * op); }
+    mg.chips = (mg.chips || []).filter(p => t - p.t0 < 0.7); c.fillStyle = '#ffffff'; for (const p of mg.chips) { p.vy += dt * 1.4; p.x += p.vx * dt * 0.4; p.y += p.vy * dt * 0.4; c.fillRect(p.x * w, p.y * h, 3 * k, 2 * k); }
+    if (mg.phase === 'a' || (mg.hole > 0 && t - mg.holeT < 0.6)) {
+      // the ice auger: a spiral bit going down into the ice, the shaft, and the crank you wind
+      const lift = mg.hole > 0 ? (t - mg.holeT) / 0.6 * h * 0.5 : 0, depth = mg.drill * h * 0.1;
+      const topY = h * 0.3 - lift + depth;
+      c.save(); c.beginPath(); c.rect(0, 0, w, hy - lift * 0); c.clip();
+      c.strokeStyle = '#8d939a'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(hx, topY); c.lineTo(hx, hy + depth - lift); c.stroke();
+      c.strokeStyle = '#b9bec4'; c.lineWidth = 3 * k; c.beginPath(); for (let i = 0; i <= 20; i++) { const yy = hy - h * 0.12 + depth - lift + i * h * 0.006, xx = hx + Math.sin(i * 0.9 + mg.drill * 40) * 7 * k; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke();
+      c.restore();
+      // the crank: an offset handle on a bar
+      const cx2 = mg.tool.x * w, cy2 = mg.tool.y * h - lift + depth;
+      c.strokeStyle = '#5b6470'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(hx, topY); c.lineTo(cx2, cy2); c.stroke();
+      c.fillStyle = '#d43a3a'; rr(c, cx2 - 5 * k, cy2 - 12 * k, 10 * k, 18 * k, 4 * k);
+      c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.5 * k; c.setLineDash([4 * k, 4 * k]); c.beginPath(); c.ellipse(hx, topY, w * 0.15, h * 0.15 * 0.4 / 0.66 * 0.66, 0, 0, 7); c.stroke(); c.setLineDash([]);
+      if (mg.phase === 'a') mgRing(c, cx2, cy2, 22 * k, k, t);
+    }
+    if (mg.hole > 0) {
+      // the little ice rod by the hole, its line going down, the float bobbing in the water
+      c.strokeStyle = '#6b4422'; c.lineWidth = 3 * k; c.beginPath(); c.moveTo(w * 0.22, h * 0.7); c.lineTo(hx - w * 0.04, h * 0.5); c.stroke();
+      if (!mg.fishy && !mg.fish && t - mg.holeT > 0.7) mg.fishy = { st: 'wait', biteAt: t + 2 + Math.random() * 2.5 };
+      const F = mg.fishy;
+      if (F) {
+        if (F.st === 'wait' && t > F.biteAt - 1.2) F.st = 'nibble';
+        else if (F.st === 'nibble' && t > F.biteAt) { F.st = 'bite'; F.t0 = t; mgBegin('b'); mg.phase = 'wait'; blip(420, 0.08); }
+        else if (F.st === 'bite' && t - F.t0 > 1.6) { F.st = 'wait'; F.biteAt = t + 2 + Math.random() * 2; mgLine('mg_wait', null, ['Чекай', 'Too late! Wait for the next one']); }
+      }
+      const sink = F && F.st === 'bite' ? 5 * k + Math.abs(Math.sin(t * 16)) * 4 * k : F && F.st === 'nibble' ? Math.max(0, Math.sin(t * 22)) * 3 * k : Math.sin(t * 2) * 1 * k;
+      if (!mg.fish) {
+        c.strokeStyle = 'rgba(60,60,60,.8)'; c.lineWidth = 1 * k; c.beginPath(); c.moveTo(hx - w * 0.04, h * 0.5); c.quadraticCurveTo(hx - w * 0.01, h * 0.6, hx, hy + sink - 4 * k); c.stroke();
+        c.fillStyle = '#fff'; circ(c, hx, hy + sink - 3 * k, 4 * k); c.fillStyle = '#e2392f'; c.beginPath(); c.arc(hx, hy + sink - 3 * k, 4 * k, Math.PI, 0); c.fill();
+        if (F && F.st === 'bite') { c.font = `900 ${Math.round(24 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = 4 * k; c.textAlign = 'center'; c.strokeText('!', hx, hy - 18 * k); c.fillText('!', hx, hy - 18 * k); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(hx, hy + 14 * k); c.lineTo(hx, hy - 40 * k); c.stroke(); }
+      } else {
+        // the fish pulled up out of the hole, flopping onto the ice, then sliding to the bucket
+        const q = Math.min(1, (t - mg.fish.t0) / 1.4), up = Math.min(1, q / 0.35), x = q < 0.35 ? hx : hx + (w * 0.88 - hx) * ((q - 0.35) / 0.65), y = q < 0.35 ? hy - up * h * 0.25 : hy - h * 0.25 + ((q - 0.35) / 0.65) * h * 0.2 - Math.sin(((q - 0.35) / 0.65) * Math.PI) * h * 0.1;
+        c.strokeStyle = 'rgba(60,60,60,.8)'; c.lineWidth = 1 * k; if (q < 0.35) { c.beginPath(); c.moveTo(hx - w * 0.04, h * 0.5); c.lineTo(x, y - 8 * k); c.stroke(); }
+        if (q < 1) fishArt(c, x, y, 1.2 * k, q < 0.35 ? -1.4 + Math.sin(t * 22) * 0.3 : Math.sin(t * 18) * 0.4, t, false, 1);
+        c.fillStyle = 'rgba(200,230,250,.9)'; for (let i = 0; i < 6; i++) { const dq = (t - mg.fish.t0) * 1.6 - i * 0.05; if (dq < 0 || dq > 0.6) continue; circ(c, hx + (i - 3) * 6 * k * dq * 3, hy - Math.sin(dq * 4) * 24 * k + dq * dq * 30 * k, 2 * k); }
+      }
+      if (mg.phase === 'wait' && F && F.st === 'bite') mgRing(c, hx, hy, 30 * k, k, t);
+    }
+  },
+};
+
+// ------------------------------------------------------------------ the chopping block: рубай!
+// Take the axe by its handle, lift it high and bring it down hard onto the log: it splits, the halves fly
+// apart and chips spray. Three logs; the split wood stacks up by the wall.
 let chop = null;
 function chopStart() {
   if (S.cd.chop > now()) return wordCard('koloda', { note: `🪓 ${W.drova.uk}: ${S.bag.drova || 0}${xl(' · Your arms need a rest. Come back in a minute.')}` });
   learn('koloda'); learn('drova'); learn('rubai');
-  chop = { n: 0, logs: 3, anim: 0, down: null };
+  chop = { n: 0, logs: 3, axe: { x: 0.78, y: 0.55, held: false, vy: 0, ang: 0.9 }, armed: false, split: null, chips: [], logIn: nowT, fl: null };
   const st = stage();
   openSheet(`<div class="card"><div class="tag">🪓 ${W.koloda.uk}${st < 3 ? ' · ' + W.koloda.en : ''}</div>
     <div class="word" style="font-size:28px"><span class="verb">${PH.rubai_drova.uk.split(' ')[0]}</span> ${PH.rubai_drova.uk.split(' ').slice(1).join(' ')}</div>${st < 3 ? `<div class="en">${PH.rubai_drova.en}</div>` : ''}
     <div class="vchip"><span class="verb">${W.rubai.uk}</span> ${st < 3 ? '= ' + W.rubai.en : xl('= ' + W.rubai.en)} <small>· дієслово${st < 3 ? ' (verb)' : ''}</small></div>
-    <canvas id="chopPad" class="cookpad" style="width:100%;display:block"></canvas>
-    <div class="muted">${st < 3 ? 'Махни пальцем униз · Swipe down on the log' : 'Махни пальцем униз'}</div>
+    <canvas id="chopPad" class="cookpad" style="width:100%;display:block;height:250px"></canvas>
+    <div class="muted" style="min-height:2.6em">${st < 3 ? 'Візьми сокиру, підніми й рубай · Take the axe, lift it high and bring it down' : 'Візьми сокиру, підніми й рубай'}</div>
     <div class="row">${btn('hear', 'p_rubai_drova', '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say('p_rubai_drova');
-  const pad = $('#chopPad'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const pad = $('#chopPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = chop;
   pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); chop.k = dpr;
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
-  pad.addEventListener('pointerdown', e => { e.preventDefault(); chop.down = { y: e.clientY, t: nowT }; try { pad.setPointerCapture(e.pointerId); } catch (er) {} });
-  const up = e => { const d = chop && chop.down; if (!d) return; chop.down = null; if (e.clientY - d.y > 30 && nowT - d.t < 0.9) chopHit(); };
+  const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); if (chop !== me) return; try { pad.setPointerCapture(e.pointerId); } catch (er) {} const [x, y] = at(e), A = chop.axe; if (Math.hypot(A.x - x, (A.y - y) * 0.66) < 0.22) { A.held = true; A.ox = A.x - x; A.oy = A.y - y; A.lt = performance.now(); blip(520, 0.03); } else chop.miss = nowT; });
+  pad.addEventListener('pointermove', e => { if (chop !== me || !chop.axe.held) return; const [x, y] = at(e), A = chop.axe, now2 = performance.now(), dtm = Math.max(1, now2 - A.lt) / 1000; const ny = Math.max(0.12, Math.min(0.6, y + A.oy)); A.vy = (ny - A.y) / dtm; A.x = Math.max(0.3, Math.min(0.85, x + A.ox)); A.y = ny; A.lt = now2; chopSwing(); });
+  const up = () => { if (chop === me) chop.axe.held = false; };
   for (const ev of ['pointerup', 'pointercancel']) pad.addEventListener(ev, up);
-  requestAnimationFrame(chopFrame);
+  requestAnimationFrame(() => chopFrame(me));
+}
+// The axe head is above the grip; raise it high to get ready, then a fast stroke down splits the log.
+function chopSwing() {
+  const A = chop.axe;
+  if (A.y < 0.32) chop.armed = true;
+  if (chop.armed && !chop.split && chop.n < chop.logs && A.y >= 0.5 && A.vy > 0.6 && Math.abs(A.x - 0.08 - 0.5) < 0.16 && nowT - chop.logIn > 0.4) chopHit();
+  else if (chop.armed && A.y >= 0.5 && A.vy <= 0.6 && !chop.split) { chop.armed = false; blip(220, 0.04); chop.bonk = nowT; }   // too gentle: the axe just bonks the log
 }
 function chopHit() {
-  if (!chop || chop.anim) return;
-  chop.anim = nowT; blip(260, 0.09); useWord('rubai', true);
+  if (!chop || chop.split) return;
+  chop.armed = false; chop.split = nowT; chop.shake = nowT; blip(160, 0.12); setTimeout(() => blip(520, 0.05), 60); useWord('rubai', true);
+  chop.fl = nowT; chopVoice();
+  for (let i = 0; i < 12; i++) chop.chips.push({ x: 0.5, y: 0.6, vx: (Math.random() - 0.5) * 1.4, vy: -0.4 - Math.random() * 0.8, r: Math.random() * 6, t0: nowT });
   setTimeout(() => {
     if (!chop) return;
-    chop.n++; give('drova'); chop.anim = 0;
-    if (chop.n >= chop.logs) { S.cd.chop = now() + 60e3; save(); const n = chop.n; setTimeout(() => { chop = null; if ($('#chopPad')) { closeSheet(); toast(`+${n} 🪵 ${W.drova.uk} (${S.bag.drova})`); say('w_drova'); } }, 700); }
-  }, 450);
+    chop.n++; give('drova'); chop.split = null; chop.logIn = nowT;
+    if (chop.n >= chop.logs) { S.cd.chop = now() + 60e3; save(); const n = chop.n, me = chop; setTimeout(() => { if (chop !== me) return; chopStopVoice(); chop = null; if ($('#chopPad')) { closeSheet(); toast(`+${n} 🪵 ${W.drova.uk} (${S.bag.drova})`); say('w_drova'); } }, 900); }
+  }, 650);
 }
-function chopFrame() {
-  const pad = $('#chopPad'); if (!chop || !pad || !sheetOpen()) { chop = null; return; }
-  const c = pad.getContext('2d'), w = pad.width, h = pad.height, k = chop.k, t = nowT;
-  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, winter() ? '#dfe9f5' : '#cfeefc'); g.addColorStop(1, winter() ? '#f6f9fd' : '#a6dc7c'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-  const bx = w * 0.45, by = h * 0.86;
-  c.fillStyle = '#8a5a2b'; c.fillRect(bx - 40 * k, by - 36 * k, 80 * k, 36 * k); c.fillStyle = '#d9b27a'; ell(c, bx, by - 36 * k, 40 * k, 12 * k);
-  const a = chop.anim ? Math.min(1, (t - chop.anim) / 0.45) : 0;
-  if (chop.n < chop.logs) {   // the log on the block, splitting into two halves
-    for (const s of [-1, 1]) { c.save(); c.translate(bx + s * a * 34 * k, by - 36 * k); c.rotate(s * a * 0.6); c.fillStyle = '#a06a35'; c.fillRect(s < 0 ? -22 * k : 0, -60 * k, 22 * k, 60 * k); c.fillStyle = '#d9b27a'; ell(c, s * 11 * k, -60 * k, 11 * k, 5 * k); c.restore(); }
+function chopVoice() {
+  chop.lastAct = performance.now();
+  if (!chop.vo) { const vo = new Audio('audio/w_rubai.mp3'), me = chop; chop.vo = vo; vo.onended = () => { duck = 1; setTimeout(() => { if (chop === me && chop.vo === vo && performance.now() - chop.lastAct < 1600) { duck = 0.3; vo.play().catch(() => {}); } }, 90); }; }
+  if (chop.vo.paused) { stopSay(); duck = 0.3; try { chop.vo.currentTime = 0; } catch (e) {} chop.vo.play().catch(() => {}); }
+}
+function chopStopVoice() { if (chop && chop.vo) { try { chop.vo.pause(); } catch (e) {} chop.vo.onended = null; chop.vo = null; duck = 1; } }
+function chopFrame(me) {
+  const pad = $('#chopPad'); if (chop !== me) return; if (!pad || !sheetOpen()) { chopStopVoice(); chop = null; return; }
+  const c = pad.getContext('2d'), w = pad.width, h = pad.height, k = chop.k, t = nowT, A = chop.axe, wi = winter();
+  const dt = Math.min(0.05, Math.max(0, t - (chop.lastT || t))); chop.lastT = t;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  const sh = chop.shake && t - chop.shake < 0.25 ? Math.sin((t - chop.shake) * 80) * 3 * k * (1 - (t - chop.shake) / 0.25) : 0;
+  c.translate(sh, 0);
+  // the cottage wall behind (whitewashed, with a timber sill), the yard in front
+  c.fillStyle = '#f4efe2'; c.fillRect(-10, 0, w + 20, h * 0.6); c.fillStyle = 'rgba(180,160,120,.25)'; for (let i = 0; i < 6; i++) c.fillRect(w * (0.05 + i * 0.17), h * 0.08, w * 0.002 + 1, h * 0.5);
+  c.fillStyle = '#8a5a2b'; c.fillRect(-10, h * 0.56, w + 20, h * 0.05);
+  const g = c.createLinearGradient(0, h * 0.6, 0, h); g.addColorStop(0, wi ? '#eef3fa' : '#a6d67c'); g.addColorStop(1, wi ? '#d6e2f0' : '#7fc25a'); c.fillStyle = g; c.fillRect(-10, h * 0.61, w + 20, h * 0.4);
+  if (wi) { c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 20; i++) circ(c, ((i * 83.3 + Math.sin(t + i) * 10) % w + w) % w, (i * 151.7 + t * 30) % h, (1.2 + i % 3) * k); }
+  // the woodpile against the wall, growing as you split
+  const pile = (S.bag.drova || 0) + 3;
+  for (let i = 0; i < Math.min(18, pile); i++) { const col = i % 6, row = Math.floor(i / 6), x = w * (0.04 + col * 0.045 + (row % 2) * 0.022), y = h * (0.6 - row * 0.07); c.fillStyle = '#a06a35'; circ(c, x, y, h * 0.035); c.fillStyle = '#d9b27a'; circ(c, x, y, h * 0.026); c.strokeStyle = '#b08850'; c.lineWidth = 1 * k; c.beginPath(); c.arc(x, y, h * 0.013, 0, 7); c.stroke(); }
+  // the block, and the log standing on it (dropped on fresh after each split)
+  const bx = w * 0.5, by = h * 0.86, bw = w * 0.2;
+  c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, bx, by + 2 * k, bw * 0.75, h * 0.03);
+  c.fillStyle = '#7a4b22'; c.fillRect(bx - bw / 2, by - h * 0.14, bw, h * 0.14); ell(c, bx, by, bw / 2, h * 0.03); c.fillStyle = '#d9b27a'; ell(c, bx, by - h * 0.14, bw / 2, h * 0.035);
+  c.strokeStyle = '#b08850'; c.lineWidth = 1.2 * k; for (const r of [0.15, 0.3, 0.42]) { c.beginPath(); c.ellipse(bx, by - h * 0.14, bw * r, h * 0.035 * r * 2, 0, 0, 7); c.stroke(); }
+  const top = by - h * 0.14, lw = w * 0.085, lh = h * 0.2;
+  if (chop.n < chop.logs) {
+    const drop = Math.max(0, 1 - (t - chop.logIn) / 0.25), sp = chop.split ? Math.min(1, (t - chop.split) / 0.5) : 0, bonk = chop.bonk && t - chop.bonk < 0.2 ? Math.sin((t - chop.bonk) * 60) * 2 * k : 0;
+    for (const s of [-1, 1]) {
+      c.save(); c.translate(bx + s * sp * w * 0.22 + bonk, top - drop * h * 0.4 - Math.sin(sp * Math.PI) * h * 0.15); c.rotate(s * sp * 1.4);
+      c.fillStyle = '#a06a35'; c.fillRect(s < 0 ? -lw : 0, -lh, lw, lh); c.fillStyle = '#8a5a2b'; c.fillRect(s < 0 ? -lw : lw - 3 * k, -lh, 3 * k, lh);
+      c.fillStyle = '#d9b27a'; c.beginPath(); c.ellipse(0, -lh, lw, h * 0.025, 0, s < 0 ? Math.PI / 2 : -Math.PI / 2, s < 0 ? Math.PI * 1.5 : Math.PI / 2); c.fill();
+      if (sp) { c.fillStyle = '#e8c890'; c.fillRect(s < 0 ? -2 * k : 0, -lh, 2 * k, lh); }
+      c.restore();
+    }
   }
-  // the axe: raised, or coming down
-  const ay = chop.anim ? by - 100 * k + a * 64 * k : by - 120 * k - Math.sin(t * 3) * 6 * k;
-  c.save(); c.translate(bx + 6 * k, ay); c.rotate(chop.anim ? -0.1 : -0.6); c.fillStyle = '#6b4422'; c.fillRect(-4 * k, -10 * k, 8 * k, 70 * k); c.fillStyle = '#9aa0a8'; poly(c, [[-5 * k, -14 * k], [26 * k, -24 * k], [30 * k, 6 * k], [-5 * k, 2 * k]]); c.restore();
-  // the stack you've split
-  for (let i = 0; i < chop.n * 2; i++) { const x = w * 0.8 + (i % 3) * 14 * k, y = h * 0.9 - Math.floor(i / 3) * 12 * k; c.fillStyle = '#a06a35'; c.fillRect(x - 6 * k, y - 10 * k, 12 * k, 10 * k); c.fillStyle = '#d9b27a'; ell(c, x + 6 * k, y - 5 * k, 2.5 * k, 5 * k); }
-  c.font = `800 ${Math.round(16 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'left'; c.fillText(`🪵 ${chop.n}/${chop.logs}`, 12 * k, 26 * k);
-  requestAnimationFrame(chopFrame);
+  chop.chips = chop.chips.filter(p => t - p.t0 < 0.8); for (const p of chop.chips) { p.vy += dt * 2.4; p.x += p.vx * dt * 0.5; p.y += p.vy * dt * 0.5; c.fillStyle = '#d9b27a'; c.save(); c.translate(p.x * w, p.y * h); c.rotate(p.r + t * 10); c.fillRect(-3 * k, -1.5 * k, 6 * k, 3 * k); c.restore(); }
+  // the axe: a long handle you hold near its end, the head above; it tips forward as you bring it down
+  if (!A.held) { A.y += (0.55 - A.y) * Math.min(1, dt * 4); A.vy = 0; }
+  const goalAng = A.held ? (A.vy > 0.5 ? 0.15 : A.y < 0.32 ? 1.2 : 0.7) : 0.9; A.ang += (goalAng - A.ang) * Math.min(1, dt * 14);
+  const gx = A.x * w, gy = A.y * h;
+  c.save(); c.translate(gx, gy); c.rotate(-A.ang);
+  c.fillStyle = '#9b6b3c'; rr(c, -4 * k, -h * 0.34, 8 * k, h * 0.38, 4 * k); c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(-2 * k, -h * 0.33, 2 * k, h * 0.36);
+  c.fillStyle = '#7a8088'; poly(c, [[-5 * k, -h * 0.34], [-5 * k, -h * 0.26], [-w * 0.09, -h * 0.24], [-w * 0.1, -h * 0.37]]); c.fillStyle = '#c9ced4'; poly(c, [[-w * 0.085, -h * 0.245], [-w * 0.1, -h * 0.37], [-w * 0.105, -h * 0.365], [-w * 0.092, -h * 0.24]]);
+  c.restore();
+  if (!A.held && (chop.miss && t - chop.miss < 0.8 || t - (chop.logIn) < 2.5 && chop.n === 0)) { c.strokeStyle = 'rgba(255,210,63,.7)'; c.lineWidth = 3 * k; c.beginPath(); c.arc(gx, gy, 30 * k, 0, 7); c.stroke(); }
+  if (A.held && chop.armed && !chop.split) { c.fillStyle = 'rgba(255,255,255,.85)'; c.font = `800 ${Math.round(12 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⬇', bx, h * 0.45); }
+  // the word, flashed on each split
+  if (chop.fl) { const q = (t - chop.fl) / 0.5; if (q >= 0 && q <= 1) { const a = q < 0.2 ? q / 0.2 : 1 - (q - 0.2) / 0.8, sc = 0.75 + q * 0.6; c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.font = `800 ${Math.round(15 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🪵 ${chop.n}/${chop.logs}`, w - 12 * k, 24 * k);
+  requestAnimationFrame(() => chopFrame(me));
 }
+const GAMES = { bohdan: BEE, bohdan_w: HIVEW, andriiko_w: SNOWMAN, taras_w: ICE };
 
 // ------------------------------------------------------------------ speaking
 // Say a word, and Gemini (through a small server that holds the key) gives a generous score. Chrome on Android.
@@ -4986,7 +5314,7 @@ const festClock = () => fest && fest.tune && !festMusic.paused ? festMusic.curre
 function startFest() {
   const F = curFest();
   fest = { F, phase: 'greet', ang: 0, boost: 0, lastT: nowT, beats: [], hits: 0, pop: null, t0: nowT, endT: 0, jumpT: 0, done: {} };
-  mode = 'fest'; learn(F.id); learn('horovod');
+  mode = 'fest'; learn(F.id); learn('horovod'); document.body.classList.add('scene');   // the goal line steps aside for the festival
   const faces = ['olia', 'taras', 'oksana', 'andriiko', 'bohdan'].map(id => `<img src="${faceURL(NPC[id].look)}" style="width:54px;height:54px;border-radius:14px;background:#e8f4d9" alt="">`).join('');
   const me = fest;
   // drawFest opens it again if it's swiped away or tapped off, since only the answer starts the dance
@@ -5014,7 +5342,7 @@ function festTap() {
   const f = fest; if (!f) return;
   if (f.phase === 'dance') {
     const ft = festClock(); let best = null; for (const b of f.beats) if (!b.hit && Math.abs(ft - b.t) < 0.3 && (!best || Math.abs(ft - b.t) < Math.abs(ft - best.t))) best = b;
-    if (best) { best.hit = Math.abs(ft - best.t) < 0.12 ? 2 : 1; f.hits++; f.boost += 2.4; f.pop = { t: nowT, txt: best.hit === 2 ? PH.chudovo.uk : PH.molodets.uk }; blip(best.hit === 2 ? 990 : 820, 0.07); }
+    if (best) { best.hit = Math.abs(ft - best.t) < 0.12 ? 2 : 1; f.hits++; f.boost += 2.4; f.combo = (f.combo || 0) + 1; f.best = Math.max(f.best || 0, f.combo); f.hitT = nowT; f.sparks = (f.sparks || []).concat(Array.from({ length: best.hit === 2 ? 14 : 8 }, (_, i) => ({ a: i / (best.hit === 2 ? 14 : 8) * Math.PI * 2 + Math.random() * 0.3, t0: nowT }))); f.pop = { t: nowT, txt: best.hit === 2 ? PH.chudovo.uk : PH.molodets.uk }; blip(best.hit === 2 ? 990 : 820, 0.07); }
   } else if (f.phase === 'finale' && !f.jumpT) {
     f.jumpT = nowT; useWord(f.F.finale, true);
     if (f.F.finale === 'spivai') say('p_koliadka'); else blip(660, 0.1);
@@ -5024,7 +5352,7 @@ function festDone() {
   const F = fest.F, owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0;
   S.hearts += 5; if (owned) S.coins += 15; else S.home[F.reward] = (S.home[F.reward] || 0) + 1;
   festNow().done = true;
-  closeSheet(); fest = null; mode = 'world'; hud(); save();
+  closeSheet(); fest = null; mode = 'world'; document.body.classList.remove('scene'); hud(); save();
   try { festMusic.pause(); } catch (e) {} startMusic();   // back to the village theme
   toast(`🎉 +5 ❤️ ${owned ? ' +15 ₴' : ' · ' + W[F.reward].uk + (stage() < 3 ? ' (in your basket: place it at home)' : '')}`, 3200);
 }
@@ -5066,20 +5394,34 @@ function drawFest(t) {
   // bunting
   c.strokeStyle = '#6b4422'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, h * 0.21); c.quadraticCurveTo(w / 2, h * 0.28, w, h * 0.21); c.stroke();
   const FL = ['#d43a3a', '#ffd23f', '#3d7cc2', '#fffdf5'];
-  for (let i = 0; i < 12; i++) { const q = (i + 0.5) / 12, x = q * w, y = h * 0.21 + (1 - (2 * q - 1) ** 2) * h * 0.035 + Math.sin(t * 2 + i) * 1.5; c.fillStyle = FL[i % 4]; poly(c, [[x - w * 0.03, y], [x + w * 0.03, y], [x, y + h * 0.045]]); }
+  const pulse = f.pulse ? Math.max(0, 1 - (t - f.pulse) / 0.3) : 0;   // everything gives a little hop on each beat of the dance
+  for (let i = 0; i < 12; i++) { const q = (i + 0.5) / 12, x = q * w, y = h * 0.21 + (1 - (2 * q - 1) ** 2) * h * 0.035 + Math.sin(t * 2 + i) * 1.5 - pulse * 2; c.fillStyle = FL[i % 4]; poly(c, [[x - w * 0.03, y], [x + w * 0.03, y], [x, y + h * 0.045]]); }
+  if (dark) for (let i = 0; i < 13; i++) { const q = i / 12, x = q * w, y = h * 0.21 + (1 - (2 * q - 1) ** 2) * h * 0.035, on = 0.6 + 0.4 * Math.sin(t * 3 + i * 1.7) + pulse * 0.4; const gl = c.createRadialGradient(x, y, 0, x, y, u * 0.04); gl.addColorStop(0, `rgba(255,214,120,${0.5 * on})`); gl.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = gl; c.fillRect(x - u * 0.04, y - u * 0.04, u * 0.08, u * 0.08); c.fillStyle = `rgba(255,236,170,${Math.min(1, on)})`; circ(c, x, y, u * 0.008); }
+  // a glow on the ground under the circle, brightest on the beat
+  { const gx = w / 2, gy = h * 0.66; const gg = c.createRadialGradient(gx, gy, 0, gx, gy, w * 0.45); gg.addColorStop(0, `rgba(255,220,140,${0.12 + pulse * 0.25})`); gg.addColorStop(1, 'rgba(255,220,140,0)'); c.fillStyle = gg; c.save(); c.translate(gx, gy); c.scale(1, 0.3); c.translate(-gx, -gy); c.fillRect(0, gy - w * 0.45, w, w * 0.9); c.restore(); }
   // --- the round dance around the festival's centrepiece
   const cx = w / 2, cy = h * 0.63, rx = w * 0.37, ry = h * 0.075;
   const looks = ['olia', 'taras', 'oksana', 'andriiko', 'bohdan'].map(id => NPC[id].look); looks.splice(3, 0, ME);
   const jumping = F.finale === 'stryby' && f.jumpT;
   const dancers = looks.map((L, i) => { const a = f.ang + i * Math.PI * 2 / looks.length; return { L, i, a, x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry, me: L === ME }; }).filter(d => !(jumping && d.me));
-  const drawD = d => { const sc = (u / 390) * 1.45 * (0.86 + 0.16 * Math.sin(d.a)), bob = Math.abs(Math.sin(t * 6 + d.i)) * 4 * sc; person(c, d.x, d.y - bob, d.L, t, true, sc); if (d.me) drawIcon(c, '❤️', d.x, d.y - sc * 88 - bob, u * 0.045); };
+  for (const d of dancers) { d.sc = (u / 390) * 1.45 * (0.86 + 0.16 * Math.sin(d.a)); d.bob = (Math.abs(Math.sin(t * 6 + d.i)) * 4 + pulse * 7) * d.sc; }
+  const WREATH = F.id === 'kupala' || F.id === 'velykden' || F.id === 'obzhynky';
+  const drawD = d => { const sc = d.sc; person(c, d.x, d.y - d.bob, d.L, t, true, sc);
+    if (WREATH) { const hy = d.y - d.bob - sc * 76; for (let q = 0; q < 9; q++) { const a = Math.PI + q / 8 * Math.PI; c.fillStyle = ['#d43a3a', '#ffd23f', '#3d7cc2', '#ff7aa8'][q % 4]; circ(c, d.x + Math.cos(a) * sc * 13, hy + Math.sin(a) * sc * 5, sc * 3.2); } c.fillStyle = '#3f8a3a'; for (const s of [-1, 1]) ell(c, d.x + s * sc * 15, hy + sc * 2, sc * 4, sc * 2); }
+    if (d.me) drawIcon(c, '❤️', d.x, d.y - sc * 88 - d.bob, u * 0.045); };
+  // joined hands: an arm from each dancer to the next one round the circle
+  const ring = dancers.slice().sort((a, b) => a.i - b.i), arms = [];
+  for (let i = 0; i < ring.length; i++) { const A = ring[i], B = ring[(i + 1) % ring.length]; if (Math.abs(A.i - B.i) > 1 && !(A.i === looks.length - 1 && B.i === 0)) continue; arms.push({ A, B, back: Math.sin(A.a) + Math.sin(B.a) < 0 }); }
+  const drawArm = ({ A, B }) => { const ay = A.y - A.bob - A.sc * 40, by2 = B.y - B.bob - B.sc * 40, dir = B.x > A.x ? 1 : -1, x1 = A.x + dir * A.sc * 12, x2 = B.x - dir * B.sc * 12, my = (ay + by2) / 2 + u * 0.012 + Math.sin(t * 6) * 2; c.strokeStyle = '#f3cfb0'; c.lineWidth = Math.max(2, (A.sc + B.sc) * 2.6); c.lineCap = 'round'; c.beginPath(); c.moveTo(x1, ay); c.quadraticCurveTo((x1 + x2) / 2, my, x2, by2); c.stroke(); c.fillStyle = '#f3cfb0'; circ(c, (x1 + x2) / 2, my - u * 0.005, Math.max(2, (A.sc + B.sc) * 2.4)); };
   dancers.filter(d => Math.sin(d.a) < 0).sort((a, b) => a.y - b.y).forEach(drawD);
+  arms.filter(m => m.back).forEach(drawArm);
   const S0 = u * 0.3;
   if (F.center === 'fire') bonfire(c, cx, cy, S0 * 0.75, t);
   else if (F.center === 'star') { carolStar(c, cx + S0 * 0.55, cy, S0 * 0.8, t); c.fillStyle = '#fffdf5'; rr(c, cx - S0 * 0.7, cy - S0 * 0.28, S0 * 1.1, S0 * 0.28, 6); drawIcon(c, W.kutia.ic, cx - S0 * 0.38, cy - S0 * 0.24, S0 * 0.5); drawIcon(c, W.didukh.ic, cx - S0 * 0.95, cy, S0 * 0.75); drawIcon(c, W.svichka.ic, cx, cy - S0 * 0.24, S0 * 0.32); }
   else if (F.center === 'harvest') { c.fillStyle = '#fffdf5'; rr(c, cx - S0 * 0.75, cy - S0 * 0.3, S0 * 1.5, S0 * 0.3, 6); c.fillStyle = '#d43a3a'; c.fillRect(cx - S0 * 0.75, cy - S0 * 0.12, S0 * 1.5, S0 * 0.05); drawIcon(c, W.korovai.ic, cx + S0 * 0.2, cy - S0 * 0.26, S0 * 0.6); drawIcon(c, W.didukh.ic, cx - S0 * 0.45, cy - S0 * 0.2, S0 * 0.85); }
   else { c.fillStyle = '#c99463'; ell(c, cx, cy - S0 * 0.08, S0 * 0.6, S0 * 0.18); drawIcon(c, W.paska.ic, cx, cy - S0 * 0.12, S0 * 0.62); for (let i = 0; i < 5; i++) drawIcon(c, W.pysanka.ic, cx - S0 * 0.5 + i * S0 * 0.25, cy + S0 * 0.02, S0 * 0.22); }
   dancers.filter(d => Math.sin(d.a) >= 0).sort((a, b) => a.y - b.y).forEach(drawD);
+  arms.filter(m => !m.back).forEach(drawArm);
   // your cats watch from the front
   houseCats().slice(0, 3).forEach((ct, i) => cat(c, [w * 0.12, w * 0.88, w * 0.27][i], h * [0.95, 0.95, 0.99][i], u * 0.15, sitPal(ct.v), t, i, i === 1 ? -1 : 1, null));
   // falling snow, drifting petals, or wheat in the air
@@ -5093,10 +5435,16 @@ function drawFest(t) {
     drawIcon(c, '🥁', bx, by + R * 0.4, R * 1.1);
     const ft = festClock();
     for (const b of f.beats) {
-      if (!b.sounded && ft >= b.t) { b.sounded = 1; if (!f.tune) blip(196, 0.05); }   // the tune has its own drum
-      const ahead = b.t - ft; if (b.hit || ahead < -0.3 || ahead > 1.6) continue;
+      if (!b.sounded && ft >= b.t) { b.sounded = 1; f.pulse = t; if (!f.tune) blip(196, 0.05); }   // the tune has its own drum
+      const ahead = b.t - ft; if (!b.hit && !b.missed && ahead < -0.3) { b.missed = 1; f.combo = 0; f.missT = t; }
+      if (b.hit || ahead < -0.3 || ahead > 1.6) continue;
       c.globalAlpha = Math.max(0, 1 - ahead / 1.6); c.strokeStyle = '#ffd23f'; c.lineWidth = 5; c.beginPath(); c.arc(bx, by, R * (1 + Math.max(0, ahead) * 1.7), 0, 7); c.stroke(); c.globalAlpha = 1;
     }
+    // sparks off the drum on a good beat, and how many in a row
+    f.sparks = (f.sparks || []).filter(s => t - s.t0 < 0.7); for (const s of f.sparks) { const q = (t - s.t0) / 0.7; c.fillStyle = `rgba(255,${200 + (s.a * 40 % 55)},90,${1 - q})`; circ(c, bx + Math.cos(s.a) * R * (1 + q * 2.2), by + Math.sin(s.a) * R * (1 + q * 2.2) * 0.8 - q * R * 0.6, (3 - q * 2) * u / 390 * 2); }
+    if (f.hitT && t - f.hitT < 0.25) { const q = (t - f.hitT) / 0.25; c.strokeStyle = `rgba(255,255,255,${1 - q})`; c.lineWidth = 6; c.beginPath(); c.arc(bx, by, R * (1 + q * 0.6), 0, 7); c.stroke(); }
+    if (f.missT && t - f.missT < 0.3) { c.strokeStyle = `rgba(120,120,140,${0.8 - (t - f.missT) * 2.6})`; c.lineWidth = 4; c.beginPath(); c.arc(bx, by, R * 1.05, 0, 7); c.stroke(); }
+    if ((f.combo || 0) >= 3) { c.save(); const pop = f.hitT ? Math.max(0, 1 - (t - f.hitT) / 0.2) : 0; c.translate(bx + R * 2.1, by - R * 0.2); c.scale(1 + pop * 0.3, 1 + pop * 0.3); c.font = cozyFont(Math.round(u * 0.05)); c.textAlign = 'center'; c.lineWidth = u * 0.012; c.strokeStyle = INK; c.strokeText('×' + f.combo, 0, 0); c.fillStyle = '#ffd23f'; c.fillText('×' + f.combo, 0, 0); c.restore(); }
     if (f.pop && t - f.pop.t < 0.7) bedText(c, f.pop.txt, '', by - R * 1.9 - (t - f.pop.t) * 30, 1 - (t - f.pop.t) / 0.7);
     const a0 = t - f.danceT;
     if (a0 < 3.2) bedText(c, W.tantsiui.uk[0].toUpperCase() + W.tantsiui.uk.slice(1) + '!', stage() < 3 ? 'Dance! Tap the drum on the beat' : '', h * 0.33, Math.min(1, a0 * 2, (3.2 - a0) * 2));
@@ -5120,7 +5468,7 @@ function drawFest(t) {
       const owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0, beats = f.beats.length;
       openSheet(`<div class="card"><div class="tag">🎉 ${W[F.id].uk}</div>
         <div class="word" style="font-size:30px">${PH.zi_sviatom.uk}</div>${stage() < 3 ? `<div class="en">${PH.zi_sviatom.en}</div>` : ''}
-        <div class="hint">💃 ${W.horovod.uk}: ${f.hits}/${beats}${stage() < 3 ? ' beats danced' : ''}</div>
+        <div class="hint">💃 ${W.horovod.uk}: ${f.hits}/${beats}${stage() < 3 ? ' beats danced' : ''}${(f.best || 0) >= 3 ? ` · 🔥 ×${f.best}${stage() < 3 ? ' in a row' : ''}` : ''}</div>
         <img class="big" src="${iconURL(owned ? 'koshyk' : F.reward)}" alt="">
         <div class="hint">❤️ +5${owned ? ' · 💰 +15 ₴' : ` · ${W[F.reward].uk}${stage() < 3 ? ' for your cottage' : ''}`}</div>
         <div class="row">${btn('festDone', '', lab('backvillage'), 'blue')}</div></div>`);
@@ -5449,7 +5797,7 @@ const A = {
     // A browser tab in full screen also reports display-mode "fullscreen", so that alone does not mean an installed app.
     const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
     const inApp = matchMedia('(display-mode: standalone), (display-mode: minimal-ui)').matches || navigator.standalone || (!inFs && matchMedia('(display-mode: fullscreen)').matches);
-    const toTitle = () => { try { festMusic.pause(); } catch (e) {} fest = null; bed = null; document.body.classList.remove('bedtime'); mg = null; chop = null; ck = null; running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
+    const toTitle = () => { try { festMusic.pause(); } catch (e) {} fest = null; bed = null; document.body.classList.remove('bedtime', 'scene'); mg = null; chop = null; ck = null; running = false; mode = 'world'; $('#homebar').style.display = 'none'; try { music.pause(); } catch (e) {} $('#start').style.display = ''; try { sizeTitle(); } catch (e) {} };
     if (inApp) {
       toTitle();
       try { window.close(); } catch (e) {}
@@ -5477,7 +5825,7 @@ const A = {
   boardGive() { boardGive(); },
   festGo() { closeSheet(); startFest(); },
   mgGo(v) { closeSheet(); setTimeout(() => mgStart(v), 120); },
-  mgNesy() { if (!mg || mg.id !== 'andriiko' || mg.phase !== 'b') return; say('w_nesy'); useWord('nesy', true); mg.phase = 'home'; blip(880, 0.06); },
+  mgNesy() { if (!mg || mg.id !== 'andriiko' || mg.phase !== 'b') return; mgAct('nesy', true); useWord('nesy', true); mg.phase = 'home'; blip(880, 0.06); },
   festDone() { festDone(); },
   spGo() { const R = sp && sp.R; sp = null; if (R) cookScene(R); },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
