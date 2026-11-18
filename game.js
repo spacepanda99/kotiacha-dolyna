@@ -3884,6 +3884,12 @@ function boardCard() {
   });
 }
 let fest = null;
+// The festival's own dance tune (75 beats a minute, first beat 0.081 s in). The dance beats are timed by the
+// tune itself, so the drum rings land on its beat; with the music off they keep the same time by the clock.
+const festMusic = new Audio('music/festival.mp3');
+festMusic.loop = true; festMusic.preload = 'none';
+const FEST_BEAT = 0.8, FEST_FIRST = 0.081;
+const festClock = () => fest && fest.tune && !festMusic.paused ? festMusic.currentTime : fest ? nowT - fest.danceT : 0;
 function startFest() {
   const F = curFest();
   fest = { F, phase: 'greet', ang: 0, boost: 0, lastT: nowT, beats: [], hits: 0, pop: null, t0: nowT, endT: 0, jumpT: 0, done: {} };
@@ -3901,16 +3907,16 @@ function startFest() {
 function festReply() {
   if (!fest) return;
   say('p_' + fest.F.reply); closeSheet();
-  const start = nowT + 2.2;
-  fest.beats = Array.from({ length: 14 }, (_, i) => ({ t: start + i * 0.8, hit: 0 }));
-  fest.phase = 'dance'; fest.danceT = nowT;
+  fest.beats = Array.from({ length: 14 }, (_, i) => ({ t: FEST_FIRST + (i + 3) * FEST_BEAT, hit: 0 }));   // three beats to get going
+  fest.phase = 'dance'; fest.danceT = nowT; fest.tune = false;
+  try { music.pause(); festMusic.currentTime = 0; festMusic.volume = 0.6; if (musicOn) festMusic.play().then(() => { if (fest) { fest.tune = true; fest.danceT = nowT - festMusic.currentTime; } }).catch(() => {}); } catch (e) {}
   setTimeout(() => { if (fest) say('w_tantsiui'); learn('tantsiui'); }, 1300);
 }
 function festTap() {
   const f = fest; if (!f) return;
   if (f.phase === 'dance') {
-    let best = null; for (const b of f.beats) if (!b.hit && Math.abs(nowT - b.t) < 0.3 && (!best || Math.abs(nowT - b.t) < Math.abs(nowT - best.t))) best = b;
-    if (best) { best.hit = Math.abs(nowT - best.t) < 0.12 ? 2 : 1; f.hits++; f.boost += 2.4; f.pop = { t: nowT, txt: best.hit === 2 ? PH.chudovo.uk : PH.molodets.uk }; blip(best.hit === 2 ? 990 : 820, 0.07); }
+    const ft = festClock(); let best = null; for (const b of f.beats) if (!b.hit && Math.abs(ft - b.t) < 0.3 && (!best || Math.abs(ft - b.t) < Math.abs(ft - best.t))) best = b;
+    if (best) { best.hit = Math.abs(ft - best.t) < 0.12 ? 2 : 1; f.hits++; f.boost += 2.4; f.pop = { t: nowT, txt: best.hit === 2 ? PH.chudovo.uk : PH.molodets.uk }; blip(best.hit === 2 ? 990 : 820, 0.07); }
   } else if (f.phase === 'finale' && !f.jumpT) {
     f.jumpT = nowT; useWord(f.F.finale, true);
     if (f.F.finale === 'spivai') say('p_koliadka'); else blip(660, 0.1);
@@ -3921,6 +3927,7 @@ function festDone() {
   S.hearts += 5; if (owned) S.coins += 15; else S.home[F.reward] = (S.home[F.reward] || 0) + 1;
   S.fest = { i: S.fest.i + 1, have: {} };
   closeSheet(); fest = null; mode = 'world'; hud(); save();
+  try { festMusic.pause(); } catch (e) {} startMusic();   // back to the village theme
   toast(`🎉 +5 ❤️ ${owned ? ' +15 ₴' : ' · ' + W[F.reward].uk + (stage() < 3 ? ' (in your basket: place it at home)' : '')}`, 3200);
 }
 // A crackling bonfire: logs, three tongues of flame and sparks.
@@ -3986,15 +3993,16 @@ function drawFest(t) {
     const bx = cx, by = h * 0.86, R = u * 0.085;
     c.fillStyle = 'rgba(255,255,255,.25)'; circ(c, bx, by, R); c.strokeStyle = '#fff8ea'; c.lineWidth = 4; c.beginPath(); c.arc(bx, by, R, 0, 7); c.stroke();
     drawIcon(c, '🥁', bx, by + R * 0.4, R * 1.1);
+    const ft = festClock();
     for (const b of f.beats) {
-      if (!b.sounded && t >= b.t) { b.sounded = 1; blip(196, 0.05); }
-      const ahead = b.t - t; if (b.hit || ahead < -0.3 || ahead > 1.6) continue;
+      if (!b.sounded && ft >= b.t) { b.sounded = 1; if (!f.tune) blip(196, 0.05); }   // the tune has its own drum
+      const ahead = b.t - ft; if (b.hit || ahead < -0.3 || ahead > 1.6) continue;
       c.globalAlpha = Math.max(0, 1 - ahead / 1.6); c.strokeStyle = '#ffd23f'; c.lineWidth = 5; c.beginPath(); c.arc(bx, by, R * (1 + Math.max(0, ahead) * 1.7), 0, 7); c.stroke(); c.globalAlpha = 1;
     }
     if (f.pop && t - f.pop.t < 0.7) bedText(c, f.pop.txt, '', by - R * 1.9 - (t - f.pop.t) * 30, 1 - (t - f.pop.t) / 0.7);
     const a0 = t - f.danceT;
     if (a0 < 3.2) bedText(c, W.tantsiui.uk[0].toUpperCase() + W.tantsiui.uk.slice(1) + '!', stage() < 3 ? 'Dance! Tap the drum on the beat' : '', h * 0.33, Math.min(1, a0 * 2, (3.2 - a0) * 2));
-    if (t > f.beats[f.beats.length - 1].t + 0.7) { f.phase = F.finale ? 'finale' : 'end'; f.endT = t; if (F.finale) { learn(F.finale); say('w_' + F.finale); } }
+    if (ft > f.beats[f.beats.length - 1].t + 0.7) { f.phase = F.finale ? 'finale' : 'end'; f.endT = t; if (F.finale) { learn(F.finale); say('w_' + F.finale); } }
   }
   // --- finales: jump the Kupala fire, or sing the carol
   if (f.phase === 'finale') {
