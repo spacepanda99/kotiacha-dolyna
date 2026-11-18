@@ -2566,7 +2566,7 @@ function cookStep(first = []) {
     <div id="cookPad" class="cookpad"><img id="ckFood" src="${iconURL(st.w)}" alt=""><div id="ckTool">${COOK_TOOL[st.v] || '🥄'}</div></div>
     <div class="cookbar"><i id="ckBar"></i></div>
     <div class="muted">${how[0]}${stg < 3 ? ' · ' + how[1] : ''}</div>
-    <div class="row">${btn('hear', 'v_olia_' + st.line, '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+    <div class="row">${btn('hear', 'v_olia_' + st.line, '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say(...first, 'v_olia_' + st.line);
   cookWire();
 }
@@ -2629,7 +2629,7 @@ function mgInvite(npc) {
   S.cd['mg_' + npc.id] = Math.max(S.cd['mg_' + npc.id] || 0, now() + 60e3);
   const L = npc.lines[mgPre() + 'invite'], st = stage();
   openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
-    <div class="row">${btn('hear', `v_${npc.id}_${mgPre()}invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>`);
+    <div class="row">${btn('hear', `v_${npc.id}_${mgPre()}invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say(`v_${npc.id}_${mgPre()}invite`);
 }
 function mgStart(id) {
@@ -2639,9 +2639,10 @@ function mgStart(id) {
   openSheet(`<div class="card"><div class="tag" id="mgTag"></div>
     <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" id="mgLine" style="font-size:26px"></div><div class="en" id="mgEn"></div></div></div>
     <div class="vchip" id="mgChip"></div>
-    <canvas id="mgPad" class="cookpad" style="width:100%;display:block"></canvas>
-    <div class="muted" id="mgHow"></div>
-    <div class="row" id="mgRow"></div></div>`);
+    <canvas id="mgPad" class="cookpad" style="width:100%;display:block${kind === 'andriiko' || kind === 'taras' ? ';height:240px' : ''}"></canvas>
+    <div class="muted" id="mgHow" style="min-height:2.6em"></div>
+    <div class="row" id="mgRow"></div></div>${subsHTML()}`);
+  subNow = null;
   const pad = $('#mgPad'), dpr = Math.min(2, window.devicePixelRatio || 1);
   pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); mg.k = dpr;
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
@@ -2686,16 +2687,13 @@ function mgBegin(step) {
   if (id === 'bohdan') {
     if (step === 'a') { mg.bees = Array.from({ length: 7 }, (_, i) => ({ ph: i * 0.9, calm: 0 })); mg.cells = []; mgLine('mg_dmukhai', 'dmukhai', ['Тримай пальцем на бджолах', 'Press and hold on the bees']); }
     else { mg.cells = Array.from({ length: 10 }, (_, i) => ({ i, full: 1 })); mgLine('mg_zbyrai', 'zbyrai', ['Торкайся сот', 'Tap each honeycomb cell']); }
-  } else if (id === 'andriiko') {
-    if (step === 'a') { mg.ball = { st: 'hand' }; mg.dog = { x: 0.62, y: 0.78, face: 1, wk: 0, step: 0, st: 'sit' }; mgLine('mg_kydai', 'kydai', ['Махни пальцем угору', 'Flick upwards to throw']); }
-    else mgLine('mg_nesy', 'nesy', ['Натисни «Неси!»', 'Press «Неси!»'], btn('mgNesy', '', lab('nesy'), 'blue'));
-  } else {
-    if (step === 'a') { mg.float = null; mg.fish = null; mgLine('mg_zakydai', 'zakydai', ['Махни пальцем угору', 'Flick upwards to cast']); }
-    else { mgLine('mg_tiahny', 'tiahny', ['Торкнися зараз!', 'Tap now!']); }
-  }
+  } else if (id === 'andriiko') fetchBegin(step);
+  else fishBegin(step);
 }
 function mgPress(x, y) {
   if (!mg) return;   // a tap landing just as the game ends
+  if (mg.id === 'andriiko') return fetchPress(x, y);
+  if (mg.id === 'taras') return fishPress();
   const w = $('#mgPad').width, h = $('#mgPad').height;
   if (mg.id === 'bohdan' && mg.phase === 'b') {
     for (const c of mg.cells) { const [cx, cy, r] = cellPos(c.i, w, h); if (c.full && Math.hypot(x - cx, y - cy) < r * 1.1) { c.full = 0; blip(700 + c.i * 30, 0.05); useWord('med', false); break; } }
@@ -2708,6 +2706,8 @@ function mgPress(x, y) {
 }
 function mgRelease(d) {
   if (!mg) return;
+  if (mg.id === 'andriiko') return fetchRelease(d);
+  if (mg.id === 'taras') return fishRelease();
   const flick = d.y0 - d.y > 40 * (mg.k || 1) && nowT - d.t < 0.8;
   if (mg.id === 'andriiko' && mg.phase === 'a' && flick && mg.ball.st === 'hand') {
     const w = $('#mgPad').width; const tx = Math.max(0.15, Math.min(0.85, 0.5 + (d.x - d.x0) / w * 1.4));
@@ -2737,9 +2737,328 @@ function mgFinish() {
   const L = npc.lines[done]; mg = null;
   openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     ${gift ? `<img class="big" src="${iconURL(gift)}" alt=""><div class="hint">+${id === 'taras' ? 2 : 1} ${W[gift].uk} · ❤️ +1</div>` : `<div class="hint">❤️ +1</div>`}
-    <div class="row">${btn('close', '', lab('close'))}</div></div>`);
+    <div class="row">${btn('close', '', lab('close'))}</div></div>${subsHTML()}`); subNow = null;
   say(`v_${id}_${done}`);
 }
+// ------------------------------------------------------------------ Andriiko's fetch, with a slingshot
+// Grab the ball, pull it back (an invisible slingshot: two faint elastic bands and a dotted aim line), let go
+// and it flies the other way. A ring target pops up somewhere in the meadow each round; land in it for a
+// «Чудово!». Brovko gallops after it, leaps to catch it if he gets there first, or picks it up where it
+// stops, then waits with it in his mouth until you tell him «Неси!» and he trots it back and sits.
+const FE = { ax: 0.3, ay: 0.74, hor: 0.4 };   // where the ball rests, and the horizon (pad fractions)
+const feScale = y => 0.55 + Math.max(0, (y - FE.hor) / (1 - FE.hor)) * 0.6;   // things further up the meadow are smaller
+function fetchBegin(step) {
+  if (step === 'a') {
+    const r = Math.random;
+    mg.tg = { x: 0.56 + r() * 0.3, y: 0.5 + r() * 0.17, t0: nowT };   // this round's target
+    mg.ball = { st: 'rest', x: FE.ax, y: FE.ay, z: 0 };
+    if (!mg.dog) mg.dog = { x: 0.44, y: 0.88, face: 1, ph: 0, sp: 0, pose: 'sit', z: 0, ball: false };
+    mg.grab = false;
+    mgLine('mg_kydai', 'kydai', ['Потягни м’ячик назад і відпусти', 'Grab the ball, pull it back and let go']);
+  } else mgLine('mg_nesy', 'nesy', ['Натисни «Неси!»', 'Press «Неси!»'], btn('mgNesy', '', lab('nesy'), 'blue'));
+}
+function fetchPress(x, y) {
+  const w = $('#mgPad').width, h = $('#mgPad').height, b = mg.ball;
+  if (mg.phase === 'a' && b.st === 'rest') { mg.grab = true; blip(520, 0.03); }   // press anywhere: the slingshot is invisible
+}
+// The pull: from the ball's rest spot to the finger, at most a fifth of the pad's width.
+function fetchPull(w, h) {
+  const d = mg.down; if (!d) return null;
+  let px = d.x0 - d.x, py = d.y0 - d.y; const L = Math.hypot(px, py), M = Math.min(w * 0.2, h * 0.24);
+  if (L > M) { px *= M / L; py *= M / L; }
+  return { px, py, f: Math.min(1, L / M) };
+}
+// Where a pull sends the ball (in pad fractions): further for a longer pull, the opposite way to the pull.
+function fetchLand(p, w, h) {
+  return { x: Math.max(0.1, Math.min(0.95, FE.ax + p.px * 2.5 / w)), y: Math.max(FE.hor + 0.07, Math.min(0.95, FE.ay + p.py * 1.9 / h)) };
+}
+function fetchRelease(d) {
+  if (mg.phase !== 'a' || !mg.grab) return;
+  const pad = $('#mgPad'), w = pad.width, h = pad.height;
+  mg.grab = false;
+  const p = { px: d.x0 - d.x, py: d.y0 - d.y }, L = Math.hypot(p.px, p.py), M = Math.min(w * 0.2, h * 0.24);
+  if (L > M) { p.px *= M / L; p.py *= M / L; }
+  const f = Math.min(1, L / M);
+  if (f < 0.18) { blip(300, 0.03); return; }   // not pulled far enough: it springs back
+  const to = fetchLand(p, w, h), dist = Math.hypot((to.x - FE.ax) * w, (to.y - FE.ay) * h);
+  mg.ball = { st: 'fly', t0: nowT, fx: FE.ax, fy: FE.ay, tx: to.x, ty: to.y, dur: 0.55 + f * 0.5, H: (0.18 + f * 0.32) * h, hit: null, dist };
+  const T = mg.tg, R = 0.075 * feScale(T.y);   // in or out of the target ring (an ellipse on the ground)
+  const dd = Math.hypot((to.x - T.x) / R, (to.y - T.y) / (R * 0.42 * w / h));
+  mg.ball.hit = dd <= 0.4 ? 2 : dd <= 1 ? 1 : 0;
+  blip(640, 0.06); useWord('kydai', true);
+}
+function fetchFrame(c, w, h, t, k, dt) {
+  // the meadow
+  let g = c.createLinearGradient(0, 0, 0, h * FE.hor); g.addColorStop(0, '#9fdcfb'); g.addColorStop(1, '#e3f5fb'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(255,255,255,.9)'; for (const [cx, cy, s] of [[0.2, 0.12, 1], [0.7, 0.08, 0.8]]) { const x = ((cx * w + t * 6 * k) % (w * 1.3)) - w * 0.15; ell(c, x, cy * h, 34 * k * s, 9 * k * s); ell(c, x + 16 * k * s, cy * h - 6 * k * s, 20 * k * s, 9 * k * s); }
+  c.fillStyle = '#8fcf6a'; ell(c, w * 0.25, h * FE.hor + 6 * k, w * 0.45, h * 0.1); c.fillStyle = '#7fc25a'; ell(c, w * 0.85, h * FE.hor + 8 * k, w * 0.4, h * 0.09);
+  g = c.createLinearGradient(0, h * FE.hor, 0, h); g.addColorStop(0, '#9bd673'); g.addColorStop(1, '#6fb34c'); c.fillStyle = g; c.fillRect(0, h * FE.hor, w, h * (1 - FE.hor));
+  // a wattle fence along the far edge, and tufts of grass
+  c.strokeStyle = '#8a5a2b'; c.lineWidth = 2 * k; for (let i = 0; i < 14; i++) { const x = w * (0.04 + i * 0.072); c.beginPath(); c.moveTo(x, h * (FE.hor + 0.02)); c.lineTo(x, h * (FE.hor - 0.07)); c.stroke(); }
+  c.strokeStyle = '#a7743f'; c.lineWidth = 3 * k; for (const yy of [-0.05, -0.02]) { c.beginPath(); c.moveTo(0, h * (FE.hor + yy)); c.lineTo(w, h * (FE.hor + yy)); c.stroke(); }
+  c.strokeStyle = '#5d9e3c'; c.lineWidth = 1.5 * k; for (let i = 0; i < 26; i++) { const x = ((i * 137.7) % 1) * w || (i * 0.039 * w), y = h * (FE.hor + 0.08 + ((i * 0.618) % 1) * 0.5), s = feScale(y / h) * 5 * k; for (const a of [-0.4, 0, 0.4]) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.sin(a + Math.sin(t + i) * 0.1) * s, y - s * 1.4); c.stroke(); } }
+  for (let i = 0; i < 7; i++) { const x = w * ((i * 0.37 + 0.11) % 1), y = h * (0.5 + ((i * 0.53) % 1) * 0.42); c.fillStyle = ['#ffd23f', '#ffffff', '#ff7aa8'][i % 3]; circ(c, x, y, 2.2 * k * feScale(y / h)); }
+  // the target: a painted ring lying in the grass, with a little flag, popping up each round
+  const T = mg.tg;
+  if (T) {
+    const pop = Math.min(1, (t - T.t0) / 0.35), sp = pop < 1 ? Math.sin(pop * Math.PI * 0.5) * (1 + 0.25 * Math.sin(pop * Math.PI)) : 1;
+    const R = 0.075 * feScale(T.y) * w * sp, tx = T.x * w, ty = T.y * h;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, tx, ty + 2 * k, R * 1.08, R * 0.46);
+    for (const [f, col] of [[1, '#d43a3a'], [0.72, '#fffdf5'], [0.44, '#d43a3a'], [0.18, '#ffd23f']]) { c.fillStyle = col; ell(c, tx, ty, R * f, R * 0.42 * f); }
+    c.strokeStyle = '#6b4422'; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(tx + R * 0.9, ty); c.lineTo(tx + R * 0.9, ty - R * 1.1); c.stroke();
+    c.fillStyle = '#3d7cc2'; poly(c, [[tx + R * 0.9, ty - R * 1.1], [tx + R * 0.9 + R * 0.55, ty - R * 0.95 + Math.sin(t * 5) * 2 * k], [tx + R * 0.9, ty - R * 0.8]]);
+    c.fillStyle = '#ffd23f'; poly(c, [[tx + R * 0.9, ty - R * 0.8], [tx + R * 0.9 + R * 0.55, ty - R * 0.65 + Math.sin(t * 5 + 1) * 2 * k], [tx + R * 0.9, ty - R * 0.5]]);
+    if (mg.hitFx && t - mg.hitFx.t < 0.9) { const q = (t - mg.hitFx.t) / 0.9; c.strokeStyle = `rgba(255,210,63,${1 - q})`; c.lineWidth = 4 * k; c.beginPath(); c.ellipse(tx, ty, R * (1 + q), R * 0.42 * (1 + q), 0, 0, 7); c.stroke(); }
+  }
+  // Andriiko, by the ball
+  person(c, w * 0.12, h * 0.95, NPC.andriiko.look, t, false, 1.25 * k);
+  // the ball, and the dog
+  const b = mg.ball, d = mg.dog;
+  if (b.st === 'fly') {
+    const q = Math.min(1, (t - b.t0) / b.dur);
+    b.x = b.fx + (b.tx - b.fx) * q; b.y = b.fy + (b.ty - b.fy) * q; b.z = 4 * b.H * q * (1 - q);
+    if (d.pose === 'leap' && q > 0.6) { b.st = 'caught'; d.ball = true; blip(900, 0.05); feScore(b, t); }
+    else if (q >= 1) {
+      b.st = 'bounce'; b.t0 = t; b.bx = b.x; b.by = b.y; b.vx = (b.tx - b.fx) * 0.22; b.vy = (b.ty - b.fy) * 0.22; blip(330, 0.04);
+      feScore(b, t);
+    }
+  } else if (b.st === 'bounce') {
+    const q = Math.min(1, (t - b.t0) / 0.5); b.x = b.bx + b.vx * Math.sin(q * Math.PI / 2); b.y = b.by + b.vy * Math.sin(q * Math.PI / 2); b.z = Math.sin(q * Math.PI) * b.H * 0.18 * (1 - q * 0.5);
+    if (q >= 1) { b.st = 'ground'; b.z = 0; }
+  }
+  // Brovko's plan: chase the ball (aiming where it will land), pick it up, wait, trot back.
+  let gx = d.x, gy = d.y, run = 0;
+  if (b.st === 'fly' && t - b.t0 > 0.2) { gx = b.tx; gy = b.ty + 0.02; run = 1; }
+  else if (b.st === 'bounce' || b.st === 'ground') { gx = b.x; gy = b.y + 0.02; run = 1; }
+  else if (mg.phase === 'home') { gx = 0.42; gy = 0.88; run = 0.55; }
+  const dx = (gx - d.x) * w, dy = (gy - d.y) * h, dd = Math.hypot(dx, dy);
+  if (d.pose === 'leap') {
+    const q = Math.min(1, (t - d.lt) / 0.55); d.z = Math.sin(q * Math.PI) * h * 0.2; d.x += d.lvx * dt; d.y += d.lvy * dt;
+    if (b.st === 'caught') { b.x = d.x + 0.06 * d.face * feScale(d.y); b.y = d.y; b.z = d.z + 24 * k * feScale(d.y); }
+    if (q >= 1) { d.pose = 'stand'; d.z = 0; if (b.st === 'caught') { b.st = 'carried'; fetchGot(); } }
+  } else if (run && dd > 4 * k) {
+    const sp = (run > 0.9 ? 0.95 : 0.45) * w * feScale(d.y);
+    d.sp += (run - d.sp) * Math.min(1, dt * 4);
+    const m = Math.min(dd, sp * d.sp * dt); d.x += dx / dd * m / w; d.y += dy / dd * m / h; d.ph += m / (w * 0.05);
+    if (Math.abs(dx) > 2 * k) d.face = dx > 0 ? 1 : -1;
+    d.pose = 'stand';
+    // nearly there as the ball comes down: leap for it
+    if (b.st === 'fly' && dd < w * 0.09 && (t - b.t0) / b.dur > 0.45) { d.pose = 'leap'; d.lt = t; d.lvx = dx / dd * 0.25; d.lvy = dy / dd * 0.25 * w / h; blip(760, 0.05); }
+  } else {
+    d.sp += (0 - d.sp) * Math.min(1, dt * 6);
+    if ((b.st === 'ground') && dd <= 4 * k * 3) { b.st = 'carried'; d.ball = true; blip(740, 0.05); fetchGot(); }
+    if (mg.phase === 'home' && dd <= 4 * k * 2) { d.ball = false; d.pose = 'sit'; d.face = -1; mg.ball = { st: 'rest', x: FE.ax, y: FE.ay, z: 0 }; mg.phase = 'pause'; blip(880, 0.06); fxTick(); setTimeout(() => { if (mg && mg.id === 'andriiko') mgRoundDone(); }, 700); }
+    if (d.pose !== 'sit' && mg.phase === 'a' && b.st === 'rest') { d.pose = 'sit'; d.face = 1; }
+  }
+  if (b.st === 'carried') { b.x = d.x; b.y = d.y; b.z = 0; }
+  // the dotted aim and the elastic while you pull
+  const P = mg.phase === 'a' && mg.grab ? fetchPull(w, h) : null;
+  if (P) {
+    const to = fetchLand(P, w, h), dur = 0.55 + P.f * 0.5, H = (0.18 + P.f * 0.32) * h;
+    c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 1; i < 12; i++) { const q = i / 12, x = (FE.ax + (to.x - FE.ax) * q) * w, y = (FE.ay + (to.y - FE.ay) * q) * h - 4 * H * q * (1 - q); circ(c, x, y, (2.4 - q) * k); }
+    c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 2 * k; c.beginPath(); c.ellipse(to.x * w, to.y * h, 8 * k, 3 * k, 0, 0, 7); c.stroke();
+  }
+  const ballXY = () => P ? [FE.ax * w - P.px, FE.ay * h - P.py] : [b.x * w, b.y * h - (b.z || 0)];
+  const drawBall = () => { if (b.st === 'carried' || b.st === 'caught') return; const [bx, by] = ballXY(), s = feScale(P ? FE.ay : b.y), r = 8 * k * s;
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, P ? bx : b.x * w, P ? by + r : b.y * h + r * 0.4, r * (1 - Math.min(0.5, (b.z || 0) / h)), r * 0.35);
+    if (P) { c.strokeStyle = `rgba(120,70,30,${0.35 + P.f * 0.4})`; c.lineWidth = (3 - P.f * 1.6) * k; for (const s2 of [-1, 1]) { c.beginPath(); c.moveTo(FE.ax * w + s2 * 15 * k, FE.ay * h - 10 * k); c.lineTo(bx, by); c.stroke(); } }
+    c.save(); c.translate(bx, by); c.rotate(b.st === 'fly' || b.st === 'bounce' ? t * 9 : 0); ballArt(c, 0, 0, r); c.restore(); };
+  // draw back to front
+  const items = [{ y: d.y, f: () => dogDraw(c, d.x * w, d.y * h - d.z, 1.15 * k * feScale(d.y), d, t, b.st === 'carried' || b.st === 'caught') }, { y: P ? FE.ay : b.y, f: drawBall }];
+  items.sort((a, z) => a.y - z.y).forEach(o => o.f());
+  if (P) { c.fillStyle = `rgba(255,255,255,${0.5 + P.f * 0.4})`; rr(c, w * 0.04, h * 0.06, w * 0.2, 7 * k, 4 * k); c.fillStyle = '#ffd23f'; rr(c, w * 0.04, h * 0.06, w * 0.2 * P.f, 7 * k, 4 * k); }
+  if (mg.pop && t - mg.pop.t < 1) { const q = (t - mg.pop.t); c.save(); c.globalAlpha = Math.max(0, 1 - q); c.font = `900 ${Math.round(24 * k)}px system-ui`; c.textAlign = 'center'; c.lineWidth = 5 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.fillStyle = '#ffd23f'; c.fillText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.restore(); }
+  c.font = `800 ${Math.round(13 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🎯 ${mg.hits || 0}`, w - 10 * k, 20 * k);
+}
+const fxTick = () => blip(1040, 0.04);
+function feScore(b, t) { if (!b.hit || b.scored) return; b.scored = 1; mg.hits = (mg.hits || 0) + 1; mg.hitFx = { t }; mg.pop = { t, txt: PH.chudovo.uk }; say('p_chudovo'); blip(990, 0.1); }
+function fetchGot() { if (mg.phase === 'a') mgBegin('b'); }
+// Brovko, drawn from the side: a brown dog with a pale muzzle and the tan "eyebrow" spots he's named for.
+// o: { face, ph (gait phase), sp (0 still .. 1 gallop), pose: stand | sit | leap }. ball: carrying it.
+function dogDraw(c, x, y, s, o, t, ball) {
+  const sp = o.sp || 0, ph = o.ph || 0, pose = o.pose, wag = Math.sin(t * (ball ? 16 : 11)) * (pose === 'sit' ? 0.55 : 0.35);
+  const COL = '#c98a4a', FAR = '#a56c34', DARK = '#7a4b22', PALE = '#fff3e0', BROW = '#e8b86a';
+  c.save(); c.translate(x, y);
+  c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, o.z || 0, 20 * s * (o.z ? 0.7 : 1), 4 * s);
+  c.scale((o.face || 1) * s, s); c.lineCap = 'round'; c.lineJoin = 'round';
+  const bob = pose === 'stand' ? -Math.abs(Math.sin(ph)) * 3 * sp : 0;
+  const leg = (hx, hy, a, len, col, bend) => { c.strokeStyle = col; c.lineWidth = 4.2; const kx = hx + Math.sin(a) * len * 0.5, ky = hy + Math.cos(a) * len * 0.5, fx = kx + Math.sin(a + bend) * len * 0.5, fy = ky + Math.cos(a + bend) * len * 0.5; c.beginPath(); c.moveTo(hx, hy); c.lineTo(kx, ky); c.lineTo(fx, fy); c.stroke(); c.fillStyle = col; ell(c, fx + 1.5, fy, 3, 1.8); };
+  if (pose === 'sit') {
+    // tail sweeping the grass, haunch down, front legs straight, head up
+    c.strokeStyle = COL; c.lineWidth = 3.4; c.beginPath(); c.moveTo(-10, -6); c.quadraticCurveTo(-20, -4 + wag * 4, -24, -10 - wag * 8); c.stroke();
+    leg(6, -20, 0.05, 20, FAR, 0); leg(10, -20, -0.05, 20, COL, 0);
+    c.fillStyle = COL; c.save(); c.translate(0, -14); c.rotate(-0.75); ell(c, 0, 0, 13, 8); c.restore();
+    c.fillStyle = FAR; ell(c, -7, -7, 8, 7); c.fillStyle = COL; ell(c, -5, -7, 7, 6.5); c.fillStyle = DARK; ell(c, 1, -2, 4, 1.8);
+    c.fillStyle = PALE; ell(c, 8, -20, 5, 7);
+    dogHead(c, 9, -33, 0.1, t, ball, sp, ph, COL, DARK, PALE, BROW);
+  } else {
+    const lp = pose === 'leap', run = Math.min(1, sp);
+    const sw = lp ? 0 : Math.sin(ph) * 0.8 * run, sw2 = lp ? 0 : Math.sin(ph + Math.PI) * 0.8 * run;
+    c.translate(0, bob);
+    if (lp) c.rotate(-0.2 + Math.min(0.4, (t - (o.lt || t)) * 0.8));
+    // tail up and wagging
+    c.strokeStyle = COL; c.lineWidth = 3.4; c.beginPath(); c.moveTo(-13, -22); c.quadraticCurveTo(-20, -26 - run * 2, -23 - wag * 3, -33 + wag * 4 + run * 6); c.stroke();
+    // far legs, body, near legs
+    leg(-10, -16, lp ? 1.2 : sw2 + 0.25, 17, FAR, lp ? 0.2 : -0.5 * run); leg(10, -17, lp ? -1.1 : sw - 0.15, 17, FAR, lp ? -0.3 : 0.4 * run);
+    c.fillStyle = COL; c.save(); c.translate(0, -20); c.rotate(lp ? 0 : Math.sin(ph * 2) * 0.05 * run); ell(c, 0, 0, 16, 8.5); c.fillStyle = FAR; ell(c, -5, -4, 7, 4); c.restore();
+    c.fillStyle = PALE; ell(c, 10, -17, 6, 6);
+    leg(-12, -16, lp ? 1.0 : sw + 0.25, 17, COL, lp ? 0.3 : -0.5 * run); leg(12, -17, lp ? -1.3 : sw2 - 0.15, 17, COL, lp ? -0.2 : 0.4 * run);
+    dogHead(c, 18 + run * 2, -30 + run * 3, run * 0.25 + (lp ? -0.3 : 0), t, ball, sp, ph, COL, DARK, PALE, BROW);
+  }
+  c.restore();
+}
+function dogHead(c, hx, hy, tilt, t, ball, sp, ph, COL, DARK, PALE, BROW) {
+  c.save(); c.translate(hx, hy); c.rotate(tilt);
+  c.fillStyle = COL; ell(c, -3, 6, 5, 7);   // neck
+  c.fillStyle = COL; circ(c, 0, 0, 8);
+  c.fillStyle = PALE; ell(c, 7, 2.5, 6.5, 4.2);
+  c.fillStyle = '#2a1d14'; ell(c, 12.5, 0.8, 2.2, 1.8);
+  c.fillStyle = BROW; ell(c, 2.4, -4.6, 2.6, 1.4);   // Brovko's eyebrow
+  c.fillStyle = '#2a1d14'; circ(c, 2.6, -2, 1.5); c.fillStyle = '#fff'; circ(c, 3.1, -2.5, 0.5);
+  if (ball) { ballArt(c, 10, 6.5, 4.6); }
+  else { const pant = Math.abs(Math.sin(t * 9)) * 1.2; c.fillStyle = '#ff7f8f'; ell(c, 8.5, 7 + pant, 2.2, 3 + pant); }
+  const flap = Math.sin(ph) * 0.5 * sp + Math.sin(t * 2) * 0.05;
+  c.save(); c.translate(-3, -5); c.rotate(0.35 + flap - sp * 0.4); c.fillStyle = DARK; ell(c, -2, 6, 3.4, 7.5); c.restore();
+  c.restore();
+}
+
+// ------------------------------------------------------------------ Taras's fishing, with a rod you bend
+// Press and pull back: the rod tilts back over your shoulder and its tip bends with the strain. Let go and it
+// whips forward, the line flies out and the float lands further for a longer pull, with a hook and a
+// wriggling worm hanging under it. A fish swims up, nibbles (the float twitches: wait!), then pulls the
+// float under: tap now, «Тягни!», the rod bends hard and the fish leaps out into the bucket.
+const FI = { bx: 0.15, by: 0.97, len: 0.54, rest: -0.95, wl: 0.5 };   // rod butt, rod length (of the width), resting angle, water line
+function fishBegin(step) {
+  if (step === 'a') {
+    mg.rod = mg.rod || { a: FI.rest, v: 0, bend: 0, load: 0 };
+    mg.cast = null; mg.fishy = null; mg.fish = null; mg.pull = 0;
+    mgLine('mg_zakydai', 'zakydai', ['Потягни вудку назад і відпусти', 'Pull the rod back and let go']);
+  } else mgLine('mg_tiahny', 'tiahny', ['Торкнися зараз!', 'Tap now!']);
+}
+// The rod as a bent line: angle a at the butt, curving by `bend` towards the tip. Returns its points.
+function rodPts(w, h, R) {
+  const n = 14, L = FI.len * w, pts = []; let x = FI.bx * w, y = FI.by * h, a = R.a;
+  pts.push([x, y]);
+  for (let i = 1; i <= n; i++) { const q = i / n; a = R.a + R.bend * q * q; x += Math.cos(a) * L / n; y += Math.sin(a) * L / n; pts.push([x, y]); }
+  return pts;
+}
+function fishPress() {
+  if (mg.phase === 'a' && !mg.cast) { mg.pulling = true; blip(480, 0.03); }
+  else if (mg.phase === 'wait' && mg.cast && mg.cast.landed) {
+    if (mg.fishy && mg.fishy.st === 'bite') fishCatch();
+    else { mgLine('mg_wait', null, ['Чекай', 'Wait until the float goes under']); mg.rod.v -= 1.5; }   // too soon: a twitch of the rod, and Taras says wait
+  }
+}
+function fishRelease() {
+  if (mg.phase !== 'a' || !mg.pulling) return;
+  mg.pulling = false;
+  const f = mg.pull;
+  if (f < 0.2) { mg.pull = 0; return; }   // just a wobble
+  const pad = $('#mgPad'), w = pad.width, h = pad.height, tip = rodPts(w, h, mg.rod).pop();
+  mg.rod.v += 9 + f * 7;   // the forward whip
+  const tx = (0.42 + f * 0.48) * w, ty = (FI.wl + 0.04 + f * 0.04) * h;
+  mg.cast = { t0: nowT, fx: tip[0], fy: tip[1], tx, ty, dur: 0.6 + f * 0.35, H: h * (0.25 + f * 0.25), landed: false };
+  blip(560, 0.06); useWord('zakydai', true); mg.pull = 0; mg.phase = 'wait';
+}
+function fishCatch() {
+  const F = mg.fishy; if (!F || F.st !== 'bite') return;
+  useWord('tiahny', true); blip(990, 0.1); say('p_molodets');
+  mg.rod.load = 1.4; mg.rod.v -= 5;
+  mg.fish = { t0: nowT, x: mg.cast.tx, y: mg.cast.ty, size: 0.8 + Math.random() * 0.5 };
+  mg.fishy = null; mg.cast = null; mg.phase = 'catch';
+  setTimeout(() => { if (mg && mg.phase === 'catch') mgRoundDone(); }, 1500);
+}
+// A drawn fish: a silvery-green body, a tail, a fin, an eye. Faces right; a = body angle.
+function fishArt(c, x, y, s, a, t, ghost, dir = 1) {
+  c.save(); c.translate(x, y); c.rotate(a); c.scale(s * dir, s);
+  const tw = Math.sin(t * 18) * 0.35;
+  c.globalAlpha *= ghost ? 0.35 : 1;
+  c.fillStyle = ghost ? '#1f3d52' : '#7fa86a'; c.save(); c.translate(-13, 0); c.rotate(tw); poly(c, [[0, 0], [-9, -7], [-6, 0], [-9, 7]]); c.restore();
+  if (!ghost) { const g = c.createLinearGradient(0, -7, 0, 7); g.addColorStop(0, '#6f9a5c'); g.addColorStop(0.5, '#c9d8b8'); g.addColorStop(1, '#eef2e6'); c.fillStyle = g; } else c.fillStyle = '#1f3d52';
+  ell(c, 0, 0, 15, 6.5);
+  if (!ghost) { c.fillStyle = '#e0713a'; poly(c, [[-2, 4], [4, 4], [0, 9]]); c.fillStyle = '#5d8a4c'; poly(c, [[-6, -5], [3, -6], [-3, -11]]); c.fillStyle = '#fff'; circ(c, 9, -1.5, 2.2); c.fillStyle = '#1a1a1a'; circ(c, 9.5, -1.5, 1.2); c.strokeStyle = 'rgba(60,90,50,.5)'; c.lineWidth = 0.8; c.beginPath(); c.arc(6, 0, 4.5, -1.2, 1.2); c.stroke(); }
+  c.restore();
+}
+function fishFrame(c, w, h, t, k, dt) {
+  const R = mg.rod, wl = FI.wl * h;
+  // sky, far bank, water, near bank
+  let g = c.createLinearGradient(0, 0, 0, wl); g.addColorStop(0, '#9fdcfb'); g.addColorStop(1, '#e8f6fb'); c.fillStyle = g; c.fillRect(0, 0, w, wl);
+  c.fillStyle = 'rgba(255,255,255,.9)'; { const x = ((w * 0.6 + t * 5 * k) % (w * 1.3)) - w * 0.15; ell(c, x, h * 0.12, 30 * k, 8 * k); ell(c, x + 14 * k, h * 0.09, 18 * k, 8 * k); }
+  c.fillStyle = '#7fc25a'; ell(c, w * 0.75, wl + 2 * k, w * 0.5, h * 0.06); c.fillStyle = '#5d9e3c'; for (let i = 0; i < 5; i++) drawIcon(c, '🌳', w * (0.45 + i * 0.13), wl - 12 * k, 26 * k);
+  g = c.createLinearGradient(0, wl, 0, h); g.addColorStop(0, '#5fb1de'); g.addColorStop(1, '#2c6f9e'); c.fillStyle = g; c.fillRect(0, wl, w, h - wl);
+  c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.5 * k; for (let i = 0; i < 9; i++) { const yy = wl + (6 + i * 11) * k, xx = ((i * 97 + t * 14 * (1 + i % 3)) % (w + 60)) - 30; c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + 22 * k, yy); c.stroke(); }
+  c.fillStyle = '#5e9f3f'; ell(c, w * 0.95, wl + h * 0.34, 14 * k, 5 * k); c.fillStyle = '#ff9fc0'; circ(c, w * 0.95 + 4 * k, wl + h * 0.34 - 3 * k, 3 * k);   // a water lily
+  c.fillStyle = '#6fb04a'; poly(c, [[0, h * 0.72], [w * 0.2, h * 0.78], [w * 0.3, h], [0, h]]);
+  c.strokeStyle = '#4f8f3a'; c.lineWidth = 2 * k; for (let i = 0; i < 6; i++) { const x = w * (0.2 + i * 0.018), sw = Math.sin(t * 1.3 + i) * 3 * k; c.beginPath(); c.moveTo(x, h * 0.86); c.quadraticCurveTo(x + sw, h * 0.7, x + sw * 1.5, h * (0.6 + (i % 3) * 0.03)); c.stroke(); c.fillStyle = '#7a4e26'; ell(c, x + sw * 1.5, h * (0.6 + (i % 3) * 0.03), 1.8 * k, 5 * k); }   // reeds
+  // the bucket on the bank
+  const bkx = w * 0.06, bky = h * 0.83;
+  c.fillStyle = '#8a9099'; poly(c, [[bkx - 14 * k, bky - 18 * k], [bkx + 14 * k, bky - 18 * k], [bkx + 11 * k, bky], [bkx - 11 * k, bky]]); c.fillStyle = '#5b6470'; ell(c, bkx, bky - 18 * k, 14 * k, 4 * k);
+  c.fillStyle = '#c9d8b8'; for (let i = 0; i < Math.min(5, mg.score); i++) ell(c, bkx - 6 * k + i * 3 * k, bky - 19 * k - (i % 2) * 2 * k, 5 * k, 2.2 * k);
+  // the rod: a spring towards its goal angle, the tip lagging behind as it moves, and bending under load
+  if (mg.pulling && mg.down) { const d = mg.down; mg.pull = Math.max(0, Math.min(1, (Math.hypot(d.x - d.x0, d.y - d.y0) / (w * 0.35)))); }
+  const goal = mg.phase === 'catch' && mg.fish && t - mg.fish.t0 < 0.5 ? -1.55 : mg.pulling ? FI.rest - 0.6 * mg.pull : FI.rest;
+  R.v += ((goal - R.a) * 90 - R.v * 13) * dt; R.a += R.v * dt;
+  R.load *= Math.exp(-dt * 2.2);
+  const nib = mg.fishy && mg.fishy.st === 'bite' ? 0.35 : mg.fishy && mg.fishy.st === 'nibble' ? 0.08 * Math.max(0, Math.sin(t * 22)) : 0;
+  R.bend += ((-R.v * 0.05 + R.load * 0.7 + nib + (mg.pulling ? -mg.pull * 0.25 : 0)) - R.bend) * Math.min(1, dt * 18);
+  R.bend = Math.max(-0.9, Math.min(1.2, R.bend));
+  const pts = rodPts(w, h, R), tip = pts[pts.length - 1];
+  // the line, the float, the hook and the worm
+  const C = mg.cast;
+  let fx = null, fy = null;
+  if (C) {
+    const q = Math.min(1, (t - C.t0) / C.dur);
+    if (!C.landed) { fx = C.fx + (C.tx - C.fx) * q; fy = C.fy + (C.ty - C.fy) * q - 4 * C.H * q * (1 - q); if (q >= 1) { C.landed = t; blip(300, 0.05); mg.fishy = { st: 'swim', t0: t, x: C.tx + (Math.random() < 0.5 ? -1 : 1) * w * 0.25, biteAt: t + 2.2 + Math.random() * 2.5 }; } }
+    else {
+      const F = mg.fishy, sink = F && F.st === 'bite' ? 7 * k + Math.abs(Math.sin(t * 16)) * 5 * k : F && F.st === 'nibble' ? Math.max(0, Math.sin(t * 22)) * 3 * k : Math.sin(t * 2) * 1.2 * k;
+      fx = C.tx; fy = C.ty + sink;
+      const r = ((t - C.landed) * 0.7) % 1; c.strokeStyle = `rgba(255,255,255,${0.6 * (1 - r)})`; c.lineWidth = 1.3 * k; c.beginPath(); c.ellipse(C.tx, C.ty + 2 * k, (6 + r * 16) * k, (2 + r * 5) * k, 0, 0, 7); c.stroke();
+    }
+    // the hook hangs under the float on its own bit of line, with the worm wriggling on it
+    const hx = fx + Math.sin(t * 1.7) * 2 * k, hy = (C.landed ? fy + 30 * k : fy + 14 * k);
+    c.strokeStyle = C.landed ? 'rgba(230,240,250,.45)' : 'rgba(60,60,60,.7)'; c.lineWidth = 1 * k; c.beginPath(); c.moveTo(fx, fy); c.lineTo(hx, hy); c.stroke();
+    c.strokeStyle = '#9aa3ad'; c.lineWidth = 1.6 * k; c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx, hy + 6 * k); c.arc(hx - 3 * k, hy + 6 * k, 3 * k, 0, Math.PI * 0.95); c.stroke();
+    c.strokeStyle = '#e8828f'; c.lineWidth = 2.6 * k; c.beginPath(); for (let i = 0; i <= 8; i++) { const q = i / 8, wx = hx - 3 * k + Math.sin(t * 7 + q * 5) * 3 * k * q, wy = hy + 6 * k + q * 9 * k; i ? c.lineTo(wx, wy) : c.moveTo(wx, wy); } c.stroke();
+    // the fish's shadow coming to the hook, nibbling, then biting
+    const F = mg.fishy;
+    if (F) {
+      if (F.st === 'swim') { F.x += (C.tx - F.x) * Math.min(1, dt * 0.7); if (t > F.biteAt - 1.4) { F.st = 'nibble'; F.t0 = t; } }
+      else if (F.st === 'nibble' && t > F.biteAt) { F.st = 'bite'; F.t0 = t; mgBegin('b'); mg.phase = 'wait'; blip(420, 0.08); }
+      else if (F.st === 'bite' && t - F.t0 > 1.4) { F.st = 'swim'; F.x = C.tx + w * 0.2; F.biteAt = t + 2 + Math.random() * 2.5; mgLine('mg_wait', null, ['Чекай', 'Too late! Wait for the next one']); }
+      const dir = C.tx >= F.x ? 1 : -1;
+      fishArt(c, F.x - dir * 8 * k, hy + 12 * k, 1.1 * k, Math.sin(t * 3) * 0.08, t, true, dir);
+      if (F.st === 'bite') { c.font = `900 ${Math.round(26 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = 4 * k; c.textAlign = 'center'; c.strokeText('!', fx, fy - 16 * k); c.fillText('!', fx, fy - 16 * k); }
+    }
+    // the line from the rod tip, sagging a little once the float is out
+    c.strokeStyle = 'rgba(70,70,70,.85)'; c.lineWidth = 1.1 * k; c.beginPath(); c.moveTo(tip[0], tip[1]);
+    const sag = C.landed ? (mg.fishy && mg.fishy.st === 'bite' ? 0 : 26 * k) : 0;
+    c.quadraticCurveTo((tip[0] + fx) / 2, Math.max(tip[1], fy) + sag, fx, fy); c.stroke();
+    c.fillStyle = '#fff'; circ(c, fx, fy, 5.5 * k); c.fillStyle = '#e2392f'; c.beginPath(); c.arc(fx, fy, 5.5 * k, Math.PI, 0); c.fill(); c.fillStyle = '#333'; c.fillRect(fx - 0.8 * k, fy - 11 * k, 1.6 * k, 6 * k);
+  } else if (!mg.fish) {
+    // waiting to cast: the hook and worm dangle from the tip
+    const sway = Math.sin(t * 2.4) * 4 * k + R.v * 2 * k, hx = tip[0] + sway, hy = tip[1] + 24 * k;
+    c.strokeStyle = 'rgba(70,70,70,.85)'; c.lineWidth = 1.1 * k; c.beginPath(); c.moveTo(tip[0], tip[1]); c.lineTo(hx, hy); c.stroke();
+    c.fillStyle = '#fff'; circ(c, tip[0] + sway * 0.6, tip[1] + 12 * k, 4 * k); c.fillStyle = '#e2392f'; c.beginPath(); c.arc(tip[0] + sway * 0.6, tip[1] + 12 * k, 4 * k, Math.PI, 0); c.fill();
+    c.strokeStyle = '#9aa3ad'; c.lineWidth = 1.6 * k; c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx, hy + 6 * k); c.arc(hx - 3 * k, hy + 6 * k, 3 * k, 0, Math.PI * 0.95); c.stroke();
+    c.strokeStyle = '#e8828f'; c.lineWidth = 2.6 * k; c.beginPath(); for (let i = 0; i <= 8; i++) { const q = i / 8, wx = hx - 3 * k + Math.sin(t * 7 + q * 5) * 3 * k * q, wy = hy + 6 * k + q * 9 * k; i ? c.lineTo(wx, wy) : c.moveTo(wx, wy); } c.stroke();
+  }
+  // the caught fish, leaping out and into the bucket, with drops of water
+  if (mg.fish) {
+    const F = mg.fish, q = Math.min(1, (t - F.t0) / 1.1), x = F.x + (bkx - F.x) * q, y = F.y + (bky - 22 * k - F.y) * q - Math.sin(q * Math.PI) * h * 0.45;
+    c.strokeStyle = 'rgba(70,70,70,.85)'; c.lineWidth = 1.1 * k; if (q < 0.9) { c.beginPath(); c.moveTo(tip[0], tip[1]); c.lineTo(x, y - 6 * k); c.stroke(); }
+    if (q < 1) fishArt(c, x, y, 1.3 * k * F.size, Math.sin(t * 20) * 0.5 + 1.2 - q * 2.2, t, false, -1);   // facing the bucket as it flies
+    c.fillStyle = 'rgba(200,230,250,.9)'; for (let i = 0; i < 8; i++) { const dq = (t - F.t0) * 1.4 - i * 0.04; if (dq < 0 || dq > 0.8) continue; circ(c, F.x + (i - 4) * 5 * k * dq * 3, F.y - Math.sin(dq * 3) * 30 * k + dq * dq * 40 * k, 2 * k); }
+    if (q < 0.25) { c.strokeStyle = `rgba(255,255,255,${0.8 - q * 3})`; c.lineWidth = 2 * k; c.beginPath(); c.ellipse(F.x, F.y + 2 * k, (10 + q * 80) * k, (3 + q * 20) * k, 0, 0, 7); c.stroke(); }
+  }
+  // the rod itself, over everything: a cork handle and reel, tapering to the tip
+  for (let i = 1; i < pts.length; i++) { c.strokeStyle = i < 4 ? '#c8a46a' : '#6b4422'; c.lineWidth = (i < 4 ? 7 : 5.5 - i * 0.32) * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(pts[i - 1][0], pts[i - 1][1]); c.lineTo(pts[i][0], pts[i][1]); c.stroke(); }
+  const rp = pts[3]; c.fillStyle = '#5b6470'; circ(c, rp[0] + 4 * k, rp[1] + 3 * k, 5 * k); c.fillStyle = '#9aa3ad'; circ(c, rp[0] + 4 * k, rp[1] + 3 * k, 2 * k);
+  c.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 5; i < pts.length; i += 3) circ(c, pts[i][0], pts[i][1], 1.6 * k);   // line guides
+  // the pull meter while you draw the rod back
+  if (mg.pulling) { c.fillStyle = 'rgba(255,255,255,.7)'; rr(c, w * 0.62, h * 0.06, w * 0.32, 8 * k, 4 * k); c.fillStyle = '#ffd23f'; rr(c, w * 0.62, h * 0.06, w * 0.32 * mg.pull, 8 * k, 4 * k); }
+  c.font = `800 ${Math.round(13 * k)}px system-ui`; c.fillStyle = '#ffffff'; c.textAlign = 'right'; c.fillText(`🐟 ${mg.score}`, w - 10 * k, h - 10 * k);
+}
+
 // The three winter games, drawn on the same pad.
 function mgWinterFrame(c, w, h, t, k) {
   const dt = Math.min(0.05, t - mg.lastT), snowBg = () => { const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfdcee'); g.addColorStop(0.4, '#eef3fa'); g.addColorStop(0.41, '#f6f9fd'); g.addColorStop(1, '#dde7f3'); c.fillStyle = g; c.fillRect(0, 0, w, h); c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 26; i++) circ(c, (i * 83.3 + Math.sin(t + i) * 10) % w, (i * 151.7 + t * 30) % h, (1.2 + i % 3) * k); };
@@ -2820,47 +3139,8 @@ function mgFrame() {
     mg.puffs = mg.puffs.filter(p => t - p.t0 < 1.2);
     for (const p of mg.puffs) { const q = (t - p.t0) / 1.2; c.fillStyle = `rgba(235,235,240,${0.6 * (1 - q)})`; circ(c, p.x + q * 20 * k, p.y - q * 50 * k, (10 + q * 30) * k); }
     if (!mg.down || mg.phase !== 'a') { c.fillStyle = '#8a8a92'; rr(c, w * 0.04, h * 0.7, w * 0.12, h * 0.22, 6 * k); c.fillStyle = '#6b4422'; c.fillRect(w * 0.06, h * 0.64, w * 0.08, h * 0.07); }   // the smoker, waiting
-  } else if (mg.id === 'andriiko') {
-    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#bfe8fb'); g.addColorStop(0.35, '#dff3e1'); g.addColorStop(0.36, '#9bd673'); g.addColorStop(1, '#7fc25a'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-    person(c, w * 0.16, h * 0.95, NPC.andriiko.look, t, false, 1.35 * k);
-    const b = mg.ball, d = mg.dog, sp = 0.9;
-    // the dog runs to wherever the ball is
-    let gx = d.x, gy = d.y;
-    if (b.st === 'ground' || b.st === 'fly') { gx = b.tx; gy = b.ty + 0.06; }
-    if (b.st === 'carried') { gx = mg.phase === 'home' ? 0.42 : d.x; gy = mg.phase === 'home' ? 0.86 : d.y; }
-    const dx = gx - d.x, dy = gy - d.y, dd = Math.hypot(dx, dy), dt = Math.min(0.05, t - mg.lastT);
-    if (dd > 0.02 && (b.st !== 'fly' || t - b.t0 > 0.3)) { const m = Math.min(dd, sp * dt); d.x += dx / dd * m; d.y += dy / dd * m; d.step += m * 9; d.wk = Math.min(1, d.wk + dt * 5); d.face = dx > 0 ? -1 : 1; } else d.wk = Math.max(0, d.wk - dt * 5);
-    if (b.st === 'ground' && dd < 0.04) { b.st = 'carried'; blip(740, 0.05); mgBegin('b'); }
-    if (mg.phase === 'home' && dd < 0.03) { mg.phase = 'pause'; b.st = 'hand'; mgRoundDone(); }
-    const e = { face: d.face, fs: d.face, wk: d.wk, step: d.step, hx: 1, dip: 0, rest: 0, an: 'dog' };
-    c.save(); c.translate(d.x * w, d.y * h); c.scale(2.2 * k * (0.7 + d.y * 0.4), 2.2 * k * (0.7 + d.y * 0.4)); quad(c, 0, 0, QUAD.dog, t, e); c.restore();
-    // the ball
-    let bx, by, bz = 0;
-    if (b.st === 'hand') { bx = 0.3; by = 0.84; }
-    else if (b.st === 'fly') { const q = Math.min(1, (t - b.t0) / 0.9); bx = 0.3 + (b.tx - 0.3) * q; by = 0.84 + (b.ty - 0.84) * q; bz = Math.sin(q * Math.PI) * 0.3; if (q >= 1) b.st = 'ground'; }
-    else if (b.st === 'ground') { bx = b.tx; by = b.ty; }
-    else { bx = d.x + (d.face > 0 ? -0.07 : 0.07); by = d.y - 0.07; }
-    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, bx * w, by * h + 4 * k, 9 * k, 3 * k);
-    c.fillStyle = '#e8463c'; circ(c, bx * w, (by - bz) * h, 9 * k); c.fillStyle = '#ffd23f'; c.fillRect(bx * w - 9 * k, (by - bz) * h - 2 * k, 18 * k, 4 * k);
-  } else {
-    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#7cc4ef'); g.addColorStop(1, '#3f8fc9'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 2 * k; for (let i = 0; i < 7; i++) { const yy = h * (0.15 + i * 0.12), xx = ((i * 137 + t * 20) % (w + 80)) - 40; c.beginPath(); c.ellipse(xx, yy, 30 * k, 4 * k, 0, 0, Math.PI); c.stroke(); }
-    c.fillStyle = '#6fb04a'; c.fillRect(0, h * 0.88, w, h * 0.12);
-    const tipX = w * 0.8, tipY = h * 0.35;
-    c.strokeStyle = '#6b4422'; c.lineWidth = 5 * k; c.beginPath(); c.moveTo(w * 0.98, h * 0.98); c.lineTo(tipX, tipY); c.stroke();
-    const f = mg.float;
-    if (f) {
-      const q = Math.min(1, (t - f.t0) / 0.7), fx = tipX + (f.x * w - tipX) * q, fy = tipY + (f.y * h - tipY) * q - Math.sin(q * Math.PI) * h * 0.2;
-      if (t >= f.biteAt && !f.bite && !f.missAt) { f.bite = true; f.missAt = t + 1.3; mgBegin('b'); mg.phase = 'wait'; }
-      if (f.bite && t > f.missAt) { f.bite = false; f.missAt = 0; f.biteAt = t + 1.5 + Math.random() * 2; mgLine('mg_wait', null, ['Чекай', 'Wait for the float to dip']); }
-      const bob = f.bite ? Math.abs(Math.sin(t * 14)) * 7 * k : Math.sin(t * 2) * 2 * k;
-      c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(tipX, tipY); c.lineTo(fx, fy); c.stroke();
-      if (q >= 1) { c.strokeStyle = 'rgba(255,255,255,.5)'; c.beginPath(); c.ellipse(fx, fy + 6 * k, (10 + (f.bite ? Math.sin(t * 14) * 4 : 0)) * k, 3 * k, 0, 0, 7); c.stroke(); }
-      c.fillStyle = '#fff'; circ(c, fx, fy + bob, 7 * k); c.fillStyle = '#e8463c'; c.beginPath(); c.arc(fx, fy + bob, 7 * k, Math.PI, 0); c.fill();
-      if (f.bite) { c.font = `900 ${Math.round(26 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.textAlign = 'center'; c.fillText('!', fx, fy - 14 * k); }
-    }
-    if (mg.fish) { const q = Math.min(1, (t - mg.fish.t0) / 1.0); drawIcon(c, W.ryba.ic, mg.fish.x * w + (tipX - mg.fish.x * w) * q, mg.fish.y * h - Math.sin(q * Math.PI) * h * 0.35 + (tipY - mg.fish.y * h) * q, 40 * k); }
-  }
+  } else if (mg.id === 'andriiko') fetchFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
+  else fishFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
   mg && (mg.lastT = t);
   requestAnimationFrame(mgFrame);
 }
@@ -2880,7 +3160,7 @@ function chopStart() {
     <div class="vchip"><span class="verb">${W.rubai.uk}</span> ${st < 3 ? '= ' + W.rubai.en : xl('= ' + W.rubai.en)} <small>· дієслово${st < 3 ? ' (verb)' : ''}</small></div>
     <canvas id="chopPad" class="cookpad" style="width:100%;display:block"></canvas>
     <div class="muted">${st < 3 ? 'Махни пальцем униз · Swipe down on the log' : 'Махни пальцем униз'}</div>
-    <div class="row">${btn('hear', 'p_rubai_drova', '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+    <div class="row">${btn('hear', 'p_rubai_drova', '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say('p_rubai_drova');
   const pad = $('#chopPad'), dpr = Math.min(2, window.devicePixelRatio || 1);
   pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); chop.k = dpr;
