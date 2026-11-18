@@ -224,6 +224,37 @@ const rr = (c, x, y, w, h, r) => { c.beginPath(); if (c.roundRect) c.roundRect(x
 const poly = (c, pts) => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.fill(); };
 
 // Hand-drawn things. Each draws inside a 100-wide, 100-tall box whose bottom centre is (0, 0).
+// Trees by season. In autumn each tree gets one of three mixes of red, orange and gold, with leaves heaped on
+// the ground under it; in winter the branches are bare with snow along them; in spring the green is fresh and
+// there's blossom. o.v (from where the tree stands) keeps each tree its own colours; the market icons (no o.v)
+// stay summer green.
+const treeSeason = o => (o && o.v != null && typeof season === 'function') ? season() : 'lito';
+const AUTUMN_PALS = [['#a8381f', '#cf5a24', '#ec8a2e', '#ffc35a'], ['#c0721a', '#df9e26', '#f2c43c', '#ffe27a'], ['#8e2a2a', '#bf3e2d', '#e46d37', '#ff9f5a']];
+function treePal(sea, o) {
+  if (sea === 'osin') return AUTUMN_PALS[Math.abs(Math.floor((o.v || 0) * 7.3)) % 3];
+  if (sea === 'vesna') return ['#4f9e48', '#64b85a', '#84cf70', '#acdf92'];
+  return ['#2f8440', '#3f9a4a', '#55b35c', '#78ca76'];
+}
+const leafCols = ['#c0461f', '#e07a24', '#f2b43a', '#a8381f', '#ffd36a', '#8e2a2a'];
+function fallenLeaves(c, o, R) {   // a drift of fallen leaves around the roots, and a few more scattered further out
+  const v = (o && o.v) || 0;
+  for (let i = 0; i < 26; i++) { const a = i * 2.39 + v, r = R * (0.25 + ((i * 0.37 + v) % 1) * 0.85), x = Math.cos(a) * r, y = Math.sin(a) * r * 0.22 + 2; c.save(); c.translate(x, y); c.rotate(a * 3); c.fillStyle = leafCols[(i + Math.floor(v * 3)) % leafCols.length]; ell(c, 0, 0, 3.6, 1.8); c.restore(); }
+}
+function autumnSpeckle(c, o) {   // individual leaves catching the light, and one or two coming down
+  const v = (o && o.v) || 0, t = (o && o.t) || 0;
+  for (let i = 0; i < 12; i++) { c.fillStyle = leafCols[(i + 2) % leafCols.length]; ell(c, Math.cos(i * 2.1 + v) * 26, -62 + Math.sin(i * 1.7 + v) * 22, 3, 2); }
+  for (let i = 0; i < 2; i++) { const q = ((t * 0.18 + i * 0.5 + v) % 1); c.save(); c.translate(Math.sin(q * 9 + i) * 18 + (i ? 14 : -16), -40 + q * 42); c.rotate(q * 12); c.fillStyle = leafCols[i * 2]; ell(c, 0, 0, 3.4, 1.7); c.restore(); }
+}
+function bareBranches(c, s) {   // winter: the bare crown, with snow lying along the boughs
+  c.strokeStyle = '#6b4422'; c.lineCap = 'round';
+  const B = [[0, -46, -26, -78, 4], [0, -46, 24, -80, 4], [0, -46, 2, -96, 4.5], [-14, -62, -36, -66, 2.5], [12, -64, 34, -62, 2.5], [-20, -72, -16, -92, 2], [18, -74, 14, -94, 2], [1, -76, -8, -100, 2]];
+  for (const [x1, y1, x2, y2, lw] of B) { c.lineWidth = lw * s; c.beginPath(); c.moveTo(x1 * s, y1); c.lineTo(x2 * s, y2); c.stroke(); }
+  c.strokeStyle = '#ffffff'; for (const [x1, y1, x2, y2, lw] of B) { c.lineWidth = lw * 0.7 * s; c.beginPath(); c.moveTo((x1 + (x2 - x1) * 0.35) * s, y1 + (y2 - y1) * 0.35 - lw); c.lineTo(x2 * s, y2 - lw * 0.8); c.stroke(); }
+}
+function blossom(c, o, s) {   // spring blossom, white and pink
+  const v = (o && o.v) || 0;
+  for (let i = 0; i < 22; i++) { const a = i * 2.4 + v, r = (8 + (i % 5) * 6) * s; c.fillStyle = i % 3 ? '#ffffff' : '#ffc2d6'; circ(c, Math.cos(a) * r * 1.2, -64 + Math.sin(a) * r * 0.9, 2.6 * s); }
+}
 const DRAW = {
   // A framed portrait of President Zelensky for the cottage wall: gilt frame, the flag's blue and yellow
   // behind him, short dark hair and beard, olive crew-neck top with a small gold trident.
@@ -366,31 +397,42 @@ const DRAW = {
   },
   // Trees and bushes: a trunk, then a crown in three tones that leans a little in the wind (o.sway).
   tree(c, o) {
+    const sea = treeSeason(o), P = treePal(sea, o);
+    if (sea === 'osin') fallenLeaves(c, o, 46);
     c.fillStyle = '#7a4e26'; poly(c, [[-10, 0], [-6, -46], [6, -46], [10, 0]]);
     c.fillStyle = '#93602f'; poly(c, [[-6, 0], [-3.5, -46], [2.5, -46], [1.5, 0]]);
     c.save(); c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40);
-    c.fillStyle = '#2f8440'; circ(c, 0, -62, 33); circ(c, -23, -47, 20); circ(c, 23, -47, 20);
-    c.fillStyle = '#3f9a4a'; circ(c, 0, -67, 32); circ(c, -22, -52, 19); circ(c, 22, -52, 19);
-    c.fillStyle = '#55b35c'; circ(c, -8, -77, 16); circ(c, 14, -63, 11); circ(c, -23, -57, 9);
-    c.fillStyle = '#78ca76'; circ(c, -11, -82, 7); circ(c, 12, -67, 4.5);
+    if (sea === 'zyma') { bareBranches(c, 1); c.restore(); return; }
+    c.fillStyle = P[0]; circ(c, 0, -62, 33); circ(c, -23, -47, 20); circ(c, 23, -47, 20);
+    c.fillStyle = P[1]; circ(c, 0, -67, 32); circ(c, -22, -52, 19); circ(c, 22, -52, 19);
+    c.fillStyle = P[2]; circ(c, -8, -77, 16); circ(c, 14, -63, 11); circ(c, -23, -57, 9);
+    c.fillStyle = P[3]; circ(c, -11, -82, 7); circ(c, 12, -67, 4.5);
+    if (sea === 'osin') autumnSpeckle(c, o); if (sea === 'vesna') blossom(c, o, 1);
     c.restore();
   },
   appletree(c, o) {
+    const sea = treeSeason(o), P = sea === 'lito' ? ['#3d9748', '#4fae55', '#6cc86e', '#8ad888'] : treePal(sea, o);
+    if (sea === 'osin') fallenLeaves(c, o, 48);
     c.fillStyle = '#7a4e26'; poly(c, [[-10, 0], [-6, -46], [6, -46], [10, 0]]);
     c.fillStyle = '#93602f'; poly(c, [[-6, 0], [-3.5, -46], [2.5, -46], [1.5, 0]]);
     c.save(); c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40);
-    c.fillStyle = '#3d9748'; circ(c, 0, -61, 35); circ(c, -25, -46, 21); circ(c, 25, -46, 21);
-    c.fillStyle = '#4fae55'; circ(c, 0, -66, 34); circ(c, -24, -51, 20); circ(c, 24, -51, 20);
-    c.fillStyle = '#6cc86e'; circ(c, -8, -78, 15); circ(c, 15, -62, 10);
-    c.fillStyle = '#8ad888'; circ(c, -11, -83, 6.5);
+    if (sea === 'zyma') { bareBranches(c, 1.05); c.restore(); return; }
+    c.fillStyle = P[0]; circ(c, 0, -61, 35); circ(c, -25, -46, 21); circ(c, 25, -46, 21);
+    c.fillStyle = P[1]; circ(c, 0, -66, 34); circ(c, -24, -51, 20); circ(c, 24, -51, 20);
+    c.fillStyle = P[2]; circ(c, -8, -78, 15); circ(c, 15, -62, 10);
+    c.fillStyle = P[3]; circ(c, -11, -83, 6.5);
+    if (sea === 'osin') autumnSpeckle(c, o); if (sea === 'vesna') { blossom(c, o, 1.1); c.restore(); return; }   // in spring it flowers instead of fruiting
     if (!o || o.fruit !== false) for (const [x, y] of [[-20, -56], [-4, -70], [14, -80], [22, -54], [2, -48], [-16, -84]]) { c.fillStyle = '#c92a22'; circ(c, x, y + 0.8, 5.2); c.fillStyle = '#e8463b'; circ(c, x, y, 4.8); c.fillStyle = 'rgba(255,255,255,.55)'; circ(c, x - 1.6, y - 1.8, 1.4); }
     c.restore();
   },
   bush(c, o) {
+    const sea = treeSeason(o), P = sea === 'lito' ? ['#3f9a4a', '#57b25d', '#74c773'] : treePal(sea, o).slice(1);
+    if (sea === 'osin') fallenLeaves(c, o, 30);
     c.save(); c.rotate(((o && o.sway) || 0) * 0.6);
-    c.fillStyle = '#3f9a4a'; circ(c, -18, -16, 20); circ(c, 16, -18, 22); circ(c, 0, -31, 22);
-    c.fillStyle = '#57b25d'; circ(c, -18, -19, 19); circ(c, 16, -21, 21); circ(c, 0, -35, 21);
-    c.fillStyle = '#74c773'; circ(c, -6, -42, 10); circ(c, -22, -25, 8); circ(c, 19, -28, 8);
+    if (sea === 'zyma') { c.strokeStyle = '#6b4422'; c.lineWidth = 2.4; c.lineCap = 'round'; for (const [x2, y2] of [[-26, -30], [-12, -44], [4, -50], [18, -42], [28, -26], [-2, -36]]) { c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(x2 * 0.4, y2 * 0.5, x2, y2); c.stroke(); } c.fillStyle = '#ffffff'; for (const [x2, y2] of [[-26, -31], [-12, -45], [4, -51], [18, -43], [28, -27]]) ell(c, x2, y2, 5, 2.2); ell(c, 0, -2, 30, 5); c.restore(); return; }   // bare twigs with snow on them
+    c.fillStyle = P[0]; circ(c, -18, -16, 20); circ(c, 16, -18, 22); circ(c, 0, -31, 22);
+    c.fillStyle = P[1]; circ(c, -18, -19, 19); circ(c, 16, -21, 21); circ(c, 0, -35, 21);
+    c.fillStyle = P[2]; circ(c, -6, -42, 10); circ(c, -22, -25, 8); circ(c, 19, -28, 8);
     c.fillStyle = '#e2574c'; circ(c, -12, -26, 3); circ(c, 8, -38, 3); circ(c, 20, -18, 3);
     c.fillStyle = 'rgba(255,255,255,.5)'; circ(c, -13, -27, 1); circ(c, 7, -39, 1); circ(c, 19, -19, 1);
     c.restore();
@@ -2644,7 +2686,7 @@ function mealScene(R) {
   const npc = NPC.olia, st = stage();
   cur = { meal: R.id, en: npc.lines['ready_' + R.id].en };
   openSheet(`<div class="card">
-    <div class="tag">🍽️ ${PH.smachnoho ? PH.smachnoho.uk : 'Смачного!'}</div>
+    <div class="tag">🍽️ Смачного!${st < 3 ? ' · Enjoy your meal!' : ''}</div>
     <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;margin:4px 0">
       <img src="${faceURL(npc.look)}" style="width:76px;height:76px;border-radius:18px;background:#e8f4d9" alt="">
       <img src="${iconURL(R.dish)}" style="width:150px;height:150px" alt="">
@@ -2725,7 +2767,7 @@ function cookSetup(kind, st) {
   if (kind === 'heat') { S0.tool = { x: 0.86, y: 0.84, hx: 0.86, hy: 0.84 }; S0.knob = 0; }
   if (kind === 'stir') { S0.tool = { x: 0.62, y: 0.62, hx: 0.62, hy: 0.62 }; S0.swirl = 0; S0.ang = null; }
   if (kind === 'taste') S0.tool = { x: 0.56, y: 0.66, hx: 0.56, hy: 0.66 };
-  if (kind === 'crack') S0.tool = { x: 0.2, y: 0.36, hx: 0.2, hy: 0.36 };
+  if (kind === 'crack') S0.tool = { x: 0.2, y: 0.56, hx: 0.2, hy: 0.56 };
   if (kind === 'add') { S0.items = Array.from({ length: n }, (_, i) => ({ x: 0.13 + (i % 3) * 0.08, y: 0.72 - Math.floor(i / 3) * 0.12, home: true, inPot: false })); S0.tool = null; }
   if (kind === 'shape') S0.items = Array.from({ length: n }, (_, i) => ({ x: 0.2 + (i % 5) * 0.15, y: 0.62 + (i % 2) * 0.12, f: 0, done: false }));
   if (kind === 'roll') S0.flat = 0;
@@ -2809,7 +2851,7 @@ function cookMove(x, y) {
     T.x = Math.max(0.08, Math.min(0.92, x)); T.y = Math.max(0.12, Math.min(0.85, y));
     const overRim = Math.abs(T.x - 0.5) < 0.24;
     if (overRim && T.y > 0.6) T.y = 0.6;   // the egg stops on the rim of the bowl
-    if (T.y < 0.48) s.armed = true;
+    if (T.y < 0.53) s.armed = true;   // lifted a little off the rim: ready to knock again
     if (s.armed && overRim && T.y >= 0.6 && !s.open) { s.armed = false; s.knocks = (s.knocks || 0) + 1; s.knockT = nowT; cookAct(true); blip(700 - s.knocks * 120, 0.05);
       if (s.knocks >= 3) { s.open = nowT; T.held = false; blip(320, 0.08); setTimeout(() => { if (ck && ck.s === s) cookEv(); }, 550); } }
   } else if (k === 'heat') {
@@ -2969,7 +3011,8 @@ function cookFrame(me) {
     c.fillStyle = '#c99463'; ell(c, w * 0.55, h * 0.7, w * 0.33, h * 0.17); c.fillStyle = '#7cc4ef'; ell(c, w * 0.55, h * 0.68, w * 0.29, h * 0.13);
     c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.5 * k; for (let i = 0; i < 3; i++) { const r = ((t * 0.5 + i / 3) % 1); c.beginPath(); c.ellipse(w * 0.55, h * 0.68, w * 0.29 * r, h * 0.13 * r, 0, 0, 7); c.stroke(); }
     s.fx = s.fx.filter(b => t - b.t < 1.2); for (const b of s.fx) { const q = (t - b.t) / 1.2; c.strokeStyle = `rgba(255,255,255,${0.9 - q * 0.8})`; c.lineWidth = 1.5 * k; c.beginPath(); c.arc(w * b.x, h * (b.y - q * 0.25), (3 + q * 4) * k, 0, 7); c.stroke(); }
-    food(T.x * w, T.y * h, h * 0.22);
+    if (st.w === 'yabluko') { drawIcon(c, W.hrusha.ic, T.x * w + h * 0.13, T.y * h + h * 0.1, h * 0.2); drawIcon(c, W.yabluko.ic, T.x * w - h * 0.02, T.y * h + h * 0.12, h * 0.21); }   // an apple and a pear, washed together
+    else food(T.x * w, T.y * h, h * 0.22);
     ring(T.x * w, T.y * h, 30 * k);
   } else if (kind === 'pour') {
     const potX = w * 0.62, potY = h * 0.9, pS = w * 0.38, over = Math.abs(T.x - 0.5) < 0.18 && T.y < 0.62;
@@ -3068,7 +3111,7 @@ function cookFrame(me) {
     c.strokeStyle = '#3d7cc2'; c.lineWidth = 3 * k; for (const yy of [0.74, 0.8]) { c.beginPath(); c.moveTo(bx - brx * (yy < 0.77 ? 0.92 : 0.78), h * yy); c.quadraticCurveTo(bx, h * (yy + 0.05), bx + brx * (yy < 0.77 ? 0.92 : 0.78), h * yy); c.stroke(); }
     c.fillStyle = '#e9edf2'; ell(c, bx, by, brx, bry); c.fillStyle = '#e8d48a'; ell(c, bx, by + 2 * k, brx * 0.88, bry * 0.72);
     c.fillStyle = 'rgba(200,170,90,.6)'; for (let i = 0; i < 16; i++) c.fillRect(bx + Math.cos(i * 2.4) * brx * 0.7 * ((i % 4) / 4 + 0.2), by + Math.sin(i * 2.4) * bry * 0.5, 4 * k, 1.5 * k);
-    const ex = T.x * w, ey = T.y * h, ER = h * 0.075;
+    const ex = T.x * w, ey = T.y * h, ER = h * 0.13;
     if (!s.open) {
       const shake = s.knockT && t - s.knockT < 0.15 ? Math.sin((t - s.knockT) * 90) * 2 * k : 0;
       c.save(); c.translate(ex + shake, ey - ER * 0.6); c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 3 * k, ER * 1.25, ER * 0.6, ER * 0.15);
@@ -3079,7 +3122,7 @@ function cookFrame(me) {
       if (!s.knocks && T.held) { c.strokeStyle = 'rgba(255,210,63,.6)'; c.lineWidth = 3 * k; c.setLineDash([5 * k, 5 * k]); c.beginPath(); c.ellipse(bx, by, brx, bry, 0, Math.PI, 0); c.stroke(); c.setLineDash([]); }
     } else {
       // split: the two half shells pull apart over the bowl, and the yolk and white drop in
-      const q = Math.min(1, (t - s.open) / 0.5), ox = 0.5 * w, oy = by - h * 0.12;
+      const q = Math.min(1, (t - s.open) / 0.5), ox = 0.5 * w, oy = by - h * 0.16;
       for (const sg of [-1, 1]) { c.save(); c.translate(ox + sg * (6 + q * 28) * k, oy - q * 6 * k); c.rotate(sg * (0.4 + q * 0.6)); c.fillStyle = '#f2dcc0'; c.beginPath(); c.ellipse(0, 0, ER * 0.7, ER * 0.9, 0, sg < 0 ? Math.PI * 0.5 : -Math.PI * 0.5, sg < 0 ? Math.PI * 1.5 : Math.PI * 0.5); c.fill(); c.fillStyle = '#fff8ea'; ell(c, sg * -ER * 0.05, 0, ER * 0.15, ER * 0.7); c.restore(); }
       const fy = oy + q * (by - oy);
       c.fillStyle = 'rgba(255,255,255,.85)'; ell(c, ox, fy, ER * (0.5 + q * 0.6), ER * (0.6 - q * 0.3)); c.fillStyle = '#ffb81c'; circ(c, ox, fy - ER * 0.05, ER * 0.32);
@@ -5474,7 +5517,7 @@ function drawWorld(t) {
     else if (e.lean) { c.save(); c.translate(x, y); c.rotate(e.lean); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }   // propped against something
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
-    else drawIcon(c, e.ic, x, y - hop, s, { t, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
+    else drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 0.9, t, s / 220);
   }
   // The watering can goes on top of everything, so the player never hides it.
@@ -6273,7 +6316,7 @@ const A = {
     say('p_duzhe_smachno'); learn(R.dish); give(R.dish); S.hearts += 3;   // a meal from Grandma earns love, not money
     S.recipe = { i: S.recipe.i + 1, have: {}, started: -1 };
     hud(); save(); setGuide(); blip(990, 0.2);
-    setTimeout(() => { closeSheet(); toast(`❤️ +3  ${W[R.dish].uk}`); }, 1800);
+    setTimeout(() => { closeSheet(); toast(`❤️ +3  ${W[R.dish].uk}${stage() < 3 ? ' · ' + W[R.dish].en : ''}`); }, 1800);
   },
   story() { storyShow(0); },
   storyGo(v) { storyShow(+v); },
