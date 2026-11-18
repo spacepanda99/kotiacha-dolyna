@@ -6067,6 +6067,7 @@ function devMenu() {
     ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].uk]))}
     ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].uk + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
     ${sec('Festivals', D.festivals.map(f => ['devFest', f.id, SEASON_IC[SEASONS[FEST_OF.indexOf(f.id)]] + ' ' + W[f.id].uk]))}
+    ${sec('Weather', [['devWx', 'sun', '☀️ ' + W.sontse.uk], ['devWx', 'cloud', '☁️ ' + W.khmara.uk], ['devWx', 'rain', '🌧️ ' + W.doshch.uk], ['devWx', 'snow', '❄️ ' + W.snih.uk]].map(([a2, v, l]) => [a2, v, l + (S.wx === v ? ' ✓' : '')]))}
     ${sec('Day and night', [['devTime', 'morning', '🌅 Morning'], ['devTime', 'evening', '🌇 Evening'], ['devTime', 'night', '🌙 Night'], ['devTime', 'bed', '🛏️ Bedtime scene']])}
     <div class="row" style="margin-top:14px">${btn('close', '', lab('close'), 'ghost')}</div>
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
@@ -6438,6 +6439,10 @@ const A = {
   devCook(v) { const R = D.recipes.find(r => r.id === v); closeSheet(); setTimeout(() => cookScene(R, true), 150); },
   devSeason(v) { seasonForce = v === 'real' ? null : v; homeList = null; closeSheet(); setGuide(); toast(`${SEASON_IC[season()]} ${W[season()].uk}${v === 'real' ? ' · the real season' : ''}`); },
   devFest(v) { seasonForce = SEASONS[FEST_OF.indexOf(v)]; closeSheet(); devToWorld(); setTimeout(() => { startFest(); if (fest) fest.dev = true; }, 150); },
+  devWx(v) {   // the weather now (rain turns to snow in winter, and snow to cloud outside it, as usual)
+    closeSheet(); devToWorld(); S.wx = v; S.clock.ev = S.clock.ev || {}; delete S.clock.ev.rained; save(); learn(WX[v].w);
+    toast(`${WX[v].ic} ${W[WX[v].w].uk}${(v === 'rain' && winter()) ? ' · in winter it falls as snow' : (v === 'snow' && !winter()) ? ' · snow only falls in winter' : ''}`, 2600);
+  },
   devTime(v) {
     closeSheet();
     if (v === 'bed') { S.clock.t = 0.9; return fadeThen(() => { enterHomeNow(); if (bed) bed.dev = true; }); }
