@@ -60,6 +60,8 @@ const season = () => SEASONS[seasonIx()];
 const winter = () => season() === 'zyma';
 const seasonDaysLeft = () => SEASON_DAYS - (((S.clock.day || 1) - 1) % SEASON_DAYS);   // which festival is next, and what's been brought for it
 if (!S.gear) S.gear = {};
+if (!S.wardrobe) S.wardrobe = { sorochka: 1 };   // the clothes she owns (her blouse and skirt to start with)
+if (!S.outfit) S.outfit = 'sorochka';
 let saveT = 0;
 // Grandma cooks one dish after another and starts over from the first once she has made them all.
 // In winter Grandma cooks warm winter dishes, and each needs firewood for her stove too.
@@ -273,6 +275,21 @@ const DRAW = {
     c.fillStyle = 'rgba(255,255,255,.18)'; ell(c, -10, -54, 9, 1.6);
     if (!back) handle();
     if (going) { c.fillStyle = 'rgba(255,250,235,.85)'; const p = (now() / 300) % 1; for (const [dx, k] of [[-31, 0], [31, 0.5]]) { const q = (p + k) % 1; circ(c, dx + Math.sign(dx) * q * 6, -32 + q * 8, 2.6 * (1 - q) + 0.6); } }
+  },
+  // Clothes icons: her, wearing the outfit.
+  o_sorochka(c) { person(c, 0, -4, lookFor('sorochka'), 0, false, 1.08); },
+  o_kersetka(c) { person(c, 0, -4, lookFor('kersetka'), 0, false, 1.08); },
+  o_plakhta(c) { person(c, 0, -4, lookFor('plakhta'), 0, false, 1.08); },
+  o_fartukh(c) { person(c, 0, -4, lookFor('fartukh'), 0, false, 1.08); },
+  o_strichky(c) { person(c, 0, -4, lookFor('strichky'), 0, false, 1.08); },
+  o_kozhushok(c) { person(c, 0, -4, lookFor('kozhushok'), 0, false, 1.08); },
+  // A painted wooden wardrobe with two doors, flowers on the panels.
+  shafa(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 40, 6);
+    c.fillStyle = '#8a5a2b'; rr(c, -34, -98, 68, 96, 6); c.fillStyle = '#a06a35'; rr(c, -30, -92, 29, 84, 4); rr(c, 1, -92, 29, 84, 4);
+    c.fillStyle = '#6b4422'; c.fillRect(-36, -102, 72, 7); c.fillRect(-32, -4, 8, 4); c.fillRect(24, -4, 8, 4);
+    for (const x of [-15.5, 15.5]) { c.fillStyle = '#d43a3a'; circ(c, x, -58, 6); c.fillStyle = '#ffd23f'; circ(c, x, -58, 2.4); c.fillStyle = '#3f8a3a'; ell(c, x - 7, -50, 4, 2); ell(c, x + 7, -50, 4, 2); }
+    c.fillStyle = '#e8c35a'; circ(c, -4, -50, 2.4); circ(c, 4, -50, 2.4);
   },
   // An ice auger: a crank handle on top, the shaft, and the spiral bit with its cutting blades.
   lodobur(c) {
@@ -1234,20 +1251,26 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   const blink = (t * 0.29 + (L.small ? 0.4 : 0)) % 1 > 0.966;
   c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 0, 17 - m * 1.5, 6);
   if (L.long) { c.fillStyle = L.hair; rr(c, -17 - sw * 0.25, -76 + bob, 34, 44, 13); }
-  c.fillStyle = '#5b4636'; rr(c, -9 + sw, -13 - la, 7, 13, 2.5); rr(c, 2 - sw, -13 - lb, 7, 13, 2.5);
-  c.fillStyle = '#3f3027'; rr(c, -10 + sw, -3.5 - la, 9, 3.5, 1.7); rr(c, 1 - sw, -3.5 - lb, 9, 3.5, 1.7);
+  c.fillStyle = L.boots || '#5b4636'; rr(c, -9 + sw, -13 - la, 7, 13, 2.5); rr(c, 2 - sw, -13 - lb, 7, 13, 2.5);
+  c.fillStyle = L.boots ? 'rgba(0,0,0,.25)' : '#3f3027'; rr(c, -10 + sw, -3.5 - la, 9, 3.5, 1.7); rr(c, 1 - sw, -3.5 - lb, 9, 3.5, 1.7);
+  if (L.boots) { c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-9 + sw, -13 - la, 7, 1.6); c.fillRect(2 - sw, -13 - lb, 7, 1.6); }   // red boots, with a pale top band
   c.rotate(m * Math.sin(w) * 0.025);
   c.fillStyle = L.skirt;
-  if (L.dress) { poly(c, [[-13, -32 + bob], [13, -32 + bob], [19, -8 + bob], [-19, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-18, -12 + bob, 36, 2.5); }
+  if (L.dress) { poly(c, [[-13, -32 + bob], [13, -32 + bob], [19, -8 + bob], [-19, -8 + bob]]);
+    if (L.skirtPat === 'check') { c.save(); c.beginPath(); c.moveTo(-13, -32 + bob); c.lineTo(13, -32 + bob); c.lineTo(19, -8 + bob); c.lineTo(-19, -8 + bob); c.closePath(); c.clip(); c.fillStyle = L.skirt2; for (let i = -3; i <= 3; i++) c.fillRect(i * 6 - 1.5, -32 + bob, 3, 24); for (let j = 0; j < 4; j++) c.fillRect(-20, -28 + j * 6 + bob, 40, 2); c.fillStyle = 'rgba(255,230,140,.6)'; for (let i = -3; i <= 3; i++) for (let j = 0; j < 4; j++) c.fillRect(i * 6 - 0.5, -27 + j * 6 + bob, 1, 1); c.restore(); }   // a plakhta's woven check
+    c.fillStyle = L.trim; c.fillRect(-18, -12 + bob, 36, 2.5);
+    if (L.apron && back < 0.5) { c.fillStyle = L.apron; poly(c, [[-8, -31 + bob], [8, -31 + bob], [10, -10 + bob], [-10, -10 + bob]]); c.fillStyle = L.apronTrim; c.fillRect(-10, -14 + bob, 20, 2); for (let i = -2; i <= 2; i++) { c.fillRect(i * 4 - 1, -18 + bob, 2, 2); } }   // the apron, embroidered along its hem
+  }
   else rr(c, -14, -31 + bob, 28, 22, 6);
   if (!L.noArms) for (const sx of [-15.5, 15.5]) {   // arms swing from the shoulder
     c.save(); c.translate(sx, -47 + bob); c.rotate(sx > 0 && L.armR !== undefined ? L.armR : sx < 0 && L.armL !== undefined ? L.armL : arm);
-    c.fillStyle = L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.trim; c.fillRect(-3.5, 13, 7, 2.5);
+    c.fillStyle = L.sleeve || L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.fur || L.trim; c.fillRect(-3.5, 13, 7, L.fur ? 4 : 2.5);
     c.fillStyle = L.skin; circ(c, 0, 19, 3.5); c.restore();
   }
   c.fillStyle = L.shirt; rr(c, -14, -51 + bob, 28, 26, 8);
   c.fillStyle = L.trim; c.fillRect(-2 + fx * 0.5, -49 + bob, 4, 18); c.fillRect(-14, -30 + bob, 28, 3);
   for (let i = 0; i < 3; i++) { c.fillRect(-6 + fx * 0.5, -46 + i * 6 + bob, 2, 2); c.fillRect(4 + fx * 0.5, -46 + i * 6 + bob, 2, 2); }
+  dressTop(c, L, bob, fx, back);
   c.fillStyle = L.skin; circ(c, 0, -63 + bob, 14);
   c.fillStyle = L.hair; c.beginPath(); c.arc(0, -65 + bob, 14.6, Math.PI, 0); c.fill();
   if (L.long) { rr(c, -15.5, -66 + bob, 5, 20, 2.5); rr(c, 10.5, -66 + bob, 5, 20, 2.5); c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
@@ -1260,8 +1283,11 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   if (back > 0.01) {   // from behind: hair covers her head, and her shirt has no buttons
     c.globalAlpha = Math.min(1, back);
     c.fillStyle = L.shirt; rr(c, -14, -51 + bob, 28, 20, 8);
+    if (L.vest) { c.fillStyle = L.vest; rr(c, -14, -51 + bob, 28, 22, 7); c.fillStyle = L.vestTrim; c.fillRect(-14, -31 + bob, 28, 2); }   // vest and coat under her hair
+    if (L.coat) { c.fillStyle = L.coat; rr(c, -15, -52 + bob, 30, 40, 8); c.fillStyle = L.fur; c.fillRect(-15, -16 + bob, 30, 4); ell(c, 0, -51 + bob, 12, 3.5); }
     c.fillStyle = L.hair; circ(c, 0, -63.5 + bob, 14.8);
-    if (L.long) rr(c, -15.5, -66 + bob, 31, 30, 10);
+    if (L.long) { c.fillStyle = L.hair; rr(c, -15.5, -66 + bob, 31, 30, 10); }
+    if (L.ribbons) L.ribbons.forEach((col, i) => { c.fillStyle = col; const sw2 = Math.sin(t * 3 + i) * 2; c.fillRect(-9 + i * 3.8 + sw2 * 0.3, -70 + bob, 3, 46 + (i % 2) * 6); });   // ribbons streaming from the crown
     c.globalAlpha = 1;
   }
   if (L.hat === 'scarf') {
@@ -1278,8 +1304,37 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   c.restore();
 }
 const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true };
+// Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
+// shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
+// apronTrim), vest (+ vestTrim), coat (+ fur), boots, beads, a hat (scarf, wreath) and ribbons on the wreath.
+const ME_BASE = Object.assign({}, ME);
+const OUTFITS = {
+  sorochka: {},
+  kersetka: { trim: '#2b2b2b', skirt: '#1d2a4a', vest: '#2f6b3a', vestTrim: '#e8c35a', beads: true, band: '#2f6b3a' },
+  plakhta: { trim: '#2f5f9e', skirt: '#b8322b', skirtPat: 'check', skirt2: '#2f6b3a', belt: '#e8c35a', band: '#2f5f9e' },
+  fartukh: { shirt: '#fffaf0', trim: '#d43a3a', skirt: '#3d7cc2', apron: '#ffffff', apronTrim: '#d43a3a', hat: 'scarf', hatCol: '#d43a3a' },
+  strichky: { trim: '#d43a3a', skirt: '#8a1f2b', hat: 'wreath', hatCol: '#ff7aa8', ribbons: ['#d43a3a', '#ffd23f', '#3d7cc2', '#2f9e5b', '#ff7aa8'], beads: true },
+  kozhushok: { skirt: '#3a2a4a', coat: '#9a6a3a', fur: '#fbf6ea', sleeve: '#9a6a3a', boots: '#b8322b', hat: 'scarf', hatCol: '#7a2e4a' },
+};
+const OUTFIT_KEYS = ['sleeve', 'skirtPat', 'skirt2', 'belt', 'apron', 'apronTrim', 'vest', 'vestTrim', 'coat', 'fur', 'boots', 'beads', 'ribbons', 'hatCol', 'band'];
+const lookFor = id => Object.assign({}, ME_BASE, OUTFITS[id] || {});
+wearOutfit(S.outfit);   // dressed as she was last time
+// Dress her in an outfit: ME is shared by every drawing of her, so it's changed in place.
+function wearOutfit(id) {
+  if (!OUTFITS[id]) id = 'sorochka';
+  for (const k of OUTFIT_KEYS) delete ME[k];
+  Object.assign(ME, ME_BASE, OUTFITS[id]);
+}
 // The same villager seen from the side, facing right (mirror it for left): one eye, a little nose, hair
 // down her back, legs striding one past the other, the far arm and leg a shade darker behind her.
+// Over the blouse, from the front: the vest's two panels, a sheepskin coat with its fur trim, the belt, the beads.
+function dressTop(c, L, bob, fx, back) {
+  if (L.vest) { c.fillStyle = L.vest; rr(c, -14, -51 + bob, 10, 24, 6); rr(c, 4, -51 + bob, 10, 24, 6); c.fillStyle = L.vestTrim; c.fillRect(-5, -50 + bob, 1.6, 22); c.fillRect(3.4, -50 + bob, 1.6, 22); c.fillRect(-14, -29 + bob, 28, 2); for (let i = 0; i < 3; i++) { circ(c, -9, -44 + i * 6 + bob, 1.1); circ(c, 9, -44 + i * 6 + bob, 1.1); } }
+  if (L.coat) { c.fillStyle = L.coat; rr(c, -15, -52 + bob, 30, 40, 8); c.fillStyle = L.fur; ell(c, 0, -50 + bob, 11, 4); c.fillRect(-1.8 + fx * 0.5, -50 + bob, 3.6, 36); c.fillRect(-15, -16 + bob, 30, 4); c.fillStyle = 'rgba(80,50,20,.35)'; for (const yy of [-44, -36, -28]) circ(c, 4 + fx * 0.5, yy + bob, 1.3); }
+  if (L.belt) { c.fillStyle = L.belt; c.fillRect(-14, -31 + bob, 28, 4); c.fillRect(7, -29 + bob, 3, 9); c.fillRect(10, -29 + bob, 3, 7); }
+  if (L.beads && back < 0.5) { const cols = ['#d43a3a', '#b8322b']; for (let r = 0; r < 3; r++) for (let i = 0; i <= 8; i++) { const a = Math.PI * (0.15 + i / 8 * 0.7); c.fillStyle = cols[(i + r) % 2]; circ(c, Math.cos(a) * (8 + r * 2), -51 + Math.sin(a) * (4 + r * 2.5) + bob, 1.6); } }
+  if (L.ribbons && back < 0.5) L.ribbons.slice(0, 2).forEach((col, i) => { c.fillStyle = col; c.fillRect(i ? 11 : -14, -60 + bob, 3, 22); });   // two ribbon ends over her shoulders
+}
 function personSide(c, x, y, L, t, moving, sc, ph) {
   const k = (L.small ? 0.78 : 1) * (sc || 1), m = +moving || 0, w = ph === undefined ? t * 12 : ph;
   c.save(); c.translate(x, y); c.scale(k, k);
@@ -1289,12 +1344,13 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   const blink = (t * 0.29 + (L.small ? 0.4 : 0)) % 1 > 0.966;
   c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 0, 14 - m * 1.5, 5.5);
   const leg = (dx, lift, far) => {
-    c.fillStyle = far ? '#4a392c' : '#5b4636'; rr(c, -3.5 + dx, -13 - lift, 7, 13, 2.5);
-    c.fillStyle = far ? '#30251d' : '#3f3027'; rr(c, -4 + dx, -3.5 - lift, 11, 3.5, 1.7);
+    c.fillStyle = L.boots || (far ? '#4a392c' : '#5b4636'); rr(c, -3.5 + dx, -13 - lift, 7, 13, 2.5);
+    c.fillStyle = L.boots ? (far ? '#7a2420' : '#962a24') : far ? '#30251d' : '#3f3027'; rr(c, -4 + dx, -3.5 - lift, 11, 3.5, 1.7);
+    if (far && L.boots) { c.fillStyle = 'rgba(0,0,0,.2)'; rr(c, -3.5 + dx, -13 - lift, 7, 13, 2.5); }
   };
   const limb = (sw, far) => {
     c.save(); c.translate(0, -47 + bob); c.rotate(sw);
-    c.fillStyle = L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.trim; c.fillRect(-3.5, 13, 7, 2.5);
+    c.fillStyle = L.sleeve || L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.fur || L.trim; c.fillRect(-3.5, 13, 7, L.fur ? 4 : 2.5);
     c.fillStyle = L.skin; circ(c, 0, 19, 3.5);
     if (far) { c.fillStyle = 'rgba(60,40,30,.22)'; rr(c, -3.5, -1, 7, 23.5, 3); }
     c.restore();
@@ -1304,12 +1360,20 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   if (L.long) { c.fillStyle = L.hair; rr(c, -16, -74 + bob, 19, 44, 10); }
   leg(st, la, false);
   c.fillStyle = L.skirt;
-  if (L.dress) { poly(c, [[-10, -32 + bob], [10, -32 + bob], [14, -8 + bob], [-13, -8 + bob]]); c.fillStyle = L.trim; c.fillRect(-13, -12 + bob, 27, 2.5); }
+  if (L.dress) { poly(c, [[-10, -32 + bob], [10, -32 + bob], [14, -8 + bob], [-13, -8 + bob]]);
+    if (L.skirtPat === 'check') { c.save(); c.beginPath(); c.moveTo(-10, -32 + bob); c.lineTo(10, -32 + bob); c.lineTo(14, -8 + bob); c.lineTo(-13, -8 + bob); c.closePath(); c.clip(); c.fillStyle = L.skirt2; for (let i = -2; i <= 2; i++) c.fillRect(i * 6 - 1.5, -32 + bob, 3, 24); for (let j = 0; j < 4; j++) c.fillRect(-14, -28 + j * 6 + bob, 28, 2); c.restore(); }
+    c.fillStyle = L.trim; c.fillRect(-13, -12 + bob, 27, 2.5);
+    if (L.apron) { c.fillStyle = L.apron; poly(c, [[3, -31 + bob], [10, -31 + bob], [13.5, -10 + bob], [6, -10 + bob]]); c.fillStyle = L.apronTrim; c.fillRect(6, -14 + bob, 7.5, 2); }
+  }
   else rr(c, -10, -31 + bob, 20, 22, 6);
   // shirt from the side: embroidered collar and hem, no front placket (that faces away from us)
   c.fillStyle = L.shirt; rr(c, -9, -51 + bob, 18, 26, 7);
   c.fillStyle = L.trim; c.fillRect(-9, -30 + bob, 18, 3); c.fillRect(-2, -51 + bob, 9, 2.5);
   for (let i = 0; i < 3; i++) c.fillRect(-4 + i * 4, -27 + bob, 2, 1.5);
+  if (L.vest) { c.fillStyle = L.vest; rr(c, -9, -51 + bob, 14, 24, 6); c.fillStyle = L.vestTrim; c.fillRect(4, -50 + bob, 1.6, 22); c.fillRect(-9, -29 + bob, 14, 2); }
+  if (L.coat) { c.fillStyle = L.coat; rr(c, -10, -52 + bob, 21, 40, 8); c.fillStyle = L.fur; c.fillRect(8, -50 + bob, 3.5, 36); c.fillRect(-10, -16 + bob, 21, 4); ell(c, 2, -50 + bob, 8, 3.5); }
+  if (L.belt) { c.fillStyle = L.belt; c.fillRect(-9, -31 + bob, 18, 4); c.fillRect(-11, -29 + bob, 3, 9); }
+  if (L.beads) { for (let i = 0; i < 6; i++) { c.fillStyle = i % 2 ? '#b8322b' : '#d43a3a'; circ(c, 3 + i * 1.4, -50 + i * 1.2 + bob, 1.5); } }
   // The head, storybook-style: a round head that is mostly hair, with the face as a soft oval on the front
   // third. Just an eye, a blush and a hint of a nose bump in the outline; no mouth.
   const hy = -63 + bob;
@@ -1332,6 +1396,7 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
     c.fillStyle = L.hatCol; ell(c, 2, hy - 10, 22, 5.5); rr(c, -9, hy - 23, 20, 14, 6);
     c.fillStyle = '#8a5a2b'; c.fillRect(-9, hy - 13, 20, 2.5);
   } else if (L.hat === 'wreath') {
+    if (L.ribbons) L.ribbons.forEach((col, i) => { c.fillStyle = col; const sw2 = Math.sin(t * 3 + i) * 2 - (+moving || 0) * 3; c.save(); c.translate(-12, hy - 4); c.rotate(0.15 + i * 0.05 + sw2 * 0.03); c.fillRect(-1.5, 0, 3, 40 + (i % 2) * 6); c.restore(); });   // the ribbons stream out behind her
     const cols = [L.hatCol, '#f2c230', '#ffffff', '#e2574c', '#5aa9e6'];
     for (let i = 0; i < 6; i++) { const ang = Math.PI * (1.02 + i * 0.15); c.fillStyle = cols[i % 5]; circ(c, Math.cos(ang) * 14.5, hy - 2 + Math.sin(ang) * 14.5, 3.6); }
   }
@@ -2413,7 +2478,7 @@ function plotSheet(i) {
 let shopTab = 'food', shopSel = null;
 // Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
 const catThings = k => (S.home[k] || 0) + nPlaced(k);
-const owned = k => shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : shopTab === 'cats' && MULTI[k] ? catThings(k) >= MULTI[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
+const owned = k => shopTab === 'clothes' ? !!(S.wardrobe && S.wardrobe[k]) : shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : shopTab === 'cats' && MULTI[k] ? catThings(k) >= MULTI[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
 const sellPrice = id => { if (id === 'ryba') return winter() ? 8 : 4;   // a fish takes a rod and some patience (and in winter, a hole in the ice)
   if (id === 'kalyna' && winter()) return 4;   // the red berries are about the only thing to pick in winter
   for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
@@ -2422,7 +2487,7 @@ let shopShown = null;   // the tab the shop was last drawn on
 // switch to another tab). Redrawing rebuilds the row, which would jump back to the first tab: shopTabsKeep()
 // puts it back where it was and makes sure the chosen tab is fully in view.
 function shopHead() {
-  const tabs = ['food', winter() ? 'veg' : 'seeds', 'tools', 'farm', 'home', 'cats', 'sell', 'help'];
+  const tabs = ['food', winter() ? 'veg' : 'seeds', 'tools', 'farm', 'home', 'clothes', 'cats', 'sell', 'help'];
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
   return `<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>`;
 }
@@ -4266,7 +4331,7 @@ function enterHomeNow() {
   mode = 'home';
   for (const ct of D.cats) if (S.cats[ct.id] === 'f') { S.cats[ct.id] = 1; const i = ents.findIndex(q => q.cat === ct.id); if (i >= 0) ents.splice(i, 1); save(); }
   pickHomeCats();
-  $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#decorBtn').style.display = ''; $('#homebar').style.display = 'flex';
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#decorBtn').style.display = ''; $('#wardBtn').innerHTML = '👗 ' + lab('wardrobe'); $('#wardBtn').style.display = ''; $('#homebar').style.display = 'flex';
   const mid = DECOR.stil.x * roomW() - cv.width / 2;
   roomX = mid; clampPan();
   // The first few times in, the view glides from one end of the room to the other and settles at the table,
@@ -4619,7 +4684,7 @@ const recipeReady = R => recipeTotal(R) >= R.needs.length * NEED;
 function enterOlia() { closeSheet(); fadeThen(enterOliaNow); }
 function enterOliaNow() {
   mode = 'olia'; if (!S.oliaVisited) { S.oliaVisited = 1; save(); }
-  $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
   // Open on the counter and Grandma; once the dish is ready, on the table.
   const mid = (recipeReady(curRecipe()) ? OX.table : 0.385) * roomW() - cv.width / 2;
   roomX = mid; clampPan();
@@ -5590,6 +5655,42 @@ function drawFest(t) {
 }
 
 
+// ------------------------------------------------------------------ the wardrobe
+// In her cottage: a big picture of her in what she's wearing, turning slowly so you see the front, side and
+// back; underneath, every outfit she owns. Tap one and she's wearing it, here and out in the village.
+let ward = null;
+function wardrobeSheet() {
+  const st = stage(), own = Object.keys(OUTFITS).filter(id => S.wardrobe[id]), more = Object.keys(D.shop.clothes).filter(id => !S.wardrobe[id]).length;
+  learn('shafa'); const first = !ward;
+  ward = { t0: nowT, view: 0 };
+  openSheet(`<div class="card"><h3><span><span class="uk">${W.shafa.uk}</span> ${st < 2 ? `<small>${W.shafa.en}</small>` : ''}</span>${btn('hear', 'p_shcho_vdiahnemo', '🔊', 'round blue')}</h3>
+    <div style="display:flex;gap:10px;align-items:center">
+      <canvas id="wardPad" style="width:42%;height:210px;border-radius:18px;background:radial-gradient(circle at 50% 60%, #fbecd3, #e3c395);flex:none" data-a="wardTurn"></canvas>
+      <div style="text-align:left;flex:1"><div class="word" style="font-size:24px">${W[S.outfit].uk}</div>${st < 3 ? `<div class="en">${W[S.outfit].en}</div>` : ''}<div class="muted" style="padding:6px 0 0;font-size:13px">${PH.shcho_vdiahnemo.uk}${st < 3 ? ' · Tap the picture to turn her round' : ''}</div></div>
+    </div>
+    <div class="grid" style="margin-top:10px">${own.map(id => `<button class="it ${S.outfit === id ? 'sel' : ''}" data-a="wear" data-v="${id}"><img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}${S.outfit === id ? '<div class="e"><b>✓</b></div>' : ''}</button>`).join('')}</div>
+    ${more ? `<div class="muted" style="font-size:13px">🧺 ${D.ui.clothes[0]}${st < 3 ? ': more clothes at the market' : ''} (${more})</div>` : ''}
+    <div class="row">${btn('close', '', lab('close'))}</div></div>`);
+  if (first) say('p_shcho_vdiahnemo');
+  const pad = $('#wardPad'), dpr = Math.min(2, window.devicePixelRatio || 1); pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr);
+  const me = ward; requestAnimationFrame(() => wardFrame(me));
+}
+function wardFrame(me) {
+  const pad = $('#wardPad'); if (ward !== me || !pad || !sheetOpen()) return;
+  const c = pad.getContext('2d'), w = pad.width, h = pad.height, t = nowT;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
+  // a rug to stand on
+  c.fillStyle = '#c0392b'; ell(c, w / 2, h * 0.9, w * 0.4, h * 0.06); c.fillStyle = '#ffd23f'; ell(c, w / 2, h * 0.9, w * 0.3, h * 0.04); c.fillStyle = '#c0392b'; ell(c, w / 2, h * 0.9, w * 0.2, h * 0.025);
+  // she turns every two and a half seconds: front, her side, her back, her other side (or you tap to turn her)
+  const auto = Math.floor((t - me.t0) / 2.5) % 4, v = (me.view + auto) % 4, sc = h / 120, pop = me.pop ? Math.max(0, 1 - (t - me.pop) / 0.35) : 0;
+  c.save(); c.translate(w / 2, h * 0.9); c.scale(1 + pop * 0.08, 1 - pop * 0.04);
+  if (v === 1 || v === 3) { c.scale(v === 3 ? -1 : 1, 1); personSide(c, 0, 0, ME, t, 0, sc, 0); }
+  else person(c, 0, 0, ME, t, 0, sc, 0, { back: v === 2 ? 1 : 0 });
+  c.restore();
+  if (pop) { c.globalAlpha = pop; for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; drawIcon(c, '✨', w / 2 + Math.cos(a) * w * 0.38 * (1.2 - pop), h * 0.5 + Math.sin(a) * h * 0.35 * (1.2 - pop), 16 * sc / 2); } c.globalAlpha = 1; }
+  requestAnimationFrame(() => wardFrame(me));
+}
+
 // ------------------------------------------------------------------ developer mode
 // The 🛠️ on the title screen asks for a code (7272) once; after that this device remembers it (kd-dev), the
 // 🛠️ stays in the top bar and the title's 🛠️ goes straight to the menu, until it's turned off in the menu.
@@ -5967,6 +6068,9 @@ const A = {
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
   festReply() { festReply(); },
+  wardrobe() { wardrobeSheet(); },
+  wardTurn() { if (ward) { ward.view = (ward.view + 1) % 4; ward.t0 = nowT; blip(600, 0.03); } },
+  wear(v) { if (!S.wardrobe[v]) return; const keep = ward && ward.view; S.outfit = v; wearOutfit(v); useWord(v, true); save(); blip(880, 0.06); wardrobeSheet(); if (ward) { ward.view = keep || 0; ward.pop = nowT; } say('w_' + v, 'p_harno_vyhliadaiesh'); },
   devPin() { if (devOn) { A.start(); return setTimeout(devMenu, 700); } devCode = ''; devPinDraw(); },   // already unlocked on this device: straight in
   devOff() { devOn = false; try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
   devPinX() { $('#devpin').classList.remove('on'); },
@@ -6026,6 +6130,7 @@ const A = {
     S.coins -= price;
     if (shopTab === 'seeds') { S.seeds[v] = (S.seeds[v] || 0) + 1; learn('nasinnia'); }
     else if (shopTab === 'veg') give(v);
+    else if (shopTab === 'clothes') { S.wardrobe[v] = 1; setTimeout(() => toast(`👗 ${W[v].uk} → ${W.shafa.uk}${stage() < 3 ? ' · in your wardrobe at home' : ''}`, 2600), 300); }
     else if (shopTab === 'home' || shopTab === 'cats') S.home[v] = (S.home[v] || 0) + 1;
     else if (shopTab === 'tools') { S.gear[v] = 1; farmEnts(); }
     else if (shopTab === 'farm') { S.farm = S.farm || {}; S.farm[v] = farmN(v) + 1; farmEnts(); }

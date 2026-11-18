@@ -187,6 +187,14 @@ window.DATA = {
     // --- tools and things you carry
     { id: "nasinnia", uk: "насіння", tr: "na-SIN-nia", en: "seeds", ic: "🌱" },
     { id: "vudka", uk: "вудка", tr: "VUD-ka", en: "fishing rod", ic: "@rod", acc: "вудку" },
+    // Clothes for her wardrobe: whole outfits, each named for its main piece.
+    { id: "shafa", uk: "шафа", tr: "SHA-fa", en: "wardrobe", ic: "@shafa" },
+    { id: "sorochka", uk: "сорочка", tr: "so-ROCH-ka", en: "embroidered blouse", ic: "@o_sorochka", fact: { uk: "Вишита сорочка — найулюбленіший одяг в Україні.", en: "An embroidered blouse is Ukraine's best-loved piece of clothing." } },
+    { id: "kersetka", uk: "керсетка", tr: "ker-SET-ka", en: "embroidered vest", ic: "@o_kersetka", fact: { uk: "Керсетку вдягали поверх сорочки на свята.", en: "A kersetka is a fitted sleeveless vest worn over the blouse on feast days." } },
+    { id: "plakhta", uk: "плахта", tr: "PLAKH-ta", en: "checked wrap skirt", ic: "@o_plakhta", fact: { uk: "Плахту ткали з вовни, у клітинку.", en: "A plakhta is a wrap skirt woven from wool in a bright check." } },
+    { id: "fartukh", uk: "фартух", tr: "FAR-tukh", en: "apron", ic: "@o_fartukh" },
+    { id: "strichky", uk: "стрічки", tr: "STRICH-ky", en: "ribbons", ic: "@o_strichky", fact: { uk: "До вінка пришивали довгі кольорові стрічки.", en: "Long coloured ribbons were sewn to the back of a flower crown." } },
+    { id: "kozhushok", uk: "кожушок", tr: "ko-zhu-SHOK", en: "sheepskin coat", ic: "@o_kozhushok", fact: { uk: "Кожушок шили з овечої шкури: у ньому тепло взимку.", en: "A kozhushok is a short sheepskin coat: warm all winter." } },
     { id: "lodobur", uk: "льодобур", tr: "lo-do-BUR", en: "ice auger", ic: "@lodobur", fact: { uk: "Льодобуром свердлять лунку в льоду, щоб рибалити взимку.", en: "With an ice auger you drill a hole in the ice, so you can fish in winter." } },
     { id: "liika", uk: "лійка", tr: "LIY-ka", en: "watering can", ic: "@can", acc: "лійку" },
     { id: "koshyk", uk: "кошик", tr: "KO-shyk", en: "basket", ic: "@koshyk" },
@@ -208,6 +216,8 @@ window.DATA = {
     { id: "dobroho_ranku", uk: "Доброго ранку!", en: "Good morning!" },
     { id: "dobranich", uk: "Добраніч!", en: "Good night!" },
     { id: "chas_spaty", uk: "Час спати.", en: "Time for bed." },
+    { id: "shcho_vdiahnemo", uk: "Що вдягнемо?", en: "What shall we wear?" },
+    { id: "harno_vyhliadaiesh", uk: "Гарно виглядаєш!", en: "You look lovely!" },
     { id: "yizhte_kotyky", uk: "Їжте, котики!", en: "Eat up, kitties!" },
     { id: "dobryi_den", uk: "Добрий день!", en: "Good day!" },
     { id: "diakuiu", uk: "Дякую!", en: "Thank you!" },
@@ -458,6 +468,8 @@ window.DATA = {
     // In winter nothing grows, so the market sells vegetables instead of seeds.
     veg: { kartoplia: 4, kapusta: 4, buriak: 3, morkva: 3, tsybulia: 3, chasnyk: 3, pomidor: 4, yabluko: 3, pshenytsia: 3, mak: 3 },
     tools: { vudka: 6, lodobur: 15, maslobiika: 10, zhorna: 12 },
+    // Clothes: each is a whole outfit, added to the wardrobe in her cottage.
+    clothes: { fartukh: 18, kersetka: 28, plakhta: 30, strichky: 34, kozhushok: 40 },
     // Animals of your own: they live by your cottage, and you collect their eggs and milk.
     farm: { kurka: 15, korova: 40 },
     cats: { kihtetochka: 30, lezhanka: 16, miachyk: 6, myshka: 6 },
@@ -470,7 +482,7 @@ window.DATA = {
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
-    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], handover: ["Віддати", "Hand over"], festgo: ["Почати свято", "Start the festival"], backvillage: ["До села", "Back to the village"], mgyes: ["Так!", "Yes!"], mglater: ["Пізніше", "Later"], nesy: ["Неси!", "Fetch!"], veg: ["Овочі", "Vegetables"], back: ["Назад", "Back"],
+    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], handover: ["Віддати", "Hand over"], festgo: ["Почати свято", "Start the festival"], backvillage: ["До села", "Back to the village"], mgyes: ["Так!", "Yes!"], mglater: ["Пізніше", "Later"], nesy: ["Неси!", "Fetch!"], veg: ["Овочі", "Vegetables"], clothes: ["Одяг", "Clothes"], wardrobe: ["Шафа", "Wardrobe"], wear: ["Вдягнути", "Put it on"], back: ["Назад", "Back"],
     take: ["Взяти", "Take"], enter: ["Зайти", "Go in"], exit: ["Вийти", "Go out"], buy: ["Купити", "Buy"],
     sell: ["Продати", "Sell"], plant: ["Посадити", "Plant"], water: ["Полити", "Water"], harvest: ["Зібрати", "Harvest"],
     next: ["Далі", "Next"], close: ["Добре", "OK"], give: ["Дати", "Give"], putaway: ["Прибрати", "Put away"],
