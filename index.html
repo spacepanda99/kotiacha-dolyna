@@ -204,6 +204,16 @@
   .gamecard .cookbar { margin:6px 0 2px; height:9px; }
   .gamecard .row { margin-top:6px; gap:8px; } .gamecard .b { min-height:40px; padding:7px 14px; font-size:16px; } .gamecard .b.round { width:42px; height:42px; min-height:42px; padding:0; }
   .gamecard + .subs { margin-top:4px; } .gamecard + .subs #subline { padding:5px 10px; margin-bottom:2px; } .gamecard + .subs #subline .su { font-size:16px; } .gamecard + .subs .subt { font-size:13px; padding:2px 8px; }
+  /* the clothes tab: big outfit cards in a row you swipe through */
+  .outfits { display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; padding:6px 2px 10px; -webkit-overflow-scrolling:touch; touch-action:pan-x; }
+  .ocard { flex:0 0 72%; scroll-snap-align:center; background:#fff; border-radius:22px; box-shadow:0 3px 0 #e6d7bd; padding:10px 10px 12px; text-align:center; position:relative; }
+  .ocard img { width:100%; max-width:240px; aspect-ratio:1; display:block; margin:0 auto 2px; background:radial-gradient(circle at 50% 60%, #fbecd3, #f1e3c8); border-radius:18px; }
+  .ocard .n { font-size:24px; font-weight:900; } .ocard .e { color:var(--soft); font-size:14px; margin-bottom:6px; }
+  .ocard .have { font-weight:800; color:#3f8a3a; padding:10px 0 4px; } .ocard .b.blue { width:100%; margin-top:4px; }
+  .ocard .b.round { position:absolute; top:14px; right:14px; width:42px; height:42px; min-height:42px; font-size:18px; }
+  .ocard.owned img { opacity:.85; }
+  .festnote { text-align:left; background:#fff8ea; border:2px dashed rgba(212,58,58,.35); border-radius:14px; padding:8px 11px; margin:8px 0 2px; font-size:13px; line-height:1.4; color:#5a4636; max-height:9.5em; overflow:auto; }
+  .festnote b { display:block; color:#b8322b; margin-bottom:2px; font-size:13.5px; }
   .cookline { display:flex; gap:10px; align-items:center; text-align:left; margin:6px 0; }
   .cookline img { width:58px; height:58px; border-radius:16px; background:#e8f4d9; flex:none; }
   .vchip { font-size:16px; margin:2px 0 8px; } .vchip small { color:var(--soft); font-weight:600; }
@@ -260,12 +270,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v146</div>
+  <div class="ver">v147</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '146';</script>
-<script src="data.js?v=146"></script>
-<script src="game.js?v=146"></script>
+<script>window.APP_VERSION = '147';</script>
+<script src="data.js?v=147"></script>
+<script src="game.js?v=147"></script>
 </body>
 </html>

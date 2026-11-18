@@ -62,6 +62,7 @@ const seasonDaysLeft = () => SEASON_DAYS - (((S.clock.day || 1) - 1) % SEASON_DA
 if (!S.gear) S.gear = {};
 if (!S.wardrobe) S.wardrobe = { sorochka: 1 };   // the clothes she owns (her blouse and skirt to start with)
 if (!S.outfit) S.outfit = 'sorochka';
+let devOn = false;   // developer mode (see the developer section); declared early, as the coin counter reads it
 let saveT = 0;
 // Grandma cooks one dish after another and starts over from the first once she has made them all.
 // In winter Grandma cooks warm winter dishes, and each needs firewood for her stove too.
@@ -1140,6 +1141,14 @@ function emojiSprite(c, ic, x, y, s, rot, scale) {
   c.save(); c.translate(x, y); c.rotate(rot); c.drawImage(sp, -B / 2, -s * 0.1 - B * 0.85, B, B); c.restore();
 }
 const iconCache = {};
+// A large picture of something (the outfit cards in the market are big).
+const bigIcons = {};
+function bigIconURL(id) {
+  if (bigIcons[id]) return bigIcons[id];
+  const k = document.createElement('canvas'); k.width = k.height = 320;
+  drawIcon(k.getContext('2d'), W[id].ic, 160, 304, 290);
+  return (bigIcons[id] = k.toDataURL());
+}
 function iconURL(id) {
   if (iconCache[id]) return iconCache[id];
   const k = document.createElement('canvas'); k.width = k.height = 128;
@@ -2491,7 +2500,7 @@ let shopShown = null;   // the tab the shop was last drawn on
 function shopHead() {
   const tabs = ['food', winter() ? 'veg' : 'seeds', 'tools', 'farm', 'home', 'clothes', 'cats', 'sell', 'help'];
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
-  return `<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>`;
+  return `<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${devOn ? '∞' : S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>`;
 }
 const shopTabsX = () => { const r = sheetOpen() && sheet.querySelector('.tabs'); return r ? r.scrollLeft : null; };
 function shopTabsKeep(keepX) {
@@ -2505,6 +2514,17 @@ function shop() {
   if (winter() && shopTab === 'seeds') shopTab = 'veg';   // in winter the seeds tab becomes vegetables
   if (!winter() && shopTab === 'veg') shopTab = 'seeds';
   if (shopTab === 'help') return helpRound(0);
+  if (shopTab === 'clothes') {
+    const st = stage();
+    body = `<div class="outfits">${Object.keys(D.shop.clothes).map(k => { const had = owned(k), price = D.shop.clothes[k]; return `<div class="ocard ${had ? 'owned' : ''}">
+      <img src="${bigIconURL(k)}" alt="">
+      <div class="n">${W[k].uk}</div>${known(k) < 2 || st < 3 ? `<div class="e">${W[k].en}</div>` : ''}
+      ${had ? `<div class="have">✓ ${D.ui.have[0]}${st < 3 ? ' · in your wardrobe' : ''}</div>` : `<button class="b blue" data-a="buy" data-v="${k}">${lab('buy')} · ${devOn ? '∞' : price} ₴</button>`}
+      ${btn('hearWord', k, '🔊', 'round ghost')}</div>`; }).join('')}</div><div class="muted" style="font-size:12px;padding:2px 0 0">⟷ ${st < 3 ? 'Swipe to see them all' : ''}</div>`;
+    setTimeout(() => sheet.classList.add('fixed'), 0);
+    const keepX = shopTabsX(); shopShown = shopTab; openSheet(shopHead() + body); shopTabsKeep(keepX);
+    return;
+  }
   if (shopTab === 'sell') {
     const items = Object.keys(S.bag).filter(k => S.bag[k] > 0);
     body = items.length ? `<div class="grid">${items.map(k => `<button class="it" data-a="sell" data-v="${k}"><span class="q">${S.bag[k]}</span><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">+${sellPrice(k)} ₴</div></button>`).join('')}</div>` : `<div class="muted">🧺 ${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`;
@@ -4306,7 +4326,7 @@ function setGuide() {
   g.querySelector('.eye').classList.toggle('on', guideEnOn);
 }
 function hud() {
-  for (const [id, txt] of [['#coins', `💰 ${S.coins}`], ['#hearts', `❤️ ${S.hearts}`], ['#water', `💧 ${S.bag.voda || 0}`]]) {
+  for (const [id, txt] of [['#coins', devOn ? '💰 ∞' : `💰 ${S.coins}`], ['#hearts', `❤️ ${S.hearts}`], ['#water', `💧 ${S.bag.voda || 0}`]]) {
     const el = $(id); if (el.textContent === txt) continue;
     const first = !el.dataset.set; el.dataset.set = 1; el.textContent = txt;
     if (!first) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }   // the counter hops when it changes
@@ -5574,6 +5594,7 @@ function startFest() {
     openSheet(`<div class="card"><div class="tag">🎉 ${W[F.id].uk}${stage() < 3 ? ' · ' + W[F.id].en : ''}</div>
       <div style="display:flex;gap:6px;justify-content:center;margin:8px 0">${faces}</div>
       <div class="word" style="font-size:32px">«${PH[F.greet].uk}»</div>${stage() < 3 ? `<div class="en">${PH[F.greet].en}</div>` : ''}
+      ${F.culture ? `<div class="festnote"><b>🇺🇦 ${W[F.id].en[0].toUpperCase() + W[F.id].en.slice(1)} in Ukraine</b>${F.culture}</div>` : ''}
       <div class="muted" style="padding:6px 0 0">${stage() < 3 ? 'Answer them:' : ''}</div>
       <div class="row">${btn('hear', 'p_' + F.greet, '🔊', 'round blue')}${btn('festReply', '', `${PH[F.reply].uk}<small class="cen"${stage() < 3 ? '' : ' style="display:none"'}>${PH[F.reply].en}</small>`)}</div></div>`);
     say('p_' + F.greet);
@@ -5912,7 +5933,7 @@ function wardFrame(me) {
 // Other phones never see it unless the code is entered there. The menu that jumps straight to any game, any of
 // Grandma's dishes, any season or festival, or the night. Dev runs of cooking, festivals and bedtime leave the
 // real progress alone: no recipe moves on, no festival is marked done, no day passes.
-let devOn = false, devCode = '', devMeal = false;
+let devCode = '', devMeal = false;
 try { devOn = localStorage.getItem('kd-dev') === '1'; } catch (e) {}
 if (devOn) $('#devBtn').style.display = '';
 function devPinDraw(bad) {
@@ -6287,13 +6308,13 @@ const A = {
   wardTurn() { if (ward) { ward.view = (ward.view + 1) % 4; ward.t0 = nowT; blip(600, 0.03); } },
   wear(v) { if (!S.wardrobe[v]) return; const keep = ward && ward.view; S.outfit = v; wearOutfit(v); useWord(v, true); save(); blip(880, 0.06); wardrobeSheet(); if (ward) { ward.view = keep || 0; ward.pop = nowT; } say('w_' + v, 'p_harno_vyhliadaiesh'); },
   devPin() { if (devOn) { A.start(); return setTimeout(devMenu, 700); } devCode = ''; devPinDraw(); },   // already unlocked on this device: straight in
-  devOff() { devOn = false; try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
+  devOff() { devOn = false; setTimeout(hud, 50); try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
   devPinX() { $('#devpin').classList.remove('on'); },
   devKey(v) {
     if (v === 'back') devCode = devCode.slice(0, -1); else if (devCode.length < 4) devCode += v;
     blip(600 + devCode.length * 80, 0.04);
     if (devCode.length < 4) return devPinDraw();
-    if (devCode === '7272') { devOn = true; devCode = ''; try { localStorage.setItem('kd-dev', '1'); } catch (e) {} $('#devpin').classList.remove('on'); $('#devBtn').style.display = ''; A.start(); setTimeout(devMenu, 700); }
+    if (devCode === '7272') { devOn = true; devCode = ''; setTimeout(hud, 50); try { localStorage.setItem('kd-dev', '1'); } catch (e) {} $('#devpin').classList.remove('on'); $('#devBtn').style.display = ''; A.start(); setTimeout(devMenu, 700); }
     else { devCode = ''; devPinDraw(true); blip(200, 0.15); }
   },
   devMenu() { if (devOn) devMenu(); },
@@ -6339,10 +6360,11 @@ const A = {
   tab(v) { shopTab = v; shopSel = null; shop(); },
   pick(v) { shopSel = owned(v) ? null : v; learn(v); shop(); say('w_' + v); if (owned(v)) toast(`✓ ${D.ui.have[0]}${stage() < 3 ? ' · ' + D.ui.have[1] : ''}`); },
   buy(v) {
+    if (shopTab === 'clothes') shopSel = v;
     if (owned(v)) return;
     const price = D.shop[shopTab][v];
-    if (S.coins < price) { toast(`${D.ui.notenough[0]}${stage() < 3 ? ' · ' + D.ui.notenough[1] : ''}`); return; }
-    S.coins -= price;
+    if (!devOn && S.coins < price) { toast(`${D.ui.notenough[0]}${stage() < 3 ? ' · ' + D.ui.notenough[1] : ''}`); return; }
+    if (!devOn) S.coins -= price;   // in developer mode everything is free (the real coins stay as they were)
     if (shopTab === 'seeds') { S.seeds[v] = (S.seeds[v] || 0) + 1; learn('nasinnia'); }
     else if (shopTab === 'veg') give(v);
     else if (shopTab === 'clothes') { S.wardrobe[v] = 1; setTimeout(() => toast(`👗 ${W[v].uk} → ${W.shafa.uk}${stage() < 3 ? ' · in your wardrobe at home' : ''}`, 2600), 300); }
