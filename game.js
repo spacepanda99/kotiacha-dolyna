@@ -2583,7 +2583,7 @@ function cookStep(first = []) {
   ck.prog = 0; ck.done = false;
   learn(st.v); learn(st.w);
   const how = COOK_HOW[kind];
-  openSheet(`<div class="card">
+  openSheet(`<div class="card gamecard">
     <div class="tag">👩‍🍳 ${W[R.dish].uk} · ${ck.i + 1}/${R.steps.length}</div>
     <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:27px">${verbHL(L.uk)}</div>${stg < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     <div class="vchip"><span class="verb">${W[st.v].uk}</span> ${stg < 3 ? '= ' + W[st.v].en : xl('= ' + W[st.v].en)} <small>· дієслово${stg < 3 ? ' (verb, an action word)' : ''}</small></div>
@@ -2613,6 +2613,7 @@ function cookSetup(kind, st) {
 }
 function cookWire(kind, st) {
   const pad = $('#cookPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = ck;
+  fitPad(pad, 250);
   pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr);
   ck.k = dpr; ck.s = cookSetup(kind, st);
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });   // keep the sheet's swipe-to-close off these
@@ -2697,7 +2698,7 @@ function cookProg(d) {
 // being said while you keep at it.
 function cookAct(beat) {
   const s = ck.s, t = nowT;
-  if (beat || !s.flash || t - s.flash > 0.65) s.flash = t;
+  if ((beat && (!s.flash || t - s.flash > 0.35)) || !s.flash || t - s.flash > 1.1) s.flash = t;
   s.lastAct = performance.now();
   if (!s.vo) {
     s.vo = new Audio('audio/w_' + s.st.v + '.mp3'); const vo = s.vo, me = ck;
@@ -2723,8 +2724,8 @@ function ckKnife(c, x, y, s, k, rot) {   // handle at (x, y), the blade reaching
   c.restore();
 }
 function ckFlash(c, w, h, k, t) {   // the action word, popping up big and fading fast
-  const s = ck.s; if (!s.flash) return; const q = (t - s.flash) / 0.5; if (q > 1) return;
-  const W0 = W[s.st.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = q < 0.2 ? q / 0.2 : 1 - (q - 0.2) / 0.8, sc = 0.75 + q * 0.6;
+  const s = ck.s; if (!s.flash) return; const q = (t - s.flash) / 1.1; if (q > 1) return;
+  const W0 = W[s.st.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = flashA(q), sc = flashS(q);
   c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.2); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(txt, 0, 0); c.fillStyle = '#ffd27a'; c.fillText(txt, 0, 0); c.restore();
 }
@@ -2914,7 +2915,7 @@ function mgStart(id, force) {
   const npc = NPC[id], kind = force || (winter() && MG[id + '_w'] ? id + '_w' : id), G = MG[kind];
   mg = { id: kind, npc, G, round: 1, phase: '', t0: nowT, lastT: nowT, puffs: [], down: null, score: 0 };
   for (const v of G.verbs) learn(v);
-  openSheet(`<div class="card"><div class="tag" id="mgTag"></div>
+  openSheet(`<div class="card gamecard"><div class="tag" id="mgTag"></div>
     <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" id="mgLine" style="font-size:26px"></div><div class="en" id="mgEn"></div></div></div>
     <div class="vchip" id="mgChip"></div>
     <canvas id="mgPad" class="cookpad" style="width:100%;display:block;height:240px"></canvas>
@@ -2922,6 +2923,7 @@ function mgStart(id, force) {
     <div class="row" id="mgRow"></div></div>${subsHTML()}`);
   subNow = null;
   const pad = $('#mgPad'), dpr = Math.min(2, window.devicePixelRatio || 1);
+  fitPad(pad, 240);
   pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); mg.k = dpr;
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
   const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) * pad.width / r.width, (e.clientY - r.top) * pad.height / r.height]; };   // the card can change height after the pad is sized
@@ -2941,6 +2943,7 @@ function mgLine(key, verb, how, extra = '') {
   $('#mgChip').innerHTML = verb ? `<span class="verb">${W[verb].uk}</span> ${st < 3 ? '= ' + W[verb].en : xl('= ' + W[verb].en)} <small>· дієслово${st < 3 ? ' (verb)' : ''}</small>` : '';
   $('#mgHow').textContent = how ? how[0] + (st < 3 ? ' · ' + how[1] : '') : '';
   $('#mgRow').innerHTML = btn('hear', `v_${mg.npc.id}_${key}`, '🔊', 'round blue') + extra + btn('close', '', lab('close'), 'ghost');
+  { const p = $('#mgPad'), k = mg.k || 1, H = p.clientHeight; fitPad(p, 240); if (p.clientHeight !== H || !p.width) { p.width = Math.round(p.clientWidth * k); p.height = Math.round(p.clientHeight * k); } }   // new words can change the card's height
   say(`v_${mg.npc.id}_${key}`);
 }
 // Each game's steps: 'a' is the first verb, 'b' the second.
@@ -3358,12 +3361,18 @@ function mgFrame() {
   requestAnimationFrame(mgFrame);
 }
 
+// A game pad is as tall as it can be while the whole card still fits on the screen (no scrolling mid-game).
+function fitPad(pad, base) {
+  pad.style.height = base + 'px';
+  const over = sheet.scrollHeight - sheet.clientHeight;
+  if (over > 0) pad.style.height = Math.max(150, base - over - 2) + 'px';
+}
 // ------------------------------------------------------------------ the action word, flashed and said
 // Every game action flashes its verb (it pops up, grows and fades fast), and while you keep at it the verb is
 // said over and over, each time to the end of the word, stopping once you stop.
 function mgAct(v, beat) {
   if (!mg) return; const t = nowT;
-  if (beat || !mg.fl || mg.fl.v !== v || t - mg.fl.t > 0.65) mg.fl = { v, t };
+  if ((beat && (!mg.fl || t - mg.fl.t > 0.35)) || !mg.fl || mg.fl.v !== v || t - mg.fl.t > 1.1) mg.fl = { v, t };
   mg.lastAct = performance.now();
   if (!mg.vo || mg.vo.v !== v) {
     mgStopVoice(); const vo = new Audio('audio/w_' + v + '.mp3'), me = mg; vo.v = v; mg.vo = vo;
@@ -3371,10 +3380,13 @@ function mgAct(v, beat) {
   }
   if (mg.vo.paused) { stopSay(); duck = 0.3; try { mg.vo.currentTime = 0; } catch (e) {} mg.vo.play().catch(() => {}); }
 }
+// The flash's fade and size over its life q (0..1): in fast, held, then fading; it grows a little throughout.
+const flashA = q => q < 0.12 ? q / 0.12 : q < 0.65 ? 1 : 1 - (q - 0.65) / 0.35;
+const flashS = q => q < 0.12 ? 0.7 + q / 0.12 * 0.45 : 1.15 + (q - 0.12) * 0.15;
 function mgStopVoice() { if (mg && mg.vo) { try { mg.vo.pause(); } catch (e) {} mg.vo.onended = null; mg.vo = null; duck = 1; } }
 function mgFlash(c, w, h, k, t) {
-  const f = mg && mg.fl; if (!f) return; const q = (t - f.t) / 0.5; if (q > 1 || q < 0) return;
-  const W0 = W[f.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = q < 0.2 ? q / 0.2 : 1 - (q - 0.2) / 0.8, sc = 0.75 + q * 0.6;
+  const f = mg && mg.fl; if (!f) return; const q = (t - f.t) / 1.1; if (q > 1 || q < 0) return;
+  const W0 = W[f.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = flashA(q), sc = flashS(q);
   c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(28 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(txt, 0, 0); c.fillStyle = '#ffd27a'; c.fillText(txt, 0, 0); c.restore();
 }
@@ -3713,7 +3725,7 @@ function chopStart() {
   learn('koloda'); learn('drova'); learn('rubai');
   chop = { n: 0, logs: 3, axe: { x: 0.78, y: 0.55, held: false, vy: 0, ang: 0.9 }, armed: false, split: null, chips: [], logIn: nowT, fl: null };
   const st = stage();
-  openSheet(`<div class="card"><div class="tag">🪓 ${W.koloda.uk}${st < 3 ? ' · ' + W.koloda.en : ''}</div>
+  openSheet(`<div class="card gamecard"><div class="tag">🪓 ${W.koloda.uk}${st < 3 ? ' · ' + W.koloda.en : ''}</div>
     <div class="word" style="font-size:28px"><span class="verb">${PH.rubai_drova.uk.split(' ')[0]}</span> ${PH.rubai_drova.uk.split(' ').slice(1).join(' ')}</div>${st < 3 ? `<div class="en">${PH.rubai_drova.en}</div>` : ''}
     <div class="vchip"><span class="verb">${W.rubai.uk}</span> ${st < 3 ? '= ' + W.rubai.en : xl('= ' + W.rubai.en)} <small>· дієслово${st < 3 ? ' (verb)' : ''}</small></div>
     <canvas id="chopPad" class="cookpad" style="width:100%;display:block;height:250px"></canvas>
@@ -3721,6 +3733,7 @@ function chopStart() {
     <div class="row">${btn('hear', 'p_rubai_drova', '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say('p_rubai_drova');
   const pad = $('#chopPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = chop;
+  fitPad(pad, 250);
   pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); chop.k = dpr;
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
   const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
@@ -3797,7 +3810,7 @@ function chopFrame(me) {
   if (!A.held && (chop.miss && t - chop.miss < 0.8 || t - (chop.logIn) < 2.5 && chop.n === 0)) { c.strokeStyle = 'rgba(255,210,63,.7)'; c.lineWidth = 3 * k; c.beginPath(); c.arc(gx, gy, 30 * k, 0, 7); c.stroke(); }
   if (A.held && chop.armed && !chop.split) { c.fillStyle = 'rgba(255,255,255,.85)'; c.font = `800 ${Math.round(12 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⬇', bx, h * 0.45); }
   // the word, flashed on each split
-  if (chop.fl) { const q = (t - chop.fl) / 0.5; if (q >= 0 && q <= 1) { const a = q < 0.2 ? q / 0.2 : 1 - (q - 0.2) / 0.8, sc = 0.75 + q * 0.6; c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
+  if (chop.fl) { const q = (t - chop.fl) / 1.1; if (q >= 0 && q <= 1) { const a = flashA(q), sc = flashS(q); c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.font = `800 ${Math.round(15 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🪵 ${chop.n}/${chop.logs}`, w - 12 * k, 24 * k);
   requestAnimationFrame(() => chopFrame(me));
