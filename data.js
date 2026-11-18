@@ -334,7 +334,7 @@ window.DATA = {
       lines: {
         greet: { uk: "Привіт! Пограймося?", en: "Hi! Shall we play?" },
         mgw_invite: { uk: "Зліпимо сніговика?", en: "Shall we build a snowman?" },
-        mgw_kachai: { uk: "Качай сніжку!", en: "Roll the snowball!" },
+        mgw_kachai: { uk: "Качай снігову кулю!", en: "Roll a big snowball!" },
         mgw_postav: { uk: "Постав її на сніговика!", en: "Put it on the snowman!" },
         mgw_done: { uk: "Який гарний сніговик!", en: "What a lovely snowman!" },
         mg_invite: { uk: "Пограймося з Бровком?", en: "Shall we play with Brovko?" },

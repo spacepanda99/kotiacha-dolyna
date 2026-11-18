@@ -1133,8 +1133,8 @@ function chore(c, x, y, id, t, layer) {
         const f = (t * 0.45 + i / 4) % 1;
         c.fillStyle = `rgba(235,235,235,${0.75 * (1 - f)})`; circ(c, hx - 5 - f * 34, hy - 16 - f * 26 + Math.sin(t * 2 + i) * 3, 4 + f * 9);
       }
-      // bees busy around him
-      for (let i = 0; i < 4; i++) {
+      // bees busy around him (in winter they stay in the hive)
+      if (!winter()) for (let i = 0; i < 4; i++) {
         const a = t * (1.6 + i * 0.3) + i * 1.7, bx = -10 + Math.cos(a) * (24 + i * 6), by = -62 + Math.sin(a * 1.3) * 16;
         c.fillStyle = 'rgba(255,255,255,.8)'; ell(c, bx - 1, by - 3, 2.6, 1.6);
         c.fillStyle = '#f2b51d'; ell(c, bx, by, 3.4, 2.4); c.fillStyle = '#3b2f2a'; c.fillRect(bx - 0.6, by - 2.2, 1.3, 4.4);
@@ -1147,7 +1147,8 @@ function chore(c, x, y, id, t, layer) {
       c.strokeStyle = '#c8a46a'; c.lineWidth = 3.5; c.beginPath(); c.moveTo(hx - 4, hy + 6); c.lineTo(tip[0], tip[1]); c.stroke();
       c.fillStyle = '#5b6470'; circ(c, hx + 3, hy - 3, 3.5);
       c.strokeStyle = 'rgba(70,70,70,.8)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(tip[0], tip[1]); c.quadraticCurveTo(tip[0] + 30, tip[1] + 40, fl[0], fl[1]); c.stroke();
-      const r = (t * 0.6) % 1; c.strokeStyle = `rgba(255,255,255,${0.7 * (1 - r)})`; c.lineWidth = 1.4; c.beginPath(); c.ellipse(112, 2, 6 + r * 14, (6 + r * 14) * 0.35, 0, 0, 7); c.stroke();
+      if (winter()) { c.fillStyle = '#2f6a99'; ell(c, 112, 2, 9, 3.4); c.strokeStyle = '#ffffff'; c.lineWidth = 1.4; c.beginPath(); c.ellipse(112, 2, 9, 3.4, 0, 0, 7); c.stroke(); }   // a hole in the ice
+      else { const r = (t * 0.6) % 1; c.strokeStyle = `rgba(255,255,255,${0.7 * (1 - r)})`; c.lineWidth = 1.4; c.beginPath(); c.ellipse(112, 2, 6 + r * 14, (6 + r * 14) * 0.35, 0, 0, 7); c.stroke(); }
       c.fillStyle = '#e2392f'; circ(c, fl[0], fl[1], 4.5); c.fillStyle = '#fffaf0'; c.beginPath(); c.arc(fl[0], fl[1], 4.5, 0, Math.PI); c.fill();
     } else {
       // a bucket for the catch
@@ -1184,15 +1185,16 @@ function chore(c, x, y, id, t, layer) {
       c.fillStyle = '#9b6b3c'; ell(c, tx + 21 + st, -67, 4, 2.6);
       // her flower bed, to her left
       c.fillStyle = '#8b6440'; ell(c, -62, 2, 34, 9); c.fillStyle = '#9c7350'; ell(c, -62, 0, 31, 7);
+      if (winter()) { c.fillStyle = '#f6f9fd'; ell(c, -62, -1, 32, 7); }   // asleep under the snow
       const fl = [[-86, '#e2574c'], [-76, '#ffd23f'], [-66, '#ff7aa8'], [-56, '#ffffff'], [-46, '#9b6bd6'], [-38, '#e2574c'], [-81, '#ff7aa8'], [-61, '#ffd23f'], [-50, '#5aa9e6']];
-      fl.forEach(([fx, col], i) => {
+      if (!winter()) fl.forEach(([fx, col], i) => {
         const fy = i > 5 ? 6 : -1, h = 16 + (i % 3) * 5, sway = Math.sin(t * 1.4 + i) * 1.5;
         c.strokeStyle = '#4f8f3a'; c.lineWidth = 2; c.beginPath(); c.moveTo(fx, fy); c.lineTo(fx + sway, fy - h); c.stroke();
         c.fillStyle = '#5fa046'; ell(c, fx + 3, fy - h * 0.45, 4, 1.8);
         c.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k * 1.2566; circ(c, fx + sway + Math.cos(a) * 3.4, fy - h + Math.sin(a) * 3.4, 2.6); }
         c.fillStyle = '#f2b51d'; circ(c, fx + sway, fy - h, 2);
       });
-    } else {
+    } else if (!winter()) {
       // watering can tipped over the bed, with water drops falling
       const tilt = 0.35 + Math.sin(t * 1.1) * 0.08;
       c.save(); c.translate(-18, -26); c.rotate(-tilt);
@@ -2489,13 +2491,16 @@ function recipeList(R) {
 }
 function talkOlia(npc, n, steps) {
   const R = curRecipe(), st = stage();
-  if (S.recipe.started !== S.recipe.i) { steps.push(line(npc, 'recipe_' + R.id)); S.recipe.started = S.recipe.i; learn(R.dish); }
+  if (S.recipe.started !== S.recipe.i || (S.recipe.dish && S.recipe.dish !== R.id)) { steps.push(line(npc, 'recipe_' + R.id)); S.recipe.started = S.recipe.i; learn(R.dish); }
+  S.recipe.dish = R.id;   // a new season can swap her dish: she says what she's making now
   const missing = () => R.needs.filter(x => recipeHave(x) < NEED);
-  let handed = 0;
+  let handed = 0; const gave = [];
   for (const x of R.needs) {   // hand them over now, so closing the chat early never loses the delivery
     const give = Math.min(S.bag[x] || 0, NEED - recipeHave(x));
-    if (give > 0) { S.bag[x] -= give; S.recipe.have[x] = recipeHave(x) + give; handed += give; useWord(x, true); }
+    if (give > 0) { S.bag[x] -= give; S.recipe.have[x] = recipeHave(x) + give; handed += give; useWord(x, true); gave.push(`−${give} ${W[x].uk}${S.bag[x] ? ` (${S.bag[x]} ${stage() < 3 ? 'left' : '🧺'})` : ''}`); }
   }
+  // say what she took, and what's still in your basket: she only takes what the dish needs
+  if (gave.length) toast(gave.join(' · '), 3200);
   if (handed) {
     hud(); save();   // no pay: Grandma's help is a favour, money comes only from selling
     const hand = mine('os');
@@ -2512,9 +2517,9 @@ function talkOlia(npc, n, steps) {
     n.q = next;
     steps.push({
       uk: D.questLine.uk.replace('%s', W[next].acc || W[next].uk),
-      en: D.questLine.en.replace('%s', (MASS.includes(next) ? 'some ' : 'a ') + W[next].en),
+      en: D.questLine.en.replace('%s', (MASS.includes(next) ? 'some ' : /^[aeiou]/i.test(W[next].en) ? 'an ' : 'a ') + W[next].en),
       clip: `q_${npc.id}_${next}`,
-      hint: `${st < 3 ? `<b>${W[R.dish].uk}</b>${st < 2 ? ' · ' + W[R.dish].en : ''}: ` : ''}${recipeTotal(R)}/${R.needs.length * NEED}${recipeList(R)}<div style="margin-top:6px">${(S.seeds[next] || 0) > 0 ? `🌱 <b>${D.ui.plantit[0]}</b>${st < 3 ? `<br>${D.ui.plantit[1].replace('%s', W[next].en)}` : ''}` : sourceHint(next)}</div>`,
+      hint: `${st < 3 ? `<b>${W[R.dish].uk}</b>${st < 2 ? ' · ' + W[R.dish].en : ''}: ` : ''}${recipeTotal(R)}/${R.needs.length * NEED}${recipeList(R)}<div style="margin-top:6px">${!winter() && (S.seeds[next] || 0) > 0 ? `🌱 <b>${D.ui.plantit[0]}</b>${st < 3 ? `<br>${D.ui.plantit[1].replace('%s', W[next].en)}` : ''}` : sourceHint(next)}</div>`,
     });
   }
   save(); setGuide();
@@ -2640,7 +2645,7 @@ function mgStart(id) {
   const pad = $('#mgPad'), dpr = Math.min(2, window.devicePixelRatio || 1);
   pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); mg.k = dpr;
   for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
-  const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) * dpr, (e.clientY - r.top) * dpr]; };
+  const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) * pad.width / r.width, (e.clientY - r.top) * pad.height / r.height]; };   // the card can change height after the pad is sized
   pad.addEventListener('pointerdown', e => { e.preventDefault(); try { pad.setPointerCapture(e.pointerId); } catch (er) {} const [x, y] = at(e); mg.down = { x, y, x0: x, y0: y, t: nowT }; mgPress(x, y); });
   pad.addEventListener('pointermove', e => { if (!mg || !mg.down) return; const [x, y] = at(e); mg.down.x = x; mg.down.y = y; });
   const up = e => { if (!mg || !mg.down) return; const d = mg.down; mg.down = null; mgRelease(d); };
@@ -2798,7 +2803,7 @@ function bee(c, x, y, s, t) {
 }
 function mgFrame() {
   if (!mg) return;
-  const pad = $('#mgPad'); if (!pad) { mg = null; return; }
+  const pad = $('#mgPad'); if (!pad || !sheetOpen()) { mg = null; return; }   // the card was closed: the game stops (and stops talking)
   const c = pad.getContext('2d'), w = pad.width, h = pad.height, t = nowT, k = mg.k || 1;
   c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, w, h);
   if (mg.id.endsWith('_w')) mgWinterFrame(c, w, h, t, k);
@@ -2895,7 +2900,7 @@ function chopHit() {
   }, 450);
 }
 function chopFrame() {
-  const pad = $('#chopPad'); if (!chop || !pad) { chop = null; return; }
+  const pad = $('#chopPad'); if (!chop || !pad || !sheetOpen()) { chop = null; return; }
   const c = pad.getContext('2d'), w = pad.width, h = pad.height, k = chop.k, t = nowT;
   const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, winter() ? '#dfe9f5' : '#cfeefc'); g.addColorStop(1, winter() ? '#f6f9fd' : '#a6dc7c'); c.fillStyle = g; c.fillRect(0, 0, w, h);
   const bx = w * 0.45, by = h * 0.86;
@@ -3072,7 +3077,7 @@ function talk(npc) {
   if (npc.id === 'olia') return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
   const quest = id => ({ uk: D.payLine.uk.replace('%s', W[id].acc || W[id].uk), en: D.payLine.en.replace('%s', (MASS.includes(id) ? 'some ' : 'a ') + W[id].en).replace('a a', 'an a').replace('a o', 'an o').replace('a e', 'an e'), clip: `qp_${npc.id}_${id}`, hint: (stage() < 2 ? `<img src="${iconURL(id)}" style="width:34px;height:34px;vertical-align:middle" alt=""> ` : '') + sourceHint(id) });
-  if (n.q && winter() && (WINTER_GONE.has(n.q) || (D.shop.seeds[n.q] && !D.shop.veg[n.q])) && !(S.bag[n.q] > 0)) { n.q = 'drova'; learn('drova'); }
+  questsFit();
   if (n.q) {
     if ((S.bag[n.q] || 0) > 0) {
       const item = n.q;
@@ -3127,8 +3132,21 @@ function tutEvent(ev) {
   }
   setGuide(); save();
 }
+// When the season turns, a request that can't be met now changes: a neighbour wanting summer flowers or a
+// garden crop in winter asks for firewood, and Grandma asks for the next thing her (new) dish needs. Run
+// before the goal line is drawn, so it never shows a request from the last season.
+function questsFit() {
+  // the garden steps of the first lessons can't be done under snow: move on to the market
+  while (winter() && TUT[S.tut] && ['plant', 'water', 'harvest'].includes(TUT[S.tut].ev)) { S.tut++; S.tutN = 0; }
+  for (const npc of D.npcs) {
+    const n = S.npc[npc.id]; if (!n || !n.q) continue;
+    if (npc.id === 'olia') { const R = curRecipe(); if (!R.needs.includes(n.q)) { const left = R.needs.filter(x => recipeHave(x) < NEED); n.q = left[0] || null; } continue; }
+    if (winter() && (WINTER_GONE.has(n.q) || (D.shop.seeds[n.q] && !D.shop.veg[n.q])) && !(S.bag[n.q] > 0)) { n.q = 'drova'; learn('drova'); }
+  }
+}
 let guideClip = '', guideEnOn = false, guideKey = '';
 function setGuide() {
+  questsFit();
   const g = $('#guide'), s = TUT[S.tut], st = stage();
   let uk, en, full;
   const active = D.npcs.filter(n => S.npc[n.id] && S.npc[n.id].q && !S.npc[n.id].mad);
@@ -3928,7 +3946,7 @@ function newDay() {
   S.clock = { day: (S.clock.day || 1) + 1, t: 0.27, ev: {} };
   if (winter()) S.wx = r < 0.4 ? 'snow' : r < 0.75 ? 'cloud' : 'sun';
   if (seasonIx() !== was && bed) bed.season = season();   // a new season starts this morning
-  learn('ranok'); learn(WX[S.wx].w); learn(season()); homeList = null; save();
+  learn('ranok'); learn(WX[S.wx].w); learn(season()); homeList = null; setGuide(); save();
 }
 // Footprints in the snow: a left and a right print every little stride while she walks, fading after a
 // minute or so (at most 160 kept).
