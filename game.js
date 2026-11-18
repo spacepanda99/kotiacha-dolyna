@@ -2574,7 +2574,9 @@ function shop() {
       ${had ? `<div class="have">✓ ${D.ui.have[0]}${st < 3 ? ' · in your wardrobe' : ''}</div>` : `<button class="b blue" data-a="buy" data-v="${k}">${lab('buy')} · ${devOn ? '∞' : price} ₴</button>`}
       ${btn('hearWord', k, '🔊', 'round ghost')}</div>`; }).join('')}</div><div class="muted" style="font-size:12px;padding:2px 0 0">⟷ ${st < 3 ? 'Swipe to see them all' : ''}</div>`;
     setTimeout(() => sheet.classList.add('fixed'), 0);
-    const keepX = shopTabsX(); shopShown = shopTab; openSheet(shopHead() + body); shopTabsKeep(keepX);
+    const keepX = shopTabsX(), row0 = shopShown === 'clothes' && sheet.querySelector('.outfits'), keepO = row0 ? row0.scrollLeft : 0;   // buying redraws the tab: the row stays where it was
+    shopShown = shopTab; openSheet(shopHead() + body); shopTabsKeep(keepX);
+    const row = sheet.querySelector('.outfits'); if (row && keepO) { row.style.scrollSnapType = 'none'; row.scrollLeft = keepO; requestAnimationFrame(() => { row.style.scrollSnapType = ''; }); }
     return;
   }
   if (shopTab === 'sell') {
