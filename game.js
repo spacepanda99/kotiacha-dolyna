@@ -2543,68 +2543,346 @@ function mealScene(R) {
 }
 
 // ------------------------------------------------------------------ cooking with Grandma
-// Once she has every ingredient, you cook the dish together, one step at a time. Each step is one of her
-// commands with its action word (verb) highlighted, and you do it with your finger: tap to chop or add,
-// draw circles to stir or mix, press and hold to boil, fry or pour.
-let ck = null;
-const COOK_TOOL = { pomyi: '🫧', pochyst: '🔪', porizh: '🔪', natry: '🧀', nasyp: '🥣', nalyi: '🫗', zamis: '👐', rozkachai: '🪵', zlipy: '👐', zvary: '🔥', posmazh: '🔥', pomishai: '🥄', zmishai: '🥄', dodai: '👇', posoly: '🧂', zahorny: '👐', sprobui: '🥄' };
+// Once she has every ingredient, you cook the dish together, one step at a time: each step is one of her
+// commands with its action word (verb) highlighted.
+// Each step is a little scene drawn on a canvas, with a real implement you take hold of and work:
+//   chop   поріж     hold the knife and chop up and down, in one press, slices falling away
+//   peel   почисть   stroke the knife down the vegetable, peel curling off
+//   grate  натри     take the vegetable and rub it up and down the grater
+//   knead  замісь    press the dough down with your hands, again and again
+//   roll   розкачай  roll the pin back and forth until the dough is a thin round
+//   shape  зліпи, загорни   press each piece to fold it
+//   wash   помий     scrub the fruit round in the basin of water
+//   pour   налий, насип     take the jug (or the flour bag) and tip it over the pot
+//   heat   звари, посмаж    turn the stove knob up and keep it cooking
+//   stir   помішай, змішай  the spoon points down into a bowl that stays put; steer it round
+//   add    додай     carry each one over to the pot and let go
+//   shake  посоли    shake the salt cellar over the pot
+//   taste  спробуй   lift a spoonful up out of the pot
+// Every action flashes the action word, and while you keep at it the word is said over and over (never cut
+// off part-way); it stops when you stop.
 const verbHL = uk => uk.replace(/^([^\s!,.]+)/, '<span class="verb">$1</span>');
+const COOK_KIND = { porizh: 'chop', pochyst: 'peel', natry: 'grate', zamis: 'knead', rozkachai: 'roll', zlipy: 'shape', zahorny: 'shape', pomyi: 'wash', nalyi: 'pour', nasyp: 'pour', zvary: 'heat', posmazh: 'heat', pomishai: 'stir', zmishai: 'stir', dodai: 'add', posoly: 'shake', sprobui: 'taste' };
+const COOK_HOW = {
+  chop: ['Тримай ніж і ріж угору-вниз', 'Hold the knife and chop up and down'], peel: ['Веди ножем униз по овочу', 'Stroke the knife down the vegetable'],
+  grate: ['Три об тертку вгору-вниз', 'Rub it up and down the grater'], knead: ['Тисни на тісто руками', 'Press down on the dough'],
+  roll: ['Качай качалкою вперед-назад', 'Roll the pin back and forth'], shape: ['Торкнися кожного шматочка', 'Press each piece to fold it'],
+  wash: ['Три у воді по колу', 'Scrub it round in the water'], pour: ['Візьми й нахили над каструлею', 'Take it and tip it over the pot'],
+  heat: ['Поверни ручку плити', 'Turn the stove knob up'], stir: ['Веди ложку по колу', 'Steer the spoon round the bowl'],
+  add: ['Неси в каструлю й відпусти', 'Carry each one to the pot and let go'], shake: ['Потруси над каструлею', 'Shake it over the pot'],
+  taste: ['Підніми ложку до рота', 'Lift the spoon up to taste'],
+};
+let ck = null;
 function cookScene(R) {
   if (!R.steps || !R.steps.length) return mealScene(R);
   ck = { R, i: 0, prog: 0, done: false };
   cookStep(['v_olia_cook']);
 }
 function cookStep(first = []) {
-  const R = ck.R, st = R.steps[ck.i], npc = NPC.olia, L = npc.lines[st.line], stg = stage();
+  const R = ck.R, st = R.steps[ck.i], npc = NPC.olia, L = npc.lines[st.line], stg = stage(), kind = COOK_KIND[st.v] || 'stir';
   ck.prog = 0; ck.done = false;
   learn(st.v); learn(st.w);
-  const how = { tap: ['Стукай!', 'Tap, tap, tap!'], stir: ['Води пальцем по колу!', 'Draw circles with your finger'], hold: ['Тримай!', 'Press and hold'] }[st.g];
+  const how = COOK_HOW[kind];
   openSheet(`<div class="card">
     <div class="tag">👩‍🍳 ${W[R.dish].uk} · ${ck.i + 1}/${R.steps.length}</div>
     <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:27px">${verbHL(L.uk)}</div>${stg < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     <div class="vchip"><span class="verb">${W[st.v].uk}</span> ${stg < 3 ? '= ' + W[st.v].en : xl('= ' + W[st.v].en)} <small>· дієслово${stg < 3 ? ' (verb, an action word)' : ''}</small></div>
-    <div id="cookPad" class="cookpad"><img id="ckFood" src="${iconURL(st.w)}" alt=""><div id="ckTool">${COOK_TOOL[st.v] || '🥄'}</div></div>
+    <canvas id="cookPad" class="cookpad" style="width:100%;display:block;height:250px"></canvas>
     <div class="cookbar"><i id="ckBar"></i></div>
-    <div class="muted">${how[0]}${stg < 3 ? ' · ' + how[1] : ''}</div>
+    <div class="muted" style="min-height:2.6em">${how[0]}${stg < 3 ? ' · ' + how[1] : ''}</div>
     <div class="row">${btn('hear', 'v_olia_' + st.line, '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say(...first, 'v_olia_' + st.line);
-  cookWire();
+  cookWire(kind, st);
 }
-function cookWire() {
-  const pad = $('#cookPad'), tool = $('#ckTool'), food = $('#ckFood'), bar = $('#ckBar'), st = ck.R.steps[ck.i], me = ck;
-  let down = false, lx = 0, ly = 0, raf = 0, lastT = 0, puff = 0;
-  const R0 = () => pad.getBoundingClientRect();
-  const place = (x, y) => { const r = R0(); tool.style.left = (x - r.left) + 'px'; tool.style.top = (y - r.top - 30) + 'px'; };
-  const add = d => { if (me !== ck || ck.done) return; ck.prog = Math.min(1, ck.prog + d); bar.style.width = (ck.prog * 100) + '%'; if (ck.prog >= 1) cookDone(); };
-  const bit = (x, y) => { const r = R0(), b = document.createElement('img'); b.className = 'ckbit'; b.src = iconURL(st.w); b.style.left = (x - r.left - 13) + 'px'; b.style.top = (y - r.top - 13) + 'px'; b.style.setProperty('--dx', (Math.random() * 80 - 40) + 'px'); pad.appendChild(b); setTimeout(() => b.remove(), 750); };
-  const steam = ic => { const p = document.createElement('div'); p.className = 'ckup'; p.textContent = ic; p.style.left = (35 + Math.random() * 30) + '%'; p.style.top = '45%'; pad.appendChild(p); setTimeout(() => p.remove(), 1150); };
-  // keep the sheet's swipe-to-close from taking these touches
-  for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
+// What a step needs: the implement (where it rests, how big a grab it takes) and its own state.
+function cookSetup(kind, st) {
+  const n = Math.max(1, st.n || { chop: 6, peel: 5, knead: 6, shape: 5, add: 2, shake: 3, taste: 1 }[kind] || 1);
+  const S0 = { kind, st, n, ev: 0, tool: { x: 0.78, y: 0.3, hx: 0.78, hy: 0.3, held: false }, bits: [], fx: [], armed: true, acc: 0, lastY: null, lastX: null };
+  if (kind === 'chop' || kind === 'peel') S0.tool = { x: 0.74, y: 0.28, hx: 0.74, hy: 0.28 };
+  if (kind === 'knead') S0.tool = { x: 0.5, y: 0.22, hx: 0.5, hy: 0.22 };
+  if (kind === 'grate' || kind === 'wash') S0.tool = { x: 0.22, y: 0.4, hx: 0.22, hy: 0.4 };
+  if (kind === 'roll') S0.tool = { x: 0.5, y: 0.86, hx: 0.5, hy: 0.86 };
+  if (kind === 'pour' || kind === 'shake') S0.tool = { x: 0.2, y: 0.42, hx: 0.2, hy: 0.42 };
+  if (kind === 'heat') { S0.tool = { x: 0.86, y: 0.84, hx: 0.86, hy: 0.84 }; S0.knob = 0; }
+  if (kind === 'stir') { S0.tool = { x: 0.62, y: 0.62, hx: 0.62, hy: 0.62 }; S0.swirl = 0; S0.ang = null; }
+  if (kind === 'taste') S0.tool = { x: 0.56, y: 0.66, hx: 0.56, hy: 0.66 };
+  if (kind === 'add') { S0.items = Array.from({ length: n }, (_, i) => ({ x: 0.13 + (i % 3) * 0.08, y: 0.72 - Math.floor(i / 3) * 0.12, home: true, inPot: false })); S0.tool = null; }
+  if (kind === 'shape') S0.items = Array.from({ length: n }, (_, i) => ({ x: 0.2 + (i % 5) * 0.15, y: 0.62 + (i % 2) * 0.12, f: 0, done: false }));
+  if (kind === 'roll') S0.flat = 0;
+  return S0;
+}
+function cookWire(kind, st) {
+  const pad = $('#cookPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = ck;
+  pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr);
+  ck.k = dpr; ck.s = cookSetup(kind, st);
+  for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });   // keep the sheet's swipe-to-close off these
+  const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };   // pad fractions
   pad.addEventListener('pointerdown', e => {
-    e.preventDefault(); down = true; lx = e.clientX; ly = e.clientY; place(lx, ly);
-    try { pad.setPointerCapture(e.pointerId); } catch (er) {}
-    if (st.g === 'tap') {
-      tool.classList.remove('chop'); void tool.offsetWidth; tool.classList.add('chop');
-      food.style.transform = 'translate(-50%,-50%) scale(.9)'; setTimeout(() => { food.style.transform = ''; }, 110);
-      bit(lx, ly); blip(480 + Math.random() * 220, 0.04); add(1 / Math.max(1, st.n));
-    } else if (st.g === 'hold') {
-      pad.classList.add('heat'); lastT = performance.now();
-      const loop = tm => { if (!down || me !== ck || ck.done) return; add((tm - lastT) / 2200); lastT = tm; if ((puff += 1) % 9 === 0) steam(st.v === 'nalyi' || st.v === 'nasyp' ? '💧' : '💨'); raf = requestAnimationFrame(loop); };
-      raf = requestAnimationFrame(loop);
-    }
+    e.preventDefault(); if (me !== ck || ck.done) return; try { pad.setPointerCapture(e.pointerId); } catch (er) {}
+    const [x, y] = at(e), s = ck.s; s.down = { x, y }; s.lastX = x; s.lastY = y;
+    if (s.kind === 'add') { const it = s.items.filter(i => i.home).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0]; if (it && Math.hypot(it.x - x, (it.y - y) * 0.6) < 0.16) { s.held = it; it.home = false; it.ox = it.x - x; it.oy = it.y - y; blip(520, 0.03); } else s.miss = nowT; return; }
+    if (s.kind === 'shape') { for (const it of s.items) if (!it.done && Math.hypot(it.x - x, (it.y - y) * 0.6) < 0.09) { it.done = true; it.t = nowT; cookAct(true); cookEv(); break; } return; }
+    const T = s.tool;   // take hold of the implement (a generous grab, but it has to be on it)
+    if (T && Math.hypot(T.x - x, (T.y - y) * 0.6) < (s.kind === 'stir' ? 0.3 : 0.2)) { T.held = true; T.ox = T.x - x; T.oy = T.y - y; if (s.kind === 'stir') { T.ox = 0; T.oy = 0; } blip(520, 0.03); }
+    else s.miss = nowT;   // flash the implement so it's clear what to take
   });
   pad.addEventListener('pointermove', e => {
-    if (!down) return; place(e.clientX, e.clientY);
-    if (st.g === 'stir') { const d = Math.hypot(e.clientX - lx, e.clientY - ly); lx = e.clientX; ly = e.clientY; food.style.transform = `translate(-50%,-50%) rotate(${(ck.prog * 720) % 360}deg)`; add(d / (R0().width * 4)); }
+    if (me !== ck || !ck.s || !ck.s.down) return; const [x, y] = at(e), s = ck.s; s.down.x = x; s.down.y = y;
+    if (s.held) { s.held.x = x + s.held.ox; s.held.y = y + s.held.oy; }
+    if (s.tool && s.tool.held) cookMove(x + s.tool.ox, y + s.tool.oy);
   });
-  const up = () => { down = false; pad.classList.remove('heat'); cancelAnimationFrame(raf); };
-  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pad.addEventListener(ev, up);
+  const up = () => {
+    if (me !== ck || !ck.s) return; const s = ck.s; s.down = null;
+    if (s.tool) s.tool.held = false;
+    if (s.held) { const it = s.held; s.held = null; if (Math.abs(it.x - 0.62) < 0.16 && it.y > 0.38 && it.y < 0.82) { it.inPot = true; it.t = nowT; blip(420, 0.06); cookAct(true); cookEv(); } else it.home = true; }
+  };
+  for (const ev of ['pointerup', 'pointercancel']) pad.addEventListener(ev, up);
+  const S1 = ck.s; requestAnimationFrame(() => cookFrame(S1));
+}
+// The implement moves with your finger; the moves that do the work are counted here.
+function cookMove(x, y) {
+  const s = ck.s, T = s.tool, k = s.kind;
+  const py = T.y;
+  if (k === 'chop' || k === 'peel') {
+    T.x = Math.max(0.3, Math.min(0.92, x)); T.y = Math.max(0.12, Math.min(k === 'chop' ? 0.72 : 0.78, y));   // the blade stops on the board
+    if (k === 'chop') {
+      if (T.y < 0.52) s.armed = true;
+      if (s.armed && T.y >= 0.7 && T.x - 0.14 < 0.66 && T.x - 0.14 > 0.34) { s.armed = false; cookAct(true); cookEv(); s.bits.push({ x: T.x - 0.14, t: nowT }); blip(300 + Math.random() * 120, 0.04); }
+    } else if (T.x - 0.1 > 0.36 && T.x - 0.1 < 0.64 && T.y > 0.35) {
+      if (T.y > py) { s.acc += T.y - py; cookAct(false); } else if (T.y < py - 0.01) s.acc = 0;   // one stroke down the vegetable, one strip of peel
+      if (s.acc > 0.2) { s.acc = -9; cookEv(); s.bits.push({ x: T.x - 0.1, t: nowT }); blip(500, 0.03); }
+    }
+  } else if (k === 'knead') {
+    T.x = Math.max(0.3, Math.min(0.7, x)); T.y = Math.max(0.12, Math.min(0.5, y));
+    if (T.y < 0.34) s.armed = true;
+    if (s.armed && T.y >= 0.49) { s.armed = false; s.squash = nowT; cookAct(true); cookEv(); blip(240, 0.06); }
+  } else if (k === 'grate' || k === 'wash' || k === 'shake') {
+    T.x = Math.max(0.08, Math.min(0.92, x)); T.y = Math.max(0.12, Math.min(0.85, y));
+    const d = Math.hypot(T.x - s.lastX0 || 0, T.y - (s.lastY0 || T.y)); s.lastX0 = T.x; s.lastY0 = T.y;
+    if (k === 'grate' && Math.abs(T.x - 0.62) < 0.13 && T.y > 0.25 && T.y < 0.7) { s.acc += Math.abs(T.y - py); if (Math.abs(T.y - py) > 0.002) cookAct(false); if (s.acc > 0.5) { s.acc = 0; cookEv(); } if (Math.random() < Math.abs(T.y - py) * 8) s.bits.push({ x: 0.62 + (Math.random() - 0.5) * 0.1, t: nowT }); }
+    if (k === 'wash' && Math.hypot((T.x - 0.55) / 0.3, (T.y - 0.66) / 0.2) < 1) { s.acc += d; if (d > 0.002) cookAct(false); if (Math.random() < d * 6) s.fx.push({ x: T.x + (Math.random() - 0.5) * 0.1, y: T.y, t: nowT }); if (s.acc > 0.6) { s.acc = 0; cookEv(); } }
+    if (k === 'shake' && Math.abs(T.x - 0.62) < 0.18 && T.y < 0.55) {   // each change of direction, up or down, is a shake
+      const dir = Math.sign(T.y - py); if (dir && s.dir && dir !== s.dir && Math.abs(T.y - s.turnY) > 0.05) { s.turnY = T.y; s.shakes = (s.shakes || 0) + 1; cookAct(true); for (let i = 0; i < 6; i++) s.bits.push({ x: T.x + (Math.random() - 0.5) * 0.05, y: T.y + 0.08, t: nowT }); blip(800, 0.02); if (s.shakes % 2 === 0) cookEv(); }
+      if (dir) { if (dir !== s.dir) s.turnY = s.turnY ?? T.y; s.dir = dir; }
+    }
+  } else if (k === 'roll') {
+    T.x = Math.max(0.25, Math.min(0.75, x)); T.y = Math.max(0.35, Math.min(0.9, y));
+    if (T.y < 0.82 && T.y > 0.4) { const d = Math.abs(T.y - py); s.flat = Math.min(1, s.flat + d * 0.8); s.acc += d; if (d > 0.002) cookAct(false); if (s.acc > 0.3) { s.acc = 0; cookEv(); } }
+  } else if (k === 'pour' || k === 'taste') {
+    T.x = Math.max(0.08, Math.min(0.92, x)); T.y = Math.max(0.1, Math.min(0.85, y));
+    if (k === 'taste' && T.y < 0.25 && !s.tasted) { s.tasted = nowT; cookAct(true); cookEv(); blip(990, 0.08); }
+  } else if (k === 'heat') {
+    const a = Math.atan2(y - 0.84, (x - 0.86) * 1.8);   // turn the knob: its angle follows the finger round its centre
+    s.knob = Math.max(0, Math.min(1, (a + Math.PI * 0.75) / (Math.PI * 1.5)));
+    if (Math.abs(s.knob - (s.lastKnob || 0)) > 0.01) blip(200 + s.knob * 300, 0.01); s.lastKnob = s.knob;
+  } else if (k === 'stir') {
+    // the spoon's tip stays inside the bowl
+    const cx = 0.5, cy = 0.62, rx = 0.25, ry = 0.13; let dx = (x - cx) / rx, dy = (y - cy) / ry; const r = Math.hypot(dx, dy); if (r > 0.92) { dx *= 0.92 / r; dy *= 0.92 / r; }
+    T.x = cx + dx * rx; T.y = cy + dy * ry;
+    const a = Math.atan2(dy, dx); if (s.ang != null && r > 0.2) { let da = a - s.ang; if (da > Math.PI) da -= Math.PI * 2; if (da < -Math.PI) da += Math.PI * 2; s.swirl += da; s.acc += Math.abs(da); if (Math.abs(da) > 0.01) cookAct(false); if (s.acc > Math.PI / 2) { s.acc = 0; cookEv(); } }
+    s.ang = a;
+  }
+}
+// One unit of work done: the progress bar moves, the word flashes.
+function cookEv() {
+  const s = ck.s; s.ev++;
+  const units = { stir: 12, roll: 6, grate: 6, wash: 5, shake: Math.ceil(s.n), pour: 1, heat: 1 }[s.kind] || s.n;
+  cookProg(1 / units);
+}
+function cookProg(d) {
+  if (ck.done) return; ck.prog = Math.min(1, ck.prog + d); const bar = $('#ckBar'); if (bar) bar.style.width = (ck.prog * 100) + '%';
+  if (ck.prog >= 1) cookDone();
+}
+// Doing the action: flash the word (now and then for a smooth action like stirring), and keep the word
+// being said while you keep at it.
+function cookAct(beat) {
+  const s = ck.s, t = nowT;
+  if (beat || !s.flash || t - s.flash > 0.65) s.flash = t;
+  s.lastAct = performance.now();
+  if (!s.vo) {
+    s.vo = new Audio('audio/w_' + s.st.v + '.mp3'); const vo = s.vo, me = ck;
+    vo.onended = () => { duck = 1; if (ck === me && ck.s && ck.s.vo === vo && !ck.done && performance.now() - ck.s.lastAct < 600) setTimeout(() => { if (ck === me && ck.s && ck.s.vo === vo && performance.now() - ck.s.lastAct < 700) { duck = 0.3; vo.play().catch(() => {}); } }, 90); };
+  }
+  if (s.vo.paused) { stopSay(); duck = 0.3; try { s.vo.currentTime = 0; } catch (e) {} s.vo.play().catch(() => {}); }
+}
+function cookStopVoice(s) { if (s && s.vo) { try { s.vo.pause(); } catch (e) {} s.vo.onended = null; duck = 1; } }
+// Drawing helpers for the kitchen.
+function ckBoard(c, w, h, k) { c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, w * 0.5, h * 0.86, w * 0.4, h * 0.05); c.fillStyle = '#c99463'; rr(c, w * 0.12, h * 0.52, w * 0.76, h * 0.32, 14 * k); c.fillStyle = '#ddb07a'; rr(c, w * 0.12, h * 0.52, w * 0.76, h * 0.27, 14 * k); c.strokeStyle = 'rgba(140,90,40,.25)'; c.lineWidth = 1.5 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(w * 0.16, h * (0.57 + i * 0.045)); c.lineTo(w * 0.84, h * (0.57 + i * 0.045) + 2 * k); c.stroke(); } c.fillStyle = '#b07a44'; circ(c, w * 0.84, h * 0.58, 4 * k); }
+function ckPot(c, x, y, s, k, t, fill) {   // an enamel pot with red flowers, seen a little from above
+  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y + s * 0.02, s * 0.62, s * 0.1);
+  c.fillStyle = '#f4f1ea'; c.beginPath(); c.moveTo(x - s * 0.5, y - s * 0.5); c.lineTo(x - s * 0.45, y - s * 0.03); c.quadraticCurveTo(x, y + s * 0.08, x + s * 0.45, y - s * 0.03); c.lineTo(x + s * 0.5, y - s * 0.5); c.closePath(); c.fill();
+  c.fillStyle = '#d43a3a'; for (const dx of [-0.25, 0, 0.25]) { circ(c, x + dx * s, y - s * 0.26, s * 0.05); c.fillStyle = '#3f8a3a'; ell(c, x + dx * s + s * 0.06, y - s * 0.24, s * 0.04, s * 0.02); c.fillStyle = '#d43a3a'; }
+  c.fillStyle = '#2f5f9e'; ell(c, x, y - s * 0.5, s * 0.52, s * 0.12); c.fillStyle = fill || '#5a3020'; ell(c, x, y - s * 0.5, s * 0.46, s * 0.09);
+  c.strokeStyle = '#2f5f9e'; c.lineWidth = 3 * k; for (const sg of [-1, 1]) { c.beginPath(); c.arc(x + sg * s * 0.55, y - s * 0.4, s * 0.06, -Math.PI / 2, Math.PI / 2, sg < 0); c.stroke(); }
+}
+function ckKnife(c, x, y, s, k, rot) {   // handle at (x, y), the blade reaching left, edge down
+  c.save(); c.translate(x, y); c.rotate(rot || 0);
+  c.fillStyle = '#d9dde2'; c.beginPath(); c.moveTo(-s * 0.05, -s * 0.07); c.lineTo(-s * 0.9, -s * 0.05); c.quadraticCurveTo(-s * 1.02, s * 0.06, -s * 0.85, s * 0.08); c.lineTo(-s * 0.05, s * 0.08); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(-s * 0.85, -s * 0.03, s * 0.78, s * 0.025);
+  c.fillStyle = '#7a4b22'; rr(c, -s * 0.06, -s * 0.07, s * 0.42, s * 0.14, s * 0.05); c.fillStyle = '#d9b27a'; for (const dx of [0.06, 0.2]) circ(c, dx * s, 0, s * 0.02);
+  c.restore();
+}
+function ckFlash(c, w, h, k, t) {   // the action word, popping up big and fading fast
+  const s = ck.s; if (!s.flash) return; const q = (t - s.flash) / 0.5; if (q > 1) return;
+  const W0 = W[s.st.v].uk, txt = W0[0].toUpperCase() + W0.slice(1) + '!', a = q < 0.2 ? q / 0.2 : 1 - (q - 0.2) / 0.8, sc = 0.75 + q * 0.6;
+  c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.2); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(txt, 0, 0); c.fillStyle = '#ffd27a'; c.fillText(txt, 0, 0); c.restore();
+}
+function cookFrame(me) {
+  const pad = $('#cookPad'); if (!ck || ck.s !== me) return;   // a newer step has its own loop
+  if (!pad || !sheetOpen()) { cookStopVoice(me); return; }
+  const c = pad.getContext('2d'), w = pad.width, h = pad.height, k = ck.k, t = nowT, s = ck.s, T = s.tool, st = s.st, kind = s.kind;
+  const dt = Math.min(0.05, Math.max(0, t - (s.lastT || t))); s.lastT = t;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  // the kitchen wall and table
+  let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#fbecd3'); g.addColorStop(0.45, '#f3dcb7'); g.addColorStop(0.46, '#a86f3e'); g.addColorStop(1, '#8a5a2b'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = 'rgba(212,58,58,.16)'; for (let i = 0; i < 9; i++) { c.save(); c.translate(w * (0.06 + i * 0.11), h * 0.1); c.rotate(Math.PI / 4); c.fillRect(-4 * k, -4 * k, 8 * k, 8 * k); c.restore(); }   // an embroidered border along the wall
+  const food = (x, y, sz, sq) => { c.save(); c.translate(x, y); if (sq) c.scale(1 + sq * 0.25, 1 - sq * 0.3); drawIcon(c, W[st.w].ic, 0, sz * 0.5, sz); c.restore(); };
+  const hint = s.miss && t - s.miss < 0.8 ? Math.sin((t - s.miss) * 20) * 0.5 + 0.5 : 0;   // you pressed beside it: the implement winks
+  const ring = (x, y, r) => { if (!hint && !(T && !T.held && t - (s.t0 || (s.t0 = t)) < 2.5)) return; c.strokeStyle = `rgba(255,210,63,${hint ? 0.9 : 0.35 + 0.3 * Math.sin(t * 6)})`; c.lineWidth = 3 * k; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); };
+  if (kind === 'chop' || kind === 'peel') {
+    ckBoard(c, w, h, k);
+    const left = kind === 'chop' ? 1 - ck.prog * 0.6 : 1;
+    food(w * 0.5, h * 0.6, h * 0.36 * left, 0);
+    for (const b of s.bits) { const q = Math.min(1, (t - b.t) / 0.5); if (kind === 'chop') { c.fillStyle = '#fff'; drawIcon(c, W[st.w].ic, w * (b.x - 0.05 - q * 0.08), h * (0.66 + q * 0.06), h * 0.11); } else { c.strokeStyle = st.w === 'buriak' ? '#7a1f3d' : '#b5824e'; c.lineWidth = 3 * k; c.beginPath(); const x = w * b.x, y = h * (0.6 + q * 0.2); c.moveTo(x, y); c.quadraticCurveTo(x + 10 * k, y + 8 * k, x, y + 14 * k); c.stroke(); } }
+    // the knife: handle in your hand (right), blade over the food, edge down
+    const bx = T.x * w, by = T.y * h;
+    ckKnife(c, bx, by, kind === 'chop' ? w * 0.3 : w * 0.22, k, kind === 'peel' ? -0.15 : 0);
+    ring(bx + w * 0.06, by, 26 * k);
+  } else if (kind === 'knead') {
+    ckBoard(c, w, h, k);
+    const sq = s.squash ? Math.max(0, 1 - (t - s.squash) / 0.35) : 0, grow = 1 + ck.prog * 0.15;
+    c.fillStyle = 'rgba(0,0,0,.1)'; ell(c, w * 0.5, h * 0.72, w * 0.18 * grow * (1 + sq * 0.2), h * 0.04);
+    c.fillStyle = '#f3e1b8'; ell(c, w * 0.5, h * (0.66 + sq * 0.02), w * 0.16 * grow * (1 + sq * 0.25), h * 0.09 * (1 - sq * 0.35)); c.fillStyle = 'rgba(255,255,255,.4)'; ell(c, w * 0.46, h * 0.63, w * 0.05, h * 0.025);
+    // two hands, palms down
+    for (const sg of [-1, 1]) { const hx = T.x * w + sg * w * 0.07, hy = T.y * h + h * 0.08; c.fillStyle = '#f3cfb0'; ell(c, hx, hy, w * 0.06, h * 0.06); for (let f = 0; f < 4; f++) ell(c, hx - w * 0.04 + f * w * 0.027, hy + h * 0.065, w * 0.012, h * 0.03); c.strokeStyle = '#e0b48f'; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(hx, hy, w * 0.06, h * 0.06, 0, 0, 7); c.stroke(); }
+    ring(T.x * w, T.y * h + h * 0.08, 34 * k);
+  } else if (kind === 'roll') {
+    ckBoard(c, w, h, k);
+    const f = s.flat; c.fillStyle = '#f3e1b8'; ell(c, w * 0.5, h * 0.66, w * (0.1 + f * 0.24), h * (0.07 + f * 0.06)); c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, w * 0.46, h * 0.64, w * (0.03 + f * 0.08), h * 0.02);
+    c.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 10; i++) circ(c, w * (0.3 + ((i * 0.37) % 0.4)), h * (0.58 + ((i * 0.53) % 0.16)), 1.2 * k);   // a dusting of flour
+    const px = T.x * w, py = T.y * h;   // the rolling pin across the dough, handles at each end
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, px, py + h * 0.05, w * 0.28, h * 0.02);
+    c.fillStyle = '#d9a35e'; rr(c, px - w * 0.24, py - h * 0.04, w * 0.48, h * 0.08, h * 0.04); c.fillStyle = 'rgba(255,255,255,.3)'; rr(c, px - w * 0.22, py - h * 0.03, w * 0.44, h * 0.02, h * 0.01);
+    c.fillStyle = '#9b6b3c'; for (const sg of [-1, 1]) rr(c, px + sg * w * 0.24 - (sg < 0 ? w * 0.08 : 0), py - h * 0.022, w * 0.08, h * 0.044, h * 0.02);
+    ring(px, py, 30 * k);
+  } else if (kind === 'grate') {
+    ckBoard(c, w, h, k);
+    // shreds piling up under the grater
+    c.fillStyle = '#e8d48a'; const pile = Math.min(1, ck.prog); ell(c, w * 0.62, h * 0.76, w * (0.04 + pile * 0.1), h * (0.015 + pile * 0.03));
+    for (const b of s.bits) { const q = (t - b.t) / 0.6; if (q > 1) continue; c.fillStyle = '#e8d48a'; c.fillRect(w * b.x, h * (0.62 + q * 0.14), 2 * k, 5 * k); }
+    s.bits = s.bits.filter(b => t - b.t < 0.6);
+    // the box grater, standing up: a handle on top and rows of little holes
+    const gx = w * 0.62; c.fillStyle = '#b9bec4'; poly(c, [[gx - w * 0.08, h * 0.74], [gx + w * 0.08, h * 0.74], [gx + w * 0.06, h * 0.26], [gx - w * 0.06, h * 0.26]]);
+    c.fillStyle = '#8d939a'; for (let r = 0; r < 8; r++) for (let q = 0; q < 4; q++) ell(c, gx - w * 0.045 + q * w * 0.03 + (r % 2) * w * 0.012, h * (0.32 + r * 0.05), 2.4 * k, 1.4 * k);
+    c.strokeStyle = '#7a4b22'; c.lineWidth = 5 * k; c.beginPath(); c.arc(gx, h * 0.25, w * 0.04, Math.PI, 0); c.stroke();
+    food(T.x * w, T.y * h - h * 0.04, h * 0.24 * (1 - ck.prog * 0.5));
+    ring(T.x * w, T.y * h - h * 0.04, 30 * k);
+  } else if (kind === 'wash') {
+    // a basin of water; scrub the fruit round in it
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, w * 0.55, h * 0.84, w * 0.34, h * 0.05);
+    c.fillStyle = '#c99463'; ell(c, w * 0.55, h * 0.7, w * 0.33, h * 0.17); c.fillStyle = '#7cc4ef'; ell(c, w * 0.55, h * 0.68, w * 0.29, h * 0.13);
+    c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.5 * k; for (let i = 0; i < 3; i++) { const r = ((t * 0.5 + i / 3) % 1); c.beginPath(); c.ellipse(w * 0.55, h * 0.68, w * 0.29 * r, h * 0.13 * r, 0, 0, 7); c.stroke(); }
+    s.fx = s.fx.filter(b => t - b.t < 1.2); for (const b of s.fx) { const q = (t - b.t) / 1.2; c.strokeStyle = `rgba(255,255,255,${0.9 - q * 0.8})`; c.lineWidth = 1.5 * k; c.beginPath(); c.arc(w * b.x, h * (b.y - q * 0.25), (3 + q * 4) * k, 0, 7); c.stroke(); }
+    food(T.x * w, T.y * h, h * 0.22);
+    ring(T.x * w, T.y * h, 30 * k);
+  } else if (kind === 'pour') {
+    const potX = w * 0.62, potY = h * 0.9, pS = w * 0.38, over = Math.abs(T.x - 0.5) < 0.18 && T.y < 0.62;
+    s.tilt = (s.tilt || 0) + (((T.held && over) ? 1 : 0) - (s.tilt || 0)) * Math.min(1, dt * 7);
+    ckPot(c, potX, potY, pS, k, t, st.v === 'nasyp' ? '#f3ead8' : '#7cc4ef');
+    if (s.tilt > 0.6) { cookAct(false); cookProg(dt / 2.4); }
+    const jx = T.x * w, jy = T.y * h;
+    // the stream from the spout into the pot
+    if (s.tilt > 0.35) { const sx = jx + w * 0.1, sy = jy + h * 0.02; c.strokeStyle = st.v === 'nasyp' ? 'rgba(250,246,236,.95)' : 'rgba(150,210,245,.9)'; c.lineWidth = (st.v === 'nasyp' ? 7 : 5) * k * s.tilt; c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(sx + w * 0.03, sy + h * 0.1, potX - w * 0.02, potY - pS * 0.5); c.stroke(); }
+    c.save(); c.translate(jx, jy); c.rotate(s.tilt * 1.1);
+    if (st.v === 'nasyp') { c.fillStyle = '#efe3c8'; rr(c, -w * 0.08, -h * 0.16, w * 0.16, h * 0.24, 10 * k); c.fillStyle = '#d43a3a'; c.fillRect(-w * 0.08, -h * 0.03, w * 0.16, h * 0.02); c.fillStyle = '#c9b48a'; poly(c, [[-w * 0.08, -h * 0.16], [w * 0.1, -h * 0.2], [w * 0.08, -h * 0.12]]); }
+    else { c.fillStyle = '#3d7cc2'; c.beginPath(); c.moveTo(-w * 0.06, h * 0.08); c.lineTo(-w * 0.07, -h * 0.1); c.lineTo(w * 0.1, -h * 0.1); c.lineTo(w * 0.06, h * 0.08); c.closePath(); c.fill(); c.fillStyle = '#fffdf5'; c.fillRect(-w * 0.065, -h * 0.03, w * 0.12, h * 0.02); c.strokeStyle = '#3d7cc2'; c.lineWidth = 5 * k; c.beginPath(); c.arc(-w * 0.07, -h * 0.01, h * 0.06, Math.PI * 0.5, Math.PI * 1.5); c.stroke(); }
+    c.restore();
+    ring(jx, jy, 34 * k);
+  } else if (kind === 'heat') {
+    // the stove top: the pot (or a pan) on the ring, flames as high as the knob is turned
+    const fl = s.knob, cx = w * 0.45, cy = h * 0.82;
+    c.fillStyle = '#3a3634'; rr(c, w * 0.05, h * 0.68, w * 0.9, h * 0.3, 12 * k); c.fillStyle = '#2a2624'; ell(c, cx, cy, w * 0.22, h * 0.06);
+    if (fl > 0.05) for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, fx = cx + Math.cos(a) * w * 0.18, fy = cy + Math.sin(a) * h * 0.045, fh = h * 0.06 * fl * (0.8 + 0.4 * Math.sin(t * 20 + i)); c.fillStyle = `rgba(80,140,255,${0.8})`; ell(c, fx, fy - fh * 0.4, 3 * k, fh * 0.5); c.fillStyle = 'rgba(255,190,90,.8)'; ell(c, fx, fy - fh * 0.75, 1.8 * k, fh * 0.3); }
+    if (st.v === 'posmazh') {
+      c.fillStyle = '#2a2a2a'; ell(c, cx, cy - h * 0.06, w * 0.24, h * 0.08); c.fillStyle = '#444'; ell(c, cx, cy - h * 0.07, w * 0.21, h * 0.065); c.fillStyle = '#2a2a2a'; rr(c, cx + w * 0.23, cy - h * 0.08, w * 0.2, h * 0.03, 6 * k);
+      for (let i = 0; i < 3; i++) food(cx + (i - 1) * w * 0.1, cy - h * 0.1, h * 0.12);
+      if (fl > 0.3) { c.fillStyle = 'rgba(255,230,140,.9)'; for (let i = 0; i < 6; i++) { const q = (t * 3 + i / 6) % 1; circ(c, cx + Math.sin(i * 7.3) * w * 0.15, cy - h * 0.1 - q * h * 0.12, 1.6 * k); } }   // sizzle
+    } else {
+      ckPot(c, cx, cy - h * 0.02, w * 0.4, k, t, '#a33c2c');
+      food(cx, cy - h * 0.28, h * 0.16);
+      if (fl > 0.3) { c.fillStyle = 'rgba(255,255,255,.75)'; for (let i = 0; i < 5; i++) { const q = (t * 0.6 * (0.6 + fl) + i / 5) % 1; circ(c, cx + Math.sin(t * 2 + i * 2) * w * 0.07, cy - h * 0.34 - q * h * 0.28, (5 + q * 10) * k); } }   // steam
+    }
+    if (fl > 0.3) { cookAct(false); cookProg(dt * fl / 2.6); }
+    // the knob: grab it and turn it right round
+    const kx = w * 0.86, ky = h * 0.84, kr = 16 * k; c.fillStyle = '#e8e4dc'; circ(c, kx, ky, kr); c.strokeStyle = '#9a948c'; c.lineWidth = 2 * k; c.beginPath(); c.arc(kx, ky, kr, 0, 7); c.stroke();
+    const ka = -Math.PI * 0.75 + fl * Math.PI * 1.5; c.strokeStyle = '#d43a3a'; c.lineWidth = 4 * k; c.beginPath(); c.moveTo(kx, ky); c.lineTo(kx + Math.cos(ka) * kr * 0.85, ky + Math.sin(ka) * kr * 0.85); c.stroke();
+    c.fillStyle = '#fff8ea'; c.font = `700 ${Math.round(9 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('🔥', kx + kr * 1.1, ky - kr * 1.1);
+    ring(kx, ky, kr * 1.6);
+  } else if (kind === 'stir') {
+    // the bowl stays put; what's in it swirls round with the spoon
+    const cx = w * 0.5, cy = h * 0.62, rx = w * 0.25, ry = h * 0.13;
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, cx, cy + h * 0.2, rx * 1.15, h * 0.05);
+    c.fillStyle = '#f4f1ea'; c.beginPath(); c.ellipse(cx, cy, rx * 1.12, ry * 1.12, 0, 0, Math.PI); c.quadraticCurveTo(cx, cy + h * 0.32, cx + rx * 1.12, cy); c.fill();
+    c.fillStyle = '#2f5f9e'; ell(c, cx, cy, rx * 1.12, ry * 1.12);
+    const FILL = { borshch: '#a33c2c', kutia: '#9c7a4c', rys: '#f3ecd8', syr: '#fbf6ea' }[st.w] || '#c9a86a';
+    c.fillStyle = FILL; ell(c, cx, cy, rx, ry);
+    c.save(); c.beginPath(); c.ellipse(cx, cy, rx, ry, 0, 0, 7); c.clip();
+    c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 3 * k; for (let i = 0; i < 3; i++) { c.beginPath(); for (let q = 0; q <= 24; q++) { const a = s.swirl + i * 2.1 + q * 0.18, r = 0.15 + q / 24 * 0.8; const x = cx + Math.cos(a) * rx * r, y = cy + Math.sin(a) * ry * r; q ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }
+    for (let i = 0; i < 6; i++) { const a = s.swirl * 0.9 + i * 1.05, r = 0.35 + (i % 3) * 0.2; drawIcon(c, W[st.w].ic, cx + Math.cos(a) * rx * r, cy + Math.sin(a) * ry * r + h * 0.03, h * 0.07); }
+    c.restore();
+    // the spoon: its bowl down in the food at your finger, the handle leaning up and out of the bowl
+    const tx = T.x * w, ty = T.y * h, hx = tx + w * 0.12 + (T.x - 0.5) * w * 0.25, hy = ty - h * 0.5;
+    c.strokeStyle = '#9b6b3c'; c.lineWidth = 7 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(tx, ty - h * 0.02); c.lineTo(hx, hy); c.stroke();
+    c.strokeStyle = '#b5824e'; c.lineWidth = 3 * k; c.beginPath(); c.moveTo(tx + 1 * k, ty - h * 0.04); c.lineTo(hx + 1 * k, hy + 2 * k); c.stroke();
+    c.fillStyle = 'rgba(155,107,60,.85)'; ell(c, tx, ty, w * 0.03, h * 0.025);
+    ring(tx, ty, 30 * k);
+  } else if (kind === 'add') {
+    const potX = w * 0.62, potY = h * 0.92, pS = w * 0.42;
+    c.fillStyle = '#fffdf5'; ell(c, w * 0.2, h * 0.76, w * 0.17, h * 0.07); c.strokeStyle = '#2f5f9e'; c.lineWidth = 2 * k; c.beginPath(); c.ellipse(w * 0.2, h * 0.76, w * 0.15, h * 0.055, 0, 0, 7); c.stroke();   // a plate
+    ckPot(c, potX, potY, pS, k, t, '#c98a4a');
+    for (const it of s.items) {
+      if (it.inPot) { const q = Math.min(1, (t - it.t) / 0.35); if (q < 1) { drawIcon(c, W[st.w].ic, potX, potY - pS * 0.5 - (1 - q) * h * 0.1, h * 0.12 * (1 - q * 0.5)); c.strokeStyle = `rgba(255,255,255,${1 - q})`; c.lineWidth = 2 * k; c.beginPath(); c.ellipse(potX, potY - pS * 0.5, pS * 0.3 * q + 4 * k, pS * 0.06 * q + 2 * k, 0, 0, 7); c.stroke(); } continue; }
+      drawIcon(c, W[st.w].ic, it.x * w, it.y * h + h * 0.06, h * (s.held === it ? 0.17 : 0.14));
+    }
+    const nxt = s.items.find(i => i.home); if (nxt && !s.held && (hint || t - (s.t0 || (s.t0 = t)) < 2.5)) { c.strokeStyle = `rgba(255,210,63,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3 * k; c.beginPath(); c.arc(nxt.x * w, nxt.y * h, 26 * k, 0, 7); c.stroke(); }
+  } else if (kind === 'shake') {
+    const potX = w * 0.62, potY = h * 0.92, pS = w * 0.42;
+    ckPot(c, potX, potY, pS, k, t, '#a33c2c');
+    s.bits = s.bits.filter(b => t - b.t < 0.5); c.fillStyle = '#ffffff'; for (const b of s.bits) { const q = (t - b.t) / 0.5; circ(c, w * b.x, h * (b.y + q * 0.35), 1.6 * k); }
+    // the salt cellar, holes down, swinging a little as it shakes
+    const sx = T.x * w, sy = T.y * h; c.save(); c.translate(sx, sy); c.rotate(Math.PI + Math.sin(t * 3) * 0.05);
+    c.fillStyle = '#fffdf5'; rr(c, -w * 0.045, -h * 0.12, w * 0.09, h * 0.2, 8 * k); c.strokeStyle = '#c9c4ba'; c.lineWidth = 1.5 * k; c.strokeRect(-w * 0.045, -h * 0.12, w * 0.09, h * 0.2);
+    c.fillStyle = '#9aa0a8'; rr(c, -w * 0.05, -h * 0.15, w * 0.1, h * 0.04, 4 * k); c.fillStyle = '#4a4a4a'; for (const dx of [-0.02, 0, 0.02]) circ(c, dx * w, -h * 0.13, 1.4 * k);
+    c.fillStyle = '#3d7cc2'; c.fillRect(-w * 0.045, -h * 0.02, w * 0.09, h * 0.02);
+    c.restore();
+    ring(sx, sy, 30 * k);
+  } else if (kind === 'taste') {
+    const potX = w * 0.55, potY = h * 0.95, pS = w * 0.46;
+    ckPot(c, potX, potY, pS, k, t, '#a33c2c'); food(potX, potY - pS * 0.62, h * 0.12);
+    c.font = `${Math.round(30 * k)}px ${EMOJI}`; c.textAlign = 'center'; c.fillText(s.tasted ? '😋' : '😮', w * 0.5, h * 0.17);
+    const tx = T.x * w, ty = T.y * h;   // the wooden spoon, bowl down in the pot until you lift it
+    c.strokeStyle = '#9b6b3c'; c.lineWidth = 7 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(tx, ty); c.lineTo(tx + w * 0.14, ty + h * 0.32); c.stroke();
+    c.fillStyle = '#9b6b3c'; ell(c, tx, ty, w * 0.035, h * 0.03); c.fillStyle = '#a33c2c'; ell(c, tx, ty - h * 0.005, w * 0.025, h * 0.018);
+    ring(tx, ty, 30 * k);
+  } else if (kind === 'shape') {
+    ckBoard(c, w, h, k);
+    const leaf = st.v === 'zahorny';
+    for (const it of s.items) {
+      const x = it.x * w, y = it.y * h, q = it.done ? Math.min(1, (t - it.t) / 0.35) : 0;
+      if (leaf) { c.fillStyle = '#9fd27a'; ell(c, x, y, w * 0.06 * (1 - q * 0.45), h * 0.07); c.strokeStyle = '#6fa84a'; c.lineWidth = 1.5 * k; c.beginPath(); c.moveTo(x, y - h * 0.06); c.lineTo(x, y + h * 0.06); c.stroke(); if (q) { c.fillStyle = '#c98a4a'; ell(c, x, y, w * 0.025, h * 0.035 * q); } }
+      else { c.fillStyle = '#f3e1b8'; c.beginPath(); c.ellipse(x, y, w * 0.055, h * 0.07 * (1 - q * 0.5), 0, Math.PI * q, Math.PI * 2); c.fill(); c.strokeStyle = '#d9c28e'; c.lineWidth = 1.5 * k; c.beginPath(); c.ellipse(x, y, w * 0.055, h * 0.07 * (1 - q * 0.5), 0, Math.PI * q, Math.PI * 2); c.stroke(); if (q >= 1) { c.strokeStyle = '#c9a86a'; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(x - w * 0.045 + i * w * 0.022, y); c.lineTo(x - w * 0.04 + i * w * 0.022, y - 3 * k); c.stroke(); } } }   // a varenyk, crimped
+      if (!it.done && (hint || t - (s.t0 || (s.t0 = t)) < 2.5)) { c.strokeStyle = `rgba(255,210,63,${0.4 + 0.3 * Math.sin(t * 6 + it.x * 9)})`; c.lineWidth = 2 * k; c.beginPath(); c.arc(x, y, 22 * k, 0, 7); c.stroke(); }
+    }
+  }
+  if (ck.done) { c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(0, 0, w, h); }
+  ckFlash(c, w, h, k, t);
+  requestAnimationFrame(() => cookFrame(me));
 }
 function cookDone() {
   const st = ck.R.steps[ck.i], me = ck; ck.done = true;
   useWord(st.v, true); save();
-  const pad = $('#cookPad'); if (pad) pad.classList.add('ok');
-  say('p_molodets'); blip(990, 0.12);
+  setTimeout(() => { if (ck === me) cookStopVoice(ck.s); say('p_molodets'); }, 250); blip(990, 0.12);
   setTimeout(() => {
     if (me !== ck || !$('#cookPad')) return;   // the card was closed part-way: she'll cook again next time
     ck.i++;
