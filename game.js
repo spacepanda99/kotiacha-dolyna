@@ -5478,11 +5478,14 @@ function drawFest(t) {
 
 
 // ------------------------------------------------------------------ developer mode
-// The 🛠️ on the title screen asks for a code (7272). With it, a 🛠️ button joins the top bar for this visit
-// only (it isn't saved, so nobody else stumbles on it), opening a menu that jumps straight to any game, any of
+// The 🛠️ on the title screen asks for a code (7272) once; after that this device remembers it (kd-dev), the
+// 🛠️ stays in the top bar and the title's 🛠️ goes straight to the menu, until it's turned off in the menu.
+// Other phones never see it unless the code is entered there. The menu that jumps straight to any game, any of
 // Grandma's dishes, any season or festival, or the night. Dev runs of cooking, festivals and bedtime leave the
 // real progress alone: no recipe moves on, no festival is marked done, no day passes.
 let devOn = false, devCode = '', devMeal = false;
+try { devOn = localStorage.getItem('kd-dev') === '1'; } catch (e) {}
+if (devOn) $('#devBtn').style.display = '';
 function devPinDraw(bad) {
   const el = $('#devpin');
   el.innerHTML = `<div class="box"><div style="font-weight:900;font-size:20px;color:#4a2c1a">🛠️ Developer</div><div style="color:#8a7566;font-size:14px;margin-top:2px">Enter the code</div>
@@ -5499,7 +5502,8 @@ function devMenu() {
     ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].uk + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
     ${sec('Festivals', D.festivals.map(f => ['devFest', f.id, SEASON_IC[SEASONS[FEST_OF.indexOf(f.id)]] + ' ' + W[f.id].uk]))}
     ${sec('Day and night', [['devTime', 'morning', '🌅 Morning'], ['devTime', 'evening', '🌇 Evening'], ['devTime', 'night', '🌙 Night'], ['devTime', 'bed', '🛏️ Bedtime scene']])}
-    <div class="row" style="margin-top:14px">${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+    <div class="row" style="margin-top:14px">${btn('close', '', lab('close'), 'ghost')}</div>
+    <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
 }
 // Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
 function devToWorld() { if (mode === 'home' || mode === 'olia') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
@@ -5850,13 +5854,14 @@ const A = {
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
   festReply() { festReply(); },
-  devPin() { devCode = ''; devPinDraw(); },
+  devPin() { if (devOn) { A.start(); return setTimeout(devMenu, 700); } devCode = ''; devPinDraw(); },   // already unlocked on this device: straight in
+  devOff() { devOn = false; try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
   devPinX() { $('#devpin').classList.remove('on'); },
   devKey(v) {
     if (v === 'back') devCode = devCode.slice(0, -1); else if (devCode.length < 4) devCode += v;
     blip(600 + devCode.length * 80, 0.04);
     if (devCode.length < 4) return devPinDraw();
-    if (devCode === '7272') { devOn = true; devCode = ''; $('#devpin').classList.remove('on'); $('#devBtn').style.display = ''; A.start(); setTimeout(devMenu, 700); }
+    if (devCode === '7272') { devOn = true; devCode = ''; try { localStorage.setItem('kd-dev', '1'); } catch (e) {} $('#devpin').classList.remove('on'); $('#devBtn').style.display = ''; A.start(); setTimeout(devMenu, 700); }
     else { devCode = ''; devPinDraw(true); blip(200, 0.15); }
   },
   devMenu() { if (devOn) devMenu(); },
