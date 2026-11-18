@@ -2823,6 +2823,23 @@ const ckLeft = () => 1 - Math.min(1, ck.prog) * 0.82;
 const CK_FLESH = { yabluko: '#fff4d6', tsybulia: '#f7f3e8', kapusta: '#e6f3c8', morkva: '#ff9a3a', kartoplia: '#f6e7a8', buriak: '#8a1f4a', pomidor: '#e8463c' };
 const ckImgs = {};
 function ckImg(id) { if (!ckImgs[id]) { const im = new Image(); im.src = iconURL(id); ckImgs[id] = im; } return ckImgs[id]; }
+// A carrot lying along the board, leafy end on the left. Each chop takes a coin off the cut end (starting at
+// the tip), and the coins roll a little and lie flat, orange with their pale core.
+function ckCarrot(c, w, h, k, t, s) {
+  const S = h * 0.42, x0 = w * 0.5 - S * 0.5, len = S * 1.05, y = h * 0.64, left = ckLeft();
+  const rad = q => S * (0.17 - q * 0.14);   // the carrot's half-thickness along its length (q = 0 top, 1 tip)
+  c.fillStyle = '#3f8a3a'; for (const a of [-0.5, -0.15, 0.2]) { c.save(); c.translate(x0, y); c.rotate(Math.PI + a); ell(c, S * 0.12, 0, S * 0.14, S * 0.03); c.restore(); }
+  const end = left; c.fillStyle = '#ff8a1f'; c.beginPath(); c.moveTo(x0, y - rad(0));
+  for (let i = 1; i <= 20; i++) { const q = i / 20 * end; c.lineTo(x0 + len * q, y - rad(q)); }
+  for (let i = 20; i >= 0; i--) { const q = i / 20 * end; c.lineTo(x0 + len * q, y + rad(q)); } c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(180,80,10,.5)'; c.lineWidth = 1 * k; for (let i = 1; i < 6; i++) { const q = i / 7; if (q > end) break; const x = x0 + len * q; c.beginPath(); c.moveTo(x, y - rad(q) * 0.7); c.lineTo(x + 3 * k, y - rad(q) * 0.2); c.stroke(); }
+  if (end < 0.999) { const ex = x0 + len * end, r = rad(end); c.fillStyle = '#ffa64a'; ell(c, ex, y, r * 0.35, r); c.fillStyle = '#ffd08a'; ell(c, ex, y, r * 0.16, r * 0.45); }
+  else { c.fillStyle = '#ff8a1f'; circ(c, x0 + len, y, S * 0.02); }
+  s.bits.forEach((b, i) => {   // the coins: each was the slice between two cuts
+    const q = Math.min(1, (t - b.t) / 0.35), mid = (b.a + b.b) / 2, r = rad(Math.min(1, mid)), bx = x0 + len * mid + (14 * k + i * 4 * k) * q, by = y + S * 0.05 + (i % 3) * 5 * k * q;
+    c.fillStyle = '#e8741a'; ell(c, bx, by + 1.5 * k, r, r * (1 - q * 0.6)); c.fillStyle = '#ffa64a'; ell(c, bx, by, r, r * (1 - q * 0.6)); c.fillStyle = '#ffd08a'; ell(c, bx, by, r * 0.45, r * 0.45 * (1 - q * 0.6));
+  });
+}
 // Drawing helpers for the kitchen.
 function ckBoard(c, w, h, k) { c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, w * 0.5, h * 0.86, w * 0.4, h * 0.05); c.fillStyle = '#c99463'; rr(c, w * 0.12, h * 0.52, w * 0.76, h * 0.32, 14 * k); c.fillStyle = '#ddb07a'; rr(c, w * 0.12, h * 0.52, w * 0.76, h * 0.27, 14 * k); c.strokeStyle = 'rgba(140,90,40,.25)'; c.lineWidth = 1.5 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(w * 0.16, h * (0.57 + i * 0.045)); c.lineTo(w * 0.84, h * (0.57 + i * 0.045) + 2 * k); c.stroke(); } c.fillStyle = '#b07a44'; circ(c, w * 0.84, h * 0.58, 4 * k); }
 function ckPot(c, x, y, s, k, t, fill) {   // an enamel pot with red flowers, seen a little from above
@@ -2860,7 +2877,8 @@ function cookFrame(me) {
   if (kind === 'chop' || kind === 'peel') {
     ckBoard(c, w, h, k);
     const im = kind === 'chop' ? ckImg(st.w) : null;
-    if (im && im.complete && im.naturalWidth) {
+    if (kind === 'chop' && st.w === 'morkva') ckCarrot(c, w, h, k, t, s);
+    else if (im && im.complete && im.naturalWidth) {
       const S = h * 0.42, fx = w * 0.5, fy = h * 0.6, left = ckLeft(), FL = CK_FLESH[st.w] || '#fff4d6';
       // what's left of it, cut straight down where the knife has been
       c.drawImage(im, 0, 0, 128 * left, 128, fx - S / 2, fy - S / 2, S * left, S);
@@ -3558,7 +3576,7 @@ function mgRing(c, x, y, r, k, t) {
   c.strokeStyle = `rgba(255,210,63,${miss ? 0.5 + 0.5 * Math.sin((t - m.miss) * 20) : 0.35 + 0.3 * Math.sin(t * 6)})`; c.lineWidth = 3 * k; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
 }
 // Taking hold of a tool: within reach of it (pad fractions, with the pad's shape allowed for).
-const mgNear = (T, fx, fy, r = 0.17) => T && Math.hypot(T.x - fx, (T.y - fy) * 0.66) < r;
+const mgNear = (T, fx, fy, r = 0.17) => T && Math.hypot(T.x + (T.gx || 0) - fx, (T.y + (T.gy || 0) - fy) * 0.66) < r;   // measured at the grip (T.gx, T.gy from the working end), where a tool is held
 
 // ------------------------------------------------------------------ Mr. Bohdan's bees
 // дмухай: take the smoker and puff smoke over the swarm; a bee in the smoke grows sleepy and goes home.
@@ -3572,7 +3590,7 @@ const BEE = {
       mgLine('mg_dmukhai', 'dmukhai', ['Візьми димар і дмухай на бджіл', 'Take the smoker and puff smoke over the bees']);
     } else {
       mg.cells = []; for (let r = 0; r < 4; r++) for (let q = 0; q < 7; q++) mg.cells.push({ r, q, full: 1, t: 0 });
-      mg.jar = 0; mg.tool = { x: 0.86, y: 0.78 }; mg.drips = []; mg.beeStep = 'b';
+      mg.jar = 0; mg.tool = { x: 0.8, y: 0.68, gx: 0.08, gy: 0.105 }; mg.drips = []; mg.beeStep = 'b';
       mgLine('mg_zbyrai', 'zbyrai', ['Веди ложкою по сотах', 'Run the honey dipper over the honeycomb']);
     }
   },
@@ -3646,8 +3664,9 @@ const BEE = {
       c.fillStyle = '#9b6b3c'; rr(c, -3 * k, -h * 0.02, 6 * k, h * 0.18, 3 * k);
       c.fillStyle = '#c99463'; ell(c, 0, -h * 0.07, 9 * k, 13 * k); c.strokeStyle = '#8a5a2b'; c.lineWidth = 1.5 * k; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(-9 * k, -h * 0.07 + i * 4 * k); c.lineTo(9 * k, -h * 0.07 + i * 4 * k); c.stroke(); }
       if (have) { c.fillStyle = 'rgba(242,168,29,.85)'; ell(c, 0, -h * 0.07 + 8 * k, 7 * k, 5 * k); }
+      c.fillStyle = '#7a4b22'; circ(c, tx + T.gx * w, ty + T.gy * h, 4 * k);   // the end of the handle, where you hold it
       c.restore();
-      mgRing(c, tx, ty, 30 * k, k, t);
+      mgRing(c, tx + T.gx * w, ty + T.gy * h, 26 * k, k, t);
       if (mg.phase === 'b' && have >= n) { useWord('zbyrai', true); mg.phase = 'pause'; blip(990, 0.1); say('p_molodets'); setTimeout(() => { if (mg && mg.id === 'bohdan') mgRoundDone(); }, 900); }
     }
   },
@@ -3660,12 +3679,12 @@ const HIVEW = {
     if (step === 'a') {
       mg.snowB = []; const rs = seeded(7 + mg.round);   // a lumpy cap of snow on the roof, drifts down the sides and on the ledge
       for (let i = 0; i < 30; i++) { const roof = i < 14, x = roof ? 0.33 + (i / 13) * 0.34 : (i % 2 ? 0.34 : 0.66) + (rs() - 0.5) * 0.04, y = roof ? 0.31 + Math.abs(i / 13 - 0.5) * 0.12 + (rs() - 0.5) * 0.03 : 0.42 + ((i - 14) >> 1) * 0.06; mg.snowB.push({ x: i >= 26 ? 0.4 + (i - 26) * 0.07 : x, y: i >= 26 ? 0.49 : y, rx: 0.035 + rs() * 0.025, ry: 0.04 + rs() * 0.03, on: 1 }); }
-      mg.flakes = []; mg.covered = 0; mg.tool = { x: 0.84, y: 0.6 };
+      mg.flakes = []; mg.covered = 0; mg.tool = { x: 0.76, y: 0.7, gx: 0.124, gy: -0.119 };
       mgLine('mgw_pochyst', 'pochyst', ['Візьми віник і змети сніг', 'Take the broom and sweep the snow off']);
     } else { mg.tool = { x: 0.84, y: 0.78, mat: true }; mgLine('mgw_nakryi', 'nakryi', ['Неси солому на вулик', 'Carry the straw mat onto the hive']); }
   },
   press(x, y) { const T = mg.tool; if (mgNear(T, x, y, 0.2)) { T.held = true; T.ox = T.x - x; T.oy = T.y - y; blip(520, 0.03); } else mg.miss = nowT; },
-  move(x, y) { const T = mg.tool; if (!T || !T.held) return; const px = T.x, py = T.y; T.x = Math.max(0.05, Math.min(0.95, x + T.ox)); T.y = Math.max(0.1, Math.min(0.92, y + T.oy)); T.sp = Math.hypot(T.x - px, T.y - py); },
+  move(x, y) { const T = mg.tool; if (!T || !T.held) return; const px = T.x, py = T.y; T.x = Math.max(0.05, Math.min(0.95, x + T.ox)); T.y = Math.max(0.15, Math.min(0.95, y + T.oy)); T.sp = Math.hypot(T.x - px, T.y - py); },
   release() {
     const T = mg.tool; if (!T) return; T.held = false;
     if (mg.phase === 'b' && T.mat && Math.abs(T.x - 0.5) < 0.2 && T.y < 0.75 && !mg.covered) { mg.covered = nowT; mgAct('nakryi', true); useWord('nakryi', true); blip(760, 0.06); mg.phase = 'pause'; setTimeout(() => { if (mg && mg.id === 'bohdan_w') mgRoundDone(); }, 1400); }
@@ -3682,7 +3701,7 @@ const HIVEW = {
     let swept = false;
     if (mg.snowB) for (const b of mg.snowB) {
       if (!b.on) continue;
-      if (T.held && !T.mat && T.sp > 0.004 && Math.hypot(T.x - 0.06 - b.x, (T.y + 0.12 - b.y) * 0.66) < 0.08) { b.on = 0; swept = true; for (let i = 0; i < 4; i++) mg.flakes.push({ x: b.x, y: b.y, vx: (Math.random() - 0.3) * 0.5, vy: -Math.random() * 0.4, t0: t }); }
+      if (T.held && !T.mat && T.sp > 0.004 && Math.hypot(T.x - 0.045 - b.x, (T.y + 0.04 - b.y) * 0.66) < 0.09) { b.on = 0; swept = true; for (let i = 0; i < 4; i++) mg.flakes.push({ x: b.x, y: b.y, vx: (Math.random() - 0.3) * 0.5, vy: -Math.random() * 0.4, t0: t }); }
       c.fillStyle = 'rgba(190,206,228,.8)'; ell(c, b.x * w, b.y * h + h * 0.012, w * b.rx, h * b.ry * 0.8); c.fillStyle = '#ffffff'; ell(c, b.x * w, b.y * h, w * b.rx, h * b.ry); c.fillStyle = 'rgba(255,255,255,.8)'; ell(c, (b.x - b.rx * 0.3) * w, (b.y - b.ry * 0.3) * h, w * b.rx * 0.4, h * b.ry * 0.3);
     }
     if (swept) { mgAct('pochyst'); blip(500 + Math.random() * 200, 0.02); }
@@ -3704,13 +3723,14 @@ const HIVEW = {
     } else if (!T.mat) {
       // the besom: a long handle and a bunch of twigs, swishing as you sweep
       const bx = T.x * w, by = T.y * h, sw = T.held ? Math.sin(t * 14) * 0.12 : 0;
-      c.save(); c.translate(bx, by); c.rotate(0.55 + sw);
-      c.fillStyle = '#9b6b3c'; rr(c, -3 * k, -h * 0.3, 6 * k, h * 0.3, 3 * k);
-      c.fillStyle = '#c99a3a'; poly(c, [[-5 * k, 0], [5 * k, 0], [16 * k, h * 0.2], [-16 * k, h * 0.2]]);
-      c.strokeStyle = '#a87a2f'; c.lineWidth = 1 * k; for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 1.2 * k, 0); c.lineTo(i * 5 * k, h * 0.2); c.stroke(); }
+      c.save(); c.translate(bx, by); c.rotate(1.0 + sw);
+      c.fillStyle = '#9b6b3c'; rr(c, -3 * k, -h * 0.22, 6 * k, h * 0.22, 3 * k);
+      c.fillStyle = '#c99a3a'; poly(c, [[-5 * k, 0], [5 * k, 0], [15 * k, h * 0.14], [-15 * k, h * 0.14]]);
+      c.strokeStyle = '#a87a2f'; c.lineWidth = 1 * k; for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 1.2 * k, 0); c.lineTo(i * 4.5 * k, h * 0.14); c.stroke(); }
       c.fillStyle = '#d43a3a'; c.fillRect(-6 * k, h * 0.01, 12 * k, 4 * k);
+      c.fillStyle = '#7a4b22'; circ(c, 0, -h * 0.22, 4 * k);   // the top of the handle, where you hold it
       c.restore();
-      mgRing(c, bx, by, 30 * k, k, t);
+      mgRing(c, bx + T.gx * w, by + T.gy * h, 28 * k, k, t);
     }
   },
 };
