@@ -80,7 +80,11 @@ const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { local
 
 // How far along the learner is. English fades out as this rises.
 const mastered = () => Object.values(S.words).filter(w => w.l >= 3).length;
-const stage = () => { const m = mastered(); return m >= 40 ? 3 : m >= 12 ? 2 : 1; };
+// How much English the village gives you. Stage 2 (the villagers stop translating themselves) needs the first
+// summer behind you (day 4, autumn) and 25 well-known words; stage 3, all Ukrainian, needs a whole year in the
+// valley (day 13, the second summer) and 90 well-known words.
+const STAGES = { 2: { words: 25, day: 4 }, 3: { words: 90, day: 13 } };
+const stage = () => { const m = mastered(), d = (S.clock && S.clock.day) || 1; return m >= STAGES[3].words && d >= STAGES[3].day ? 3 : m >= STAGES[2].words && d >= STAGES[2].day ? 2 : 1; };
 const lab = k => { const u = D.ui[k]; return u[0] + `<small${stage() < 3 ? '' : ' class="xl"'}>${u[1]}</small>`; };
 // English that is shown while you're learning and, in the all-Ukrainian stage, kept hidden until you tap 👁.
 const xl = h => stage() < 3 ? h : h ? `<span class="xl">${h}</span>` : '';
@@ -2674,7 +2678,7 @@ function mealScene(R) {
 const verbHL = uk => uk.replace(/^([^\s!,.]+)/, '<span class="verb">$1</span>');
 const COOK_KIND = { porizh: 'chop', pochyst: 'peel', natry: 'grate', zamis: 'knead', rozkachai: 'roll', zlipy: 'shape', zahorny: 'shape', pomyi: 'wash', nalyi: 'pour', nasyp: 'pour', zvary: 'heat', posmazh: 'heat', pomishai: 'stir', zmishai: 'stir', dodai: 'add', posoly: 'shake', sprobui: 'taste' };
 const COOK_HOW = {
-  chop: ['Тримай ніж і ріж угору-вниз', 'Hold the knife and chop up and down'], peel: ['Веди ножем униз по овочу', 'Stroke the knife down the vegetable'],
+  chop: ['Підніми ніж і ріж по лінії', 'Lift the knife and bring it down on the dashed line'], peel: ['Веди ножем униз по овочу', 'Stroke the knife down the vegetable'],
   grate: ['Три об тертку вгору-вниз', 'Rub it up and down the grater'], knead: ['Тисни на тісто руками', 'Press down on the dough'],
   roll: ['Качай качалкою вперед-назад', 'Roll the pin back and forth'], shape: ['Торкнися кожного шматочка', 'Press each piece to fold it'],
   wash: ['Три у воді по колу', 'Scrub it round in the water'], pour: ['Візьми й нахили над каструлею', 'Take it and tip it over the pot'],
@@ -2712,7 +2716,8 @@ function cookStep(first = []) {
 function cookSetup(kind, st) {
   const n = Math.max(1, st.n || { chop: 6, peel: 5, knead: 6, shape: 5, add: 2, shake: 3, taste: 1 }[kind] || 1);
   const S0 = { kind, st, n, ev: 0, tool: { x: 0.78, y: 0.3, hx: 0.78, hy: 0.3, held: false }, bits: [], fx: [], armed: true, acc: 0, lastY: null, lastX: null };
-  if (kind === 'chop' || kind === 'peel') S0.tool = { x: 0.74, y: 0.28, hx: 0.74, hy: 0.28 };
+  if (kind === 'peel') S0.tool = { x: 0.74, y: 0.28, hx: 0.74, hy: 0.28 };
+  if (kind === 'chop') S0.tool = { x: 0.8, y: 0.16, hx: 0.8, hy: 0.16 };
   if (kind === 'knead') S0.tool = { x: 0.5, y: 0.22, hx: 0.5, hy: 0.22 };
   if (kind === 'grate' || kind === 'wash') S0.tool = { x: 0.22, y: 0.4, hx: 0.22, hy: 0.4 };
   if (kind === 'roll') S0.tool = { x: 0.5, y: 0.86, hx: 0.5, hy: 0.86 };
@@ -2764,12 +2769,18 @@ const ckGrip = s => { const T = s.tool, o = SPOON_GRIP[s.kind]; return o ? { x: 
 function cookMove(x, y) {
   const s = ck.s, T = s.tool, k = s.kind;
   const py = T.y;
-  if (k === 'chop' || k === 'peel') {
-    T.x = Math.max(0.3, Math.min(0.92, x)); T.y = Math.max(0.12, Math.min(k === 'chop' ? 0.72 : 0.78, y));   // the blade stops on the board
-    if (k === 'chop') {
-      if (T.y < 0.52) s.armed = true;
-      if (s.armed && T.y >= 0.7 && T.x - 0.14 < 0.66 && T.x - 0.14 > 0.34) { s.armed = false; cookAct(true); const b0 = ckLeft(); cookEv(); s.bits.push({ a: ckLeft(), b: b0, t: nowT }); blip(300 + Math.random() * 120, 0.04); }
-    } else if (T.x - 0.1 > 0.36 && T.x - 0.1 < 0.64 && T.y > 0.35) {
+  if (k === 'chop') {
+    // T is where the blade meets the handle; the blade hangs straight down from it, its tip 0.26 of the pad lower.
+    // Lift the tip above the vegetable, then bring it down to the board on the dashed line: one slice.
+    T.x = Math.max(0.18, Math.min(0.88, x)); T.y = Math.max(0.06, Math.min(0.53, y));
+    if (T.y < 0.16) s.armed = true;
+    if (s.armed && T.y >= 0.51) { s.armed = false;
+      if (Math.abs(T.x - ckGuide()) < 0.07) { cookAct(true); const b0 = ckLeft(); cookEv(); s.bits.push({ a: ckLeft(), b: b0, t: nowT }); blip(300 + Math.random() * 120, 0.04); }
+      else { blip(220, 0.03); s.missCut = nowT; }   // off the line: the knife only taps the board
+    }
+  } else if (k === 'peel') {
+    T.x = Math.max(0.3, Math.min(0.92, x)); T.y = Math.max(0.12, Math.min(0.78, y));
+    if (T.x - 0.1 > 0.36 && T.x - 0.1 < 0.64 && T.y > 0.35) {
       if (T.y > py) { s.acc += T.y - py; cookAct(false); } else if (T.y < py - 0.01) s.acc = 0;   // one stroke down the vegetable, one strip of peel
       if (s.acc > 0.2) { s.acc = -9; cookEv(); s.bits.push({ x: T.x - 0.1, t: nowT }); blip(500, 0.03); }
     }
@@ -2840,6 +2851,7 @@ function cookStopVoice(s) { if (s && s.vo) { try { s.vo.pause(); } catch (e) {} 
 // Chopping: how much of the vegetable is still whole (a fraction of its width, from the left), and the colour
 // of its inside where it's been cut.
 const ckLeft = () => 1 - Math.min(1, ck.prog) * 0.82;
+function ckGuide() { const pad = $('#cookPad'), a = pad ? pad.height / pad.width : 0.7, S = 0.42 * a, s = ck.s, nextLeft = Math.max(0.05, ckLeft() - 0.82 / Math.max(1, s.n)), carrot = s.st.w === 'morkva'; return 0.5 - S / 2 + S * (carrot ? 1.05 : 1) * nextLeft; }
 const CK_FLESH = { yabluko: '#fff4d6', tsybulia: '#f7f3e8', kapusta: '#e6f3c8', morkva: '#ff9a3a', kartoplia: '#f6e7a8', buriak: '#8a1f4a', pomidor: '#e8463c' };
 const ckImgs = {};
 function ckImg(id) { if (!ckImgs[id]) { const im = new Image(); im.src = iconURL(id); ckImgs[id] = im; } return ckImgs[id]; }
@@ -2912,8 +2924,16 @@ function cookFrame(me) {
     for (const b of (kind === 'chop' ? [] : s.bits)) { const q = Math.min(1, (t - b.t) / 0.5); if (kind === 'chop') { c.fillStyle = '#fff'; drawIcon(c, W[st.w].ic, w * (b.x - 0.05 - q * 0.08), h * (0.66 + q * 0.06), h * 0.11); } else { c.strokeStyle = st.w === 'buriak' ? '#7a1f3d' : '#b5824e'; c.lineWidth = 3 * k; c.beginPath(); const x = w * b.x, y = h * (0.6 + q * 0.2); c.moveTo(x, y); c.quadraticCurveTo(x + 10 * k, y + 8 * k, x, y + 14 * k); c.stroke(); } }
     // the knife: handle in your hand (right), blade over the food, edge down
     const bx = T.x * w, by = T.y * h;
-    ckKnife(c, bx, by, kind === 'chop' ? w * 0.3 : w * 0.22, k, kind === 'peel' ? -0.15 : 0);
-    ring(bx + w * 0.06, by, 26 * k);
+    if (kind === 'chop') {
+      // the dashed line where the next slice is cut, and the knife upright above it, handle up, tip down
+      if (!ck.done) { const gx = ckGuide() * w; c.save(); c.strokeStyle = `rgba(255,255,255,${0.55 + 0.3 * Math.sin(t * 6)})`; c.lineWidth = 2.5 * k; c.setLineDash([6 * k, 6 * k]); c.beginPath(); c.moveTo(gx, h * 0.36); c.lineTo(gx, h * 0.84); c.stroke(); c.restore(); }
+      if (s.missCut && t - s.missCut < 0.6) { c.fillStyle = 'rgba(255,255,255,.9)'; c.font = `800 ${Math.round(12 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⟷', bx, by - h * 0.12); }
+      ckKnife(c, bx, by, w * 0.2, k, -Math.PI / 2);
+      ring(bx, by - w * 0.05, 24 * k);
+    } else {
+      ckKnife(c, bx, by, w * 0.22, k, -0.15);
+      ring(bx + w * 0.06, by, 26 * k);
+    }
   } else if (kind === 'knead') {
     ckBoard(c, w, h, k);
     const sq = s.squash ? Math.max(0, 1 - (t - s.squash) / 0.35) : 0, grow = 1 + ck.prog * 0.15;
@@ -3099,7 +3119,7 @@ function cookDone() {
 //   Taras's fishing: закидай (flick to cast), wait for the bite, тягни (tap!) → fish
 const MG = { bohdan: { verbs: ['dmukhai', 'zbyrai'], rounds: 2 }, andriiko: { verbs: ['kydai', 'nesy'], rounds: 3 }, taras: { verbs: ['zakydai', 'tiahny'], rounds: 3 },
   // in winter they have different jobs (and two different verbs each)
-  bohdan_w: { verbs: ['pochyst', 'nakryi'], rounds: 2 }, andriiko_w: { verbs: ['kachai', 'postav'], rounds: 3 }, taras_w: { verbs: ['sverdly', 'tiahny'], rounds: 2 } };
+  bohdan_w: { verbs: ['zmety', 'nakryi'], rounds: 2 }, andriiko_w: { verbs: ['kachai', 'postav'], rounds: 3 }, taras_w: { verbs: ['sverdly', 'tiahny'], rounds: 2 } };
 const mgPre = () => winter() ? 'mgw_' : 'mg_';
 let mg = null;
 function mgInvite(npc) {
@@ -3160,7 +3180,7 @@ function mgBegin(step) {
     return;
   }
   if (id === 'bohdan_w') {
-    if (step === 'a') { mg.snow = 1; mg.covered = false; mgLine('mgw_pochyst', 'pochyst', ['Води пальцем по снігу', 'Rub the snow off with your finger']); }
+    if (step === 'a') { mg.snow = 1; mg.covered = false; mgLine('mgw_zmety', 'zmety', ['Води пальцем по снігу', 'Rub the snow off with your finger']); }
     else mgLine('mgw_nakryi', 'nakryi', ['Торкнися вулика', 'Tap the hive']);
     return;
   }
@@ -3700,7 +3720,7 @@ const HIVEW = {
       mg.snowB = []; const rs = seeded(7 + mg.round);   // a lumpy cap of snow on the roof, drifts down the sides and on the ledge
       for (let i = 0; i < 30; i++) { const roof = i < 14, x = roof ? 0.33 + (i / 13) * 0.34 : (i % 2 ? 0.34 : 0.66) + (rs() - 0.5) * 0.04, y = roof ? 0.31 + Math.abs(i / 13 - 0.5) * 0.12 + (rs() - 0.5) * 0.03 : 0.42 + ((i - 14) >> 1) * 0.06; mg.snowB.push({ x: i >= 26 ? 0.4 + (i - 26) * 0.07 : x, y: i >= 26 ? 0.49 : y, rx: 0.035 + rs() * 0.025, ry: 0.04 + rs() * 0.03, on: 1 }); }
       mg.flakes = []; mg.covered = 0; mg.tool = { x: 0.76, y: 0.7, gx: 0.124, gy: -0.119 };
-      mgLine('mgw_pochyst', 'pochyst', ['Візьми віник і змети сніг', 'Take the broom and sweep the snow off']);
+      mgLine('mgw_zmety', 'zmety', ['Візьми віник і змети сніг', 'Take the broom and sweep the snow off']);
     } else { mg.tool = { x: 0.84, y: 0.78, mat: true }; mgLine('mgw_nakryi', 'nakryi', ['Неси солому на вулик', 'Carry the straw mat onto the hive']); }
   },
   press(x, y) { const T = mg.tool; if (mgNear(T, x, y, 0.2)) { T.held = true; T.ox = T.x - x; T.oy = T.y - y; blip(520, 0.03); } else mg.miss = nowT; },
@@ -3724,9 +3744,9 @@ const HIVEW = {
       if (T.held && !T.mat && T.sp > 0.004 && Math.hypot(T.x - 0.045 - b.x, (T.y + 0.04 - b.y) * 0.66) < 0.09) { b.on = 0; swept = true; for (let i = 0; i < 4; i++) mg.flakes.push({ x: b.x, y: b.y, vx: (Math.random() - 0.3) * 0.5, vy: -Math.random() * 0.4, t0: t }); }
       c.fillStyle = 'rgba(190,206,228,.8)'; ell(c, b.x * w, b.y * h + h * 0.012, w * b.rx, h * b.ry * 0.8); c.fillStyle = '#ffffff'; ell(c, b.x * w, b.y * h, w * b.rx, h * b.ry); c.fillStyle = 'rgba(255,255,255,.8)'; ell(c, (b.x - b.rx * 0.3) * w, (b.y - b.ry * 0.3) * h, w * b.rx * 0.4, h * b.ry * 0.3);
     }
-    if (swept) { mgAct('pochyst'); blip(500 + Math.random() * 200, 0.02); }
+    if (swept) { mgAct('zmety'); blip(500 + Math.random() * 200, 0.02); }
     mg.flakes = (mg.flakes || []).filter(f => t - f.t0 < 0.8); c.fillStyle = 'rgba(255,255,255,.95)'; for (const f of mg.flakes) { f.vy += dt * 1.2; f.x += f.vx * dt; f.y += f.vy * dt; circ(c, f.x * w, f.y * h, 2.5 * k); }
-    if (mg.phase === 'a' && mg.snowB && mg.snowB.every(b => !b.on)) { useWord('pochyst', true); blip(990, 0.1); mgBegin('b'); }
+    if (mg.phase === 'a' && mg.snowB && mg.snowB.every(b => !b.on)) { useWord('zmety', true); blip(990, 0.1); mgBegin('b'); }
     // the straw mat, wrapped round the hive once it's laid on, tied with a red cord
     if (mg.covered) {
       const q = Math.min(1, (t - mg.covered) / 0.6);
@@ -4356,11 +4376,11 @@ function wordsSheet() {
   const ids = Object.keys(S.words).sort((a, b) => S.words[a].l - S.words[b].l);
   const m = mastered(), st = stage();
   const title = ['', 'Гість · Guest', 'Сусід · Neighbour', 'Свій · One of us'][st];
-  const next = st === 1 ? 12 : st === 2 ? 40 : D.words.length;
+  const goal = STAGES[st + 1], next = goal ? goal.words : D.words.length, day = (S.clock && S.clock.day) || 1;
   openSheet(`<h3><span><span class="uk">${D.ui.words[0]}</span> ${st < 3 ? `<small>${D.ui.words[1]}</small>` : ''}</span><small>🐈 ${catFriends()}/${D.cats.length} · ${ids.length} / ${D.words.length}</small></h3>
     <div style="font-weight:800">${title}</div>
     <div class="bar"><i style="width:${Math.min(100, Math.round(m / next * 100))}%"></i></div>
-    ${st < 3 ? `<div class="muted" style="padding:0 0 10px;text-align:left">${m} well-known words. At ${next}, ${st === 1 ? 'the villagers stop translating themselves' : 'the village goes fully Ukrainian'}.</div>` : ''}
+    ${st < 3 ? `<div class="muted" style="padding:0 0 10px;text-align:left">${m} well-known words · day ${day} (${W[season()].en}). With ${next} words${goal && day < goal.day ? ` and from day ${goal.day} (${st === 1 ? 'autumn' : 'your second summer'})` : ''}, ${st === 1 ? 'the villagers stop translating themselves' : 'the village goes fully Ukrainian'}.</div>` : ''}
     ${ids.length ? `<div class="grid">${ids.map(k => `<button class="it${W[k].verb ? ' verbit' : ''}" data-a="hearWord" data-v="${k}"><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">${S.words[k].l < 3 ? W[k].en : '···'}</div><div class="lv">${'●'.repeat(S.words[k].l)}${'○'.repeat(5 - S.words[k].l)}</div></button>`).join('')}</div>` : `<div class="muted">${D.ui.empty[0]}</div>`}`);
 }
 

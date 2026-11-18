@@ -83,6 +83,7 @@ window.DATA = {
     { id: "kachai", uk: "качай", tr: "ka-CHAI", en: "roll!", ic: "⚪", verb: true },
     { id: "postav", uk: "постав", tr: "po-STAV", en: "put! place!", ic: "👇", verb: true },
     { id: "nakryi", uk: "накрий", tr: "na-KRYI", en: "cover!", ic: "🧺", verb: true },
+    { id: "zmety", uk: "змети", tr: "zme-TY", en: "sweep off!", ic: "🧹", verb: true },
     // Festivals and the village notice board
     { id: "doshka", uk: "дошка оголошень", tr: "DOSH-ka o-ho-LO-shen", en: "notice board", ic: "@doshka" },
     { id: "horovod", uk: "хоровод", tr: "kho-ro-VOD", en: "round dance", ic: "💃", fact: { uk: "У хороводі всі тримаються за руки й танцюють по колу.", en: "In a khorovod everyone holds hands and dances round in a circle." } },
@@ -366,7 +367,7 @@ window.DATA = {
       lines: {
         greet: { uk: "Добрий день! Радий тебе бачити.", en: "Good day! Glad to see you." },
         mgw_invite: { uk: "Допоможеш укрити вулики на зиму?", en: "Will you help me cover the hives for winter?" },
-        mgw_pochyst: { uk: "Почисть сніг з вулика!", en: "Clear the snow off the hive!" },
+        mgw_zmety: { uk: "Змети сніг з вулика!", en: "Sweep the snow off the hive!" },
         mgw_nakryi: { uk: "Накрий вулик соломою!", en: "Cover the hive with straw!" },
         mgw_done: { uk: "Дякую! Бджолам буде тепло.", en: "Thank you! The bees will be warm." },
         mg_invite: { uk: "Допоможеш мені з бджолами?", en: "Will you help me with the bees?" },
