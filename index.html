@@ -176,6 +176,26 @@
   #update.show { display:block; }
   #start .ver { position:absolute; left:12px; bottom:calc(8px + env(safe-area-inset-bottom)); font-size:12px; color:#fff; opacity:.9; text-shadow:0 1px 2px rgba(0,0,0,.45); }
   #start .reset { position:absolute; right:12px; bottom:calc(8px + env(safe-area-inset-bottom)); font-size:12px; background:none; color:#fff; opacity:.9; text-decoration:underline; text-shadow:0 1px 2px rgba(0,0,0,.45); }
+  /* action words (verbs) stand out wherever they appear */
+  .verb { background:#ffd27a; color:#7a3300; border-radius:8px; padding:0 6px; box-shadow:0 2px 0 #e8a33a; }
+  .it.verbit { box-shadow: inset 0 0 0 3px #ffb347; }
+  /* cooking with Grandma */
+  .cookline { display:flex; gap:10px; align-items:center; text-align:left; margin:6px 0; }
+  .cookline img { width:58px; height:58px; border-radius:16px; background:#e8f4d9; flex:none; }
+  .vchip { font-size:16px; margin:2px 0 8px; } .vchip small { color:var(--soft); font-weight:600; }
+  .cookpad { position:relative; height:210px; border-radius:20px; background:radial-gradient(circle at 50% 55%, #fbecd3, #e3c395); touch-action:none; overflow:hidden; user-select:none; -webkit-user-select:none; transition:box-shadow .3s; }
+  .cookpad #ckFood { position:absolute; left:50%; top:52%; width:120px; height:120px; transform:translate(-50%,-50%); pointer-events:none; transition:transform .12s; }
+  .cookpad.heat { box-shadow:inset 0 -36px 44px rgba(255,110,30,.5); }
+  .cookpad.ok::after { content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:96px; font-weight:900; color:#2f9e44; background:rgba(255,255,255,.55); }
+  #ckTool { position:absolute; left:72%; top:32%; font-size:50px; transform:translate(-50%,-50%); pointer-events:none; }
+  #ckTool.chop { animation:chop .18s; }
+  @keyframes chop { 50% { transform:translate(-50%,-25%) rotate(-28deg); } }
+  .cookbar { height:12px; border-radius:6px; background:#eadcc4; margin:10px 0 4px; overflow:hidden; }
+  .cookbar i { display:block; height:100%; width:0; background:linear-gradient(90deg,#ffb347,#ff7b54); transition:width .1s; }
+  .ckbit { position:absolute; pointer-events:none; width:26px; height:26px; animation:ckbit .7s forwards; }
+  .ckup { position:absolute; pointer-events:none; font-size:24px; animation:ckup 1.1s forwards; }
+  @keyframes ckbit { to { transform:translate(var(--dx), 46px) scale(.4) rotate(160deg); opacity:0; } }
+  @keyframes ckup { to { transform:translateY(-80px) scale(1.4); opacity:0; } }
 </style>
 </head>
 <body>
@@ -211,12 +231,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v124</div>
+  <div class="ver">v125</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '124';</script>
-<script src="data.js?v=124"></script>
-<script src="game.js?v=124"></script>
+<script>window.APP_VERSION = '125';</script>
+<script src="data.js?v=125"></script>
+<script src="game.js?v=125"></script>
 </body>
 </html>

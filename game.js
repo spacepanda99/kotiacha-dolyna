@@ -2131,6 +2131,7 @@ function wordCard(id, o = {}) {
   const en = hideEn || stage() >= 3 ? peekBtn : `<div class="en">${w.en}</div>${/class="xl"/.test(o.note || '') ? peekBtn : ''}`;
   openSheet(`<div class="card">
     ${isNew ? `<div class="tag">✨ ${PH.nove_slovo.uk}${stage() >= 3 ? xl(' · ' + PH.nove_slovo.en) : ''}</div>` : ''}
+    ${w.verb ? `<div class="tag" style="background:#ffd27a">🔶 дієслово${stage() < 3 ? ' · verb, an action word' : xl(' · verb')}</div>` : ''}
     <img class="big" src="${iconURL(id)}" alt="">
     <div class="word">${w.uk}</div>
     ${st.l < 4 ? `<div class="tr">${w.tr}</div>` : ''}
@@ -2475,6 +2476,77 @@ function mealScene(R) {
   say('v_olia_ready_' + R.id);
 }
 
+// ------------------------------------------------------------------ cooking with Grandma
+// Once she has every ingredient, you cook the dish together, one step at a time. Each step is one of her
+// commands with its action word (verb) highlighted, and you do it with your finger: tap to chop or add,
+// draw circles to stir or mix, press and hold to boil, fry or pour.
+let ck = null;
+const COOK_TOOL = { pomyi: '🫧', pochyst: '🔪', porizh: '🔪', natry: '🧀', nasyp: '🥣', nalyi: '🫗', zamis: '👐', rozkachai: '🪵', zlipy: '👐', zvary: '🔥', posmazh: '🔥', pomishai: '🥄', zmishai: '🥄', dodai: '👇', posoly: '🧂', zahorny: '👐', sprobui: '🥄' };
+const verbHL = uk => uk.replace(/^([^\s!,.]+)/, '<span class="verb">$1</span>');
+function cookScene(R) {
+  if (!R.steps || !R.steps.length) return mealScene(R);
+  ck = { R, i: 0, prog: 0, done: false };
+  cookStep(['v_olia_cook']);
+}
+function cookStep(first = []) {
+  const R = ck.R, st = R.steps[ck.i], npc = NPC.olia, L = npc.lines[st.line], stg = stage();
+  ck.prog = 0; ck.done = false;
+  learn(st.v); learn(st.w);
+  const how = { tap: ['Стукай!', 'Tap, tap, tap!'], stir: ['Води пальцем по колу!', 'Draw circles with your finger'], hold: ['Тримай!', 'Press and hold'] }[st.g];
+  openSheet(`<div class="card">
+    <div class="tag">👩‍🍳 ${W[R.dish].uk} · ${ck.i + 1}/${R.steps.length}</div>
+    <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:27px">${verbHL(L.uk)}</div>${stg < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
+    <div class="vchip"><span class="verb">${W[st.v].uk}</span> ${stg < 3 ? '= ' + W[st.v].en : xl('= ' + W[st.v].en)} <small>· дієслово${stg < 3 ? ' (verb, an action word)' : ''}</small></div>
+    <div id="cookPad" class="cookpad"><img id="ckFood" src="${iconURL(st.w)}" alt=""><div id="ckTool">${COOK_TOOL[st.v] || '🥄'}</div></div>
+    <div class="cookbar"><i id="ckBar"></i></div>
+    <div class="muted">${how[0]}${stg < 3 ? ' · ' + how[1] : ''}</div>
+    <div class="row">${btn('hear', 'v_olia_' + st.line, '🔊', 'round blue')}${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+  say(...first, 'v_olia_' + st.line);
+  cookWire();
+}
+function cookWire() {
+  const pad = $('#cookPad'), tool = $('#ckTool'), food = $('#ckFood'), bar = $('#ckBar'), st = ck.R.steps[ck.i], me = ck;
+  let down = false, lx = 0, ly = 0, raf = 0, lastT = 0, puff = 0;
+  const R0 = () => pad.getBoundingClientRect();
+  const place = (x, y) => { const r = R0(); tool.style.left = (x - r.left) + 'px'; tool.style.top = (y - r.top - 30) + 'px'; };
+  const add = d => { if (me !== ck || ck.done) return; ck.prog = Math.min(1, ck.prog + d); bar.style.width = (ck.prog * 100) + '%'; if (ck.prog >= 1) cookDone(); };
+  const bit = (x, y) => { const r = R0(), b = document.createElement('img'); b.className = 'ckbit'; b.src = iconURL(st.w); b.style.left = (x - r.left - 13) + 'px'; b.style.top = (y - r.top - 13) + 'px'; b.style.setProperty('--dx', (Math.random() * 80 - 40) + 'px'); pad.appendChild(b); setTimeout(() => b.remove(), 750); };
+  const steam = ic => { const p = document.createElement('div'); p.className = 'ckup'; p.textContent = ic; p.style.left = (35 + Math.random() * 30) + '%'; p.style.top = '45%'; pad.appendChild(p); setTimeout(() => p.remove(), 1150); };
+  // keep the sheet's swipe-to-close from taking these touches
+  for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
+  pad.addEventListener('pointerdown', e => {
+    e.preventDefault(); down = true; lx = e.clientX; ly = e.clientY; place(lx, ly);
+    try { pad.setPointerCapture(e.pointerId); } catch (er) {}
+    if (st.g === 'tap') {
+      tool.classList.remove('chop'); void tool.offsetWidth; tool.classList.add('chop');
+      food.style.transform = 'translate(-50%,-50%) scale(.9)'; setTimeout(() => { food.style.transform = ''; }, 110);
+      bit(lx, ly); blip(480 + Math.random() * 220, 0.04); add(1 / Math.max(1, st.n));
+    } else if (st.g === 'hold') {
+      pad.classList.add('heat'); lastT = performance.now();
+      const loop = tm => { if (!down || me !== ck || ck.done) return; add((tm - lastT) / 2200); lastT = tm; if ((puff += 1) % 9 === 0) steam(st.v === 'nalyi' || st.v === 'nasyp' ? '💧' : '💨'); raf = requestAnimationFrame(loop); };
+      raf = requestAnimationFrame(loop);
+    }
+  });
+  pad.addEventListener('pointermove', e => {
+    if (!down) return; place(e.clientX, e.clientY);
+    if (st.g === 'stir') { const d = Math.hypot(e.clientX - lx, e.clientY - ly); lx = e.clientX; ly = e.clientY; food.style.transform = `translate(-50%,-50%) rotate(${(ck.prog * 720) % 360}deg)`; add(d / (R0().width * 4)); }
+  });
+  const up = () => { down = false; pad.classList.remove('heat'); cancelAnimationFrame(raf); };
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) pad.addEventListener(ev, up);
+}
+function cookDone() {
+  const st = ck.R.steps[ck.i], me = ck; ck.done = true;
+  useWord(st.v, true); save();
+  const pad = $('#cookPad'); if (pad) pad.classList.add('ok');
+  say('p_molodets'); blip(990, 0.12);
+  setTimeout(() => {
+    if (me !== ck || !$('#cookPad')) return;   // the card was closed part-way: she'll cook again next time
+    ck.i++;
+    if (ck.i >= ck.R.steps.length) { const R = ck.R; ck = null; mealScene(R); }
+    else cookStep();
+  }, 1300);
+}
+
 // ------------------------------------------------------------------ speaking
 // Say a word, and Gemini (through a small server that holds the key) gives a generous score. Chrome on Android.
 const SPEECH_URL = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/kdScoreSpeech';
@@ -2748,7 +2820,7 @@ function wordsSheet() {
     <div style="font-weight:800">${title}</div>
     <div class="bar"><i style="width:${Math.min(100, Math.round(m / next * 100))}%"></i></div>
     ${st < 3 ? `<div class="muted" style="padding:0 0 10px;text-align:left">${m} well-known words. At ${next}, ${st === 1 ? 'the villagers stop translating themselves' : 'the village goes fully Ukrainian'}.</div>` : ''}
-    ${ids.length ? `<div class="grid">${ids.map(k => `<button class="it" data-a="hearWord" data-v="${k}"><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">${S.words[k].l < 3 ? W[k].en : '···'}</div><div class="lv">${'●'.repeat(S.words[k].l)}${'○'.repeat(5 - S.words[k].l)}</div></button>`).join('')}</div>` : `<div class="muted">${D.ui.empty[0]}</div>`}`);
+    ${ids.length ? `<div class="grid">${ids.map(k => `<button class="it${W[k].verb ? ' verbit' : ''}" data-a="hearWord" data-v="${k}"><img src="${iconURL(k)}" alt=""><div class="n">${W[k].uk}</div><div class="e">${S.words[k].l < 3 ? W[k].en : '···'}</div><div class="lv">${'●'.repeat(S.words[k].l)}${'○'.repeat(5 - S.words[k].l)}</div></button>`).join('')}</div>` : `<div class="muted">${D.ui.empty[0]}</div>`}`);
 }
 
 // ------------------------------------------------------------------ inside the cottage
@@ -4118,7 +4190,7 @@ const A = {
   spStop() { if (sp) sp.stop = true; },
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
-  spGo() { const R = sp && sp.R; sp = null; if (R) mealScene(R); },
+  spGo() { const R = sp && sp.R; sp = null; if (R) cookScene(R); },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
   close() { if (sp) return; closeSheet(); },   // a stray tap outside must not throw away a speaking round
   words: wordsSheet, bag: bagSheet,
