@@ -67,6 +67,22 @@ window.DATA = {
     { id: "nesy", uk: "неси", tr: "ne-SY", en: "fetch! bring it!", ic: "🐕", verb: true },
     { id: "zakydai", uk: "закидай", tr: "za-ky-DAI", en: "cast! (a fishing line)", ic: "🎣", verb: true },
     { id: "tiahny", uk: "тягни", tr: "tiah-NY", en: "pull!", ic: "💪", verb: true },
+    // Seasons and winter
+    { id: "lito", uk: "літо", tr: "LI-to", en: "summer", ic: "🌻" },
+    { id: "osin", uk: "осінь", tr: "O-sin", en: "autumn", ic: "🍂" },
+    { id: "zyma", uk: "зима", tr: "zy-MA", en: "winter", ic: "⛄" },
+    { id: "vesna", uk: "весна", tr: "ves-NA", en: "spring", ic: "🌸" },
+    { id: "snih", uk: "сніг", tr: "snih", en: "snow", ic: "❄️" },
+    { id: "lid", uk: "лід", tr: "lid", en: "ice", ic: "🧊" },
+    { id: "snihovyk", uk: "сніговик", tr: "sni-ho-VYK", en: "snowman", ic: "⛄" },
+    { id: "drova", uk: "дрова", tr: "dro-VA", en: "firewood", ic: "🪵", fact: { uk: "Взимку дровами топлять піч: і тепло, і можна варити.", en: "In winter firewood heats the stove: it keeps the cottage warm and cooks the food." } },
+    { id: "koloda", uk: "колода", tr: "ko-LO-da", en: "chopping block", ic: "@koloda" },
+    { id: "rubai", uk: "рубай", tr: "ru-BAI", en: "chop!", ic: "🪓", verb: true },
+    { id: "zatopy", uk: "затопи", tr: "za-to-PY", en: "light! (the stove)", ic: "🔥", verb: true },
+    { id: "sverdly", uk: "свердли", tr: "SVERD-ly", en: "drill!", ic: "🌀", verb: true },
+    { id: "kachai", uk: "качай", tr: "ka-CHAI", en: "roll!", ic: "⚪", verb: true },
+    { id: "postav", uk: "постав", tr: "po-STAV", en: "put! place!", ic: "👇", verb: true },
+    { id: "nakryi", uk: "накрий", tr: "na-KRYI", en: "cover!", ic: "🧺", verb: true },
     // Festivals and the village notice board
     { id: "doshka", uk: "дошка оголошень", tr: "DOSH-ka o-ho-LO-shen", en: "notice board", ic: "@doshka" },
     { id: "horovod", uk: "хоровод", tr: "kho-ro-VOD", en: "round dance", ic: "💃", fact: { uk: "У хороводі всі тримаються за руки й танцюють по колу.", en: "In a khorovod everyone holds hands and dances round in a circle." } },
@@ -179,6 +195,9 @@ window.DATA = {
   // Phrases in the teacher's voice: things you say, and the guide's instructions.
   phrases: [
     { id: "pryvit", uk: "Привіт!", en: "Hi!" },
+    { id: "rubai_drova", uk: "Рубай дрова!", en: "Chop the firewood!" },
+    { id: "zatopy_pich", uk: "Затопи піч!", en: "Light the stove!" },
+    { id: "kholodno", uk: "Холодно! Потрібні дрова.", en: "It's cold! We need firewood." },
     { id: "zi_sviatom", uk: "Зі святом!", en: "Happy holiday!" },
     { id: "khrystos_narodyvsia", uk: "Христос народився!", en: "Christ is born!" },
     { id: "slavimo", uk: "Славімо Його!", en: "Let us praise Him!" },
@@ -293,6 +312,9 @@ window.DATA = {
       look: { skin: "#eec39a", shirt: "#f7f3e8", trim: "#2c5fa8", skirt: "#3d5a80", hair: "#5a3a22", hat: "straw", hatCol: "#e8c66a" },
       lines: {
         greet: { uk: "Привіт! Гарний день, правда?", en: "Hi! A lovely day, isn't it?" },
+        mgw_invite: { uk: "Порибалимо на льоду?", en: "Shall we fish on the ice?" },
+        mgw_sverdly: { uk: "Свердли лунку в льоду!", en: "Drill a hole in the ice!" },
+        mgw_done: { uk: "Зимова риба — найсмачніша!", en: "Winter fish is the tastiest!" },
         mg_invite: { uk: "Порибалимо разом?", en: "Shall we go fishing together?" },
         mg_zakydai: { uk: "Закидай вудку!", en: "Cast the line!" },
         mg_tiahny: { uk: "Тягни!", en: "Pull!" },
@@ -311,6 +333,10 @@ window.DATA = {
       look: { skin: "#f6d2b3", shirt: "#ffffff", trim: "#2e9e5b", skirt: "#3a7d44", hair: "#e0b34c", hat: "none", hatCol: "#000", small: true },
       lines: {
         greet: { uk: "Привіт! Пограймося?", en: "Hi! Shall we play?" },
+        mgw_invite: { uk: "Зліпимо сніговика?", en: "Shall we build a snowman?" },
+        mgw_kachai: { uk: "Качай сніжку!", en: "Roll the snowball!" },
+        mgw_postav: { uk: "Постав її на сніговика!", en: "Put it on the snowman!" },
+        mgw_done: { uk: "Який гарний сніговик!", en: "What a lovely snowman!" },
         mg_invite: { uk: "Пограймося з Бровком?", en: "Shall we play with Brovko?" },
         mg_kydai: { uk: "Кидай м'ячик!", en: "Throw the ball!" },
         mg_nesy: { uk: "Скажи йому: «Неси!»", en: "Tell him: «Fetch!»" },
@@ -328,6 +354,10 @@ window.DATA = {
       look: { skin: "#eabf98", shirt: "#fff8e6", trim: "#c98a1a", skirt: "#6b4f2a", hair: "#8a8a8a", hat: "straw", hatCol: "#f1dfa0" },
       lines: {
         greet: { uk: "Добрий день! Радий тебе бачити.", en: "Good day! Glad to see you." },
+        mgw_invite: { uk: "Допоможеш укрити вулики на зиму?", en: "Will you help me cover the hives for winter?" },
+        mgw_pochyst: { uk: "Почисть сніг з вулика!", en: "Clear the snow off the hive!" },
+        mgw_nakryi: { uk: "Накрий вулик соломою!", en: "Cover the hive with straw!" },
+        mgw_done: { uk: "Дякую! Бджолам буде тепло.", en: "Thank you! The bees will be warm." },
         mg_invite: { uk: "Допоможеш мені з бджолами?", en: "Will you help me with the bees?" },
         mg_dmukhai: { uk: "Дмухай димом на бджіл!", en: "Blow smoke on the bees!" },
         mg_zbyrai: { uk: "Збирай мед!", en: "Collect the honey!" },
@@ -424,6 +454,8 @@ window.DATA = {
     seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
     home: { vazon: 12, chashka: 8, svichka: 8, knyha: 10, kvity: 10, lampa: 16, hlechyk: 16, rushnyk: 16, pysanka: 12, motanka: 16, tarilka: 20, vinok: 16, didukh: 20, vyshyvanka: 24, bandura: 40, skrynia: 30, kartyna: 20, dzerkalo: 20, hodynnyk: 20, kylym: 30 },
     // Toys and furniture for the cat friends (they use them).
+    // In winter nothing grows, so the market sells vegetables instead of seeds.
+    veg: { kartoplia: 4, kapusta: 4, buriak: 3, morkva: 3, tsybulia: 3, chasnyk: 3, pomidor: 4, yabluko: 3, pshenytsia: 3, mak: 3 },
     tools: { vudka: 6, maslobiika: 10, zhorna: 12 },
     // Animals of your own: they live by your cottage, and you collect their eggs and milk.
     farm: { kurka: 15, korova: 40 },
@@ -437,7 +469,7 @@ window.DATA = {
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
-    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], handover: ["Віддати", "Hand over"], festgo: ["Почати свято", "Start the festival"], backvillage: ["До села", "Back to the village"], mgyes: ["Так!", "Yes!"], mglater: ["Пізніше", "Later"], nesy: ["Неси!", "Fetch!"], back: ["Назад", "Back"],
+    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], handover: ["Віддати", "Hand over"], festgo: ["Почати свято", "Start the festival"], backvillage: ["До села", "Back to the village"], mgyes: ["Так!", "Yes!"], mglater: ["Пізніше", "Later"], nesy: ["Неси!", "Fetch!"], veg: ["Овочі", "Vegetables"], back: ["Назад", "Back"],
     take: ["Взяти", "Take"], enter: ["Зайти", "Go in"], exit: ["Вийти", "Go out"], buy: ["Купити", "Buy"],
     sell: ["Продати", "Sell"], plant: ["Посадити", "Plant"], water: ["Полити", "Water"], harvest: ["Зібрати", "Harvest"],
     next: ["Далі", "Next"], close: ["Добре", "OK"], give: ["Дати", "Give"], putaway: ["Прибрати", "Put away"],
