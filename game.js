@@ -2121,7 +2121,15 @@ function wordCard(id, o = {}) {
   () => {
     if (!recall) return;
     // Remembered it without peeking at the English: it moves up and comes back later.
-    if (!cur.peeked) { st.l = Math.min(5, st.l + 1); st.d = now() + IV[st.l]; } else st.d = now() + IV[2];   // peeked: try again in a few minutes
+    if (!cur.peeked) { st.l = Math.min(5, st.l + 1); st.d = now() + IV[st.l]; st.pk = 0; }
+    else {
+      // Peeked at the English (often just to read the culture note): it doesn't count as remembered, but it
+      // mustn't trap the word sparkling every few minutes either. It waits at least half an hour, and every
+      // second peek still moves it up a level, so things you've looked at often settle down.
+      st.pk = (st.pk || 0) + 1;
+      if (st.pk >= 2) { st.l = Math.min(5, st.l + 1); st.pk = 0; }
+      st.d = now() + Math.max(IV[3], IV[st.l]);
+    }
     save();
   });
   say('w_' + id, ...(o.clips || []));
