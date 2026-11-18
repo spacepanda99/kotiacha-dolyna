@@ -2573,9 +2573,9 @@ const COOK_HOW = {
   taste: ['Підніми ложку до рота', 'Lift the spoon up to taste'],
 };
 let ck = null;
-function cookScene(R) {
+function cookScene(R, dev) {
   if (!R.steps || !R.steps.length) return mealScene(R);
-  ck = { R, i: 0, prog: 0, done: false };
+  ck = { R, i: 0, prog: 0, done: false, dev };
   cookStep(['v_olia_cook']);
 }
 function cookStep(first = []) {
@@ -2886,7 +2886,7 @@ function cookDone() {
   setTimeout(() => {
     if (me !== ck || !$('#cookPad')) return;   // the card was closed part-way: she'll cook again next time
     ck.i++;
-    if (ck.i >= ck.R.steps.length) { const R = ck.R; ck = null; mealScene(R); }
+    if (ck.i >= ck.R.steps.length) { const R = ck.R; devMeal = !!ck.dev; ck = null; mealScene(R); }
     else cookStep();
   }, 1300);
 }
@@ -2910,8 +2910,8 @@ function mgInvite(npc) {
     <div class="row">${btn('hear', `v_${npc.id}_${mgPre()}invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
   say(`v_${npc.id}_${mgPre()}invite`);
 }
-function mgStart(id) {
-  const npc = NPC[id], kind = winter() && MG[id + '_w'] ? id + '_w' : id, G = MG[kind];
+function mgStart(id, force) {
+  const npc = NPC[id], kind = force || (winter() && MG[id + '_w'] ? id + '_w' : id), G = MG[kind];
   mg = { id: kind, npc, G, round: 1, phase: '', t0: nowT, lastT: nowT, puffs: [], down: null, score: 0 };
   for (const v of G.verbs) learn(v);
   openSheet(`<div class="card"><div class="tag" id="mgTag"></div>
@@ -4419,7 +4419,7 @@ function drawBed(t) {
     // --- 2.–4. the valley, faded in over the room and out again at the end
     const inA = fade(N, N + 1.1), outA = 1 - fade(T3 - 0.8, T3);
     const p = a < T1 ? 0 : a < T2 ? (a - T1) / (T2 - T1) : 1;
-    if (a > T1 + 0.6) once('morning', () => newDay());   // the new day (and its weather) begins as the sky turns
+    if (a > T1 + 0.6) once('morning', () => { if (bed.dev) { const r = Math.random(); S.wx = winter() ? (r < 0.4 ? 'snow' : r < 0.75 ? 'cloud' : 'sun') : r < 0.5 ? 'sun' : r < 0.78 ? 'cloud' : 'rain'; S.clock.t = 0.27; S.clock.ev = {}; S.clock.nightT = 0; } else newDay(); });   // the new day (and its weather) begins as the sky turns
     const wx = d.morning ? S.wx : null;
     c.save(); c.globalAlpha = inA * outA; bedValley(c, w, h, p, t, a - N, wx); c.restore();
     // the window frame of the cottage around the view, as if you're looking out
@@ -5349,12 +5349,11 @@ function festTap() {
   }
 }
 function festDone() {
-  const F = fest.F, owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0;
-  S.hearts += 5; if (owned) S.coins += 15; else S.home[F.reward] = (S.home[F.reward] || 0) + 1;
-  festNow().done = true;
+  const F = fest.F, owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0, dev = fest.dev;
+  if (!dev) { S.hearts += 5; if (owned) S.coins += 15; else S.home[F.reward] = (S.home[F.reward] || 0) + 1; festNow().done = true; }
   closeSheet(); fest = null; mode = 'world'; document.body.classList.remove('scene'); hud(); save();
   try { festMusic.pause(); } catch (e) {} startMusic();   // back to the village theme
-  toast(`🎉 +5 ❤️ ${owned ? ' +15 ₴' : ' · ' + W[F.reward].uk + (stage() < 3 ? ' (in your basket: place it at home)' : '')}`, 3200);
+  toast(dev ? '🛠️ ' + W[F.id].uk : `🎉 +5 ❤️ ${owned ? ' +15 ₴' : ' · ' + W[F.reward].uk + (stage() < 3 ? ' (in your basket: place it at home)' : '')}`, 3200);
 }
 // A crackling bonfire: logs, three tongues of flame and sparks.
 function bonfire(c, x, y, s, t) {
@@ -5476,6 +5475,34 @@ function drawFest(t) {
   }
   if (f.phase === 'greet' && f.greetAt && !sheetOpen() && nowT - f.greetAt > 0.6) f.greetCard();   // never left with no way to answer
 }
+
+
+// ------------------------------------------------------------------ developer mode
+// The 🛠️ on the title screen asks for a code (7272). With it, a 🛠️ button joins the top bar for this visit
+// only (it isn't saved, so nobody else stumbles on it), opening a menu that jumps straight to any game, any of
+// Grandma's dishes, any season or festival, or the night. Dev runs of cooking, festivals and bedtime leave the
+// real progress alone: no recipe moves on, no festival is marked done, no day passes.
+let devOn = false, devCode = '', devMeal = false;
+function devPinDraw(bad) {
+  const el = $('#devpin');
+  el.innerHTML = `<div class="box"><div style="font-weight:900;font-size:20px;color:#4a2c1a">🛠️ Developer</div><div style="color:#8a7566;font-size:14px;margin-top:2px">Enter the code</div>
+    <div class="dots">${[0, 1, 2, 3].map(i => `<i class="${i < devCode.length ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="keys">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-a="devKey" data-v="${n}">${n}</button>`).join('')}<button data-a="devPinX" aria-label="Cancel">✕</button><button data-a="devKey" data-v="0">0</button><button data-a="devKey" data-v="back" aria-label="Delete">⌫</button></div></div>`;
+  el.classList.add('on'); el.classList.remove('bad'); if (bad) { void el.offsetWidth; el.classList.add('bad'); }
+}
+function devMenu() {
+  const sec = (title, items) => `<div style="font-weight:900;margin:12px 0 6px;color:#4a2c1a">${title}</div><div style="display:flex;flex-wrap:wrap;gap:6px">${items.map(([a, v, l]) => `<button class="b ghost" style="padding:8px 11px;font-size:14px;margin:0" data-a="${a}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  const ic = id => (W[id].ic[0] === '@' ? '' : W[id].ic + ' ');
+  openSheet(`<div class="card" style="text-align:left"><h3><span>🛠️ Developer</span><small>${SEASON_IC[season()]} ${W[season()].uk}${seasonForce ? ' (set here)' : ''} · ${['day', 'evening', 'night'][S.clock.t >= 0.86 ? 2 : S.clock.t >= 0.78 ? 1 : 0]}</small></h3>
+    ${sec('Mini games', [['devGame', 'bohdan', '🐝 Bees'], ['devGame', 'andriiko', '🐕 Fetch'], ['devGame', 'taras', '🎣 Fishing'], ['devGame', 'bohdan_w', '❄️ Winter hive'], ['devGame', 'andriiko_w', '⛄ Snowman'], ['devGame', 'taras_w', '🧊 Ice fishing'], ['devGame', 'chop', '🪓 Chopping wood']])}
+    ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].uk]))}
+    ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].uk + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
+    ${sec('Festivals', D.festivals.map(f => ['devFest', f.id, SEASON_IC[SEASONS[FEST_OF.indexOf(f.id)]] + ' ' + W[f.id].uk]))}
+    ${sec('Day and night', [['devTime', 'morning', '🌅 Morning'], ['devTime', 'evening', '🌇 Evening'], ['devTime', 'night', '🌙 Night'], ['devTime', 'bed', '🛏️ Bedtime scene']])}
+    <div class="row" style="margin-top:14px">${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+}
+// Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
+function devToWorld() { if (mode === 'home' || mode === 'olia') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
 
 // ------------------------------------------------------------------ the title screen, drawn
 const tcv = $('#tc'), tctx = tcv.getContext('2d');
@@ -5767,6 +5794,7 @@ function storyClose() { $('#story').classList.remove('show'); sayToken++; for (c
 const A = {
   update() { location.reload(); },
   eatMeal() {
+    if (devMeal) { devMeal = false; say('p_duzhe_smachno'); blip(990, 0.2); return setTimeout(closeSheet, 1500); }   // a developer's practice meal
     const R = curRecipe(); if (!R) return closeSheet();
     say('p_duzhe_smachno'); learn(R.dish); give(R.dish); S.hearts += 3;   // a meal from Grandma earns love, not money
     S.recipe = { i: S.recipe.i + 1, have: {}, started: -1 };
@@ -5822,6 +5850,25 @@ const A = {
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
   festReply() { festReply(); },
+  devPin() { devCode = ''; devPinDraw(); },
+  devPinX() { $('#devpin').classList.remove('on'); },
+  devKey(v) {
+    if (v === 'back') devCode = devCode.slice(0, -1); else if (devCode.length < 4) devCode += v;
+    blip(600 + devCode.length * 80, 0.04);
+    if (devCode.length < 4) return devPinDraw();
+    if (devCode === '7272') { devOn = true; devCode = ''; $('#devpin').classList.remove('on'); $('#devBtn').style.display = ''; A.start(); setTimeout(devMenu, 700); }
+    else { devCode = ''; devPinDraw(true); blip(200, 0.15); }
+  },
+  devMenu() { if (devOn) devMenu(); },
+  devGame(v) { closeSheet(); if (v === 'chop') return setTimeout(chopStart, 150); setTimeout(() => mgStart(v.replace('_w', ''), v), 150); },
+  devCook(v) { const R = D.recipes.find(r => r.id === v); closeSheet(); setTimeout(() => cookScene(R, true), 150); },
+  devSeason(v) { seasonForce = v === 'real' ? null : v; homeList = null; closeSheet(); setGuide(); toast(`${SEASON_IC[season()]} ${W[season()].uk}${v === 'real' ? ' · the real season' : ''}`); },
+  devFest(v) { seasonForce = SEASONS[FEST_OF.indexOf(v)]; closeSheet(); devToWorld(); setTimeout(() => { startFest(); if (fest) fest.dev = true; }, 150); },
+  devTime(v) {
+    closeSheet();
+    if (v === 'bed') { S.clock.t = 0.9; return fadeThen(() => { enterHomeNow(); if (bed) bed.dev = true; }); }
+    devToWorld(); S.clock.t = { morning: 0.3, evening: 0.79, night: 0.88 }[v]; S.clock.ev = {}; S.clock.nightT = 0; save(); toast({ morning: '🌅 ' + W.ranok.uk, evening: '🌇 ' + W.vechir.uk, night: '🌙 ' + W.nich.uk }[v]);
+  },
   boardGive() { boardGive(); },
   festGo() { closeSheet(); startFest(); },
   mgGo(v) { closeSheet(); setTimeout(() => mgStart(v), 120); },

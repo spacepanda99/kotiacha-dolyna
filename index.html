@@ -41,6 +41,17 @@
 
   #homebar { position:fixed; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:5; display:none; justify-content:center; gap:10px; flex-wrap:wrap; padding:0 12px; }
 
+  #start .tdev { position:absolute; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); width:46px; height:46px; border-radius:50%; background:rgba(255,248,234,.75); border:0; font-size:21px; z-index:2; }
+  #devpin { position:fixed; inset:0; z-index:60; background:rgba(40,30,20,.55); display:none; align-items:center; justify-content:center; }
+  #devpin.on { display:flex; }
+  #devpin .box { background:#fff8ea; border-radius:22px; padding:18px 18px 16px; width:min(300px, 86vw); text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  #devpin.bad .box { animation:devshake .35s; }
+  @keyframes devshake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-10px); } 75% { transform:translateX(10px); } }
+  #devpin .dots { display:flex; gap:12px; justify-content:center; margin:12px 0 14px; }
+  #devpin .dots i { width:16px; height:16px; border-radius:50%; border:2px solid #4a2c1a; }
+  #devpin .dots i.on { background:#4a2c1a; }
+  #devpin .keys { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; }
+  #devpin .keys button { font-size:24px; font-weight:800; padding:12px 0; border-radius:14px; border:0; background:#f1e3c8; color:#4a2c1a; }
   #veil { position:fixed; inset:0; background:rgba(40,30,20,.28); z-index:9; display:none; }
   #sheet { position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:min(100vw, 560px); max-height:78vh; overflow:auto; -webkit-overflow-scrolling:touch; touch-action:pan-y; background:var(--cream); border-radius:26px 26px 0 0; padding:16px 16px calc(18px + env(safe-area-inset-bottom)); z-index:10; display:none; box-shadow:0 -6px 24px rgba(40,30,20,.25); }
   #sheet.show, #veil.show, #sheet.closing, #veil.closing { display:block; }
@@ -213,6 +224,7 @@
   <button class="pill btn" data-a="music" id="musicBtn" aria-label="Музика / Music">🎵</button>
   <button class="pill btn" data-a="words" aria-label="Словник / Word book">📖</button>
   <button class="pill btn" data-a="bag" aria-label="Кошик / Basket">🧺</button>
+  <button class="pill btn" data-a="devMenu" id="devBtn" aria-label="Developer" style="display:none">🛠️</button>
 </div>
 <div id="guide" data-a="guide"><button class="eye" data-a="guideEye" aria-label="Show English">👁</button><div class="t"><div class="uk"></div><div class="en"></div></div><div class="spk">🔊</div></div>
 <div id="homebar"><button id="decorBtn" class="b" data-a="decorate"></button><button id="exit" class="b blue" data-a="exitHome"></button></div>
@@ -220,6 +232,7 @@
 <div id="veil" data-a="close"></div>
 <div id="sheet"></div>
 <div id="toast"></div>
+<div id="devpin"></div>
 <div id="fade"></div>
 <button id="update" data-a="update">🔄 Нова версія · <small>New version, tap to update</small></button>
 <div id="story" data-a="storyBg"><div class="paper"></div></div>
@@ -227,18 +240,19 @@
 <div id="start">
   <canvas id="tc"></canvas>
   <button class="tmusic" data-a="music" aria-label="Музика / Music">🎵</button>
+  <button class="tdev" data-a="devPin" aria-label="Developer">🛠️</button>
   <h1 class="sr">Котяча Долина · Kotiacha Dolyna · Cat Valley</h1>
   <div class="btns">
     <button class="b" data-a="start">Почати<small>Start</small></button>
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v137</div>
+  <div class="ver">v138</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '137';</script>
-<script src="data.js?v=137"></script>
-<script src="game.js?v=137"></script>
+<script>window.APP_VERSION = '138';</script>
+<script src="data.js?v=138"></script>
+<script src="game.js?v=138"></script>
 </body>
 </html>
