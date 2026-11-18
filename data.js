@@ -57,6 +57,16 @@ window.DATA = {
     { id: "posoly", uk: "посоли", tr: "po-so-LY", en: "salt it!", ic: "🧂", verb: true },
     { id: "zahorny", uk: "загорни", tr: "za-hor-NY", en: "wrap!", ic: "🌯", verb: true },
     { id: "sprobui", uk: "спробуй", tr: "SPRO-bui", en: "taste!", ic: "😋", verb: true },
+    { id: "tantsiui", uk: "танцюй", tr: "tan-TSIUI", en: "dance!", ic: "💃", verb: true },
+    { id: "stryby", uk: "стрибай", tr: "stry-BAI", en: "jump!", ic: "🦘", verb: true },
+    { id: "spivai", uk: "співай", tr: "spi-VAI", en: "sing!", ic: "🎶", verb: true },
+    // Festivals and the village notice board
+    { id: "doshka", uk: "дошка оголошень", tr: "DOSH-ka o-ho-LO-shen", en: "notice board", ic: "@doshka" },
+    { id: "horovod", uk: "хоровод", tr: "kho-ro-VOD", en: "round dance", ic: "💃", fact: { uk: "У хороводі всі тримаються за руки й танцюють по колу.", en: "In a khorovod everyone holds hands and dances round in a circle." } },
+    { id: "obzhynky", uk: "Обжинки", tr: "OB-zhyn-ky", en: "the harvest festival", ic: "🌾", fact: { uk: "Обжинки — свято кінця жнив. З останнього снопа роблять дідуха.", en: "Obzhynky is the feast at the end of the wheat harvest. The last sheaf becomes the didukh." } },
+    { id: "kupala", uk: "Івана Купала", tr: "i-VA-na ku-PA-la", en: "Kupala Night (midsummer)", ic: "🔥", fact: { uk: "На Івана Купала стрибають через вогонь і пускають вінки на воду.", en: "On Kupala Night people jump over a bonfire and float flower wreaths on the water." } },
+    { id: "sviatvechir", uk: "Святвечір", tr: "sviat-VE-chir", en: "Christmas Eve", ic: "⭐", fact: { uk: "На Святвечір на столі дванадцять страв, і перша — кутя.", en: "On Christmas Eve there are twelve dishes on the table, and the first is kutia." } },
+    { id: "velykden", uk: "Великдень", tr: "ve-LYK-den", en: "Easter", ic: "🥚", fact: { uk: "На Великдень святять паску й писанки.", en: "At Easter people bless paska and pysanky." } },
     { id: "kin", uk: "кінь", tr: "kin", en: "horse", ic: "🐎", fact: { uk: "Кінь був вірним другом козака.", en: "A horse was a Cossack's faithful friend. Old songs and tales are full of them." } },
     { id: "koza", uk: "коза", tr: "ko-ZA", en: "goat", ic: "🐐", fact: { uk: "На Новий рік колядники водять «козу».", en: "At New Year, carol singers go from house to house with someone dressed as a goat, to wish a good harvest." } },
     { id: "kachka", uk: "качка", tr: "KACH-ka", en: "duck", ic: "🦆" },
@@ -162,6 +172,12 @@ window.DATA = {
   // Phrases in the teacher's voice: things you say, and the guide's instructions.
   phrases: [
     { id: "pryvit", uk: "Привіт!", en: "Hi!" },
+    { id: "zi_sviatom", uk: "Зі святом!", en: "Happy holiday!" },
+    { id: "khrystos_narodyvsia", uk: "Христос народився!", en: "Christ is born!" },
+    { id: "slavimo", uk: "Славімо Його!", en: "Let us praise Him!" },
+    { id: "khrystos_voskres", uk: "Христос воскрес!", en: "Christ is risen!" },
+    { id: "voistynu", uk: "Воістину воскрес!", en: "He is risen indeed!" },
+    { id: "koliadka", uk: "Добрий вечір тобі, пане господарю, радуйся!", en: "Good evening to you, master of the house, rejoice! (a carol)" },
     { id: "dobroho_ranku", uk: "Доброго ранку!", en: "Good morning!" },
     { id: "dobranich", uk: "Добраніч!", en: "Good night!" },
     { id: "chas_spaty", uk: "Час спати.", en: "Time for bed." },
@@ -320,6 +336,14 @@ window.DATA = {
   ],
 
   // Grandma Olia's cooking. She asks for each ingredient in turn, then cooks the dish and you eat together.
+  // The village's festivals, in turn. The notice board lists what the village still needs; bring it all and
+  // the festival begins: greetings, a round dance, and a festival finish.
+  festivals: [
+    { id: "obzhynky", needs: { pshenytsia: 5, khlib: 2, yabluko: 4, kvitka: 3 }, greet: "zi_sviatom", reply: "zi_sviatom", center: "harvest", sky: "gold", reward: "didukh" },
+    { id: "kupala", needs: { kvitka: 5, kalyna: 3, soniashnyk: 2 }, greet: "zi_sviatom", reply: "zi_sviatom", center: "fire", sky: "night", reward: "vinok", finale: "stryby" },
+    { id: "sviatvechir", needs: { kutia: 1, uzvar: 1, med: 2, mak: 3 }, greet: "khrystos_narodyvsia", reply: "slavimo", center: "star", sky: "snow", reward: "svichka", finale: "spivai" },
+    { id: "velykden", needs: { paska: 1, yaitse: 6, maslo: 2, syr: 2 }, greet: "khrystos_voskres", reply: "voistynu", center: "basket", sky: "spring", reward: "pysanka" }
+  ],
   recipes: [
     { id: "borshch", dish: "borshch", needs: ["buriak", "kapusta", "kartoplia", "morkva", "tsybulia", "pomidor"], steps: [{"v":"pochyst","w":"buriak","line":"do_pochyst_buriak","g":"tap","n":5},{"v":"porizh","w":"kapusta","line":"do_porizh_kapusta","g":"tap","n":6},{"v":"nalyi","w":"voda","line":"do_nalyi_voda","g":"hold","n":0},{"v":"zvary","w":"borshch","line":"do_zvary_borshch","g":"hold","n":0},{"v":"posoly","w":"sil","line":"do_posoly_sil","g":"tap","n":3},{"v":"pomishai","w":"borshch","line":"do_pomishai_borshch","g":"stir","n":0},{"v":"sprobui","w":"borshch","line":"do_sprobui_borshch","g":"tap","n":1}] },
     { id: "varenyky", dish: "varenyky", needs: ["boroshno", "kartoplia", "tsybulia", "syr", "maslo"], steps: [{"v":"nasyp","w":"boroshno","line":"do_nasyp_boroshno","g":"hold","n":0},{"v":"zamis","w":"boroshno","line":"do_zamis_boroshno","g":"tap","n":6},{"v":"rozkachai","w":"boroshno","line":"do_rozkachai_boroshno","g":"stir","n":0},{"v":"porizh","w":"tsybulia","line":"do_porizh_tsybulia","g":"tap","n":5},{"v":"zlipy","w":"varenyky","line":"do_zlipy_varenyky","g":"tap","n":5},{"v":"zvary","w":"varenyky","line":"do_zvary_varenyky","g":"hold","n":0},{"v":"dodai","w":"maslo","line":"do_dodai_maslo","g":"tap","n":2}] },
@@ -392,7 +416,7 @@ window.DATA = {
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
-    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], back: ["Назад", "Back"],
+    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], handover: ["Віддати", "Hand over"], festgo: ["Почати свято", "Start the festival"], backvillage: ["До села", "Back to the village"], back: ["Назад", "Back"],
     take: ["Взяти", "Take"], enter: ["Зайти", "Go in"], exit: ["Вийти", "Go out"], buy: ["Купити", "Buy"],
     sell: ["Продати", "Sell"], plant: ["Посадити", "Plant"], water: ["Полити", "Water"], harvest: ["Зібрати", "Harvest"],
     next: ["Далі", "Next"], close: ["Добре", "OK"], give: ["Дати", "Give"], putaway: ["Прибрати", "Put away"],

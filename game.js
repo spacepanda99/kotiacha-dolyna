@@ -50,6 +50,7 @@ if (!S.say) S.say = {};
 // own weather (S.wx): sunny, cloudy or rain, and rain waters the garden for you.
 if (!S.clock) S.clock = { day: 1, t: 0.3, ev: {} };
 if (!S.wx) S.wx = 'sun';
+if (!S.fest) S.fest = { i: 0, have: {} };   // which festival is next, and what's been brought for it
 if (!S.gear) S.gear = {};
 let saveT = 0;
 // Grandma cooks one dish after another and starts over from the first once she has made them all.
@@ -255,6 +256,16 @@ const DRAW = {
     c.fillStyle = 'rgba(255,255,255,.18)'; ell(c, -10, -54, 9, 1.6);
     if (!back) handle();
     if (going) { c.fillStyle = 'rgba(255,250,235,.85)'; const p = (now() / 300) % 1; for (const [dx, k] of [[-31, 0], [31, 0.5]]) { const q = (p + k) % 1; circ(c, dx + Math.sign(dx) * q * 6, -32 + q * 8, 2.6 * (1 - q) + 0.6); } }
+  },
+  // The village notice board: a plank board on two posts under a little shingled roof, notes pinned to it.
+  doshka(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 40, 6);
+    c.fillStyle = '#7a4a24'; c.fillRect(-33, -74, 7, 74); c.fillRect(26, -74, 7, 74);
+    c.fillStyle = '#b5824e'; rr(c, -40, -86, 80, 54, 4);
+    c.fillStyle = 'rgba(0,0,0,.08)'; for (const y of [-72, -58, -44]) c.fillRect(-40, y, 80, 2);
+    c.fillStyle = '#8a3b2b'; poly(c, [[-48, -84], [0, -104], [48, -84], [44, -80], [0, -98], [-44, -80]]);
+    const note = (x, y, w, h, r, col) => { c.save(); c.translate(x, y); c.rotate(r); c.fillStyle = col; c.fillRect(-w / 2, -h / 2, w, h); c.fillStyle = 'rgba(74,44,26,.45)'; for (let k = 0; k < 3; k++) c.fillRect(-w / 2 + 4, -h / 2 + 6 + k * 6, w - 8, 1.6); c.fillStyle = '#d43a3a'; circ(c, 0, -h / 2 + 2, 2.4); c.restore(); };
+    note(-20, -62, 26, 30, -0.08, '#fffaf0'); note(10, -64, 24, 28, 0.06, '#ffe9a8'); note(-2, -46, 30, 16, -0.03, '#e8f4ff');
   },
   koshyk(c) { c.scale(3.8, 3.8); marketBasket(c, 0, -11.5); },   // the same wicker basket as in Oksana's bubble
   khata(c) {
@@ -1374,6 +1385,7 @@ function add(e) {
   for (const [x, y] of [[4.5, 11.5], [22.6, 11.5], [27.2, 11.35], [17.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28 });   // Grandma's wattle fence
   add({ w: 'prapor', x: 21.95, y: 15.95, s: 2.3, solid: true });
+  add({ w: 'doshka', k: 'board', x: 23.6, y: 17.5, s: 1.35, solid: true });   // the notice board: what the next festival needs
   add({ w: 'lastivka', x: 12.6, y: 6.9, s: 0.7, kind: 'fly', cx: 12.6, cy: 6.9, ph: 1.3, swoop: true });
   // The bandura and a wreath lean against the ends of Oksana's market stall.
   add({ w: 'bandura', x: 17.5, y: 17.06, s: 0.95, lean: 0.16 });
@@ -2294,6 +2306,7 @@ function interact(e) {
     } }] : [] });
   }
   if (e.k === 'my_churn') return churnCard();
+  if (e.k === 'board') return boardCard();
   if (e.k === 'my_mill') return millCard();
   if (e.give) return wordCard(e.w, { acts: ready(e) ? [{ k: 'take', fn: () => take(e) }] : [] });
   wordCard(e.w);
@@ -3814,6 +3827,7 @@ function drawWorld(t) {
       continue;
     }
     const wd = S.words[e.w];
+    if (e.k === 'board' && festReady()) { const top = y - T * 1.6 + Math.sin(t * 2.5) * 3; bubble(c, x, top, 19); drawIcon(c, '🎉', x, top + 12, 27); }
     if (e.kind === 'home') homeSign(c, x, y - e.s * T * 0.5, t);
     else if (e.k === 'oliaHome') {
       if (!S.oliaVisited) offer(e, 'Хата баби Олі' + (stage() < 3 ? " · Grandma Olia's" : ''));
@@ -3846,6 +3860,165 @@ function drawWorld(t) {
     let mx = (i * 173.3 + t * sp - camX * zoom * 0.5) % mw, my = (i * 311.7 + t * sp * 0.35 + Math.sin(t * 0.8 + i) * 20 - camY * zoom * 0.5) % mh;
     if (mx < 0) mx += mw; if (my < 0) my += mh;
     c.fillStyle = `rgba(255,${i % 3 ? 255 : 238},${i % 3 ? 244 : 170},${0.4 + 0.25 * Math.sin(t * 1.7 + i * 2)})`; circ(c, mx - 40, my - 40, (1.3 + (i % 3) * 0.55) * zoom);
+  }
+}
+
+// ------------------------------------------------------------------ festivals
+// The notice board in the square lists what the next festival needs. Hand things over as you find them;
+// once it's all in, start the festival: the villagers greet you (you answer), everyone joins a хоровод
+// (tap on the beat to dance), Kupala ends with jumping the bonfire and Christmas Eve with a carol, and
+// you go home with a keepsake for your cottage.
+const curFest = () => D.festivals[S.fest.i % D.festivals.length];
+const festHave = id => Math.min(curFest().needs[id], S.fest.have[id] || 0);
+const festReady = () => Object.keys(curFest().needs).every(id => festHave(id) >= curFest().needs[id]);
+function boardCard() {
+  const F = curFest(), st = stage(); learn('doshka');
+  const canGive = Object.keys(F.needs).filter(id => festHave(id) < F.needs[id] && (S.bag[id] || 0) > 0), ready = festReady();
+  const list = `<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px">${Object.entries(F.needs).map(([id, n]) => { const h = festHave(id), full = h >= n; return `<span style="text-align:center;opacity:${h ? 1 : 0.5}"><img src="${iconURL(id)}" style="width:40px;height:40px" alt=""><br><b style="font-size:13px">${full ? '✓' : h + '/' + n}</b><br><small>${W[id].uk}</small></span>`; }).join('')}</div>`;
+  wordCard(F.id, {
+    note: `📋 <b>${W.doshka.uk}</b>${xl(' · notice board')}<br>${ready ? `🎉 <b>${PH.zi_sviatom.uk}</b>${xl(' · Everything is ready. Start the festival!')}` : `${st < 3 ? 'The village needs these for the festival. Bring them here:' : '🧺'}`}${list}`,
+    acts: ready ? [{ k: 'festgo', fn: () => { closeSheet(); startFest(); } }] : canGive.length ? [{ k: 'handover', fn: () => {
+      let n = 0; for (const id of canGive) { const g = Math.min(S.bag[id], F.needs[id] - festHave(id)); S.bag[id] -= g; S.fest.have[id] = festHave(id) + g; n += g; useWord(id, true); }
+      hud(); save(); blip(880, 0.1); toast(`📋 −${n}  ${festReady() ? '🎉' : ''}`); boardCard();
+    } }] : [],
+  });
+}
+let fest = null;
+function startFest() {
+  const F = curFest();
+  fest = { F, phase: 'greet', ang: 0, boost: 0, lastT: nowT, beats: [], hits: 0, pop: null, t0: nowT, endT: 0, jumpT: 0, done: {} };
+  mode = 'fest'; learn(F.id); learn('horovod');
+  const faces = ['olia', 'taras', 'oksana', 'andriiko', 'bohdan'].map(id => `<img src="${faceURL(NPC[id].look)}" style="width:54px;height:54px;border-radius:14px;background:#e8f4d9" alt="">`).join('');
+  setTimeout(() => {
+    openSheet(`<div class="card"><div class="tag">🎉 ${W[F.id].uk}${stage() < 3 ? ' · ' + W[F.id].en : ''}</div>
+      <div style="display:flex;gap:6px;justify-content:center;margin:8px 0">${faces}</div>
+      <div class="word" style="font-size:32px">«${PH[F.greet].uk}»</div>${stage() < 3 ? `<div class="en">${PH[F.greet].en}</div>` : ''}
+      <div class="muted" style="padding:6px 0 0">${stage() < 3 ? 'Answer them:' : ''}</div>
+      <div class="row">${btn('hear', 'p_' + F.greet, '🔊', 'round blue')}${btn('festReply', '', `${PH[F.reply].uk}<small class="cen"${stage() < 3 ? '' : ' style="display:none"'}>${PH[F.reply].en}</small>`)}</div></div>`);
+    say('p_' + F.greet);
+  }, 900);
+}
+function festReply() {
+  if (!fest) return;
+  say('p_' + fest.F.reply); closeSheet();
+  const start = nowT + 2.2;
+  fest.beats = Array.from({ length: 14 }, (_, i) => ({ t: start + i * 0.8, hit: 0 }));
+  fest.phase = 'dance'; fest.danceT = nowT;
+  setTimeout(() => { if (fest) say('w_tantsiui'); learn('tantsiui'); }, 1300);
+}
+function festTap() {
+  const f = fest; if (!f) return;
+  if (f.phase === 'dance') {
+    let best = null; for (const b of f.beats) if (!b.hit && Math.abs(nowT - b.t) < 0.3 && (!best || Math.abs(nowT - b.t) < Math.abs(nowT - best.t))) best = b;
+    if (best) { best.hit = Math.abs(nowT - best.t) < 0.12 ? 2 : 1; f.hits++; f.boost += 2.4; f.pop = { t: nowT, txt: best.hit === 2 ? PH.chudovo.uk : PH.molodets.uk }; blip(best.hit === 2 ? 990 : 820, 0.07); }
+  } else if (f.phase === 'finale' && !f.jumpT) {
+    f.jumpT = nowT; useWord(f.F.finale, true);
+    if (f.F.finale === 'spivai') say('p_koliadka'); else blip(660, 0.1);
+  }
+}
+function festDone() {
+  const F = fest.F, owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0;
+  S.hearts += 5; if (owned) S.coins += 15; else S.home[F.reward] = (S.home[F.reward] || 0) + 1;
+  S.fest = { i: S.fest.i + 1, have: {} };
+  closeSheet(); fest = null; mode = 'world'; hud(); save();
+  toast(`🎉 +5 ❤️ ${owned ? ' +15 ₴' : ' · ' + W[F.reward].uk + (stage() < 3 ? ' (in your basket: place it at home)' : '')}`, 3200);
+}
+// A crackling bonfire: logs, three tongues of flame and sparks.
+function bonfire(c, x, y, s, t) {
+  const g = c.createRadialGradient(x, y - s * 0.3, 0, x, y - s * 0.3, s * 1.6); g.addColorStop(0, 'rgba(255,170,60,.45)'); g.addColorStop(1, 'rgba(255,170,60,0)'); c.fillStyle = g; c.fillRect(x - s * 1.6, y - s * 1.9, s * 3.2, s * 3.2);
+  c.save(); c.translate(x, y); c.lineCap = 'round';
+  c.strokeStyle = '#6b4422'; c.lineWidth = s * 0.12; for (const r of [-0.35, 0.35, 0]) { c.save(); c.rotate(r); c.beginPath(); c.moveTo(-s * 0.45, 0); c.lineTo(s * 0.45, 0); c.stroke(); c.restore(); }
+  for (const [col, k, ph] of [['#ff5a1f', 1, 0], ['#ff9f1c', 0.72, 1.3], ['#ffd23f', 0.45, 2.1]]) {
+    const fl = (Math.sin(t * 9 + ph) * 0.08 + 1) * k * s, sw = Math.sin(t * 5 + ph) * s * 0.08;
+    c.fillStyle = col; c.beginPath(); c.moveTo(-s * 0.36 * k, -s * 0.02); c.quadraticCurveTo(-s * 0.4 * k, -fl * 0.6, sw, -fl * 1.15); c.quadraticCurveTo(s * 0.4 * k, -fl * 0.6, s * 0.36 * k, -s * 0.02); c.closePath(); c.fill();
+  }
+  c.fillStyle = '#ffe9a8'; for (let i = 0; i < 9; i++) { const q = (t * 0.7 + i / 9) % 1; c.globalAlpha = 1 - q; circ(c, Math.sin(i * 2.3 + t) * s * 0.3, -s * (0.4 + q * 1.4), s * 0.03); }
+  c.globalAlpha = 1; c.restore();
+}
+// The carollers' star on its pole, turning slowly.
+function carolStar(c, x, y, s, t) {
+  c.strokeStyle = '#6b4422'; c.lineWidth = s * 0.06; c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - s * 1.1); c.stroke();
+  c.save(); c.translate(x, y - s * 1.35); c.rotate(t * 0.6);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, s * 0.9); g.addColorStop(0, 'rgba(255,220,120,.5)'); g.addColorStop(1, 'rgba(255,220,120,0)'); c.fillStyle = g; circ(c, 0, 0, s * 0.9);
+  const pts = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? s * 0.18 : s * 0.42, a = i * Math.PI / 8; pts.push([Math.cos(a) * r, Math.sin(a) * r]); }
+  c.fillStyle = '#ffd23f'; poly(c, pts); c.strokeStyle = INK; c.lineWidth = 2; c.beginPath(); pts.forEach(([px, py], i) => i ? c.lineTo(px, py) : c.moveTo(px, py)); c.closePath(); c.stroke();
+  c.fillStyle = '#d43a3a'; circ(c, 0, 0, s * 0.1); c.restore();
+}
+function drawFest(t) {
+  const f = fest, c = ctx, w = cv.width, h = cv.height, u = roomU(), F = f ? f.F : curFest();
+  if (!f) { c.fillStyle = '#8fd169'; c.fillRect(0, 0, w, h); return; }
+  const dt = Math.min(0.05, Math.max(0, t - f.lastT)); f.lastT = t;
+  f.boost *= Math.exp(-dt * 2); f.ang += dt * (0.35 + f.boost);
+  // --- sky and ground
+  const SKY = { night: ['#141c45', '#3b3570'], snow: ['#1b2a4a', '#4a6a96'], gold: ['#ffc56b', '#ffe9b8'], spring: ['#8fd3f4', '#eaf8ff'] }[F.sky];
+  let g = c.createLinearGradient(0, 0, 0, h * 0.55); g.addColorStop(0, SKY[0]); g.addColorStop(1, SKY[1]); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  const dark = F.sky === 'night' || F.sky === 'snow';
+  if (dark) { for (const [dx, dy, dr] of DOTS) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.3 + dx * 20)); c.fillStyle = '#fff'; circ(c, dx * w, dy * h * 0.45, 0.8 + dr * 1.6); } c.globalAlpha = 1; c.fillStyle = '#fff6d8'; circ(c, w * 0.82, h * 0.13, u * 0.05); }
+  else { c.fillStyle = 'rgba(255,255,255,.85)'; ell(c, w * 0.25 + Math.sin(t * 0.1) * 20, h * 0.14, u * 0.12, u * 0.035); ell(c, w * 0.72, h * 0.2, u * 0.09, u * 0.028); }
+  for (const [px, sc] of [[0.14, 0.33], [0.88, 0.3], [0.5, 0.24]]) drawIcon(c, px === 0.5 ? W.tserkva.ic : W.khata.ic, w * px, h * 0.5, u * sc);
+  const groundCol = F.sky === 'snow' ? ['#e8f0fb', '#cfdcee'] : dark ? ['#2f5a3a', '#244a30'] : ['#9bd673', '#7fc25a'];
+  g = c.createLinearGradient(0, h * 0.47, 0, h); g.addColorStop(0, groundCol[0]); g.addColorStop(1, groundCol[1]); c.fillStyle = g; c.fillRect(0, h * 0.47, w, h * 0.53);
+  // bunting
+  c.strokeStyle = '#6b4422'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, h * 0.21); c.quadraticCurveTo(w / 2, h * 0.28, w, h * 0.21); c.stroke();
+  const FL = ['#d43a3a', '#ffd23f', '#3d7cc2', '#fffdf5'];
+  for (let i = 0; i < 12; i++) { const q = (i + 0.5) / 12, x = q * w, y = h * 0.21 + (1 - (2 * q - 1) ** 2) * h * 0.035 + Math.sin(t * 2 + i) * 1.5; c.fillStyle = FL[i % 4]; poly(c, [[x - w * 0.03, y], [x + w * 0.03, y], [x, y + h * 0.045]]); }
+  // --- the round dance around the festival's centrepiece
+  const cx = w / 2, cy = h * 0.63, rx = w * 0.37, ry = h * 0.075;
+  const looks = ['olia', 'taras', 'oksana', 'andriiko', 'bohdan'].map(id => NPC[id].look); looks.splice(3, 0, ME);
+  const jumping = F.finale === 'stryby' && f.jumpT;
+  const dancers = looks.map((L, i) => { const a = f.ang + i * Math.PI * 2 / looks.length; return { L, i, a, x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry, me: L === ME }; }).filter(d => !(jumping && d.me));
+  const drawD = d => { const sc = (u / 390) * 1.45 * (0.86 + 0.16 * Math.sin(d.a)), bob = Math.abs(Math.sin(t * 6 + d.i)) * 4 * sc; person(c, d.x, d.y - bob, d.L, t, true, sc); if (d.me) drawIcon(c, '❤️', d.x, d.y - sc * 88 - bob, u * 0.045); };
+  dancers.filter(d => Math.sin(d.a) < 0).sort((a, b) => a.y - b.y).forEach(drawD);
+  const S0 = u * 0.3;
+  if (F.center === 'fire') bonfire(c, cx, cy, S0 * 0.75, t);
+  else if (F.center === 'star') { carolStar(c, cx + S0 * 0.55, cy, S0 * 0.8, t); c.fillStyle = '#fffdf5'; rr(c, cx - S0 * 0.7, cy - S0 * 0.28, S0 * 1.1, S0 * 0.28, 6); drawIcon(c, W.kutia.ic, cx - S0 * 0.38, cy - S0 * 0.24, S0 * 0.5); drawIcon(c, W.didukh.ic, cx - S0 * 0.95, cy, S0 * 0.75); drawIcon(c, W.svichka.ic, cx, cy - S0 * 0.24, S0 * 0.32); }
+  else if (F.center === 'harvest') { c.fillStyle = '#fffdf5'; rr(c, cx - S0 * 0.75, cy - S0 * 0.3, S0 * 1.5, S0 * 0.3, 6); c.fillStyle = '#d43a3a'; c.fillRect(cx - S0 * 0.75, cy - S0 * 0.12, S0 * 1.5, S0 * 0.05); drawIcon(c, W.korovai.ic, cx + S0 * 0.2, cy - S0 * 0.26, S0 * 0.6); drawIcon(c, W.didukh.ic, cx - S0 * 0.45, cy - S0 * 0.2, S0 * 0.85); }
+  else { c.fillStyle = '#c99463'; ell(c, cx, cy - S0 * 0.08, S0 * 0.6, S0 * 0.18); drawIcon(c, W.paska.ic, cx, cy - S0 * 0.12, S0 * 0.62); for (let i = 0; i < 5; i++) drawIcon(c, W.pysanka.ic, cx - S0 * 0.5 + i * S0 * 0.25, cy + S0 * 0.02, S0 * 0.22); }
+  dancers.filter(d => Math.sin(d.a) >= 0).sort((a, b) => a.y - b.y).forEach(drawD);
+  // your cats watch from the front
+  houseCats().slice(0, 3).forEach((ct, i) => cat(c, [w * 0.12, w * 0.88, w * 0.27][i], h * [0.95, 0.95, 0.99][i], u * 0.15, sitPal(ct.v), t, i, i === 1 ? -1 : 1, null));
+  // falling snow, drifting petals, or wheat in the air
+  if (F.sky === 'snow') { c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 60; i++) circ(c, ((i * 83.3 + Math.sin(t + i) * 20) % w + w) % w, (i * 151.7 + t * 50) % h, 1.5 + (i % 3)); }
+  if (F.sky === 'spring') { c.fillStyle = 'rgba(255,190,210,.85)'; for (let i = 0; i < 24; i++) ell(c, ((i * 97.7 + t * 30) % w), (i * 191.3 + t * 40) % h, 4, 2.5); }
+  if (F.sky === 'gold') { c.fillStyle = 'rgba(255,240,170,.85)'; for (let i = 0; i < 24; i++) ell(c, ((i * 97.7 + t * 25) % w), (i * 191.3 + t * 18) % h, 3.5, 1.6); }
+  // --- the dance: tap when a ring closes onto the drum
+  if (f.phase === 'dance') {
+    const bx = cx, by = h * 0.86, R = u * 0.085;
+    c.fillStyle = 'rgba(255,255,255,.25)'; circ(c, bx, by, R); c.strokeStyle = '#fff8ea'; c.lineWidth = 4; c.beginPath(); c.arc(bx, by, R, 0, 7); c.stroke();
+    drawIcon(c, '🥁', bx, by + R * 0.4, R * 1.1);
+    for (const b of f.beats) {
+      if (!b.sounded && t >= b.t) { b.sounded = 1; blip(196, 0.05); }
+      const ahead = b.t - t; if (b.hit || ahead < -0.3 || ahead > 1.6) continue;
+      c.globalAlpha = Math.max(0, 1 - ahead / 1.6); c.strokeStyle = '#ffd23f'; c.lineWidth = 5; c.beginPath(); c.arc(bx, by, R * (1 + Math.max(0, ahead) * 1.7), 0, 7); c.stroke(); c.globalAlpha = 1;
+    }
+    if (f.pop && t - f.pop.t < 0.7) bedText(c, f.pop.txt, '', by - R * 1.9 - (t - f.pop.t) * 30, 1 - (t - f.pop.t) / 0.7);
+    const a0 = t - f.danceT;
+    if (a0 < 3.2) bedText(c, W.tantsiui.uk[0].toUpperCase() + W.tantsiui.uk.slice(1) + '!', stage() < 3 ? 'Dance! Tap the drum on the beat' : '', h * 0.33, Math.min(1, a0 * 2, (3.2 - a0) * 2));
+    if (t > f.beats[f.beats.length - 1].t + 0.7) { f.phase = F.finale ? 'finale' : 'end'; f.endT = t; if (F.finale) { learn(F.finale); say('w_' + F.finale); } }
+  }
+  // --- finales: jump the Kupala fire, or sing the carol
+  if (f.phase === 'finale') {
+    const word = W[F.finale], en = F.finale === 'stryby' ? 'Jump over the fire! Tap!' : 'Sing a carol! Tap!';
+    if (!f.jumpT) bedText(c, word.uk[0].toUpperCase() + word.uk.slice(1) + '!', stage() < 3 ? en : '', h * 0.33, Math.min(1, (t - f.endT) * 2));
+    else {
+      const q = Math.min(1, (t - f.jumpT) / 1.1);
+      if (F.finale === 'stryby') { const sc = (u / 390) * 1.5, jx = cx, jy = cy + ry * 1.8 - q * ry * 3.4 - Math.sin(q * Math.PI) * u * 0.32; person(c, jx, jy, ME, t, true, sc); }
+      else bedText(c, PH.koliadka.uk, stage() < 3 ? PH.koliadka.en : '', h * 0.33, Math.min(1, (t - f.jumpT) * 2));
+      if (t - f.jumpT > (F.finale === 'spivai' ? 4.2 : 1.6)) { f.phase = 'end'; f.endT = t; }
+    }
+  }
+  if (f.phase === 'end') {
+    bedText(c, PH[F.greet].uk, stage() < 3 ? PH[F.greet].en : '', h * 0.33, Math.min(1, (t - f.endT) * 2));
+    if (t - f.endT > 1.6 && !f.done.card) {
+      f.done.card = 1; say('p_zi_sviatom');
+      const owned = (S.home[F.reward] || 0) + (S.decor[F.reward] ? 1 : 0) > 0, beats = f.beats.length;
+      openSheet(`<div class="card"><div class="tag">🎉 ${W[F.id].uk}</div>
+        <div class="word" style="font-size:30px">${PH.zi_sviatom.uk}</div>${stage() < 3 ? `<div class="en">${PH.zi_sviatom.en}</div>` : ''}
+        <div class="hint">💃 ${W.horovod.uk}: ${f.hits}/${beats}${stage() < 3 ? ' beats danced' : ''}</div>
+        <img class="big" src="${iconURL(owned ? 'koshyk' : F.reward)}" alt="">
+        <div class="hint">❤️ +5${owned ? ' · 💰 +15 ₴' : ` · ${W[F.reward].uk}${stage() < 3 ? ' for your cottage' : ''}`}</div>
+        <div class="row">${btn('festDone', '', lab('backvillage'), 'blue')}</div></div>`);
+    }
   }
 }
 
@@ -4057,6 +4230,7 @@ function frame(ms) {
   if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
+  else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); }
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
 }
@@ -4092,6 +4266,7 @@ cv.addEventListener('pointermove', ev => {
   }
 });
 cv.addEventListener('pointercancel', () => { peeking = false; down = null; });
+cv.addEventListener('pointerdown', () => { if (mode === 'fest' && !sheetOpen()) festTap(); });
 cv.addEventListener('pointerup', ev => {
   peeking = false;
   if (fishFx) { down = null; return; }   // no walking off mid-cast
@@ -4101,6 +4276,7 @@ cv.addEventListener('pointerup', ev => {
   const k = cv.width / innerWidth, px = ev.clientX * k, py = ev.clientY * k;
   if (mode === 'home') return homeTap(px, py);
   if (mode === 'olia') return oliaTap(px, py);
+  if (mode === 'fest') return;   // the festival takes its taps on pointerdown, for the beat
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
   blip(e ? 700 : 560, 0.05); fxTap(e && e.kind !== 'pond' ? e.x : wx, e && e.kind !== 'pond' ? e.y : wy, !!e);
@@ -4190,6 +4366,8 @@ const A = {
   spStop() { if (sp) sp.stop = true; },
   spNext() { spAdvance(); },
   spSkip() { spAdvance(); },
+  festReply() { festReply(); },
+  festDone() { festDone(); },
   spGo() { const R = sp && sp.R; sp = null; if (R) cookScene(R); },
   reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
   close() { if (sp) return; closeSheet(); },   // a stray tap outside must not throw away a speaking round
