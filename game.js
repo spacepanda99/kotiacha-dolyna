@@ -232,6 +232,25 @@ const DRAW = {
     c.fillStyle = '#8a5a2b'; ell(c, 0, -66, 18, 4.5); c.fillStyle = '#a06a35'; ell(c, 0, -67, 15, 3.4);
     c.fillStyle = '#fff6dc'; if (bob > 4) { circ(c, -6, -69, 2.2); circ(c, 7, -70, 1.8); }
   },
+  // Жорна, the hand mill: two round millstones on a wooden trough, the top stone turned by an upright
+  // wooden handle near its rim. While grinding, the handle goes round and flour dusts out into the trough.
+  zhorna(c) {
+    const going = grindUntil > now(), a = going ? now() / 160 : 0.9, sx = Math.cos(a) * 21, back = Math.sin(a) < 0;
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 40, 6);
+    // the trough the flour falls into
+    c.fillStyle = '#8a5a2b'; rr(c, -38, -24, 76, 22, 4); c.fillStyle = '#a06a35'; rr(c, -38, -24, 76, 6, 3);
+    c.fillStyle = 'rgba(0,0,0,.12)'; for (const x of [-26, 0, 26]) c.fillRect(x - 1, -18, 2, 15);
+    c.fillStyle = '#fbf4e4'; ell(c, -20, -24, 12, 3.5); ell(c, 22, -24, 9, 3);   // flour in the trough
+    const stone = (y, rx, h, top, side) => { c.fillStyle = side; c.fillRect(-rx, y, rx * 2, h); ell(c, 0, y + h, rx, rx * 0.26); c.fillStyle = top; ell(c, 0, y, rx, rx * 0.26); };
+    const handle = () => { c.strokeStyle = '#6b4422'; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx, -50 + Math.sin(a) * 5); c.lineTo(sx + 2, -84 + Math.sin(a) * 5); c.stroke(); };
+    stone(-36, 30, 10, '#a8a8ac', '#8d8d93');    // the lower stone, fixed
+    if (back) handle();
+    stone(-52, 28, 12, '#bdbdc2', '#9a9aa0');    // the upper stone, turned by the handle
+    c.fillStyle = '#5c5c62'; ell(c, 0, -52, 6, 2);   // the hole the grain goes in
+    c.fillStyle = 'rgba(255,255,255,.18)'; ell(c, -10, -54, 9, 1.6);
+    if (!back) handle();
+    if (going) { c.fillStyle = 'rgba(255,250,235,.85)'; const p = (now() / 300) % 1; for (const [dx, k] of [[-31, 0], [31, 0.5]]) { const q = (p + k) % 1; circ(c, dx + Math.sign(dx) * q * 6, -32 + q * 8, 2.6 * (1 - q) + 0.6); } }
+  },
   koshyk(c) { c.scale(3.8, 3.8); marketBasket(c, 0, -11.5); },   // the same wicker basket as in Oksana's bubble
   khata(c) {
     c.fillStyle = '#b5553f'; c.fillRect(21, -86, 12, 30); c.fillStyle = '#8f3f2d'; c.fillRect(19, -89, 16, 5);   // chimney
@@ -2152,7 +2171,7 @@ function give(id, n = 1) { S.bag[id] = (S.bag[id] || 0) + n; hud(); save(); }
 const FARM_MAX = { kurka: 4, korova: 1 };
 const HEN_SPOTS = [[9.7, 12.95], [10.3, 12.4], [12.7, 12.45], [13.2, 13.0]], COW_SPOT = [11.5, 12.75];   // in front of the cottage fence, between it and the road
 const farmN = k => (S.farm && S.farm[k]) || 0;
-let churnUntil = 0;
+let churnUntil = 0, grindUntil = 0;
 function farmEnts() {
   const put = o => {
     if (ents.some(e => e.k === o.k)) return;
@@ -2163,6 +2182,19 @@ function farmEnts() {
   for (let i = 0; i < Math.min(FARM_MAX.kurka, farmN('kurka')); i++) put({ w: 'kurka', k: 'my_kurka' + i, x: HEN_SPOTS[i][0], y: HEN_SPOTS[i][1], kind: 'animal', r: 0.8, give: 'yaitse', cd: 90 });
   if (farmN('korova') > 0) put({ w: 'korova', k: 'my_korova', x: COW_SPOT[0], y: COW_SPOT[1], s: 1.4, kind: 'animal', r: 0.6, give: 'moloko', cd: 120 });
   if (S.gear.maslobiika) put({ w: 'maslobiika', k: 'my_churn', x: 8.75, y: 12.45, s: 0.85 });
+  if (S.gear.zhorna) put({ w: 'zhorna', k: 'my_mill', x: 9.55, y: 12.5, s: 0.85 });
+}
+// The hand mill: a sheaf of wheat in, a bag of flour out, with the top stone going round a moment.
+function millCard() {
+  const has = (S.bag.pshenytsia || 0) > 0;
+  wordCard('zhorna', {
+    note: `🌾 ${W.pshenytsia.uk}: ${S.bag.pshenytsia || 0}${xl((has ? ' · One wheat makes one flour.' : ' · You need wheat. It grows in a strip by the pond, on the east side.'))}`,
+    acts: has ? [{ k: 'grind', fn: () => {
+      S.bag.pshenytsia--; give('boroshno'); learn('boroshno'); useWord('pshenytsia', true); grindUntil = now() + 1800; blip(520, 0.12); setTimeout(() => blip(600, 0.12), 450);
+      const me = ents.find(q => q.k === 'my_mill'); if (me) setTimeout(() => fxBurst(me.x, me.y - 1, W.boroshno.ic), 1000);
+      toast(`−1 ${W.pshenytsia.uk}  +1 ${W.boroshno.uk}`); closeSheet(); setTimeout(() => say('w_boroshno'), 1000);
+    } }] : [],
+  });
 }
 // The butter churn: a cup of milk in, a pat of butter out, with the dasher going up and down a moment.
 function churnCard() {
@@ -2256,6 +2288,7 @@ function interact(e) {
     } }] : [] });
   }
   if (e.k === 'my_churn') return churnCard();
+  if (e.k === 'my_mill') return millCard();
   if (e.give) return wordCard(e.w, { acts: ready(e) ? [{ k: 'take', fn: () => take(e) }] : [] });
   wordCard(e.w);
 }
@@ -4011,7 +4044,7 @@ const A = {
     else if (shopTab === 'farm') { S.farm = S.farm || {}; S.farm[v] = farmN(v) + 1; farmEnts(); }
     else give(v);
     hud(); blip(880, 0.1); say('n_' + price, 'p_diakuiu');
-    toast(shopTab === 'seeds' ? `−${price} ₴  🌱 ${W.nasinnia.uk}: ${W[v].uk}${stage() < 3 ? ' · seeds to plant in your garden' : ''}` : `−${price} ₴  ${W[v].uk}${stage() < 3 && (shopTab === 'farm' || v === 'maslobiika') ? ' · now by your cottage' : ''}`); tutEvent('buy'); save(); shop();
+    toast(shopTab === 'seeds' ? `−${price} ₴  🌱 ${W.nasinnia.uk}: ${W[v].uk}${stage() < 3 ? ' · seeds to plant in your garden' : ''}` : `−${price} ₴  ${W[v].uk}${stage() < 3 && (shopTab === 'farm' || v === 'maslobiika' || v === 'zhorna') ? ' · now by your cottage' : ''}`); tutEvent('buy'); save(); shop();
   },
   sell(v) { if (!(S.bag[v] > 0)) return; S.bag[v]--; S.coins += sellPrice(v); hud(); blip(820); say('w_' + v); save(); shop(); },
   hand(v) {

@@ -32,6 +32,7 @@ window.DATA = {
     { id: "piven", uk: "півень", tr: "PI-ven", en: "rooster", ic: "🐓", fact: { uk: "Півень будить село на світанку.", en: "The rooster is a favourite of folk art: there are clay roosters, embroidered roosters and painted roosters." } },
     { id: "korova", uk: "корова", tr: "ko-RO-va", en: "cow", ic: "🐄" },
     { id: "maslobiika", uk: "маслобійка", tr: "mas-lo-BII-ka", en: "butter churn", ic: "@maslobiika", fact: { uk: "У маслобійці довго збивають вершки, і виходить масло.", en: "In a churn you beat cream for a long time, and it turns into butter." } },
+    { id: "zhorna", uk: "жорна", tr: "ZHOR-na", en: "hand mill", ic: "@zhorna", fact: { uk: "Жорна — це два круглі камені. Верхній крутять за ручку, і зерно стає борошном.", en: "Zhorna are two round millstones. You turn the top one by its handle, and the grain between them becomes flour." } },
     { id: "kin", uk: "кінь", tr: "kin", en: "horse", ic: "🐎", fact: { uk: "Кінь був вірним другом козака.", en: "A horse was a Cossack's faithful friend. Old songs and tales are full of them." } },
     { id: "koza", uk: "коза", tr: "ko-ZA", en: "goat", ic: "🐐", fact: { uk: "На Новий рік колядники водять «козу».", en: "At New Year, carol singers go from house to house with someone dressed as a goat, to wish a good harvest." } },
     { id: "kachka", uk: "качка", tr: "KACH-ka", en: "duck", ic: "🦆" },
@@ -313,7 +314,7 @@ window.DATA = {
     seeds: { buriak: 2, morkva: 2, kartoplia: 2, kapusta: 2, tsybulia: 2, chasnyk: 2, pomidor: 3, ohirok: 3, harbuz: 4, kukurudza: 3, polunytsia: 4, soniashnyk: 3 },
     home: { vazon: 12, chashka: 8, svichka: 8, knyha: 10, kvity: 10, lampa: 16, hlechyk: 16, rushnyk: 16, pysanka: 12, motanka: 16, tarilka: 20, vinok: 16, didukh: 20, vyshyvanka: 24, bandura: 40, skrynia: 30, kartyna: 20, dzerkalo: 20, hodynnyk: 20, kylym: 30 },
     // Toys and furniture for the cat friends (they use them).
-    tools: { vudka: 6, maslobiika: 10 },
+    tools: { vudka: 6, maslobiika: 10, zhorna: 12 },
     // Animals of your own: they live by your cottage, and you collect their eggs and milk.
     farm: { kurka: 15, korova: 40 },
     cats: { kihtetochka: 30, lezhanka: 16, miachyk: 6, myshka: 6 },
@@ -326,7 +327,7 @@ window.DATA = {
 
   // Short labels on buttons and panels: Ukrainian first, English fades out as you learn.
   ui: {
-    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], back: ["Назад", "Back"],
+    farm: ["Тварини", "Animals"], churn: ["Збити масло", "Make butter"], grind: ["Змолоти", "Grind flour"], back: ["Назад", "Back"],
     take: ["Взяти", "Take"], enter: ["Зайти", "Go in"], exit: ["Вийти", "Go out"], buy: ["Купити", "Buy"],
     sell: ["Продати", "Sell"], plant: ["Посадити", "Plant"], water: ["Полити", "Water"], harvest: ["Зібрати", "Harvest"],
     next: ["Далі", "Next"], close: ["Добре", "OK"], give: ["Дати", "Give"], putaway: ["Прибрати", "Put away"],
