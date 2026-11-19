@@ -20,7 +20,7 @@ const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
 // ------------------------------------------------------------------ save
 const SAVE = 'kotiacha-dolyna-v1';
 const fresh = () => ({
-  coins: 10, hearts: 0, words: {}, bag: { voda: 3 }, waterInit: 1, seeds: { morkva: 3 }, home: {}, placed: {},
+  coins: 10, hearts: 0, words: {}, bag: { voda: 3 }, waterInit: 1, seeds: { morkva: 3 }, home: { vazon: 1 }, placed: {},   // a potted plant to start with: something to decorate with on day one
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
   npc: {}, cats: {}, decor: {}, gear: {}, farm: {}, recipe: { i: 0, have: {}, started: -1 }, tut: 0, tutN: 0, cd: {}, x: 7.5, y: 12.5,
 });
