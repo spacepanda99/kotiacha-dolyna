@@ -1545,6 +1545,10 @@ const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (y === 6 && x >= 11 
 
 const ents = [];
 // Whether a spot is on the road or within m tiles of it (the road is drawn a little wider than its tiles).
+// On a road or path as it's drawn (a little wider than its tiles), or in the soft patch where a road ends.
+const ROAD_ENDS = []; for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) if (isRoad(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => isRoad(x + a, y + b)).length === 1) ROAD_ENDS.push([x + 0.5, y + 0.5]);
+const onRoadish = (x, y) => { for (const dx of [-0.35, 0, 0.35]) for (const dy of [-0.35, 0, 0.35]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return ROAD_ENDS.some(([ex, ey]) => Math.hypot(x - ex, (y - ey) / 0.78) < 1.45); };
+const GROWS = new Set(['kvitka', 'hryb', 'malva', 'chornobryvtsi', 'mak', 'soniashnyk', 'pshenytsia']);
 const nearRoad = (x, y, m) => { for (const dx of [-m, 0, m]) for (const dy of [-m, 0, m]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return false; };
 const ANIMAL_OF = { zhaba: 'frog', kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
 const ASIZE = { frog: 0.62, horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.85, cat: 0.65, hen: 0.6, rooster: 0.72, duck: 0.55 };
@@ -1583,7 +1587,7 @@ function add(e) {
   add({ w: 'leleka', k: 'nest', x: 21.5, y: 7, s: 2.6, solid: true });   // the stork's nest on its pole: storks in spring and summer, empty in autumn and winter
   add({ w: 'yizhak', k: 'yizhak', x: 16.5, y: 10.6, s: 0.7, kind: 'crawl', cx: 16.5, cy: 10.6, ph: 0.7, only: ['lito', 'osin', 'vesna'] });   // a hedgehog pottering about by the bushes
   add({ w: 'yizhak', k: 'yizhak_spyt', x: 15.2, y: 10.4, s: 0.9, only: ['zyma'], sleep: true });   // ...and asleep in his leaf pile all winter
-  add({ w: 'hodivnychka', k: 'feeder', x: 7.6, y: 12.9, s: 1.6, solid: true, only: ['zyma'] });   // the bird feeder by the cottage in winter
+  add({ w: 'hodivnychka', k: 'feeder', x: 6.0, y: 12.7, s: 1.6, solid: true, only: ['zyma'] });   // the bird feeder by the cottage in winter
   rect(10, 2, 12, 4); add({ w: 'mlyn', x: 11.5, y: 5, s: 4.5, spin: true });
   // Market square.
   rect(17, 16, 21, 16); add({ w: 'rynok', x: 19.5, y: 17, s: 4.3, kind: 'shop' });
@@ -1625,6 +1629,10 @@ function add(e) {
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
   for (const [x, y] of [[3.4, 7.5], [15.3, 7.4], [26.4, 5.4], [13.3, 26.3], [32.8, 26.3]]) add({ w: 'hryb', x, y, s: 0.7, give: 'hryb', cd: 120, hide: true });
   for (const [x, y] of [[12, 8], [26, 15.5], [8, 16.5]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x });
+  // Nothing that grows stands on a road or path: any flower, mushroom or crop that would is moved onto the grass
+  // beside it (checked at its foot and a little above, since it's drawn upward from there).
+  for (const e of ents) if (GROWS.has(e.w)) { if (!onRoadish(e.x, e.y) && !onRoadish(e.x, e.y - 0.45)) continue;
+    for (const [dx, dy] of [[0, 0.8], [0, -0.8], [0.8, 0], [-0.8, 0], [0, 1.3], [0, -1.3], [1.3, 0], [-1.3, 0], [0.9, 0.9], [-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0, 1.9], [0, -1.9]]) { const nx = e.x + dx, ny = e.y + dy; if (!onRoadish(nx, ny) && !onRoadish(nx, ny - 0.45) && !solid[Math.floor(ny)][Math.floor(nx)]) { e.x = nx; e.y = ny; break; } } }
   // Villagers.
   add({ w: 'khata', k: 'n_oksana', x: 19.5, y: 18.1, kind: 'npc', npc: 'oksana', s: 1.3 });
   add({ w: 'khata', k: 'n_taras', x: 25.3, y: 21.2, kind: 'npc', npc: 'taras', s: 1.3 });
@@ -1686,7 +1694,7 @@ function paintGround() {
   c.lineCap = 'round';
   for (let i = 0; i < 1700; i++) {
     const x = r() * GW, y = r() * GH, dk = r() < 0.55, h = 6 + r() * 6;
-    if (onRoad(x, y) || inPond(x / T, y / T, 0.45)) continue;
+    if (onRoadish(x / T, y / T) || inPond(x / T, y / T, 0.45)) continue;
     c.strokeStyle = dk ? '#6bb552' : '#b4e88a'; c.lineWidth = 2; c.beginPath();
     for (let j = -1; j <= 1; j++) { c.moveTo(x + j * 3, y); c.quadraticCurveTo(x + j * 4, y - h * 0.6, x + j * 6.5, y - h - (j ? 0 : 3)); }
     c.stroke();
@@ -1694,7 +1702,7 @@ function paintGround() {
   // little meadow flowers with petals
   for (let i = 0; i < 300; i++) {
     const x = r() * GW, y = r() * GH, col = ['#ffffff', '#ffe36e', '#ffb3c7', '#d9c2ff'][Math.floor(r() * 4)], pr = 2 + r() * 1.2;
-    if (onRoad(x, y) || inPond(x / T, y / T, 0.45)) continue;
+    if (onRoadish(x / T, y / T) || inPond(x / T, y / T, 0.45)) continue;
     c.fillStyle = col; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257) * pr, y + Math.sin(k * 1.257) * pr, pr * 0.85);
     c.fillStyle = col === '#ffe36e' ? '#f08a2c' : '#ffd23f'; circ(c, x, y, pr * 0.7);
   }
