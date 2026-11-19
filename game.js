@@ -1540,7 +1540,8 @@ function pondPath(c, grow, stroke) {
   for (let i = 0; i <= 72; i++) { const a = i / 72 * Math.PI * 2, w = pondWob(a); const px = (POND.x + Math.cos(a) * (POND.rx * w + grow)) * T, py = (POND.y + Math.sin(a) * (POND.ry * w + grow)) * T; i ? c.lineTo(px, py) : c.moveTo(px, py); }
   c.closePath(); if (stroke) c.stroke(); else c.fill();
 }
-const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (x === 18 && y >= 6 && y <= 23) || (x === 7 && y >= 11 && y <= 13) || (x === 25 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
+const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
+   (x === 18 && y >= 6 && y <= 23) || (x === 7 && y >= 11 && y <= 13) || (x === 25 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
 // Whether a spot is on the road or within m tiles of it (the road is drawn a little wider than its tiles).
@@ -1618,9 +1619,9 @@ function add(e) {
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
-  for (const [x, y] of [[2.5, 6.9], [14.5, 6.9], [20.5, 3.9], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [34.5, 17.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
+  for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [20.5, 3.9], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [34.5, 17.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [21.5, 11.9], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
-  for (const [x, y] of [[16.5, 6.9], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
+  for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
   for (const [x, y] of [[3.4, 7.5], [15.3, 7.4], [26.4, 5.4], [13.3, 26.3], [32.8, 26.3]]) add({ w: 'hryb', x, y, s: 0.7, give: 'hryb', cd: 120, hide: true });
   for (const [x, y] of [[12, 8], [26, 15.5], [8, 16.5]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x });
@@ -1670,6 +1671,13 @@ function paintGround() {
   road(T + 26, 'rgba(98,150,70,.15)');
   road(T + 12, '#d4bb82');
   road(T + 4, '#ecd9a6');
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (isRoad(x, y)) {   // each end of a road or path
+    const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => isRoad(x + dx, y + dy)); if (nb.length !== 1) continue;
+    const [dx, dy] = nb[0], cx = (x + 0.5 - dx * 0.35) * T, cy = (y + 0.5 - dy * 0.35) * T, R = T * 1.75;
+    const gr = c.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, '#ecd9a6'); gr.addColorStop(0.38, '#e6d29d'); gr.addColorStop(0.62, 'rgba(212,187,130,.75)'); gr.addColorStop(0.85, 'rgba(190,170,110,.25)'); gr.addColorStop(1, 'rgba(190,170,110,0)');
+    c.save(); c.translate(cx, cy); c.scale(1, 0.78); c.translate(-cx, -cy); c.fillStyle = gr; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.restore();
+    for (let i = 0; i < 6; i++) { const a = r() * 7, d = r() * R * 0.8; c.fillStyle = r() < 0.5 ? 'rgba(205,181,126,.8)' : 'rgba(250,240,208,.7)'; ell(c, cx + Math.cos(a) * d, cy + Math.sin(a) * d * 0.7, 2 + r() * 3, 1.5 + r() * 2); }
+  }
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (isRoad(x, y)) {
     for (let i = 0; i < 2; i++) { c.fillStyle = 'rgba(250,240,208,.8)'; ell(c, x * T + r() * T, y * T + r() * T, 9 + r() * 9, 4 + r() * 3); }
     for (let i = 0; i < 3; i++) { c.fillStyle = r() < 0.5 ? '#d9c390' : '#cdb57e'; ell(c, x * T + r() * T, y * T + r() * T, 2 + r() * 2.5, 1.5 + r() * 1.5); }
@@ -5396,9 +5404,10 @@ function paintSky(c, w, h, t, lights, outdoors) {
 }
 // Each season's weather: summer has thunderstorms, autumn and spring misty mornings, winter snow.
 function dayWeather(sea, r) {
-  if (sea === 'zyma') return r < 0.4 ? 'snow' : r < 0.7 ? 'cloud' : r < 0.9 ? 'sun' : 'fog';
-  if (sea === 'lito') return r < 0.45 ? 'sun' : r < 0.65 ? 'cloud' : r < 0.85 ? 'rain' : 'storm';
-  return r < 0.35 ? 'sun' : r < 0.55 ? 'cloud' : r < 0.78 ? 'rain' : 'fog';
+  // mostly fine days; clouds, rain, storms and fog only now and then
+  if (sea === 'zyma') return r < 0.5 ? 'sun' : r < 0.82 ? 'snow' : r < 0.93 ? 'cloud' : 'fog';
+  if (sea === 'lito') return r < 0.7 ? 'sun' : r < 0.8 ? 'cloud' : r < 0.92 ? 'rain' : 'storm';
+  return r < 0.62 ? 'sun' : r < 0.72 ? 'cloud' : r < 0.86 ? 'rain' : 'fog';
 }
 // Over the village: a storm's lightning (and its thunder a moment later), the morning fog that thins as it lifts,
 // the rainbow after rain, and in autumn the cranes going over in a V on their way south.
