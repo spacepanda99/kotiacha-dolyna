@@ -4035,6 +4035,22 @@ function padVillage(c, vx, vy, k, w, t, snowy) {
 }
 // The score, the same in every game: a little dark pill in the top right corner.
 function padBadge(c, w, k, text) { c.save(); c.font = `800 ${Math.round(14 * k)}px system-ui, sans-serif`; const tw = c.measureText(text).width, bw = tw + 18 * k, bh = 24 * k, x = w - bw - 8 * k, y = 8 * k; c.fillStyle = "rgba(47,42,38,.72)"; rr(c, x, y, bw, bh, bh / 2); c.fillStyle = "#fff"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, x + bw / 2, y + bh / 2 + 1); c.restore(); }
+// A neighbour in a winter coat (for the winter games), and their breath steaming in the cold now and then.
+const winterLook = L => Object.assign({}, L, { coat: '#6b4a32', fur: '#f1ead8', boots: '#4a3020' });
+function coldBreath(c, x, y, t, k, ph) { const q = ((t + ph) % 2.6) / 1.2; if (q > 1) return; c.fillStyle = `rgba(255,255,255,${0.55 * (1 - q)})`; circ(c, x + q * 14 * k, y - q * 10 * k, (2 + q * 6) * k); }
+// A painted Ukrainian hive: boards, a shaded side, a yellow band, painted flowers, a pitched roof, the entrance
+// and its landing board (the summer and the winter bee games share it).
+function hiveBox(c, hx, hy, hw, hh, k) {
+  c.fillStyle = 'rgba(40,60,20,.2)'; ell(c, hx, hy + 3 * k, hw * 0.62, 6 * k);
+  c.fillStyle = '#7a4b22'; c.fillRect(hx - hw * 0.4, hy - 6 * k, 5 * k, 10 * k); c.fillRect(hx + hw * 0.4 - 5 * k, hy - 6 * k, 5 * k, 10 * k);
+  c.fillStyle = '#5d9ad3'; rr(c, hx - hw / 2, hy - hh * 0.9, hw, hh * 0.84, 4 * k);
+  c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(hx + hw * 0.32, hy - hh * 0.9, hw * 0.18, hh * 0.84);
+  c.strokeStyle = 'rgba(30,50,90,.25)'; c.lineWidth = 1 * k; for (let i = 1; i < 5; i++) { const y = hy - hh * 0.9 + hh * 0.84 * i / 5; c.beginPath(); c.moveTo(hx - hw / 2, y); c.lineTo(hx + hw / 2, y); c.stroke(); }
+  c.fillStyle = '#ffd23f'; c.fillRect(hx - hw / 2, hy - hh * 0.5, hw, 4 * k);
+  for (const dx of [-0.27, 0.27]) { const fx = hx + dx * hw, fy = hy - hh * 0.72; c.fillStyle = '#d43a3a'; for (let p = 0; p < 5; p++) { const a = p * 1.2566 - 1.57; ell(c, fx + Math.cos(a) * 4.5 * k, fy + Math.sin(a) * 4.5 * k, 3 * k, 3 * k); } c.fillStyle = '#ffd23f'; circ(c, fx, fy, 2.4 * k); }
+  c.fillStyle = '#8a3b2b'; poly(c, [[hx - hw * 0.64, hy - hh * 0.88], [hx, hy - hh * 1.18], [hx + hw * 0.64, hy - hh * 0.88]]); c.fillStyle = '#6e2d20'; poly(c, [[hx, hy - hh * 1.18], [hx + hw * 0.64, hy - hh * 0.88], [hx + hw * 0.56, hy - hh * 0.88]]);
+  c.fillStyle = '#3a2a1a'; rr(c, hx - hw * 0.2, hy - hh * 0.18, hw * 0.4, 5 * k, 2 * k); c.fillStyle = '#a06a35'; c.fillRect(hx - hw * 0.26, hy - hh * 0.18 + 5 * k, hw * 0.52, 3 * k);
+}
 // A round won: a soft glow and a burst of sparkles from the middle of the pad.
 function padCheer(c, w, h, k, t0, t) {
   const q = (t - t0) / 0.9; if (!t0 || q < 0 || q > 1) return;
@@ -4127,6 +4143,7 @@ const BEE = {
     c.strokeStyle = '#a7743f'; c.lineWidth = 2.6 * k; for (const yy of [0.545, 0.575]) { c.beginPath(); c.moveTo(0, h * yy); c.lineTo(w, h * yy); c.stroke(); }
     for (let i = 0; i < 12; i++) { const x = w * ((i * 0.37 + 0.05) % 1), y = h * (0.62 + ((i * 0.61) % 1) * 0.32); c.fillStyle = ['#ffd23f', '#ffffff', '#ff7aa8', '#9b6bd6'][i % 4]; for (let p = 0; p < 5; p++) circ(c, x + Math.cos(p * 1.26) * 3 * k, y + Math.sin(p * 1.26) * 3 * k, 2 * k); c.fillStyle = '#f2b51d'; circ(c, x, y, 1.6 * k); }
     const T = mg.tool;
+    { const bs = h * 0.0036; person(c, w * (mg.beeStep === 'a' ? 0.56 : 0.9), h * 0.98, NPC.bohdan.look, t, false, bs); }   // Mr. Bohdan, watching his bees
     if (mg.beeStep === 'a') {
       const hx = w * 0.26, hy = h * 0.86, hw = w * 0.24, hh = h * 0.36;
       c.fillStyle = '#7a4b22'; c.fillRect(hx - hw * 0.4, hy - 6 * k, 5 * k, 10 * k); c.fillRect(hx + hw * 0.4 - 5 * k, hy - 6 * k, 5 * k, 10 * k);
@@ -4221,10 +4238,9 @@ const HIVEW = {
   frame(c, w, h, t, k, dt) {
     snowScene(c, w, h, t, k);
     const hx = w * 0.5, hy = h * 0.86, hw = w * 0.3, hh = h * 0.44;
-    c.fillStyle = '#7a4b22'; c.fillRect(hx - hw * 0.4, hy - 6 * k, 5 * k, 10 * k); c.fillRect(hx + hw * 0.4 - 5 * k, hy - 6 * k, 5 * k, 10 * k);
-    c.fillStyle = '#5d9ad3'; rr(c, hx - hw / 2, hy - hh * 0.9, hw, hh * 0.84, 4 * k); c.fillStyle = '#ffd23f'; c.fillRect(hx - hw / 2, hy - hh * 0.5, hw, 4 * k);
-    c.fillStyle = '#8a3b2b'; poly(c, [[hx - hw * 0.62, hy - hh * 0.88], [hx, hy - hh * 1.18], [hx + hw * 0.62, hy - hh * 0.88]]);
-    c.fillStyle = '#3a2a1a'; rr(c, hx - hw * 0.2, hy - hh * 0.18, hw * 0.4, 5 * k, 2 * k);
+    { const bs = h * 0.0036, bx2 = w * 0.12, by2 = h * 0.97; person(c, bx2, by2, winterLook(NPC.bohdan.look), t, false, bs); coldBreath(c, bx2 + 8 * bs, by2 - 60 * bs, t, k, 0); }   // Mr. Bohdan, wrapped up warm
+    hiveBox(c, hx, hy, hw, hh, k);
+    if (mg.snowB && mg.snowB.every(b => !b.on)) for (let i = 0; i < 2; i++) { const px2 = hx + (i ? 6 : -6) * k + Math.sin(t * 3 + i) * 2 * k; bee(c, px2, hy - hh * 0.18 - 2 * k, 6 * k, t + i); }   // two bees peep out, glad of the air
     const T = mg.tool;
     // snow lumps on the hive; the broom sweeps away any it passes over quickly enough
     let swept = false;
@@ -4310,7 +4326,7 @@ const SNOWMAN = {
     if (mg.phase === 'a') {   // rolling: along the ground only; it grows with the distance rolled
       const nx = Math.max(0.08, Math.min(0.36, x + T.ox)), d = Math.abs(nx - T.x); T.x = nx; T.rot += d * 30;
       const goal = SNOWMAN.sizes[mg.balls.length]; T.r = Math.min(goal, T.r + d * 0.55);
-      if (d > 0.002) { mgAct('kachai'); mg.track.push(T.x); if (mg.track.length > 80) mg.track.shift(); }
+      if (d > 0.002) { mgAct('kachai'); mg.track.push(T.x); (mg.spray = mg.spray || []).push({ x: T.x - Math.sign(nx - T.x || 1) * T.r * 0.12, y: 0.9, vx: -(nx - T.x) * 30 + (Math.random() - 0.5) * 0.2, vy: -0.25 - Math.random() * 0.3, t0: nowT }); if (mg.track.length > 80) mg.track.shift(); }
       if (T.r >= goal) { T.held = false; useWord('kachai', true); blip(880, 0.06); if (!mg.balls.length) mg.phase = 'roll'; else mgBegin('b'); }   // the bottom ball rolls on into place; the others are lifted up
     } else if (mg.phase === 'b') { T.x = Math.max(0.08, Math.min(0.92, x + T.ox)); T.y = Math.max(0.15, Math.min(0.9, y + T.oy)); }
   },
@@ -4334,6 +4350,7 @@ const SNOWMAN = {
     const R0 = SNOWMAN.R0(h), sx = w * 0.5;
     if (mg.phase === 'roll' && mg.cur) { const T = mg.cur, dx = 0.5 - T.x, st = Math.sign(dx) * Math.min(Math.abs(dx), dt * 0.32); T.x += st; T.rot += Math.abs(st) * 30; if (Math.abs(st) > 0) { mg.track.push(T.x); if (mg.track.length > 80) mg.track.shift(); } if (Math.abs(dx) < 0.003) SNOWMAN.place(T, 'kachai'); }
     // the track the rolling ball has pressed into the snow
+    mg.spray = (mg.spray || []).filter(p => t - p.t0 < 0.6).slice(-40); c.fillStyle = 'rgba(255,255,255,.95)'; for (const p of mg.spray) { p.vy += dt * 1.4; p.x += p.vx * dt; p.y += p.vy * dt; circ(c, p.x * w, p.y * h, 2.4 * k * (1 - (t - p.t0) / 0.6)); }   // snow kicked up by the rolling ball
     c.fillStyle = 'rgba(170,190,215,.35)'; for (const x of mg.track || []) ell(c, x * w, h * 0.92, 5 * k, 2.5 * k);
     person(c, w * 0.9, h * 0.97, NPC.andriiko.look, t, false, 1.2 * k);
     // the snowman so far
@@ -4480,6 +4497,7 @@ const ICE = {
         c.fillStyle = '#e8b33a'; circ(c, lx, ly, 3 * k); c.strokeStyle = '#e8828f'; c.lineWidth = 2.4 * k; c.beginPath(); for (let i = 0; i <= 6; i++) { const q = i / 6; c.lineTo(lx + Math.sin(t * 7 + q * 5) * 2.5 * k * q, ly + 3 * k + q * 8 * k); } c.stroke();
         if (F && F.st === 'bite') { c.font = `900 ${Math.round(22 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = 4 * k; c.textAlign = 'center'; c.strokeText('!', nx - 8 * k, ny - 10 * k); c.fillText('!', nx - 8 * k, ny - 10 * k); }
       }
+      { const tsx = w * 0.2, tsy = S0 + h * 0.012, ts = sc * 0.95; person(c, tsx, tsy, winterLook(NPC.taras.look), t, false, ts); coldBreath(c, tsx + 8 * ts, tsy - 60 * ts, t, k, 1.3); coldBreath(c, px + 8 * sc, py - 60 * sc, t, k, 0); }   // Taras beside her on the ice; both their breath steams
       // her, standing on the ice beside the hole with the rod in both hands; she leans back hard as she pulls a fish up, then gives a happy hop
       { c.save(); c.translate(px, py - hopY); c.rotate(lean); person(c, 0, 0, Object.assign({}, ME, { armL: aL, armR: hopq > 0.05 ? 2.6 : undefined }), t, false, sc); c.restore(); }   // and her other hand goes up in a cheer as she lands one
       c.strokeStyle = '#6b4422'; c.lineWidth = 5 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(tx, ty); c.stroke();
