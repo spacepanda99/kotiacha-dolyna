@@ -1708,6 +1708,7 @@ function add(e) {
   add({ w: 'pysanka', x: STALL.x + 0.8, y: STALL.y + 0.1, s: 0.6 });   // a basket of pysanky on the ground in front of the stall, by the right-hand crate
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
   for (const [x, y] of [[34.3, 21.5], [34.3, 22.2], [34.3, 22.9], [34.3, 23.6], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0, give: 'pshenytsia', cd: 150, hide: true });   // a strip of wheat
+  for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) add({ w: 'pshenytsia', x: 32.6 + k * 0.72 + (r % 2) * 0.3, y: 2.9 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 33.8 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28 });   // Grandma's wattle fence
   add({ w: 'prapor', ic: '@praportop', x: 19.0, y: 18.17, s: 2.3, lift: 0.01 });   // the flag flies from the top of the fountain
@@ -2571,7 +2572,7 @@ function farmEnts() {
 function millCard() {
   const has = (S.bag.pshenytsia || 0) > 0;
   wordCard('zhorna', {
-    note: `🌾 ${W.pshenytsia.uk}: ${S.bag.pshenytsia || 0}${xl((has ? ' · One wheat makes one flour.' : ' · You need wheat. It grows in a strip by the pond, on the east side.'))}`,
+    note: `🌾 ${W.pshenytsia.uk}: ${S.bag.pshenytsia || 0}${xl((has ? ' · One wheat makes one flour.' : ' · You need wheat. It grows in the field beside the church, and in a strip by the pond.'))}`,
     acts: has ? [{ k: 'grind', fn: () => {
       S.bag.pshenytsia--; give('boroshno'); learn('boroshno'); useWord('pshenytsia', true); grindUntil = now() + 1800; blip(520, 0.12); setTimeout(() => blip(600, 0.12), 450);
       const me = ents.find(q => q.k === 'my_mill'); if (me) setTimeout(() => fxBurst(me.x, me.y - 1, W.boroshno.ic), 1000);
@@ -2820,7 +2821,7 @@ function sourceHint(id) {
   if (D.shop.seeds[id]) return '🌱 Grow it in your garden. Seeds are at the market.';
   if (D.shop.food[id]) return '🧺 Oksana sells it at the market.';
   if (id === 'kalyna') return '🌿 Kalyna bushes grow in the valley.';
-  if (id === 'pshenytsia') return '🌾 Wheat grows in a strip by the pond, on the east side.';
+  if (id === 'pshenytsia') return '🌾 Wheat grows in the field beside the church, and in a strip by the pond.';
   if (id === 'mak') return '🌺 Poppies grow beside the sunflower field.';
   if (D.shop.home[id]) return '🧺 Oksana sells it at the market, for your cottage.';
   return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: winter() ? (S.gear && S.gear.lodobur ? '🧊 Fish through the ice on the pond with your ice auger.' : '🧊 Buy an ice auger (льодобур) at the market, then fish through the ice.') : S.gear && S.gear.vudka ? '🎣 Catch one in the pond.' : '🎣 Buy a fishing rod (вудка) at the market, then fish in the pond.' }[id] || '';
@@ -5243,7 +5244,7 @@ function millRope() {
 }
 function millHopper() {
   const have = S.bag.pshenytsia || 0;
-  if (!have) { learn('pshenytsia'); return wordCard('kivsh', { note: `🌾 ${W.pshenytsia.uk} × 0${xl(' · You need wheat to grind. It grows in the strip by the pond, or buy seeds at the market.')}` }); }
+  if (!have) { learn('pshenytsia'); return wordCard('kivsh', { note: `🌾 ${W.pshenytsia.uk} × 0${xl(' · You need wheat to grind. It grows in the field beside the church and in the strip by the pond, or buy seeds at the market.')}` }); }
   const n = Math.min(have, 6 - Math.ceil(MILL.grain));
   if (n <= 0) return toast('🌾 ' + xlT('The hopper is full.'), 1800);
   S.bag.pshenytsia -= n; MILL.grain += n; hud(); save(); learn('kivsh'); millFlash('nasyp');
@@ -5295,7 +5296,7 @@ const MILL_STEPS = {
   sack: ['🛍️', 'Постав мішок під жолоб', 'Tap the dotted box under the spout: stand a sack there.'],
   hopper: ['🌾', 'Насип пшеницю в ківш', 'Tap the hopper up by the ladder: she climbs up and tips your wheat in.'],
   climb: ['🪜', 'Насип пшеницю в ківш', 'Up the ladder with the wheat…'],
-  nowheat: ['🌾', 'Немає пшениці', 'You have no wheat to grind. Grow it in the strip by the pond (seeds at the market), then come back.'],
+  nowheat: ['🌾', 'Немає пшениці', 'You have no wheat to grind. Pick some in the field beside the church or the strip by the pond, then come back.'],
   start: ['🔴', 'Тягни важіль: млин рушить', 'Pull the red lever: the sails turn and the stones start.'],
   wheel: ['🔄', 'Крути колесо: стрілка на зелене', 'Hold the little wheel. Let go when the needle is on green.'],
   wait: ['⏳', 'Мелемо…', 'Grinding: watch the flour pour into the sack.'],
@@ -5513,7 +5514,7 @@ function drawMill(t) {
 // (the real season and weather outside), slanting light falls through drifting incense, a candle chandelier
 // (панікадило) sways gently, and beeswax candles flicker on two stands. You can light a candle there, and pull
 // the bell rope by the door to ring the bell up in the tower.
-const CH = { cx: 0.52, door: 0.075, rope: 0.15, standL: 0.215, standR: 0.875, lect: 0.815, winL: 0.2, winR: 0.875 };
+const CH = { cx: 0.52, door: 0.075, rope: 0.15, standL: 0.215, standR: 0.95, lect: 0.815, winL: 0.2, winR: 0.875 };
 let churchHits = [];
 const CHURCH = { lit: [0, 0], bell: -9 };
 function enterChurch() { closeSheet(); fadeThen(enterChurchNow); }
@@ -5524,7 +5525,7 @@ function enterChurchNow() {
   inStart(CH.cx - 0.08);
   if (!S.churchDay || S.churchDay.d !== S.clock.day) S.churchDay = { d: S.clock.day, lit: [0, 0] };
   CHURCH.lit = S.churchDay.lit;
-  if (!S.churchSeen) { S.churchSeen = 1; save(); setTimeout(() => { if (mode === 'church') toast('⛪ ' + W.tserkva.uk + xlT(' · Look around. Light a candle at a stand, or pull the bell rope by the door.'), 5200); }, 700); }
+  if (!S.churchSeen) { S.churchSeen = 1; save(); setTimeout(() => { if (mode === 'church') toast('⛪ ' + W.tserkva.uk + xlT(' · Look around. Light a candle at a stand, give a few coins at the altar, or pull the bell rope by the door.'), 5200); }, 700); }
 }
 function churchTap(sx, py) {
   const px = sx + roomX;
@@ -5544,6 +5545,16 @@ function churchBell() {
   } catch (e) {}
 }
 function churchRope() { if (nowT - CHURCH.bell < 1.4) return; CHURCH.bell = nowT; duck = 0.5; setTimeout(() => { duck = 1; }, 3500); churchBell(); setTimeout(churchBell, 1500); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
+// The only thing to do at the altar: put a few coins in the box. It counts what you've given, and that's all.
+function donateCard() {
+  const st = stage(), have = S.coins || 0, given = S.churchGiven || 0;
+  const b2 = n => btn('donate', n, `💰 ${n}`, have >= n ? '' : 'off');
+  openSheet(`<div class="card">
+    <div class="tag">⛪ Пожертва${st < 3 ? ' · A gift for the church' : ''}</div>
+    <div class="word" style="font-size:24px">🙏 ${W.tserkva.uk}</div>
+    ${st < 3 ? `<div class="en">Drop a few coins in the box for the church. You have ${have} 💰.${given ? ` You've given ${given} so far.` : ''}</div>` : `<div class="en">💰 ${have}${given ? ` · 🙏 ${given}` : ''}</div>`}
+    <div class="row">${b2(1)}${b2(5)}${b2(10)}</div></div>`);
+}
 function churchCandle(i) {
   if (CHURCH.lit[i] >= 9) return toast('🕯️ ' + xlT('Every candle here is burning.'), 1800);
   CHURCH.lit[i]++; S.churchDay.lit = CHURCH.lit; save(); learn('svichka'); useWord('svichka', true); say('w_svichka'); blip(880, 0.06);
@@ -5663,11 +5674,28 @@ function drawChurch(t) {
     for (let k = 0; k < n; k++) { const q = (k + 0.5) / n, cxk = x - u * 0.085 + q * u * 0.17, ht = u * (0.05 + ((k * 37) % 5) * 0.01), by = top - u * 0.008 + Math.sin(q * Math.PI) * u * 0.006;
       c.fillStyle = '#f1d58a'; c.fillRect(cxk - u * 0.005, by - ht, u * 0.01, ht); chFlame(c, cxk, by - ht - u * 0.002, u * 0.016, t, k + i * 5); }
     hit(x - u * 0.13, top - u * 0.15, u * 0.26, fy - top + u * 0.15, () => churchCandle(i), x + u * 0.16); }
-  // ---- the lectern (тетрапод) with a рушник and a candle
-  { const x = CH.lect * RW, top = fy - u * 0.24; c.fillStyle = '#7a4e26'; c.fillRect(x - u * 0.06, top, u * 0.12, fy - top); c.fillStyle = '#f8f3e8'; c.fillRect(x - u * 0.07, top - u * 0.01, u * 0.14, u * 0.06); c.fillStyle = '#c62828'; for (let j = 0; j < 5; j++) c.fillRect(x - u * 0.065 + j * u * 0.028, top + u * 0.035, u * 0.016, u * 0.012);
-    c.save(); c.translate(x, top - u * 0.01); c.rotate(-0.12); c.fillStyle = '#6a2a1a'; c.fillRect(-u * 0.05, -u * 0.04, u * 0.1, u * 0.04); c.fillStyle = '#e0b44a'; c.fillRect(-u * 0.008, -u * 0.035, u * 0.016, u * 0.03); c.restore();
-    c.fillStyle = '#f1d58a'; c.fillRect(x + u * 0.05, top - u * 0.08, u * 0.01, u * 0.07); chFlame(c, x + u * 0.055, top - u * 0.082, u * 0.016, t, 9);
-    hit(x - u * 0.09, top - u * 0.1, u * 0.18, fy - top + u * 0.1, word('svichka'), x); }
+  // ---- the altar table: a white cloth with an embroidered hem, a gilded Gospel, a cross and two candles, and a
+  // carved donation box (скринька) with a coin slot. Giving a few coins is all there is to do here.
+  { const x = CH.lect * RW, tw = u * 0.34, top = fy - u * 0.2;
+    c.fillStyle = 'rgba(60,40,20,.18)'; ell(c, x, fy, tw * 0.6, u * 0.02);
+    c.fillStyle = '#6b4422'; c.fillRect(x - tw / 2, top, tw, fy - top);
+    c.fillStyle = '#f8f3e8'; poly(c, [[x - tw / 2 - u * 0.015, top - u * 0.01], [x + tw / 2 + u * 0.015, top - u * 0.01], [x + tw / 2 + u * 0.02, fy - u * 0.03], [x - tw / 2 - u * 0.02, fy - u * 0.03]]);
+    for (let j = 0; j < 9; j++) { const xx = x - tw / 2 + (j + 0.5) * tw / 9, yy = fy - u * 0.065; c.fillStyle = j % 2 ? '#2d2d2d' : '#c62828'; poly(c, [[xx, yy - u * 0.018], [xx + u * 0.014, yy], [xx, yy + u * 0.018], [xx - u * 0.014, yy]]); }
+    c.fillStyle = '#c62828'; c.fillRect(x - tw / 2 - u * 0.02, fy - u * 0.04, tw + u * 0.04, u * 0.008); c.fillRect(x - tw / 2 - u * 0.015, top + u * 0.01, tw + u * 0.03, u * 0.006);
+    // the Gospel lying open, the cross standing behind it, a candle each side
+    c.fillStyle = '#e0b44a'; rr(c, x - u * 0.06, top - u * 0.035, u * 0.12, u * 0.03, u * 0.005); c.fillStyle = '#b8322c'; c.fillRect(x - u * 0.005, top - u * 0.033, u * 0.01, u * 0.026);
+    c.fillStyle = '#f2cc66'; c.fillRect(x - u * 0.006, top - u * 0.15, u * 0.012, u * 0.115); c.fillRect(x - u * 0.035, top - u * 0.12, u * 0.07, u * 0.011); c.fillRect(x - u * 0.02, top - u * 0.142, u * 0.04, u * 0.008);
+    c.save(); c.translate(x, top - u * 0.07); c.rotate(-0.35); c.fillRect(-u * 0.022, -u * 0.004, u * 0.044, u * 0.008); c.restore();
+    for (const s2 of [-1, 1]) { const cx2 = x + s2 * tw * 0.38; c.fillStyle = '#c99a32'; ell(c, cx2, top - u * 0.008, u * 0.018, u * 0.006); c.fillStyle = '#f1d58a'; c.fillRect(cx2 - u * 0.005, top - u * 0.085, u * 0.01, u * 0.077); chFlame(c, cx2, top - u * 0.087, u * 0.016, t, s2 + 9); }
+    // the donation box, on the floor in front of the table
+    const bx = x + tw * 0.72, bw = u * 0.1, bh = u * 0.09, by = fy - u * 0.01;
+    c.fillStyle = '#7a4e26'; c.fillRect(bx - u * 0.012, by - u * 0.1, u * 0.024, u * 0.1);
+    c.fillStyle = '#8a5a2b'; rr(c, bx - bw / 2, by - u * 0.1 - bh, bw, bh, u * 0.01); c.fillStyle = '#a06a35'; c.fillRect(bx - bw / 2, by - u * 0.1 - bh, bw, u * 0.018);
+    c.fillStyle = '#2d1a0c'; c.fillRect(bx - u * 0.025, by - u * 0.1 - bh + u * 0.004, u * 0.05, u * 0.008);   // the slot
+    c.fillStyle = '#f2cc66'; c.fillRect(bx - u * 0.004, by - u * 0.1 - bh * 0.72, u * 0.008, bh * 0.5); c.fillRect(bx - u * 0.017, by - u * 0.1 - bh * 0.58, u * 0.034, u * 0.007);
+    const ago = nowT - (CHURCH.coinT || -9); if (ago < 0.9) for (let i = 0; i < Math.min(5, CHURCH.coinN || 1); i++) { const q = Math.min(1, Math.max(0, ago * 1.6 - i * 0.12)); if (q <= 0 || q >= 1) continue; const yy = by - u * 0.1 - bh - u * 0.12 * (1 - q) * (1 - q) - u * 0.02 + q * u * 0.02; c.fillStyle = '#f2c230'; ell(c, bx, yy, u * 0.012 * (1 - q * 0.6), u * 0.012); c.fillStyle = '#ffe680'; ell(c, bx - u * 0.003, yy - u * 0.003, u * 0.004, u * 0.004); }
+    hit(x - tw / 2 - u * 0.03, top - u * 0.16, tw + u * 0.06, fy - top + u * 0.16, donateCard, x - tw * 0.2);
+    hit(bx - bw / 2 - u * 0.02, by - u * 0.1 - bh - u * 0.04, bw + u * 0.04, bh + u * 0.15, donateCard, bx + u * 0.08); }
   // ---- the chandelier: two tiers of candles on gilded rings, hanging from the vault on a chain and swaying slightly
   { const ax = cx, sw = Math.sin(t * 0.6) * 0.025, cy0 = h * 0.19;
     c.save(); c.translate(ax, 0); c.rotate(sw); c.strokeStyle = '#a87a22'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, cy0 - u * 0.1); c.stroke();
@@ -7335,6 +7363,12 @@ function storyShow(i) {
 function storyClose() { $('#story').classList.remove('show'); sayToken++; for (const k in clipCache) { try { clipCache[k].pause(); } catch (e) {} } }
 
 const A = {
+  donate(v) {
+    const n = +v || 1; if ((S.coins || 0) < n) return toast('💰 ' + (stage() < 3 ? 'Not enough coins.' : '✖'), 1600);
+    S.coins -= n; S.churchGiven = (S.churchGiven || 0) + n; hud(); save(); closeSheet();
+    CHURCH.coinT = nowT; CHURCH.coinN = Math.min(5, n); for (let i = 0; i < Math.min(5, n); i++) setTimeout(() => blip(1320 + i * 60, 0.05), 250 + i * 110);
+    setTimeout(() => toast('🙏 Дякуємо!' + (stage() < 3 ? ' · Thank you!' : ''), 2200), 700);
+  },
   update() { location.reload(); },
   eatMeal() {
     if (devMeal) { devMeal = false; say('p_duzhe_smachno'); blip(990, 0.2); return setTimeout(closeSheet, 1500); }   // a developer's practice meal
