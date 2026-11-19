@@ -98,6 +98,7 @@ const missing = all.filter(c => !fs.existsSync(path.join(OUT, c.id + '.mp3')) &&
 if (cmd === 'list') {
   console.log(`${all.length} clips, ${missing.length} missing, ${all.reduce((s, c) => s + c.text.length, 0)} characters of Ukrainian in total`);
   for (const c of missing) console.log('  missing', c.id, c.text);
+  if (process.env.IDS) fs.writeFileSync(process.env.IDS, JSON.stringify(all.map(c => c.id)));   // IDS=file: every clip id in use
 } else if (cmd === 'test') {
   const c = all.find(x => x.id === (process.argv[3] || 'w_khlib'));
   const res = await tts(c);
