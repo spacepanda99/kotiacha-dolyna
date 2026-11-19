@@ -1154,6 +1154,9 @@ const DRAW = {
   // The same flag on a short pole standing on top of the fountain's column (drawn at the fountain's spot; the
   // column's top is 97 units up at this scale).
   praportop(c, o) { c.save(); c.translate(0, -97); c.scale(0.8, 0.8); c.translate(0, 20); DRAW.prapor(c, Object.assign({}, o, { noShadow: true })); c.restore(); },
+  // A burlap sack tied at the neck, and a wooden grain hopper.
+  mishok(c) { sackArt(c, 0, -2, 70, 84, 0.8); },
+  kivsh(c) { c.fillStyle = '#a06a35'; poly(c, [[-40, -86], [40, -86], [10, -30], [-10, -30]]); c.fillStyle = '#e0b84a'; poly(c, [[-34, -80], [34, -80], [14, -50], [-14, -50]]); c.fillStyle = '#f0cc66'; ell(c, 0, -80, 34, 5); c.strokeStyle = '#7a4e26'; c.lineWidth = 3; c.beginPath(); c.moveTo(-40, -86); c.lineTo(40, -86); c.lineTo(10, -30); c.lineTo(-10, -30); c.closePath(); c.stroke(); c.fillStyle = '#8a5a2b'; poly(c, [[-8, -30], [10, -30], [26, -4], [14, 0]]); },
   // A swallow on the wing: blue-black back, white belly, rusty throat, long forked tail.
   lastivka(c, o) {
     const f = Math.sin(((o && o.t) || 0) * 13);
@@ -2662,6 +2665,7 @@ function interact(e) {
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { note: `🏠 <b>Хата баби Олі</b>${xl(" · Grandma Olia's cottage. She is inside, cooking.")}`, acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.w === 'mlyn') return wordCard('mlyn', { note: '⚙️ ' + xl('A working windmill: go in and grind wheat into flour.'), acts: [{ k: 'enter', fn: enterMill }] });
   if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${xl(' · This is your cottage.')}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
   if (e.w === 'krynytsia') {
     const have = S.bag.voda || 0;
@@ -4753,7 +4757,7 @@ function enterHomeNow() {
   pickHomeCats();
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#decorBtn').style.display = ''; $('#wardBtn').innerHTML = '👗 ' + lab('wardrobe'); $('#wardBtn').style.display = ''; $('#homebar').style.display = 'flex';
   const mid = DECOR.stil.x * roomW() - cv.width / 2;
-  roomX = mid; clampPan();
+  roomX = mid; clampPan(); inStart(DECOR.stil.x + 0.06);
   // The first few times in, the view glides from one end of the room to the other and settles at the table,
   // so it's clear there's more to see. Touching the screen stops it.
   if (S.clock.t >= 0.8) { bed = { t0: null, done: {} }; $('#homebar').style.display = 'none'; }   // night: feed the cats and go to bed
@@ -4763,17 +4767,18 @@ function enterHomeNow() {
 function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
 function homeTap(sx, py) {
   if (bed) { bed.tap = true; return; }
-  const px = sx + roomX;
+  const px = sx + roomX, [ba] = inBand();
   const friends = homeCats().map(h => h.ct);
-  for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` }); }
-  let best = null, bestScore = -1e9;
+  for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return inGo(p.x, p.y, () => wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` })); }
+  let best = null, bestR = null, bestScore = -1e9;
   for (const it of roomItems()) {
     const r = decorRect(it.id, it.k);
     if (!(px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h)) continue;
     const score = itemZ(it) * 1e4 - Math.abs(px - r.cx);
-    if (score > bestScore) { bestScore = score; best = it.id; }
+    if (score > bestScore) { bestScore = score; best = it.id; bestR = r; }
   }
-  if (best) return wordCard(best, BASICS.includes(best) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(best); closeSheet(); } }] });
+  if (best) { const id = best, D0 = DECOR[id]; return inGo(bestR.cx, D0.wall || D0.on || D0.shelf !== undefined ? ba : bestR.by, () => wordCard(id, BASICS.includes(id) ? {} : { acts: [{ k: 'putaway', fn: () => { A.decor(id); closeSheet(); } }] })); }
+  if (py > cv.height * 0.58) inWalkTo(px, py);   // the floor: walk there
 }
 // Every cat you've brought home lives here, and they're busy. One bats the towel hanging off the table (or a
 // toy, once you have one), one sleeps in the middle of your bed (or a cat bed), one washes itself on the
@@ -5045,7 +5050,7 @@ function drawHome(t) {
     else if (a < 4.2) roomX = max + ease((a - 3.0) / 1.2) * (tour.mid - max);
     else { roomX = tour.mid; tour = null; }
   }
-  clampPan();
+  clampPan(); inStep(t);
   c.save(); c.translate(-roomX, 0);
   // back wall, beams, embroidered border
   c.fillStyle = '#fbf1dc'; c.fillRect(0, 0, RW, wallB);
@@ -5073,14 +5078,22 @@ function drawHome(t) {
   // everything in the room: wall things first, then floor things back to front
   const items = roomItems(), cats = homeCats(), spots = cats.map((_, i) => catSpot(i));
   const batted = new Set(spots.filter(p => p.toy).map(p => p.toy)), towelCat = spots.some(p => p.towel);
+  const drawIt = (id, k, r) => {
+    if (DECOR[id].fit) return windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u);
+    if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.75); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
+    else drawIcon(c, W[id].ic, r.cx + (batted.has(id + k) ? toyNudge(t) : 0), r.by, r.sz, id === 'stil' && towelCat ? { swing: towelSwing(t) } : id === 'kihtetochka' && k ? { alt: true } : undefined);
+  };
   for (const { id, k } of items) {
     const r = decorRect(id, k);
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
-    if (DECOR[id].fit) { windowRushnyk(c, r.cx, u * 0.3, h * 0.27, h * 0.45, u); continue; }
-    if (id === 'kylym') { c.save(); c.translate(r.cx, r.by); c.scale(1, 0.75); drawIcon(c, W[id].ic, 0, r.sz * 0.42, r.sz); c.restore(); }
-    else drawIcon(c, W[id].ic, r.cx + (batted.has(id + k) ? toyNudge(t) : 0), r.by, r.sz, id === 'stil' && towelCat ? { swing: towelSwing(t) } : id === 'kihtetochka' && k ? { alt: true } : undefined);
+    drawIt(id, k, r);
   }
-  cats.map((h, i) => [h, spots[i], i]).sort((a, b) => a[1].y - b[1].y).forEach(([{ ct }, p, i]) => { if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, p.groom ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); });
+  const catList = cats.map((h, i) => [h, spots[i], i]).sort((a, b) => a[1].y - b[1].y), drawCat = ([{ ct }, p, i]) => { if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, p.groom ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); };
+  catList.forEach(drawCat);
+  // her, walking about the room; then whatever stands nearer than her is drawn again, in front of her
+  if (!bed) { inDraw(c, t);
+    for (const { id, k } of items) { const D0 = DECOR[id], r = decorRect(id, k); if (D0.wall || D0.flat || D0.on || D0.shelf !== undefined || r.by <= IN.y) continue; drawIt(id, k, r); }
+    catList.filter(([, p]) => p.y > IN.y).forEach(drawCat); }
   if (inRoom().length === BASICS.length && stage() < 3) {
     c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
@@ -5093,6 +5106,285 @@ function drawHome(t) {
     paintSky(c, w, h, t, lights, false);
   }
   if (bed) drawBed(t);
+}
+
+// ------------------------------------------------------------------ walking about indoors
+// In every room (your cottage, Grandma's, the windmill) she is in there with you. Tap the floor and she walks
+// there; tap something and she walks over to it first, then it opens. The view follows her as she goes, and
+// you can still drag to look around. Further down the floor is nearer, so she's a little bigger there.
+const IN = { x: 0, y: 0, tx: 0, ty: 0, wk: 0, step: 0, face: 1, dir: 'front', then: null, follow: false, lt: 0 };
+const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
+const inScale = y => { const [a, b] = inBand(); return roomU() * 0.0043 * (0.93 + 0.14 * (y - a) / Math.max(1, b - a)); };
+function inStart(fx) { const [a, b] = inBand(); IN.x = IN.tx = fx * roomW(); IN.y = IN.ty = b - (b - a) * 0.35; IN.wk = 0; IN.then = null; IN.face = 1; IN.dir = 'front'; IN.follow = false; }
+function inWalkTo(x, y, then) {
+  const [a, b] = inBand(), u = roomU();
+  IN.tx = Math.max(u * 0.1, Math.min(roomW() - u * 0.1, x)); IN.ty = Math.max(a, Math.min(b, y)); IN.then = then || null; IN.follow = true;
+  if (Math.hypot(IN.tx - IN.x, IN.ty - IN.y) < u * 0.03) { IN.tx = IN.x; IN.ty = IN.y; }   // already there
+}
+// Walk over to a thing standing at room x (its foot at y), stopping just in front of it, then do fn.
+function inGo(x, y, fn) { const [a] = inBand(), u = roomU(), near = Math.abs(IN.x - x) < u * 0.22 && IN.y >= a - 2; if (near) { IN.face = x >= IN.x ? 1 : -1; return fn(); } inWalkTo(x + (IN.x < x ? -1 : 1) * u * 0.12, Math.max(a, (y || a) + u * 0.03), () => { IN.face = x >= IN.x ? 1 : -1; fn(); }); }
+function inStep(t) {
+  const dt = Math.min(0.05, Math.max(0, t - IN.lt)); IN.lt = t;
+  const u = roomU(), dx = IN.tx - IN.x, dy = IN.ty - IN.y, d = Math.hypot(dx, dy), sp = u * 1.05;
+  if (d > 1.5) { const m = Math.min(d, sp * dt); IN.x += dx / d * m; IN.y += dy / d * m; IN.step += m / (u * 0.05); IN.wk = Math.min(1, IN.wk + dt * 6);
+    if (Math.abs(dx) > Math.abs(dy) * 0.5) { IN.face = dx > 0 ? 1 : -1; IN.dir = 'side'; } else IN.dir = dy > 0 ? 'front' : 'back'; }
+  else { IN.wk = Math.max(0, IN.wk - dt * 6); if (IN.wk < 0.05) IN.dir = 'front'; if (IN.then) { const f = IN.then; IN.then = null; f(); } }
+  if (IN.follow && !down) { const want = Math.max(0, Math.min(panMax(), IN.x - cv.width / 2)); roomX += (want - roomX) * Math.min(1, dt * 3.5); clampPan(); if (d <= 1.5 && Math.abs(want - roomX) < 2) IN.follow = false; }
+}
+function inDraw(c, t) {
+  const sc = inScale(IN.y), x = IN.x, y = IN.y;
+  c.fillStyle = 'rgba(60,40,20,.2)'; ell(c, x, y, 17 * sc, 4.5 * sc);
+  c.save(); c.translate(x, y);
+  if (IN.dir === 'side') { c.scale(IN.face, 1); personSide(c, 0, 0, ME, t, IN.wk, sc, IN.step); }
+  else person(c, 0, 0, ME, t, IN.wk, sc, IN.step, { back: IN.dir === 'back' ? 1 : 0 });
+  c.restore();
+}
+
+// ------------------------------------------------------------------ inside the windmill (млин)
+// A working mill, opened up so you can see how it goes. The sails outside turn the windshaft, which comes in
+// through the wall at the hub of the big brake wheel. Pegs on the brake wheel's face turn the wallower, a
+// lantern gear on top of the upright main shaft, and the shaft turns the upper millstone (the runner) on top
+// of the fixed bed stone. Grain goes into the hopper, trickles down the shoe into the eye of the runner,
+// is ground between the stones and comes out as flour down the spout into a sack.
+// Milling is done right there on the screen, in the right order:
+//   1. постав мішок: stand a sack under the spout          2. насип зерно: tip your wheat into the hopper
+//   3. тягни: pull the brake rope, the sails start to turn  4. крути: hold the little hand wheel until the
+//      gauge's needle is in the green (the gap between the stones: too tight and they rub and smoke, too wide
+//      and the grain comes through whole)                   5. тягни again: brake, and the mill stops
+//   6. take the sack of flour.
+// Running with no grain makes the stones grind on each other and spark; grinding with no sack spills the flour
+// on the floor. Doing it all without a slip makes you a real мірошник.
+const MILL = { on: false, spd: 0, rot: 0, sack: false, grain: 0, flour: 0, gap: 0.12, gapPh: 0, hold: false, mist: 0, warn: '', warnT: -9, spill: 0, parts: [], flash: null, lt: 0 };
+let millHits = [];
+const MX = { door: 0.07, wheat: 0.17, slate: 0.275, mid: 0.52, win: 0.76, sacks: 0.83, table: 0.92 };
+function enterMill() { closeSheet(); fadeThen(enterMillNow); }
+function enterMillNow() {
+  mode = 'mill'; learn('mlyn');
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
+  roomX = MX.mid * roomW() - cv.width / 2; clampPan(); tour = null; blip(520);
+  inStart(MX.mid - 0.04);
+  if (!S.millSeen) { S.millSeen = 1; save(); setTimeout(() => { if (mode === 'mill') toast('⚙️ ' + W.mlyn.uk + xlT(' · A working windmill! The slate on the wall shows how to grind wheat into flour.'), 5200); }, 600); }
+}
+const xlT = s => stage() < 3 ? s : '';
+function millFlash(v) { MILL.flash = { v, t0: nowT }; if (W[v]) { useWord(v, true); say('w_' + v); subNow = { uk: verbEn1(v), en: '', a: null, t0: performance.now(), both: true }; } }
+function millWarn(key, uk, en) { if (MILL.warn === key && nowT - MILL.warnT < 6) return; MILL.warn = key; MILL.warnT = nowT; toast(uk + xlT(' · ' + en), 3400); blip(260, 0.08); }
+function millTap(sx, py) {
+  const px = sx + roomX;
+  for (let i = millHits.length - 1; i >= 0; i--) { const r = millHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return inGo(r.gx, r.gy, r.fn); } }
+  if (py > cv.height * 0.78) { blip(560, 0.05); inWalkTo(px, py); }
+}
+function millDown(ev) {
+  if (sheetOpen()) return;
+  const k = cv.width / innerWidth, px = ev.clientX * k + roomX, py = ev.clientY * k, H = millHits.find(r => r.wheel);
+  if (H && px >= H.x && px <= H.x + H.w && py >= H.y && py <= H.y + H.h && Math.abs(IN.x - H.gx) < roomU() * 0.3 && !IN.then) { MILL.hold = true; MILL.gapPh = Math.acos(Math.max(-1, Math.min(1, 1 - 2 * MILL.gap))); millFlash('kruty'); }
+}
+function millUp() {
+  MILL.hold = false; blip(620, 0.05);
+  const g = MILL.gap;
+  if (g >= 0.46 && g <= 0.6) toast('✅ ' + W.zhorna.uk + xlT(' · Just right: the stones are set.'), 2200);
+  else if (g < 0.46) toast('↔️ ' + xlT('Too tight: the stones will rub. Hold the wheel again.'), 2600);
+  else toast('↔️ ' + xlT('Too wide: the grain will come through whole. Hold the wheel again.'), 2600);
+}
+const millSet = () => MILL.gap >= 0.46 && MILL.gap <= 0.6;
+function millRope() {
+  MILL.on = !MILL.on; millFlash('tiahny'); blip(MILL.on ? 480 : 380, 0.1);
+  if (MILL.on && !MILL.grain && !MILL.flour) MILL.mist++;   // let go of the brake with nothing to grind
+}
+function millHopper() {
+  const have = S.bag.pshenytsia || 0;
+  if (!have) { learn('pshenytsia'); return wordCard('kivsh', { note: `🌾 ${W.pshenytsia.uk} × 0${xl(' · You need wheat to grind. It grows in the strip by the pond, or buy seeds at the market.')}` }); }
+  const n = Math.min(have, 6 - Math.ceil(MILL.grain));
+  if (n <= 0) return toast('🌾 ' + xlT('The hopper is full.'), 1800);
+  S.bag.pshenytsia -= n; MILL.grain += n; hud(); save(); learn('kivsh'); millFlash('nasyp');
+  if (!MILL.sack) MILL.mist++;   // grain in before the sack is under the spout
+}
+function millSpout() {
+  if (!MILL.sack) { MILL.sack = true; MILL.flour = 0; learn('mishok'); millFlash('postav'); return; }
+  if (MILL.spd > 0.08) return millWarn('stopfirst', '🛑 ' + W.tiahny.uk + '!', 'Stop the mill first: pull the brake rope.');
+  const n = Math.floor(MILL.flour + 0.01);
+  if (n < 1) return wordCard('mishok', { note: xl('The sack is still empty. Grind some wheat first.') });
+  give('boroshno', n); learn('boroshno'); millFlash('vizmy'); MILL.sack = false; MILL.flour = 0; blip(900, 0.1);
+  if (!MILL.mist) { learn('miroshnyk'); S.coins += 5; hud(); setTimeout(() => { toast(`🏅 ${W.miroshnyk.uk}! +5 💰` + xlT(` · ${n} flour, no slips: a real miller!`), 3600); say('w_miroshnyk'); }, 900); }
+  else toast(`🥣 ${W.boroshno.uk} × ${n}` + xlT(' · Into your bag.'), 2600);
+  MILL.mist = 0; save();
+}
+function millSlate() {
+  const st = [['🛍️', 'Постав мішок під жолоб', 'Stand a sack under the spout'], ['🌾', 'Насип пшеницю в ківш', 'Tip the wheat into the hopper'], ['🪢', 'Тягни мотузку: млин рушить', 'Pull the rope: the mill starts'], ['🔄', 'Крути колесо: стрілка на зелене', 'Hold the wheel: needle on the green'], ['🪢', 'Тягни ще раз: стоп', 'Pull again: stop'], ['🥣', 'Візьми борошно', 'Take the flour']];
+  wordCard('mlyn', { note: `<b>${xl('How to grind flour:')}</b><br>` + st.map(([ic, uk, en], i) => `${i + 1}. ${ic} ${uk}${xl(` · ${en}`)}`).join('<br>') });
+}
+// A sack of flour, tied at the neck.
+function sackArt(c, x, y, w2, h2, full, col) {
+  const bulge = 0.8 + full * 0.25;
+  c.fillStyle = col || '#d9c08a'; c.beginPath(); c.moveTo(x - w2 * 0.3, y - h2); c.quadraticCurveTo(x - w2 * 0.62 * bulge, y - h2 * 0.55, x - w2 * 0.5 * bulge, y); c.lineTo(x + w2 * 0.5 * bulge, y); c.quadraticCurveTo(x + w2 * 0.62 * bulge, y - h2 * 0.55, x + w2 * 0.3, y - h2); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(120,90,40,.35)'; c.lineWidth = 1; for (let i = 1; i < 5; i++) { c.beginPath(); c.moveTo(x - w2 * 0.45, y - h2 * i / 5); c.lineTo(x + w2 * 0.45, y - h2 * i / 5); c.stroke(); }
+  c.fillStyle = '#8a5a2b'; c.fillRect(x - w2 * 0.32, y - h2 * 0.98, w2 * 0.64, h2 * 0.05);
+}
+function drawMill(t) {
+  const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), M = MILL;
+  const dt = Math.min(0.05, Math.max(0, t - M.lt)); M.lt = t;
+  clampPan(); inStep(t);
+  // ---- the machine: speed eases up when the brake is off, faster in a strong wind
+  const wind = S.wx === 'storm' ? 1.5 : wet(S.wx) ? 1.15 : S.wx === 'fog' ? 0.75 : 1;
+  M.spd += ((M.on ? wind : 0) - M.spd) * Math.min(1, dt * (M.on ? 0.7 : 1.6));
+  M.rot += M.spd * dt * 1.1;
+  if (M.hold) { M.gapPh += dt * 1.25; M.gap = 0.5 - 0.5 * Math.cos(M.gapPh); }
+  const grinding = M.spd > 0.45;
+  let out = null;   // what's coming down the spout: 'flour', 'whole' or nothing
+  if (grinding && M.grain > 0) {
+    const used = Math.min(M.grain, dt * 0.22 * M.spd); M.grain -= used;
+    if (M.gap < 0.46) { millWarn('tight', '🔥 ' + W.zhorna.uk + '!', 'The stones are too tight: they rub and smoke. Hold the hand wheel to open them.'); M.grain += used * 0.85; if (Math.random() < 0.3) M.parts.push({ k: 'smoke', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 0.2 }); }
+    else if (M.gap > 0.6) { out = 'whole'; millWarn('wide', '🌾 ' + W.zhorna.uk + '!', 'The gap is too wide: the grain comes out whole. Hold the hand wheel to close it.'); }
+    else { out = 'flour'; if (M.sack) M.flour += used; else { M.spill += used; M.mist++; millWarn('spill', '🛍️ ' + W.mishok.uk + '!', 'No sack under the spout: the flour is going on the floor!'); } }
+  }
+  if (grinding && M.grain <= 0) M.dry = (M.dry || 0) + dt; else M.dry = Math.max(0, (M.dry || 0) - dt * 2);
+  if (M.dry > 1.2) { millWarn('dry', '⚡ ' + W.zhorna.uk + '!', 'Nothing to grind: the stones grind each other and spark! Pull the rope to stop.'); if (Math.random() < 0.6) M.parts.push({ k: 'spark', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 2, vy: -Math.random() }); if (!M.dryCounted) { M.mist++; M.dryCounted = true; } }
+  if (!grinding) M.dryCounted = false;
+
+  const cx = MX.mid * RW, fy = h * 0.8, platY = h * 0.63, bwY = h * 0.25, R = u * 0.2;
+  millHits = [];
+  const hit = (x, y, ww, hh, fn, gx, gy, extra) => millHits.push(Object.assign({ x, y, w: ww, h: hh, fn, gx: gx ?? x + ww / 2, gy: gy ?? fy }, extra || {}));
+  const word = id => () => wordCard(id);
+  c.save(); c.translate(-roomX, 0);
+  // ---- inside the tower: plank walls, posts leaning in toward the cap, a ceiling of beams
+  c.fillStyle = '#c89a62'; c.fillRect(0, 0, RW, fy);
+  c.fillStyle = 'rgba(90,55,25,.13)'; for (let x = 0; x < RW; x += u * 0.07) c.fillRect(x, 0, Math.max(1, u * 0.004), fy);
+  c.fillStyle = 'rgba(255,240,210,.07)'; for (let x = u * 0.035; x < RW; x += u * 0.14) c.fillRect(x, 0, u * 0.03, fy);
+  c.fillStyle = '#6b4422'; c.fillRect(0, 0, RW, h * 0.085); c.fillStyle = '#5a381b'; for (let x = u * 0.1; x < RW; x += u * 0.45) c.fillRect(x, h * 0.085, u * 0.05, h * 0.02);
+  c.fillStyle = '#7a4e26'; for (const [x0, x1] of [[0.012, 0.05], [0.988, 0.95]]) poly(c, [[x0 * RW - u * 0.03, fy], [x0 * RW + u * 0.03, fy], [x1 * RW + u * 0.025, 0], [x1 * RW - u * 0.025, 0]]);
+  // the floor: worn boards, dusty with flour
+  c.fillStyle = '#a8794a'; c.fillRect(0, fy, RW, h - fy);
+  c.strokeStyle = 'rgba(80,50,20,.3)'; c.lineWidth = Math.max(1.5, h * 0.0025); for (let i = 1; i < 6; i++) { const y = fy + (h - fy) * (i / 6) ** 1.2; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
+  c.fillStyle = 'rgba(255,250,235,.18)'; ell(c, cx - u * 0.25, fy + u * 0.03, u * 0.35, u * 0.03);
+  c.fillStyle = 'rgba(60,35,15,.25)'; c.fillRect(0, fy - h * 0.006, RW, h * 0.008);
+  // ---- the door, open to the day, light falling in across the floor
+  { const dx = MX.door * RW, dw = u * 0.22, dt2 = fy - u * 0.42;
+    c.fillStyle = '#5a381b'; rr(c, dx - dw / 2 - u * 0.02, dt2 - u * 0.02, dw + u * 0.04, fy - dt2 + u * 0.02, u * 0.02);
+    c.save(); c.beginPath(); c.rect(dx - dw / 2, dt2, dw, fy - dt2); c.clip(); windowView(c, dx - dw / 2, dt2, dw, fy - dt2, t, 2, 1); c.restore();
+    const L = skyLight(S.clock.t); c.fillStyle = `rgba(255,236,190,${0.18 * (1 - L.dark)})`; poly(c, [[dx - dw / 2, fy], [dx + dw / 2, fy], [dx + dw * 1.4, h], [dx - dw * 0.2, h]]);
+    hit(dx - dw / 2, dt2, dw, fy - dt2, () => exitHome(), dx, fy); }
+  // ---- sacks of wheat by the door
+  { const sx = MX.wheat * RW; sackArt(c, sx - u * 0.06, fy, u * 0.13, u * 0.17, 0.8, '#d6b46a'); sackArt(c, sx + u * 0.07, fy, u * 0.12, u * 0.15, 0.6, '#cfae64'); sackArt(c, sx, fy - u * 0.13, u * 0.11, u * 0.12, 0.5, '#dcbb72');
+    for (let i = 0; i < 5; i++) { c.save(); c.translate(sx + u * (0.0 + i * 0.012), fy - u * 0.25); c.rotate(-0.3 + i * 0.15); c.strokeStyle = '#b8902e'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -u * 0.07); c.stroke(); c.fillStyle = '#e0b84a'; ell(c, 0, -u * 0.08, u * 0.008, u * 0.02); c.restore(); }
+    hit(sx - u * 0.13, fy - u * 0.33, u * 0.26, u * 0.33, word('pshenytsia'), sx, fy); }
+  // ---- the slate on the wall: how to grind
+  { const sx = MX.slate * RW, sy = h * 0.42, sw = u * 0.2, sh = u * 0.25;
+    c.fillStyle = '#8a5a2b'; rr(c, sx - sw / 2 - u * 0.012, sy - u * 0.012, sw + u * 0.024, sh + u * 0.024, u * 0.01); c.fillStyle = '#2f3a36'; c.fillRect(sx - sw / 2, sy, sw, sh);
+    c.font = `${Math.round(u * 0.03)}px system-ui`; c.textAlign = 'left'; c.textBaseline = 'middle';
+    ['🛍️', '🌾', '🪢', '🔄', '🪢', '🥣'].forEach((ic, i) => { const y = sy + sh * (0.1 + i * 0.158); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(`${i + 1}.`, sx - sw * 0.42, y); c.fillText(ic, sx - sw * 0.2, y); c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1; c.beginPath(); c.moveTo(sx + sw * 0.08, y); c.lineTo(sx + sw * 0.4, y); c.stroke(); });
+    hit(sx - sw / 2, sy, sw, sh, millSlate, sx, fy); }
+  // ---- the sails, seen turning past a small window high up on the wall
+  { const wx = MX.win * RW, wy = h * 0.2, ws = u * 0.18;
+    c.fillStyle = '#5a381b'; rr(c, wx - ws / 2 - u * 0.015, wy - u * 0.015, ws + u * 0.03, ws + u * 0.03, u * 0.01);
+    c.save(); c.beginPath(); c.rect(wx - ws / 2, wy, ws, ws); c.clip(); windowView(c, wx - ws / 2, wy, ws, ws, t, 1, 0);
+    c.translate(wx - ws * 0.65, wy + ws * 0.15); c.rotate(-M.rot * 0.9);
+    for (let i = 0; i < 4; i++) { c.save(); c.rotate(i * Math.PI / 2); c.fillStyle = '#6b4422'; c.fillRect(-u * 0.008, 0, u * 0.016, u * 0.4); c.fillStyle = 'rgba(250,244,228,.92)'; c.fillRect(u * 0.008, u * 0.08, u * 0.07, u * 0.3); c.strokeStyle = '#6b4422'; c.lineWidth = 1.5; for (let j = 0; j < 5; j++) { c.beginPath(); c.moveTo(u * 0.008, u * (0.1 + j * 0.06)); c.lineTo(u * 0.078, u * (0.1 + j * 0.06)); c.stroke(); } c.restore(); }
+    c.restore();
+    c.strokeStyle = '#5a381b'; c.lineWidth = u * 0.01; c.beginPath(); c.moveTo(wx, wy); c.lineTo(wx, wy + ws); c.moveTo(wx - ws / 2, wy + ws / 2); c.lineTo(wx + ws / 2, wy + ws / 2); c.stroke();
+    hit(wx - ws / 2, wy, ws, ws, word('kryla'), wx, fy); }
+  // ---- the landing under the cap, with a ladder up to it
+  c.fillStyle = '#7a4e26'; c.fillRect(cx - u * 0.75, h * 0.45, u * 0.55, u * 0.04); c.fillRect(cx + u * 0.2, h * 0.45, u * 0.5, u * 0.04);
+  c.fillStyle = '#5a381b'; c.fillRect(cx - u * 0.75, h * 0.45 + u * 0.04, u * 1.45, u * 0.008);
+  { const lx = cx - u * 0.62; c.strokeStyle = '#6b4422'; c.lineWidth = u * 0.014; c.beginPath(); c.moveTo(lx - u * 0.05, fy); c.lineTo(lx, h * 0.45); c.moveTo(lx + u * 0.07, fy); c.lineTo(lx + u * 0.12, h * 0.45); c.stroke(); c.lineWidth = u * 0.01; for (let i = 1; i < 8; i++) { const q = i / 8, y = fy - (fy - h * 0.45) * q; c.beginPath(); c.moveTo(lx - u * 0.05 + u * 0.05 * q, y); c.lineTo(lx + u * 0.07 + u * 0.05 * q, y); c.stroke(); } }
+  // ---- the brake wheel, face-on, its hub on the windshaft coming in from the sails; pegs round its face
+  { c.save(); c.translate(cx, bwY);
+    c.fillStyle = 'rgba(0,0,0,.12)'; circ(c, u * 0.01, u * 0.012, R * 1.04);
+    c.strokeStyle = '#8a5a2b'; c.lineWidth = R * 0.16; c.beginPath(); c.arc(0, 0, R * 0.9, 0, 7); c.stroke();
+    c.strokeStyle = '#a06a35'; c.lineWidth = R * 0.05; c.beginPath(); c.arc(0, 0, R * 0.96, 0, 7); c.stroke();
+    c.save(); c.rotate(M.rot);
+    c.fillStyle = '#7a4e26'; for (let i = 0; i < 4; i++) { c.save(); c.rotate(i * Math.PI / 2); c.fillRect(-R * 0.06, -R * 0.86, R * 0.12, R * 1.72); c.restore(); }   // the arms
+    for (let i = 0; i < 28; i++) { const a = i * Math.PI * 2 / 28; c.save(); c.rotate(a); c.fillStyle = '#e0c08a'; c.fillRect(-R * 0.035, -R * 0.94, R * 0.07, R * 0.1); c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(-R * 0.035, -R * 0.85, R * 0.07, R * 0.012); c.restore(); }   // the cogs
+    c.restore();
+    c.fillStyle = '#4b4f55'; circ(c, 0, 0, R * 0.16); c.fillStyle = '#6d737b'; circ(c, 0, 0, R * 0.1); c.fillStyle = '#9aa1a8'; circ(c, -R * 0.03, -R * 0.03, R * 0.035);
+    // the brake: a wooden band round the top of the rim, the lever off to the left, the rope hanging from it
+    const lev = M.on ? -0.18 : 0.05;
+    c.strokeStyle = '#5a381b'; c.lineWidth = R * 0.08; c.beginPath(); c.arc(0, 0, R * 1.03, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+    c.save(); c.translate(-R * 1.0, -R * 0.1); c.rotate(lev); c.fillStyle = '#6b4422'; c.fillRect(-R * 0.9, -R * 0.05, R * 1.0, R * 0.1); c.restore();
+    c.restore();
+    hit(cx - R, bwY - R, R * 2, R * 2, word('shesternia'), cx, fy); }
+  // the rope from the brake lever
+  const ropeX = cx - R * 1.85, ropeTop = bwY - R * 0.1 + Math.sin(M.on ? -0.18 : 0.05) * -R * 0.9, ropeBot = h * 0.69 + (M.on ? -u * 0.04 : 0);
+  c.strokeStyle = '#c9a56a'; c.lineWidth = u * 0.008; c.beginPath(); c.moveTo(ropeX, ropeTop); c.quadraticCurveTo(ropeX + Math.sin(t * 1.3) * u * 0.01, (ropeTop + ropeBot) / 2, ropeX, ropeBot); c.stroke();
+  c.fillStyle = '#d43a3a'; rr(c, ropeX - u * 0.018, ropeBot, u * 0.036, u * 0.05, u * 0.012);
+  hit(ropeX - u * 0.08, ropeBot - u * 0.25, u * 0.16, u * 0.33, millRope, ropeX, fy);
+  // ---- the wallower: a lantern gear (two discs and staves) on top of the main shaft, driven by the cogs above
+  const wlY = bwY + R + u * 0.035, wlR = u * 0.075, wlH = u * 0.065;
+  c.fillStyle = '#6b4422'; ell(c, cx, wlY - wlH / 2, wlR, wlR * 0.28);
+  for (let i = 0; i < 10; i++) { const a = M.rot * 3.2 + i * Math.PI * 2 / 10, x = cx + Math.cos(a) * wlR * 0.85, front = Math.sin(a) > 0; c.fillStyle = front ? '#e0c08a' : '#8a6a3a'; c.fillRect(x - u * 0.006, wlY - wlH / 2, u * 0.012, wlH); }
+  c.fillStyle = '#7a4e26'; ell(c, cx, wlY + wlH / 2, wlR, wlR * 0.28); c.fillStyle = '#8a5a2b'; ell(c, cx, wlY - wlH / 2 - 1, wlR * 0.98, wlR * 0.26);
+  hit(cx - wlR, wlY - wlH, wlR * 2, wlH * 2, word('shesternia'), cx, fy);
+  // ---- the main shaft, down from the wallower to the runner stone
+  const bedH = u * 0.05, runH = u * 0.058, gapPx = u * (0.002 + M.gap * 0.014), sR = u * 0.22;
+  const bedTop = platY - bedH, runBot = bedTop - gapPx, runTop = runBot - runH;
+  c.fillStyle = '#8a5a2b'; c.fillRect(cx - u * 0.022, wlY + wlH / 2, u * 0.044, runTop - wlY - wlH / 2);
+  c.fillStyle = 'rgba(255,230,190,.35)'; for (let i = 0; i < 3; i++) { const q = ((M.rot * 0.5 + i / 3) % 1); c.fillRect(cx - u * 0.022 + q * u * 0.044, wlY + wlH / 2, u * 0.006, runTop - wlY - wlH / 2); }
+  // ---- the platform the stones stand on
+  c.fillStyle = '#6b4422'; c.fillRect(cx - u * 0.34, platY, u * 0.68, u * 0.045); for (const lx of [-0.3, 0.3]) c.fillRect(cx + lx * u - u * 0.025, platY, u * 0.05, fy - platY);
+  c.fillStyle = '#5a381b'; c.fillRect(cx - u * 0.3, platY + (fy - platY) * 0.55, u * 0.6, u * 0.025);
+  // ---- the millstones: the bed stone fixed, the runner turning (its dressing marks sliding round)
+  const stone = (y0, hh, spin) => {
+    c.fillStyle = '#9a958c'; c.fillRect(cx - sR, y0, sR * 2, hh); c.fillStyle = '#b4afa6'; ell(c, cx, y0, sR, sR * 0.13); c.fillStyle = '#86817a'; ell(c, cx, y0 + hh, sR, sR * 0.13); c.fillRect(cx - sR, y0, sR * 2, hh * 0.98); c.fillStyle = '#a7a299'; ell(c, cx, y0, sR, sR * 0.13);
+    if (spin !== undefined) { c.strokeStyle = 'rgba(60,55,50,.45)'; c.lineWidth = Math.max(1, u * 0.004); for (let i = 0; i < 9; i++) { const a = spin + i * Math.PI * 2 / 9; if (Math.sin(a) < 0) continue; const x = cx + Math.cos(a) * sR * 0.97; c.beginPath(); c.moveTo(x, y0 + hh * 0.15); c.lineTo(x, y0 + hh * 0.85); c.stroke(); } c.fillStyle = '#5b574f'; ell(c, cx, y0, sR * 0.12, sR * 0.03); }   // the eye in the middle
+    c.strokeStyle = 'rgba(70,60,50,.4)'; c.lineWidth = Math.max(1, u * 0.004); c.beginPath(); c.moveTo(cx - sR, y0 + hh * 0.5); c.lineTo(cx + sR, y0 + hh * 0.5); c.stroke();   // an iron hoop round it
+  };
+  stone(bedTop, bedH);
+  c.fillStyle = 'rgba(40,30,20,.55)'; c.fillRect(cx - sR * 0.98, runBot, sR * 1.96, gapPx);   // the gap between the stones
+  stone(runTop, runH, M.rot);
+  c.fillStyle = '#8a5a2b'; c.fillRect(cx - u * 0.022, runTop - u * 0.03, u * 0.044, u * 0.03);   // the shaft into the eye
+  hit(cx - sR, runTop - u * 0.02, sR * 2, platY - runTop + u * 0.03, word('zhorna'), cx, fy);
+  // smoke if they're set too tight, sparks if they run dry
+  M.parts = M.parts.filter(p => t - p.t0 < (p.k === 'spark' ? 0.4 : 1.6));
+  for (const p of M.parts) { const q = (t - p.t0); if (p.k === 'smoke') { c.fillStyle = `rgba(120,110,100,${0.35 * (1 - q / 1.6)})`; circ(c, cx + sR * (p.vx * 4) + q * u * 0.05, runBot - q * u * 0.25, u * (0.015 + q * 0.03)); } else { c.fillStyle = `rgba(255,${180 + Math.random() * 60 | 0},60,${1 - q / 0.4})`; circ(c, cx + (p.vx > 0 ? sR : -sR) + p.vx * q * u * 0.25, runBot + (p.vy * q + q * q * 2) * u * 0.2, u * 0.006); } }
+  // ---- the hopper above the runner, and the shoe that shakes grain down into the eye
+  const hx2 = cx + u * 0.15, hTop = runTop - u * 0.3, hBot = runTop - u * 0.16, shake = M.spd > 0.2 ? Math.sin(t * 30) * u * 0.004 * Math.min(1, M.spd) : 0;
+  c.strokeStyle = '#5a381b'; c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(hx2 - u * 0.1, hBot + u * 0.02); c.lineTo(hx2 - u * 0.14, runTop + u * 0.01); c.moveTo(hx2 + u * 0.1, hBot + u * 0.02); c.lineTo(hx2 + u * 0.15, platY); c.stroke();   // the frame it sits on
+  const hopper = () => poly(c, [[hx2 - u * 0.13, hTop], [hx2 + u * 0.13, hTop], [hx2 + u * 0.03, hBot], [hx2 - u * 0.03, hBot]]);
+  c.fillStyle = '#a06a35'; hopper();
+  if (M.grain > 0) { c.save(); hopper(); c.clip(); const lvl = hBot - (hBot - hTop) * Math.min(1, M.grain / 6) * 0.92; c.fillStyle = '#e0b84a'; c.fillRect(hx2 - u * 0.14, lvl, u * 0.28, hBot - lvl); c.fillStyle = '#f0cc66'; ell(c, hx2, lvl, u * 0.1 * (0.4 + 0.6 * (hBot - lvl) / (hBot - hTop)), u * 0.008); c.restore(); }
+  c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.008; c.beginPath(); [[hx2 - u * 0.13, hTop], [hx2 + u * 0.13, hTop], [hx2 + u * 0.03, hBot], [hx2 - u * 0.03, hBot]].forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.stroke(); c.strokeStyle = 'rgba(0,0,0,.12)'; c.lineWidth = 1; for (let i = 1; i < 4; i++) { const y = hTop + (hBot - hTop) * i / 4; c.beginPath(); c.moveTo(hx2 - u * 0.13 + u * 0.1 * i / 4, y); c.lineTo(hx2 + u * 0.13 - u * 0.1 * i / 4, y); c.stroke(); }
+  const shTipX = cx + u * 0.025 + shake, shTipY = runTop - u * 0.045;
+  c.fillStyle = '#8a5a2b'; poly(c, [[hx2 - u * 0.025 + shake, hBot], [hx2 + u * 0.03 + shake, hBot], [shTipX + u * 0.01, shTipY + u * 0.012], [shTipX - u * 0.02, shTipY]]);   // the shoe
+  if (M.grain > 0 && M.spd > 0.2) { c.fillStyle = '#e0b84a'; for (let i = 0; i < 6; i++) { const q = ((t * 3 + i / 6) % 1); circ(c, shTipX - u * 0.01 + Math.sin(i * 7) * u * 0.004, shTipY + q * (runTop - shTipY + u * 0.01), u * 0.004); } }
+  hit(hx2 - u * 0.14, hTop - u * 0.04, u * 0.28, hBot - hTop + u * 0.06, millHopper, hx2, fy);
+  // ---- the spout from the stones, and the sack stood under it
+  const spX = cx - sR - u * 0.01, spY = platY - u * 0.02, spEx = cx - u * 0.36, spEy = platY + u * 0.13;
+  c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.04; c.lineCap = 'butt'; c.beginPath(); c.moveTo(spX + u * 0.02, spY); c.lineTo(spEx, spEy); c.stroke(); c.strokeStyle = '#5a381b'; c.lineWidth = u * 0.008; c.beginPath(); c.moveTo(spX + u * 0.02, spY - u * 0.02); c.lineTo(spEx, spEy - u * 0.02); c.stroke();
+  const sackW = u * 0.17, full = Math.min(1, M.flour / 6);
+  if (M.sack) sackArt(c, spEx, fy, sackW, fy - spEy, full);
+  else { c.strokeStyle = 'rgba(255,255,255,.5)'; c.setLineDash([u * 0.012, u * 0.012]); c.lineWidth = 1.5; c.strokeRect(spEx - sackW / 2, spEy, sackW, fy - spEy); c.setLineDash([]); }   // where a sack goes
+  if (M.spill > 0) { c.fillStyle = 'rgba(255,252,240,.95)'; ell(c, spEx, fy + u * 0.01, u * (0.04 + Math.min(0.12, M.spill * 0.05)), u * (0.012 + Math.min(0.03, M.spill * 0.012))); }   // flour spilt on the floor
+  if (out) { c.fillStyle = out === 'flour' ? 'rgba(255,252,240,.9)' : '#e0b84a'; for (let i = 0; i < 10; i++) { const q = ((t * 2.5 + i / 10) % 1); circ(c, spEx + Math.sin(i * 3 + t) * u * 0.008, spEy + q * (M.sack ? u * 0.05 : fy - spEy), u * (out === 'flour' ? 0.007 : 0.005)); } }
+  if (M.sack && M.flour >= 0.99) { const n = Math.floor(M.flour + 0.01); c.font = `800 ${Math.round(u * 0.032)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#4a2c1a'; c.fillText(`${n}`, spEx, fy - (fy - spEy) * 0.4); }
+  hit(spEx - sackW * 0.7, spEy - u * 0.04, sackW * 1.4, fy - spEy + u * 0.05, millSpout, spEx, fy);
+  // ---- the hand wheel that sets the gap between the stones, and its gauge
+  { const gx = cx + u * 0.42, gy = platY + u * 0.09, gr = u * 0.045, ga = (M.gapPh || 0) * 2;
+    c.fillStyle = '#6b4422'; c.fillRect(gx - u * 0.01, gy, u * 0.02, fy - gy);
+    c.strokeStyle = '#4b4f55'; c.lineWidth = u * 0.008; c.beginPath(); c.arc(gx, gy, gr, 0, 7); c.stroke(); for (let i = 0; i < 4; i++) { const a = ga + i * Math.PI / 2; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + Math.cos(a) * gr, gy + Math.sin(a) * gr); c.stroke(); } c.fillStyle = '#d43a3a'; circ(c, gx + Math.cos(ga) * gr, gy + Math.sin(ga) * gr, u * 0.01);
+    const dX = gx, dY = gy - u * 0.12, dr = u * 0.07;
+    c.fillStyle = '#f6efe0'; c.beginPath(); c.arc(dX, dY, dr, Math.PI, 0); c.closePath(); c.fill();
+    for (const [a0, a1, col] of [[0, 0.46, '#e2574c'], [0.46, 0.6, '#5cb85c'], [0.6, 1, '#f2a23a']]) { c.strokeStyle = col; c.lineWidth = dr * 0.18; c.beginPath(); c.arc(dX, dY, dr * 0.82, Math.PI + a0 * Math.PI, Math.PI + a1 * Math.PI); c.stroke(); }
+    const na = Math.PI + M.gap * Math.PI; c.strokeStyle = '#2d2d2d'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(dX, dY); c.lineTo(dX + Math.cos(na) * dr * 0.9, dY + Math.sin(na) * dr * 0.9); c.stroke(); c.fillStyle = '#2d2d2d'; circ(c, dX, dY, u * 0.009);
+    c.strokeStyle = '#8a5a2b'; c.lineWidth = u * 0.008; c.beginPath(); c.arc(dX, dY, dr, Math.PI, 0); c.closePath(); c.stroke();
+    if (M.spd > 0.3 && !millSet() && !M.hold) mgRing(c, gx, gy, gr * 1.6, u / 390, t);
+    hit(gx - gr * 2, dY - dr, gr * 4, gy - dY + dr + gr * 1.5, () => { if (!M.hold) toast('🔄 ' + W.kruty.uk + xlT(' · Hold the hand wheel and let go when the needle is on the green.'), 2600); }, gx, fy, { wheel: true }); }
+  // ---- sacks of flour you've made, and the miller's table: bread, a mug, and a mouse after the crumbs
+  { const sx = MX.sacks * RW, n = Math.min(4, S.bag.boroshno || 0);
+    for (let i = 0; i < Math.max(1, n); i++) sackArt(c, sx + (i % 2 ? 1 : -1) * u * 0.07 * (i > 1 ? 0.5 : 1), fy - (i > 1 ? u * 0.13 : 0), u * 0.13, u * 0.15, 0.9, i < n ? '#f1ead8' : 'rgba(241,234,216,.35)');
+    hit(sx - u * 0.15, fy - u * 0.3, u * 0.3, u * 0.3, word('boroshno'), sx, fy); }
+  { const tx = MX.table * RW, ty = fy - u * 0.2;
+    c.fillStyle = '#7a4e26'; c.fillRect(tx - u * 0.15, ty, u * 0.3, u * 0.03); c.fillRect(tx - u * 0.13, ty, u * 0.025, fy - ty); c.fillRect(tx + u * 0.105, ty, u * 0.025, fy - ty);
+    drawIcon(c, W.khlib.ic, tx - u * 0.04, ty + 1, u * 0.12); drawIcon(c, W.chashka.ic, tx + u * 0.08, ty + 1, u * 0.07);
+    hit(tx - u * 0.1, ty - u * 0.1, u * 0.12, u * 0.11, word('khlib'), tx, fy);
+  }
+  // ---- her
+  inDraw(c, t);
+  c.restore();
+  // a little dust in the air when it's running, the room warming toward evening
+  if (M.spd > 0.3) { c.fillStyle = 'rgba(255,250,235,.35)'; for (let i = 0; i < 18; i++) { const q = (t * 0.05 + i * 0.061) % 1; circ(c, ((i * 0.37 + Math.sin(t * 0.3 + i) * 0.02) % 1) * w, h * (0.9 - q * 0.7), 1.3); } }
+  { const lights = [[MX.door * RW - roomX, fy - u * 0.2, u * 0.7], [MX.win * RW - roomX, h * 0.29, u * 0.5]]; paintSky(c, w, h, t, lights, false); }
+  // the action word, big for a moment, and its English underneath
+  if (M.flash && W[M.flash.v]) { const q = (nowT - M.flash.t0) / 1.6; if (q < 1) { const s = q < 0.2 ? 0.6 + q * 2 : 1, a = q < 0.7 ? 1 : (1 - q) / 0.3; c.save(); c.globalAlpha = a; c.font = `900 ${Math.round(u * 0.1 * s)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = u * 0.014; c.strokeStyle = '#4a2c1a'; c.strokeText(W[M.flash.v].uk + '!', w / 2, h * 0.17); c.fillStyle = '#ffd23f'; c.fillText(W[M.flash.v].uk + '!', w / 2, h * 0.17);
+    if (subsOnNow()) { const en = verbEn1(M.flash.v); c.font = `700 ${Math.round(u * 0.045)}px system-ui, sans-serif`; const bw = c.measureText(en).width + u * 0.08; c.fillStyle = 'rgba(47,42,38,.85)'; rr(c, w / 2 - bw / 2, h * 0.215, bw, u * 0.075, u * 0.03); c.fillStyle = '#fff'; c.fillText(en, w / 2, h * 0.215 + u * 0.0375); }
+    c.restore(); } }
 }
 
 // ------------------------------------------------------------------ inside Grandma Olia's cottage
@@ -5114,15 +5406,17 @@ function enterOliaNow() {
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
   // Open on the counter and Grandma; once the dish is ready, on the table.
   const mid = (recipeReady(curRecipe()) ? OX.table : 0.385) * roomW() - cv.width / 2;
-  roomX = mid; clampPan();
+  roomX = mid; clampPan(); inStart(0.4);
   tour = null; blip(520);
   setTimeout(() => { if (mode === 'olia' && !sheetOpen()) talk(NPC.olia); }, 500);
   oliaTip = S.oliaTip ? 0 : 1;
 }
 function oliaTap(sx, py) {
   const px = sx + roomX;
-  for (let i = oliaHits.length - 1; i >= 0; i--) { const r = oliaHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return r.fn(); } }
+  const [ba] = inBand();
+  for (let i = oliaHits.length - 1; i >= 0; i--) { const r = oliaHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return inGo(r.x + r.w / 2, ba, r.fn); } }
   blip(560, 0.05);
+  if (py > cv.height * 0.6) inWalkTo(px, py);   // the floor: walk there
 }
 function drawOlia(t) {
   const h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56, R = curRecipe(), ready = recipeReady(R), st = stage();
@@ -5134,7 +5428,7 @@ function drawOlia(t) {
     if (i >= legs.length) { roomX = tour.mid; tour = null; }
     else { const [p, q, d] = legs[i]; roomX = p + (q - p) * ease(Math.min(1, k / d)); if (oliaWave) oliaWave.pass = i < 2 ? 0 : i < 4 ? 1 : 2; }
   }
-  clampPan();
+  clampPan(); inStep(t);
   if (oliaTip === 1 && sheetOpen()) oliaTip = 2;
   else if (oliaTip === 2 && !sheetOpen() && !sp) { oliaTip = 0; S.oliaTip = 1; save(); if (panMax() > 10) { tour = { t0: t, mid: roomX }; oliaWave = { seen: {}, pass: 0 }; } toast('👀 Роздивись бабину хату!' + (stage() < 3 ? ' · Explore Grandma’s room: tap things to hear their names.' : ''), 5000); }
   oliaHits = [];
@@ -5413,6 +5707,8 @@ function drawOlia(t) {
   c.fillStyle = '#d43a3a'; circ(c, ballx, yy - u * 0.024, u * 0.025); c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.2; c.beginPath(); c.arc(ballx, yy - u * 0.024, u * 0.016, bat, bat + 2.4); c.stroke();
   cat(c, px2, yy, u * 0.17, CATS[0], t, 0.7, -1);
   hit(px2 - u * 0.08, yy - u * 0.19, u * 0.16, u * 0.2, word('kit', { note: `❤️ <b>${OLIA_PETS[1]}</b>${xl(" · Grandma's kitten. He loves her wool.")}` }));
+
+  inDraw(c, t);   // her, walking about Grandma's room
 
   // the wave of name labels during the first-visit pan
   if (oliaWave) {
@@ -6392,7 +6688,7 @@ function devMenu() {
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
 }
 // Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
-function devToWorld() { if (mode === 'home' || mode === 'olia') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
+function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
 
 // ------------------------------------------------------------------ the title screen, drawn
 const tcv = $('#tc'), tctx = tcv.getContext('2d');
@@ -6642,6 +6938,7 @@ function frame(ms) {
   if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
+  else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
   else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); }
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
@@ -6666,7 +6963,7 @@ cv.addEventListener('pointerdown', ev => { tour = null; peeking = false; down = 
 cv.addEventListener('pointermove', ev => {
   if (!down || sheetOpen()) return;
   const k = cv.width / innerWidth;
-  if (mode !== 'world') { roomX = down.rx - (ev.clientX - down.x) * k; clampPan(); return; }
+  if (mode !== 'world') { if (MILL.hold && mode === 'mill') return; IN.follow = false; roomX = down.rx - (ev.clientX - down.x) * k; clampPan(); return; }
   // Outdoors: drag to look around.
   if (!running) return;
   if (!peeking && Math.hypot(ev.clientX - down.x, ev.clientY - down.y) > 12) peeking = true;
@@ -6677,10 +6974,12 @@ cv.addEventListener('pointermove', ev => {
     peekVX = peekVY = 0;
   }
 });
-cv.addEventListener('pointercancel', () => { peeking = false; down = null; });
+cv.addEventListener('pointercancel', () => { peeking = false; down = null; if (MILL.hold) millUp(); });
+cv.addEventListener('pointerdown', ev => { if (mode === 'mill') millDown(ev); });   // holding the mill's hand wheel
 cv.addEventListener('pointerdown', () => { if (mode === 'fest' && !sheetOpen()) festTap(); });
 cv.addEventListener('pointerup', ev => {
   peeking = false;
+  if (mode === 'mill' && MILL.hold) { millUp(); down = null; return; }   // let go of the mill's hand wheel
   if (fishFx) { down = null; return; }   // no walking off mid-cast
   if (!down || !running || sheetOpen()) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
@@ -6688,6 +6987,7 @@ cv.addEventListener('pointerup', ev => {
   const k = cv.width / innerWidth, px = ev.clientX * k, py = ev.clientY * k;
   if (mode === 'home') return homeTap(px, py);
   if (mode === 'olia') return oliaTap(px, py);
+  if (mode === 'mill') return millTap(px, py);
   if (mode === 'fest') return;   // the festival takes its taps on pointerdown, for the beat
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
