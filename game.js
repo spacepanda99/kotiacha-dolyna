@@ -230,6 +230,48 @@ const poly = (c, pts) => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0
 // stay summer green.
 const treeSeason = o => (o && o.v != null && typeof season === 'function') ? season() : 'lito';
 const AUTUMN_PALS = [['#a8381f', '#cf5a24', '#ec8a2e', '#ffc35a'], ['#c0721a', '#df9e26', '#f2c43c', '#ffe27a'], ['#8e2a2a', '#bf3e2d', '#e46d37', '#ff9f5a']];
+const KHATA_LOOK = {
+  mine:   { wall: '#fffdf5', band: '#4a90d9', band2: '#3d7cc2', roof: ['#d8a23a', '#e6b95a', '#b9842a'], thatch: 1, frame: '#3d7cc2', glass: '#bfe6fb', door: '#8a5a2b', box: ['#e2574c', '#f2c230', '#e2574c'] },
+  olia:   { wall: '#fbf3e2', band: '#d43a3a', band2: '#a82c2c', roof: ['#b98a3a', '#cfa252', '#93692a'], thatch: 1, frame: '#2f7a4a', glass: '#cfeeda', door: '#5e8a3a', shutters: '#3f9a5a', painted: 1, box: ['#ff7aa8', '#ffffff', '#ff7aa8'] },
+  bohdan: { wall: '#f6e3b4', band: '#8a5a2b', band2: '#6b4422', roof: ['#9a4a2e', '#b45c3a', '#7a3a22'], shingle: 1, frame: '#8a5a2b', glass: '#ffe9a8', door: '#6b4422', skep: 1, box: ['#f2c230', '#ffffff', '#f2c230'] },
+  taras:  { wall: '#dcebf5', band: '#2f5f8a', band2: '#24496b', roof: ['#8e9aa0', '#a9b4b8', '#6f7a80'], thatch: 1, frame: '#ffffff', glass: '#bfe6fb', door: '#2f5f8a', net: 1, box: ['#5aa9e6', '#ffffff', '#5aa9e6'] },
+};
+function khataArt(c, P) {
+  c.fillStyle = '#b5553f'; c.fillRect(21, -86, 12, 30); c.fillStyle = '#8f3f2d'; c.fillRect(19, -89, 16, 5);   // chimney
+  c.fillStyle = P.wall; rr(c, -40, -52, 80, 52, 4);
+  c.fillStyle = 'rgba(120,96,60,.16)'; c.fillRect(-40, -50, 80, 7);   // shade under the eaves
+  c.fillStyle = P.band; c.fillRect(-40, -8, 80, 8); c.fillStyle = P.band2; c.fillRect(-40, -2.5, 80, 2.5);
+  if (P.painted) {   // a painted garland of red flowers and green leaves along the wall (like her stove)
+    for (let x = -34; x <= 34; x += 11) { c.fillStyle = '#4f8f3a'; ell(c, x - 3, -48, 3, 1.3); ell(c, x + 3, -48, 3, 1.3); c.fillStyle = (x / 11) % 2 ? '#d43a3a' : '#3d7cc2'; circ(c, x, -48.5, 2.2); }
+  }
+  c.fillStyle = P.roof[0]; poly(c, [[-50, -48], [0, -98], [50, -48]]);
+  c.fillStyle = P.roof[1]; poly(c, [[-50, -48], [0, -98], [-8, -90], [-40, -48]]);
+  c.fillStyle = P.roof[2]; poly(c, [[-50, -48], [50, -48], [47, -44], [-47, -44]]);
+  c.strokeStyle = P.roof[2]; c.lineWidth = 2;
+  if (P.shingle) { c.save(); c.beginPath(); c.moveTo(-50, -48); c.lineTo(0, -98); c.lineTo(50, -48); c.closePath(); c.clip(); for (let y = -92; y < -48; y += 7) { c.beginPath(); c.moveTo(-50, y); c.lineTo(50, y); c.stroke(); for (let x = -50 + ((y / 7) % 2 ? 4 : 0); x < 50; x += 9) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 7); c.stroke(); } } c.restore(); }   // wooden shingles
+  else for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 6, -92 + Math.abs(i) * 6); c.lineTo(i * 14, -50); c.stroke(); }   // thatch
+  c.fillStyle = P.door; rr(c, -9, -36, 18, 36, 3);
+  c.fillStyle = '#f2c230'; circ(c, 5, -18, 1.8);
+  for (const x of [-33, 17]) {
+    if (P.shutters) { c.fillStyle = P.shutters; c.fillRect(x - 7, -42, 5, 20); c.fillRect(x + 18, -42, 5, 20); c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(x - 6, -40, 3, 1.5); c.fillRect(x + 19, -40, 3, 1.5); }
+    c.fillStyle = P.frame; rr(c, x - 2, -42, 20, 20, 3);
+    c.fillStyle = P.glass; rr(c, x, -40, 16, 16, 2);
+    c.fillStyle = P.frame; c.fillRect(x + 7, -40, 2, 16); c.fillRect(x, -33, 16, 2);
+    c.fillStyle = P.box[0]; circ(c, x + 3, -21, 2.5); circ(c, x + 13, -21, 2.5);
+    c.fillStyle = P.box[1]; circ(c, x + 8, -21, 2.5);
+  }
+  if (P.skep) {   // a straw bee skep on a stand by the door, and a bee or two
+    c.fillStyle = '#6b4422'; c.fillRect(-27, -8, 2, 8); c.fillRect(-17, -8, 2, 8);
+    c.fillStyle = '#e0b04a'; c.beginPath(); c.ellipse(-21, -9, 9, 13, 0, Math.PI, 0); c.fill(); c.strokeStyle = '#b98a2a'; c.lineWidth = 1.2; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-30 + i * 0.8, -11 - i * 3); c.lineTo(-12 - i * 0.8, -11 - i * 3); c.stroke(); }
+    c.fillStyle = '#4a2c1a'; ell(c, -21, -10, 2, 1.5);
+    c.fillStyle = '#f2c230'; ell(c, -30, -26, 2, 1.4); ell(c, -14, -30, 2, 1.4);
+  }
+  if (P.net) {   // a fishing net hung to dry on the wall, with floats, and an oar leaning by the door
+    c.strokeStyle = 'rgba(90,70,50,.6)'; c.lineWidth = 0.8; for (let i = 0; i <= 5; i++) { c.beginPath(); c.moveTo(-39 + i * 4, -45); c.lineTo(-39 + i * 4 + 6, -10); c.stroke(); c.beginPath(); c.moveTo(-39 + i * 4 + 6, -45); c.lineTo(-39 + i * 4, -10); c.stroke(); }
+    c.fillStyle = '#e2574c'; for (let i = 0; i < 4; i++) circ(c, -38 + i * 7, -45, 1.8);
+    c.strokeStyle = '#a06a35'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(12, 0); c.lineTo(16, -40); c.stroke(); c.fillStyle = '#a06a35'; ell(c, 12.5, -4, 3, 7);
+  }
+}
 function treePal(sea, o) {
   if (sea === 'osin') return AUTUMN_PALS[Math.abs(Math.floor((o.v || 0) * 7.3)) % 3];
   if (sea === 'vesna') return ['#4f9e48', '#64b85a', '#84cf70', '#acdf92'];
@@ -381,26 +423,13 @@ const DRAW = {
     note(-20, -62, 26, 30, -0.08, '#fffaf0'); note(10, -64, 24, 28, 0.06, '#ffe9a8'); note(-2, -46, 30, 16, -0.03, '#e8f4ff');
   },
   koshyk(c) { c.scale(3.8, 3.8); marketBasket(c, 0, -11.5); },   // the same wicker basket as in Oksana's bubble
-  khata(c) {
-    c.fillStyle = '#b5553f'; c.fillRect(21, -86, 12, 30); c.fillStyle = '#8f3f2d'; c.fillRect(19, -89, 16, 5);   // chimney
-    c.fillStyle = '#fffdf5'; rr(c, -40, -52, 80, 52, 4);
-    c.fillStyle = 'rgba(120,96,60,.16)'; c.fillRect(-40, -50, 80, 7);   // shade under the eaves
-    c.fillStyle = '#4a90d9'; c.fillRect(-40, -8, 80, 8); c.fillStyle = '#3d7cc2'; c.fillRect(-40, -2.5, 80, 2.5);
-    c.fillStyle = '#d8a23a'; poly(c, [[-50, -48], [0, -98], [50, -48]]);
-    c.fillStyle = '#e6b95a'; poly(c, [[-50, -48], [0, -98], [-8, -90], [-40, -48]]);
-    c.fillStyle = '#b9842a'; poly(c, [[-50, -48], [50, -48], [47, -44], [-47, -44]]);
-    c.strokeStyle = '#b9842a'; c.lineWidth = 2;
-    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 6, -92 + Math.abs(i) * 6); c.lineTo(i * 14, -50); c.stroke(); }
-    c.fillStyle = '#8a5a2b'; rr(c, -9, -36, 18, 36, 3);
-    c.fillStyle = '#f2c230'; circ(c, 5, -18, 1.8);
-    for (const x of [-33, 17]) {
-      c.fillStyle = '#3d7cc2'; rr(c, x - 2, -42, 20, 20, 3);
-      c.fillStyle = '#bfe6fb'; rr(c, x, -40, 16, 16, 2);
-      c.fillStyle = '#3d7cc2'; c.fillRect(x + 7, -40, 2, 16); c.fillRect(x, -33, 16, 2);
-      c.fillStyle = '#e2574c'; circ(c, x + 3, -21, 2.5); circ(c, x + 13, -21, 2.5);
-      c.fillStyle = '#f2c230'; circ(c, x + 8, -21, 2.5);
-    }
-  },
+  // The cottages. They share a shape (whitewashed walls, a thatched or shingled roof, two windows and a door)
+  // but each one is its owner's: hers with blue trim and sunflowers, Grandma Olia's with painted flowers and green
+  // shutters, Mr. Bohdan's with a shingle roof and a bee skep by the door, Taras's pale blue with a net drying on it.
+  khata(c) { khataArt(c, KHATA_LOOK.mine); },
+  khata_olia(c) { khataArt(c, KHATA_LOOK.olia); },
+  khata_bohdan(c) { khataArt(c, KHATA_LOOK.bohdan); },
+  khata_taras(c) { khataArt(c, KHATA_LOOK.taras); },
   parkan(c) {
     c.fillStyle = '#a8713f'; c.fillRect(-50, -44, 100, 6); c.fillRect(-50, -20, 100, 6);
     c.fillStyle = '#c08a55';
@@ -1585,7 +1614,7 @@ function pondPath(c, grow, stroke) {
 }
 const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
    (x === 18 && y >= 6 && y <= 30) || (y === 30 && x >= 5 && x <= 31) ||   // the village road runs on down to the bottom road, past Mr. Bohdan's and Taras's cottages
-    (x === 7 && y >= 11 && y <= 13) || (x === 25 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
+    (x === 7 && y >= 11 && y <= 13) || (x === 28 && y >= 11 && y <= 13) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
 const STALL = { x: 21.6, y: 12.95 };   // where the market stall stands (its front edge)
@@ -1617,18 +1646,18 @@ function add(e) {
   add({ w: 'yablunia', x: 3.5, y: 10.8, s: 2.3, solid: true, give: 'yabluko', cd: 60 });
   add({ w: 'krynytsia', x: 14.5, y: 12.9, s: 1.5, solid: true, give: 'voda', cd: 8 });
   // Grandma Olia's corner.
-  rect(23, 8, 26, 10);
-  rect(3, 27, 6, 29); add({ w: 'khata', k: 'bohdanHome', x: 5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
-  rect(29, 27, 32, 29); add({ w: 'khata', k: 'tarasHome', x: 31, y: 30, s: 3.7 });  // Taras's cottage, bottom right, below the pond
-  add({ w: 'khata', k: 'oliaHome', x: 25, y: 11, s: 3.7 });
-  add({ w: 'kurka', x: 27.6, y: 11.8, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens
-  add({ w: 'kurka', x: 28.4, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
-  add({ w: 'piven', x: 27.2, y: 12.9, kind: 'animal', r: 1.2 });
+  rect(26, 8, 29, 10);   // (moved 3 tiles right, off the market stall)
+  rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
+  rect(29, 27, 32, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 31, y: 30, s: 3.7 });  // Taras's cottage, bottom right, below the pond
+  add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28, y: 11, s: 3.7 });
+  add({ w: 'kurka', x: 25.4, y: 11.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens
+  add({ w: 'kurka', x: 26.2, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
+  add({ w: 'piven', x: 25.1, y: 12.95, kind: 'animal', r: 1.2 });
   add({ w: 'kit', x: 22.4, y: 12.3, kind: 'animal', r: 0.8 });
   add({ w: 'kit', x: 12.4, y: 13.2, kind: 'animal', r: 1.2, s: 0.9 });
   add({ w: 'kit', x: 17.2, y: 20.6, kind: 'animal', r: 1.2, s: 0.85 });
   add({ w: 'kit', x: 8.6, y: 15.6, kind: 'animal', r: 1.0, s: 0.8 });
-  add({ w: 'svynia', x: 29.4, y: 9.8, kind: 'animal', r: 1.0 });
+  add({ w: 'svynia', x: 31.7, y: 10.3, kind: 'animal', r: 1.0 });
   // Landmarks.
   rect(29, 3, 31, 5); add({ w: 'tserkva', x: 30.5, y: 6, s: 5.4 });
   add({ w: 'leleka', k: 'nest', x: 21.5, y: 7, s: 2.6, solid: true });   // the stork's nest on its pole: storks in spring and summer, empty in autumn and winter
@@ -1651,9 +1680,9 @@ function add(e) {
   // Pasture.
   add({ w: 'korova', x: 30.0, y: 12.2, s: 1.4, kind: 'animal', r: 1.3, give: 'moloko', cd: 120, olias: true });   // Grandma's cow
   add({ w: 'kin', x: 32.6, y: 13.0, s: 1.5, kind: 'animal', r: 1.3 });
-  add({ w: 'koza', x: 28.6, y: 13.4, s: 1.1, kind: 'animal', r: 0.9 });
+  add({ w: 'koza', x: 31.0, y: 13.4, s: 1.1, kind: 'animal', r: 0.9 });
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
-  for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [23.4, 11.15], [26.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
+  for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [26.4, 11.15], [29.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
   add({ w: 'pysanka', x: STALL.x + 0.8, y: STALL.y + 0.1, s: 0.6 });   // a basket of pysanky on the ground in front of the stall, by the right-hand crate
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
@@ -4055,7 +4084,7 @@ const SNOWMAN = {
 const ICE = {
   // The pond seen in a cutaway: the snowy ice on top (SURF), the slab of ice, and the water underneath where
   // you can watch the lure and the fish.
-  SURF: 0.38, BOT: 0.52, HX: 0.5,
+  SURF: 0.38, BOT: 0.52, HX: 0.5, GX: 0.76, GY: 0.33,   // GX/GY: where her hands hold the rod's grip
   begin(step) {
     if (step === 'a') {
       mg.drill = 0; mg.ang = null; mg.chips = []; mg.hole = 0; mg.fishy = null; mg.fish = null; mg.jig = 0; mg.lure = 0.66;
@@ -4066,7 +4095,7 @@ const ICE = {
   press(x, y) {
     if (mg.phase === 'a' && mgNear(mg.tool, x, y, 0.2)) { mg.tool.held = true; mg.ang = null; blip(520, 0.03); return; }
     const R = mg.rod;
-    if (R && mgNear(R, x, y, 0.24)) { R.held = true; R.ox = R.x - x; R.oy = R.y - y; R.hist = [[performance.now(), R.y]]; blip(520, 0.03); return; }
+    if (R && (mgNear({ x: ICE.GX, y: ICE.GY }, x, y, 0.3) || x > 0.55)) { R.held = true; R.ox = 0; R.oy = R.y - y; R.hist = [[performance.now(), R.y]]; blip(520, 0.03); return; }
     mg.miss = nowT;
   },
   move(x, y) {
@@ -4078,12 +4107,12 @@ const ICE = {
         if (Math.abs(da) > 0.01) { mgAct('sverdly'); if (Math.random() < 0.6) mg.chips.push({ x: ICE.HX + (Math.random() - 0.5) * 0.05, y: ICE.SURF, vx: (Math.random() - 0.5) * 0.7, vy: -0.3 - Math.random() * 0.5, t0: nowT }); } }
       mg.ang = a;
       if (mg.drill >= 1) { mg.tool.held = false; mg.hole = 1; mg.holeT = nowT; useWord('sverdly', true); blip(880, 0.08); mg.phase = 'wait';
-        mg.rod = { x: 0.8, y: 0.24 }; mg.fishy = { st: 'far', x: Math.random() < 0.5 ? 0.06 : 0.94, y: 0.78, t0: nowT, vx: 0 };
+        mg.rod = { x: ICE.GX, y: 0.24 }; mg.fishy = { st: 'far', x: Math.random() < 0.5 ? 0.06 : 0.94, y: 0.78, t0: nowT, vx: 0 };
         setTimeout(() => { if (mg && mg.id === 'taras_w' && mg.phase === 'wait') mgLine('mg_wait', null, ['Візьми вудку й поводи вгору-вниз', 'Take the rod and jig it gently up and down']); }, 700); }
       return;
     }
     const R = mg.rod; if (!R || !R.held) return;
-    const py = R.y; R.x = Math.max(0.62, Math.min(0.92, x + R.ox)); R.y = Math.max(0.1, Math.min(0.36, y + R.oy));
+    const py = R.y; R.y = Math.max(0.1, Math.min(0.36, y + R.oy));
     mg.jig = Math.min(1.5, mg.jig + Math.abs(R.y - py) * 6);
     const tnow = performance.now(); R.hist.push([tnow, R.y]); while (R.hist.length && tnow - R.hist[0][0] > 350) R.hist.shift();
     const rise = R.hist.length ? R.hist[0][1] - R.y : 0;   // how far the rod came up in the last third of a second
@@ -4148,20 +4177,24 @@ const ICE = {
       // the rod: a short winter rod in your hand; the line from its tip down through the hole to the lure.
       // Moving the rod up and down makes the lure dance; the springy tip (the кивок) nods when a fish touches it.
       const bend = F && F.st === 'bite' ? 0.55 + Math.sin(t * 18) * 0.08 : F && F.st === 'nibble' ? Math.max(0, Math.sin(t * 20)) * 0.25 : mg.phase === 'catch' && mg.fish && t - mg.fish.t0 < 0.6 ? 0.6 : 0;
-      const gx = R.x * w, gy = R.y * h, tx = hx + w * 0.04, ty = gy - h * 0.02;
+      // her lean and hop as she lands a fish carry her hands, and so the grip, with her
+      const sc = h * 0.42 / 90, px = (ICE.GX + 0.1) * w, py = S0 + h * 0.012, since = mg.fish ? t - mg.fish.t0 : 99, pull = since < 0.7 ? 1 - since / 0.7 : 0, hopq = since > 0.7 && since < 1.7 ? Math.abs(Math.sin((since - 0.7) * Math.PI * 2)) * (1.7 - since) : 0;
+      const lean = -pull * 0.12, cl = Math.cos(lean), sl = Math.sin(lean), hopY = hopq * 12 * k;
+      const elev = -0.3 + (0.36 - R.y) / 0.26 * 0.95 + pull * 0.35, ce = Math.cos(elev), se = Math.sin(elev);   // the rod's tilt: tip down at the hole, or raised high
+      const aL = 0.8 + elev * 0.35, hlx = (-15.5 - 19 * Math.sin(aL)) * sc, hly = (-47 + 19 * Math.cos(aL)) * sc;   // her arm lifts a little with the rod; the grip is in her hand, wherever it is
+      const gx = px + hlx * cl - hly * sl, gy = py + hlx * sl + hly * cl - hopY, L = px - 30 * sc - hx + w * 0.01;
+      const tx = gx - ce * L, ty = gy - se * L;
       mg.lure += ((0.58 + (R.y - 0.1) * 1.2) - mg.lure) * Math.min(1, dt * 6);
-      const nx = tx - w * 0.05, ny = ty + h * 0.02 + bend * h * 0.1;   // the nod's tip
+      const nx = tx - ce * w * 0.05, ny = ty - se * w * 0.05 + bend * h * 0.1;   // the nod's tip
       if (!mg.fish || t - mg.fish.t0 > 0.5) { c.strokeStyle = 'rgba(40,40,40,.75)'; c.lineWidth = 1 * k; c.beginPath(); c.moveTo(nx, ny); c.lineTo(hx, S0); c.lineTo(lx, ly); c.stroke(); }
       if (!mg.fish) {   // the lure: a little bead with the worm on its hook
         c.fillStyle = '#e8b33a'; circ(c, lx, ly, 3 * k); c.strokeStyle = '#e8828f'; c.lineWidth = 2.4 * k; c.beginPath(); for (let i = 0; i <= 6; i++) { const q = i / 6; c.lineTo(lx + Math.sin(t * 7 + q * 5) * 2.5 * k * q, ly + 3 * k + q * 8 * k); } c.stroke();
         if (F && F.st === 'bite') { c.font = `900 ${Math.round(22 * k)}px system-ui`; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = 4 * k; c.textAlign = 'center'; c.strokeText('!', nx - 8 * k, ny - 10 * k); c.fillText('!', nx - 8 * k, ny - 10 * k); }
       }
       // her, standing on the ice beside the hole with the rod in both hands; she leans back hard as she pulls a fish up, then gives a happy hop
-      { const sc = h * 0.42 / 90, px = Math.min(gx + w * 0.1, w * 0.94), py = S0 + h * 0.012, since = mg.fish ? t - mg.fish.t0 : 99, pull = since < 0.7 ? 1 - since / 0.7 : 0, hopq = since > 0.7 && since < 1.7 ? Math.abs(Math.sin((since - 0.7) * Math.PI * 2)) * (1.7 - since) : 0;
-        const shy = py - 47 * sc, aL = Math.atan2(-(gx - (px - 15.5 * sc)), gy - shy), aR = Math.atan2(-(gx - (px + 15.5 * sc)), gy - shy);
-        c.save(); c.translate(px, py - hopq * 12 * k); c.rotate(-pull * 0.22); person(c, 0, 0, Object.assign({}, ME, { armL: aL, armR: aR }), t, false, sc); c.restore(); }
+      { c.save(); c.translate(px, py - hopY); c.rotate(lean); person(c, 0, 0, Object.assign({}, ME, { armL: aL, armR: hopq > 0.05 ? 2.6 : undefined }), t, false, sc); c.restore(); }   // and her other hand goes up in a cheer as she lands one
       c.strokeStyle = '#6b4422'; c.lineWidth = 5 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(tx, ty); c.stroke();
-      c.fillStyle = winter() ? '#d43a3a' : ME.skin; circ(c, gx, gy, 4.5 * k); circ(c, gx - (gx - tx) * 0.12, gy - (gy - ty) * 0.12, 4.5 * k);   // her hands (mittens in winter) on the grip
+      c.fillStyle = winter() ? '#d43a3a' : ME.skin; circ(c, gx, gy, 4.2 * sc);   // her hand (a mitten in winter) round the grip
       c.strokeStyle = '#c8a46a'; c.lineWidth = 8 * k; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx - (gx - tx) * 0.25, gy - (gy - ty) * 0.25); c.stroke();   // the cork grip
       c.fillStyle = '#5b6470'; circ(c, gx - (gx - tx) * 0.32, gy - (gy - ty) * 0.32 + 4 * k, 4 * k);   // the little reel
       c.strokeStyle = '#d43a3a'; c.lineWidth = 1.6 * k; c.beginPath(); c.moveTo(tx, ty); c.quadraticCurveTo(tx - w * 0.03, ty, nx, ny); c.stroke(); c.fillStyle = '#d43a3a'; circ(c, nx, ny, 2 * k);
@@ -5539,11 +5572,11 @@ function drawRain(c, w, h, t, storm) {
 }
 // Snow that falls like snow: flakes at three depths (small, slow and faint far off; big, soft and quicker
 // close by), each swaying on its own, blown by a slow changing breeze, some tumbling as they come down.
-const SNOW = (() => { const r = seeded(53), a = []; for (let i = 0; i < 240; i++) { const L2 = i < 110 ? 0 : i < 195 ? 1 : 2; a.push({ x: r(), y: r(), L: L2, sp: [0.05, 0.085, 0.13][L2] * (0.75 + r() * 0.5), sz: [1.5, 2.6, 4][L2] * (0.7 + r() * 0.6), sw: 0.5 + r() * 1.4, swA: [6, 12, 20][L2] * (0.5 + r()), ph: r() * 9, a: [0.55, 0.8, 0.95][L2] }); } return a; })();
+const SNOW = (() => { const r = seeded(53), a = []; for (let i = 0; i < 240; i++) { const L2 = i < 110 ? 0 : i < 195 ? 1 : 2; a.push({ x: r(), y: r(), L: L2, sp: [0.04, 0.065, 0.1][L2] * (0.75 + r() * 0.5), sz: [1.5, 2.6, 4][L2] * (0.7 + r() * 0.6), sw: 0.5 + r() * 1.4, swA: [2.5, 4.5, 7][L2] * (0.5 + r()), ph: r() * 9, a: [0.55, 0.8, 0.95][L2] }); } return a; })();
 function drawSnow(c, w, h, t, k, amount) {
-  const breeze = Math.sin(t * 0.21) * 0.06 + Math.sin(t * 0.57 + 1) * 0.03;
+  const breeze = Math.sin(t * 0.13) * 0.025 + Math.sin(t * 0.31 + 1) * 0.01;   // the breeze nudges the whole fall a little one way, then the other (an offset, not a speed, so it never builds up)
   for (let i = 0; i < SNOW.length; i++) { const f = SNOW[i]; if ((i % 10) / 10 >= amount) continue;
-    const y = ((f.y + t * f.sp) % 1.08 - 0.04) * h, x = ((f.x + t * breeze * (0.6 + f.L * 0.3) + Math.sin(t * f.sw + f.ph) * f.swA / Math.max(1, w) ) % 1 + 1) % 1 * w;
+    const y = ((f.y + t * f.sp) % 1.08 - 0.04) * h, x = ((f.x + breeze * (0.6 + f.L * 0.3) + Math.sin(t * f.sw * 0.6 + f.ph) * f.swA / Math.max(1, w) ) % 1 + 1) % 1 * w;
     const s = f.sz * k, tw = 0.75 + 0.25 * Math.sin(t * 2 + f.ph);
     c.fillStyle = `rgba(255,255,255,${f.a * tw})`;
     if (f.L === 2 && i % 3 === 0) { c.save(); c.translate(x, y); c.rotate(t * 0.8 + f.ph); c.strokeStyle = c.fillStyle; c.lineWidth = Math.max(0.8, s * 0.35); c.beginPath(); for (let j = 0; j < 3; j++) { const an = j * Math.PI / 3; c.moveTo(Math.cos(an) * s * 1.3, Math.sin(an) * s * 1.3); c.lineTo(-Math.cos(an) * s * 1.3, -Math.sin(an) * s * 1.3); } c.stroke(); c.restore(); }   // a few big flakes are proper six-armed snowflakes, turning
