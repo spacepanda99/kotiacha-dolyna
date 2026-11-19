@@ -2818,7 +2818,7 @@ function shop() {
       <img src="${bigIconURL(k)}" alt="">
       <div class="n">${W[k].uk}</div>${known(k) < 2 || st < 3 ? `<div class="e">${W[k].en}</div>` : ''}
       ${had ? `<div class="have">✓ ${D.ui.have[0]}${st < 3 ? ' · in your wardrobe' : ''}</div>` : `<button class="b blue" data-a="buy" data-v="${k}">${lab('buy')} · ${devOn ? '∞' : price} ₴</button>`}
-      ${btn('hearWord', k, '🔊', 'round ghost')}</div>`; }).join('')}</div><div class="muted" style="font-size:12px;padding:2px 0 0">⟷ ${st < 3 ? 'Swipe to see them all' : ''}</div>`;
+      ${btn('hearWord', k, '🔊', 'round ghost')}</div>`; }).join('')}</div><div class="muted" style="font-size:14px;padding:2px 0 0">⟷ ${st < 3 ? 'Swipe to see them all' : ''}</div>`;
     setTimeout(() => sheet.classList.add('fixed'), 0);
     const keepX = shopTabsX(), row0 = shopShown === 'clothes' && sheet.querySelector('.outfits'), keepO = row0 ? row0.scrollLeft : 0;   // buying redraws the tab: the row stays where it was
     shopShown = shopTab; openSheet(shopHead() + body); shopTabsKeep(keepX);
@@ -2897,7 +2897,7 @@ const mine = id => ({ uk: PH[id].uk, en: PH[id].en, clip: 'p_' + id, me: true })
 // and when she has everything she cooks the dish and you eat it together.
 const MASS = ['drova', 'boroshno', 'syr', 'maslo', 'sil', 'kapusta', 'kartoplia', 'morkva', 'tsybulia', 'pshenytsia', 'med', 'rys'];
 function recipeList(R) {
-  return `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">${R.needs.map(id => { const n = recipeHave(id), full = n >= NEED; return `<span style="position:relative;text-align:center;opacity:${n ? 1 : 0.45}"><img src="${iconURL(id)}" style="width:34px;height:34px;display:block;margin:0 auto" alt=""><span style="font-size:12px;font-weight:800;color:${full ? '#3f8a3a' : '#8a7566'}">${full ? '✓' : n + '/' + NEED}</span></span>`; }).join('')}</div>`;
+  return `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px">${R.needs.map(id => { const n = recipeHave(id), full = n >= NEED; return `<span style="position:relative;text-align:center;opacity:${n ? 1 : 0.45}"><img src="${iconURL(id)}" style="width:34px;height:34px;display:block;margin:0 auto" alt=""><span style="font-size:14px;font-weight:800;color:${full ? '#3f8a3a' : '#8a7566'}">${full ? '✓' : n + '/' + NEED}</span></span>`; }).join('')}</div>`;
 }
 function talkOlia(npc, n, steps) {
   const R = curRecipe(), st = stage();
@@ -4686,8 +4686,9 @@ function setGuide() {
   const g = $('#guide'), s = TUT[S.tut], st = stage();
   let uk, en, full;
   const active = D.npcs.filter(n => S.npc[n.id] && S.npc[n.id].q && !S.npc[n.id].mad);
-  if (nightNow()) {   // night: the only goal is home to bed
-    uk = PH.chas_spaty.uk + ' 🏠'; full = 'Time for bed. Go home and go to sleep.'; en = st < 3 ? full : ''; guideClip = 'p_chas_spaty';
+  if (nightNow()) {   // night: the only goal is home to bed (and later, just get indoors)
+    const late = (S.clock.nightT || 0) > 25;
+    uk = late ? 'Додому! 🏠🐺' : PH.chas_spaty.uk + ' 🏠'; full = late ? 'It is very late. Time to get indoors!' : 'Time for bed. Go home and go to sleep.'; en = st < 3 ? full : ''; guideClip = 'p_chas_spaty';
   } else if (s.ev) {
     uk = PH[s.p].uk + (s.need ? ` ${S.tutN}/${s.need}` : '');
     full = `${PH[s.p].en} ${s.en}`; en = st < 3 ? full : '';
@@ -6195,7 +6196,47 @@ const WX = { snow: { w: 'snih', ic: '❄️' }, sun: { w: 'sontse', ic: '☀️'
 const wet = wx => wx === 'rain' || wx === 'storm';   // rain or a thunderstorm: either waters the garden
 const DAY_RATE = 0.6 / 600;   // morning to night in about ten minutes of play
 let clockSave = 0;
+// ------------------------------------------------------------------ night sounds
+// Out of doors after dusk: crickets (цвіркуни) chirp on summer and autumn nights, frogs croak by the pond in spring
+// and early summer, and winter nights are silent. Stay out far too late and it grows very dark, and wolves
+// start to howl in the forest.
+const NS = { next: 0, frog: 3 };
+function nsVoice() { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (!NS.out) { NS.out = actx.createGain(); NS.out.gain.value = 1; NS.out.connect(actx.destination); } return NS.out; }
+function cricket(f, pulses, vol) {
+  try { const out = nsVoice(), t0 = actx.currentTime + 0.02;
+    for (let i = 0; i < pulses; i++) { const o = actx.createOscillator(), g = actx.createGain(), st = t0 + i * 0.028; o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(vol, st + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, st + 0.018); o.connect(g); g.connect(out); o.start(st); o.stop(st + 0.03); }
+  } catch (e) {}
+}
+function frogCroak(vol) {
+  try { const out = nsVoice(), t0 = actx.currentTime + 0.02;
+    for (let i = 0; i < 2; i++) { const o = actx.createOscillator(), fl = actx.createBiquadFilter(), g = actx.createGain(), st = t0 + i * 0.16; o.type = 'sawtooth'; o.frequency.setValueAtTime(150, st); o.frequency.linearRampToValueAtTime(115, st + 0.12);
+      fl.type = 'bandpass'; fl.frequency.value = 650; fl.Q.value = 3; g.gain.setValueAtTime(0.0001, st); g.gain.exponentialRampToValueAtTime(vol, st + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, st + 0.13);
+      o.connect(fl); fl.connect(g); g.connect(out); o.start(st); o.stop(st + 0.15); }
+  } catch (e) {}
+}
+// A wolf's howl: a rising, wavering note that slides down at the end, with a second wolf answering further off.
+function wolfHowl(vol = 0.1) {
+  try { const out = nsVoice();
+    const voice = (delay, base, v) => { const t0 = actx.currentTime + delay, o = actx.createOscillator(), lfo = actx.createOscillator(), lg = actx.createGain(), fl = actx.createBiquadFilter(), g = actx.createGain();
+      o.type = 'triangle'; o.frequency.setValueAtTime(base * 0.7, t0); o.frequency.exponentialRampToValueAtTime(base * 1.25, t0 + 0.9); o.frequency.setValueAtTime(base * 1.25, t0 + 2.2); o.frequency.exponentialRampToValueAtTime(base * 0.75, t0 + 3.4);
+      lfo.frequency.value = 5.5; lg.gain.value = base * 0.015; lfo.connect(lg); lg.connect(o.frequency);
+      fl.type = 'lowpass'; fl.frequency.value = 1400; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + 0.5); g.gain.setValueAtTime(v, t0 + 2.6); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 3.6);
+      o.connect(fl); fl.connect(g); g.connect(out); o.start(t0); lfo.start(t0); o.stop(t0 + 3.7); lfo.stop(t0 + 3.7); };
+    voice(0, 430, vol); voice(1.6, 390, vol * 0.45);
+  } catch (e) {}
+}
+function nightSounds(dt) {
+  const L = skyLight(S.clock.t), sea = season();
+  if (mode !== 'world' || L.dark < 0.3 || wet(S.wx) || document.hidden || !running) return;
+  if ((NS.next -= dt) <= 0) {
+    if (sea === 'lito' || sea === 'osin') { const n = sea === 'lito' ? 3 : 1, k = Math.floor(Math.random() * n); cricket([4500, 4150, 4800][k], 3 + (k % 2), 0.022 * L.dark); NS.next = (sea === 'lito' ? 0.45 : 1.2) + Math.random() * 0.6; }
+    else NS.next = 2;
+  }
+  if ((sea === 'vesna' || sea === 'lito') && (NS.frog -= dt) <= 0) { const d = Math.hypot(P.x - POND.x, P.y - POND.y); NS.frog = (sea === 'vesna' ? 1.6 : 3.5) + Math.random() * 3; if (d < 14) frogCroak(0.08 * (1 - d / 14) * L.dark); }
+}
 function dayTick(dt) {
+  nightSounds(dt);
   if (winter() && wet(S.wx)) S.wx = 'snow'; else if (!winter() && S.wx === 'snow') S.wx = 'cloud';
   { const Cl = S.clock; Cl.ev = Cl.ev || {};
     if (wet(S.wx) && Cl.t >= 0.62 && !Cl.ev.rainbow) { Cl.ev.rainbow = 1; S.wx = 'sun'; S.rainbowDay = Cl.day; learn('veselka'); say('w_veselka'); toast(`🌈 ${W.veselka.uk}${stage() < 3 ? ' · the rain has stopped: a rainbow!' : '!'}`, 3200); }
@@ -6217,7 +6258,9 @@ function dayTick(dt) {
   // Out after dark: two reminders to go home to bed, then she walks home by herself.
   if (C.t >= 0.86) {
     C.nightT = (C.nightT || 0) + dt;
-    if (C.nightT > 25 && !C.ev.rem1) { C.ev.rem1 = 1; say('p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · It’s late: go home to sleep 🏠' : ' 🏠'}`, 3600); }
+    if (C.nightT > 32 && !C.ev.wolf1) { C.ev.wolf1 = 1; duck = 0.4; setTimeout(() => { duck = 1; }, 5000); wolfHowl(0.09); toast('🐺 Ау-у-у…' + (stage() < 3 ? ' · Wolves are howling in the forest! Time to get indoors.' : ''), 3600); }
+    if (C.nightT > 58 && !C.ev.wolf2) { C.ev.wolf2 = 1; duck = 0.4; setTimeout(() => { duck = 1; }, 5000); wolfHowl(0.13); }
+    if (C.nightT > 25 && !C.ev.rem1) { C.ev.rem1 = 1; setTimeout(setGuide, 0); say('p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · It’s late: go home to sleep 🏠' : ' 🏠'}`, 3600); }
     if (C.nightT > 50 && !C.ev.rem2) { C.ev.rem2 = 1; say('w_nich', 'p_chas_spaty'); toast(`😴 ${PH.chas_spaty.uk}${stage() < 3 ? ' · She’s very sleepy. Home to bed soon!' : ''}`, 3600); }
     if (C.nightT > 70 && !C.ev.home && !fishFx && mode === 'world') { C.ev.home = 1; toast(`🏠 ${PH.dobranich.uk}${stage() < 3 ? ' · Too sleepy: she heads home to bed.' : ''}`, 3000); P.path = []; setTimeout(() => { if (mode === 'world' && running) { const hm = ents.find(e => e.kind === 'home'); if (hm) { P.x = P.rx = hm.x; P.y = P.ry = hm.y + 1; S.x = P.x; S.y = P.y; } fadeThen(enterHomeNow); } }, 1400); }
   }
@@ -6670,6 +6713,9 @@ function drawWorld(t) {
     for (const e of list) if (e.kind === 'home' || e.k === 'oliaHome' || (e.w === 'khata' && e.kind !== 'npc')) lights.push([sx(e.x), sy(e.y - (e.s || 1) * 0.35), (e.s || 1) * T * zoom * 0.75]);
     lights.push([sx(P.rx), sy(P.ry - 0.4), T * zoom * 1.2]);   // her little lantern
     paintSky(c, cv.width, cv.height, t, lights, true);
+    const nt = nightNow() ? (S.clock.nightT || 0) : 0;   // out far too late: it grows very dark, all but her lantern
+    if (nt > 25) { const a = Math.min(0.5, (nt - 25) / 30 * 0.5), lx = sx(P.rx), ly = sy(P.ry - 0.4), R = T * zoom * 2.2, g = c.createRadialGradient(lx, ly, R * 0.15, lx, ly, R);
+      g.addColorStop(0, 'rgba(4,6,18,0)'); g.addColorStop(1, `rgba(4,6,18,${a})`); c.fillStyle = g; c.fillRect(0, 0, cv.width, cv.height); }
   }
   // specks of pollen drifting on the air
   if (GFX.motes && !winter() && !wet(S.wx) && S.wx !== 'fog' && skyLight(S.clock.t).dark < 0.3) for (let i = 0; i < 14; i++) {
@@ -6717,12 +6763,12 @@ function boardCard() {
   }
   const F = curFest(), st = stage(), first = learn(F.id); learn('doshka');
   const canGive = Object.keys(F.needs).some(id => festHave(id) < F.needs[id] && (S.bag[id] || 0) > 0), ready = festReady();
-  const list = `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">${Object.entries(F.needs).map(([id, n]) => { const h = festHave(id), full = h >= n; return `<span style="text-align:center;min-width:54px;opacity:${h ? 1 : 0.55}"><img src="${iconURL(id)}" style="width:34px;height:34px" alt=""><br><b style="font-size:13px">${full ? '✓' : h + '/' + n}</b><br><small style="font-size:11px">${W[id].uk}</small></span>`; }).join('')}</div>`;
+  const list = `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">${Object.entries(F.needs).map(([id, n]) => { const h = festHave(id), full = h >= n; return `<span style="text-align:center;min-width:54px;opacity:${h ? 1 : 0.55}"><img src="${iconURL(id)}" style="width:34px;height:34px" alt=""><br><b style="font-size:14px">${full ? '✓' : h + '/' + n}</b><br><small style="font-size:14px">${W[id].uk}</small></span>`; }).join('')}</div>`;
   const fact = W[F.id].fact;
   openSheet(`<div class="card">
     <div style="display:flex;align-items:center;gap:10px;justify-content:center"><img src="${iconURL(F.id)}" style="width:48px;height:48px" alt=""><div style="text-align:left"><div class="word" style="font-size:28px">${W[F.id].uk}</div>${st < 3 ? `<div class="en" style="font-size:14px">${W[F.id].en}</div>` : ''}</div></div>
     <div class="hint" style="margin-top:6px;padding:6px 10px">📋 ${W.doshka.uk}${xl(' · notice board')} · ${ready ? `🎉 <b>${PH.zi_sviatom.uk}</b>${xl(' Everything is ready!')}` : xl('The village needs:')}${list}</div>
-    ${fact ? `<div class="muted" style="font-size:13px;padding:6px 2px 0;line-height:1.35">🌾 ${fact.uk}${st < 3 ? `<br><span style="opacity:.8">${fact.en}</span>` : ''}</div>` : ''}
+    ${fact ? `<div class="muted" style="font-size:14px;padding:6px 2px 0;line-height:1.35">🌾 ${fact.uk}${st < 3 ? `<br><span style="opacity:.8">${fact.en}</span>` : ''}</div>` : ''}
     <div class="row">${btn('hear', 'w_' + F.id, '🔊', 'round blue')}${ready ? btn('festGo', '', lab('festgo')) : canGive ? btn('boardGive', '', lab('handover')) : ''}${btn('close', '', lab('close'), 'ghost')}</div></div>`);
   if (first) say('w_' + F.id);
 }
@@ -7088,10 +7134,10 @@ function wardrobeSheet() {
   openSheet(`<div class="card"><h3><span><span class="uk">${W.shafa.uk}</span> ${st < 2 ? `<small>${W.shafa.en}</small>` : ''}</span>${btn('hear', 'p_shcho_vdiahnemo', '🔊', 'round blue')}</h3>
     <div style="display:flex;gap:10px;align-items:center">
       <canvas id="wardPad" style="width:42%;height:210px;border-radius:18px;background:radial-gradient(circle at 50% 60%, #fbecd3, #e3c395);flex:none" data-a="wardTurn"></canvas>
-      <div style="text-align:left;flex:1"><div class="word" style="font-size:24px">${W[S.outfit].uk}</div>${st < 3 ? `<div class="en">${W[S.outfit].en}</div>` : ''}<div class="muted" style="padding:6px 0 0;font-size:13px">${PH.shcho_vdiahnemo.uk}${st < 3 ? ' · Tap the picture to turn her round' : ''}</div></div>
+      <div style="text-align:left;flex:1"><div class="word" style="font-size:24px">${W[S.outfit].uk}</div>${st < 3 ? `<div class="en">${W[S.outfit].en}</div>` : ''}<div class="muted" style="padding:6px 0 0;font-size:14px">${PH.shcho_vdiahnemo.uk}${st < 3 ? ' · Tap the picture to turn her round' : ''}</div></div>
     </div>
     <div class="grid" style="margin-top:10px">${own.map(id => `<button class="it ${S.outfit === id ? 'sel' : ''}" data-a="wear" data-v="${id}"><img src="${iconURL(id)}" alt=""><div class="n">${W[id].uk}</div>${known(id) < 2 ? `<div class="e">${W[id].en}</div>` : ''}${S.outfit === id ? '<div class="e"><b>✓</b></div>' : ''}</button>`).join('')}</div>
-    ${more ? `<div class="muted" style="font-size:13px">🧺 ${D.ui.clothes[0]}${st < 3 ? ': more clothes at the market' : ''} (${more})</div>` : ''}
+    ${more ? `<div class="muted" style="font-size:14px">🧺 ${D.ui.clothes[0]}${st < 3 ? ': more clothes at the market' : ''} (${more})</div>` : ''}
     <div class="row">${btn('close', '', lab('close'))}</div></div>`);
   if (first) say('p_shcho_vdiahnemo');
   const pad = $('#wardPad'), dpr = Math.min(2, window.devicePixelRatio || 1); pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr);
