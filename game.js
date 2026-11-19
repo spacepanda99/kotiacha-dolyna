@@ -4717,7 +4717,19 @@ const WIN_X = 0.3;                                    // the window, across the 
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
 const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
-const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
+// Your cottage and Grandma's have a strip of room left of x = 0, with the door out, so the view can pan to -roomPL().
+const roomPL = () => mode === 'home' || mode === 'olia' ? roomU() * 0.5 : 0;
+const clampPan = () => { roomX = Math.max(-roomPL(), Math.min(panMax(), roomX)); };
+// The door out (like the mill's): open to the day, light falling in across the floor. Returns its tap box.
+function roomDoor(c, t, base) {
+  const u = roomU(), dx = -roomPL() + u * 0.24, dw = u * 0.22, top = base - u * 0.42, h = cv.height;
+  c.fillStyle = '#5a381b'; rr(c, dx - dw / 2 - u * 0.025, top - u * 0.025, dw + u * 0.05, base - top + u * 0.025, u * 0.02);
+  c.save(); c.beginPath(); c.rect(dx - dw / 2, top, dw, base - top); c.clip(); windowView(c, dx - dw / 2, top, dw, base - top, t, 2, 1); c.restore();
+  c.fillStyle = '#7a4e26'; c.save(); c.beginPath(); c.moveTo(dx - dw / 2, top); c.lineTo(dx - dw / 2 - u * 0.07, top + u * 0.03); c.lineTo(dx - dw / 2 - u * 0.07, base + u * 0.02); c.lineTo(dx - dw / 2, base); c.closePath(); c.fill(); c.restore();   // the door itself, swung open
+  c.fillStyle = '#e0a93b'; circ(c, dx - dw / 2 - u * 0.055, (top + base) / 2 + u * 0.02, u * 0.01);
+  const L = skyLight(S.clock.t); c.fillStyle = `rgba(255,236,190,${0.16 * (1 - L.dark)})`; poly(c, [[dx - dw / 2, base], [dx + dw / 2, base], [dx + dw * 1.3, h], [dx - dw * 0.3, h]]);
+  return { x: dx - dw / 2 - u * 0.07, y: top, w: dw + u * 0.07, h: base - top + u * 0.05, cx: dx };
+}
 // Cat things you can own more than one of: a cat bed for every cat, and a few of each toy.
 const MULTI = { lezhanka: 1, miachyk: 3, myshka: 3, kihtetochka: 2 };   // one cat bed: the other cats sleep on the cat trees, the bed and the stove
 // Where the second, third… of each stands (the first uses its DECOR spot): x across the room, y down the screen.
@@ -4762,13 +4774,15 @@ function enterHomeNow() {
   // The first few times in, the view glides from one end of the room to the other and settles at the table,
   // so it's clear there's more to see. Touching the screen stops it.
   if (S.clock.t >= 0.8) { bed = { t0: null, done: {} }; $('#homebar').style.display = 'none'; }   // night: feed the cats and go to bed
-  else if (panMax() > 10 && (S.tours || 0) < 3) { S.tours = (S.tours || 0) + 1; save(); roomX = 0; tour = { t0: nowT, mid }; }
+  else if (panMax() > 10 && (S.tours || 0) < 3) { S.tours = (S.tours || 0) + 1; save(); roomX = -roomPL(); tour = { t0: nowT, mid }; }
   blip(520);
 }
 function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
+let homeDoor = null;
 function homeTap(sx, py) {
   if (bed) { bed.tap = true; return; }
   const px = sx + roomX, [ba] = inBand();
+  if (homeDoor && px >= homeDoor.x && px <= homeDoor.x + homeDoor.w && py >= homeDoor.y && py <= homeDoor.y + homeDoor.h) { blip(700, 0.05); return inGo(homeDoor.cx, ba, exitHome); }
   const friends = homeCats().map(h => h.ct);
   for (let i = 0; i < friends.length; i++) { const p = catSpot(i); if (Math.abs(px - p.x) < p.s * 0.45 && py < p.y && py > p.y - p.s * 1.05) return inGo(p.x, p.y, () => wordCard(friends[i].word, { note: `❤️ ${friends[i].name}` })); }
   let best = null, bestR = null, bestScore = -1e9;
@@ -5042,11 +5056,12 @@ function drawBed(t) {
   canvasSub(c, w, h);
 }
 function drawHome(t) {
-  const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56;
+  const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), PL = roomPL(), wallB = h * 0.56;
   if (tour) {
     const a = t - tour.t0, ease = k => k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2, max = panMax();
-    if (a < 0.5) roomX = 0;
-    else if (a < 2.6) roomX = ease((a - 0.5) / 2.1) * max;
+    const mn = -roomPL();
+    if (a < 0.5) roomX = mn;
+    else if (a < 2.6) roomX = mn + ease((a - 0.5) / 2.1) * (max - mn);
     else if (a < 3.0) roomX = max;
     else if (a < 4.2) roomX = max + ease((a - 3.0) / 1.2) * (tour.mid - max);
     else { roomX = tour.mid; tour = null; }
@@ -5054,11 +5069,11 @@ function drawHome(t) {
   clampPan(); inStep(t);
   c.save(); c.translate(-roomX, 0);
   // back wall, beams, embroidered border
-  c.fillStyle = '#fbf1dc'; c.fillRect(0, 0, RW, wallB);
-  c.fillStyle = 'rgba(160,110,60,.10)'; for (let x = 0; x < RW; x += u * 0.11) c.fillRect(x, 0, u * 0.004 + 1, wallB);
+  c.fillStyle = '#fbf1dc'; c.fillRect(-PL, 0, RW + PL, wallB);
+  c.fillStyle = 'rgba(160,110,60,.10)'; for (let x = -PL; x < RW; x += u * 0.11) c.fillRect(x, 0, u * 0.004 + 1, wallB);
   const k = Math.max(10, u / 36), y0 = h * 0.17;
-  c.fillStyle = '#8a5a2b'; c.fillRect(0, y0 - k * 0.9, RW, k * 0.5);
-  for (let x = 0; x < RW + k; x += k * 2) { c.fillStyle = '#d43a3a'; poly(c, [[x, y0], [x + k * 0.8, y0 + k * 0.8], [x, y0 + k * 1.6], [x - k * 0.8, y0 + k * 0.8]]); c.fillStyle = '#2d2d2d'; circ(c, x + k, y0 + k * 0.8, k * 0.22); }
+  c.fillStyle = '#8a5a2b'; c.fillRect(-PL, y0 - k * 0.9, RW + PL, k * 0.5);
+  for (let x = -Math.ceil(PL / (k * 2)) * k * 2; x < RW + k; x += k * 2) { c.fillStyle = '#d43a3a'; poly(c, [[x, y0], [x + k * 0.8, y0 + k * 0.8], [x, y0 + k * 1.6], [x - k * 0.8, y0 + k * 0.8]]); c.fillStyle = '#2d2d2d'; circ(c, x + k, y0 + k * 0.8, k * 0.22); }
   // the window onto the valley
   const wx = WIN_X * RW, ww = u * 0.3, wt = h * 0.27, wb = h * 0.45;
   c.save(); c.beginPath(); c.rect(wx - ww / 2, wt, ww, wb - wt); c.clip();
@@ -5069,13 +5084,14 @@ function drawHome(t) {
   c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(wx, wt); c.lineTo(wx, wb); c.moveTo(wx - ww / 2, (wt + wb) / 2); c.lineTo(wx + ww / 2, (wt + wb) / 2); c.stroke();
   c.fillStyle = '#c08a55'; rr(c, wx - ww / 2 - u * 0.03, wb, ww + u * 0.06, u * 0.025, 4);
   // floor, skirting, and the shadow where wall meets floor
-  c.fillStyle = '#c99a63'; c.fillRect(0, wallB, RW, h - wallB);
+  c.fillStyle = '#c99a63'; c.fillRect(-PL, wallB, RW + PL, h - wallB);
   c.strokeStyle = 'rgba(120,80,40,.28)'; c.lineWidth = Math.max(2, h * 0.003);
-  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
-  c.fillStyle = '#4a90d9'; c.fillRect(0, wallB - h * 0.012, RW, h * 0.014);
-  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(0, wallB, RW, h * 0.05);
+  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(-PL, y); c.lineTo(RW, y); c.stroke(); }
+  c.fillStyle = '#4a90d9'; c.fillRect(-PL, wallB - h * 0.012, RW + PL, h * 0.014);
+  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(-PL, wallB, RW + PL, h * 0.05);
+  homeDoor = roomDoor(c, t, wallB);   // the door out, at the far left
   // a warm glow around the lamp or candle
-  for (const id of ['lampa', 'svichka']) if (S.decor[id]) { const r = decorRect(id), gy = r.by - r.sz * (id === 'lampa' ? 0.82 : 0.6); g = c.createRadialGradient(r.cx, gy, 0, r.cx, gy, u * 0.7); g.addColorStop(0, 'rgba(255,214,120,.2)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(0, 0, RW, h); }
+  for (const id of ['lampa', 'svichka']) if (S.decor[id]) { const r = decorRect(id), gy = r.by - r.sz * (id === 'lampa' ? 0.82 : 0.6); g = c.createRadialGradient(r.cx, gy, 0, r.cx, gy, u * 0.7); g.addColorStop(0, 'rgba(255,214,120,.2)'); g.addColorStop(1, 'rgba(255,214,120,0)'); c.fillStyle = g; c.fillRect(-PL, 0, RW + PL, h); }
   // everything in the room: wall things first, then floor things back to front
   const items = roomItems(), cats = homeCats(), spots = cats.map((_, i) => catSpot(i));
   const batted = new Set(spots.filter(p => p.toy).map(p => p.toy)), towelCat = spots.some(p => p.towel);
@@ -5122,7 +5138,7 @@ function inStart(fx) { const [a, b] = inBand(); IN.x = IN.tx = fx * roomW(); IN.
 function inPath(pts, done) { IN.path = pts.slice(); IN.pathDone = done || null; IN.then = null; IN.follow = true; IN.tx = IN.x; IN.ty = IN.y; }
 function inWalkTo(x, y, then) {
   const [a, b] = inBand(), u = roomU();
-  IN.tx = Math.max(u * 0.1, Math.min(roomW() - u * 0.1, x)); IN.ty = Math.max(a, Math.min(b, y)); IN.then = then || null; IN.follow = true;
+  IN.tx = Math.max(-roomPL() + u * 0.1, Math.min(roomW() - u * 0.1, x)); IN.ty = Math.max(a, Math.min(b, y)); IN.then = then || null; IN.follow = true;
   if (Math.hypot(IN.tx - IN.x, IN.ty - IN.y) < u * 0.03) { IN.tx = IN.x; IN.ty = IN.y; }   // already there
 }
 // Walk over to a thing standing at room x (its foot at y), stopping just in front of it, then do fn.
@@ -5140,7 +5156,7 @@ function inStep(t) {
     else { IN.climb = false; IN.pose = null; const f = IN.pathDone; IN.path = null; IN.pathDone = null; if (f) f(); }
   }
   else { IN.wk = Math.max(0, IN.wk - dt * 6); if (IN.wk < 0.05) IN.dir = 'front'; if (IN.then) { const f = IN.then; IN.then = null; f(); } }
-  if (IN.follow && !down) { const want = Math.max(0, Math.min(panMax(), IN.x - cv.width / 2)); roomX += (want - roomX) * Math.min(1, dt * 3.5); clampPan(); if (d <= 1.5 && Math.abs(want - roomX) < 2) IN.follow = false; }
+  if (IN.follow && !down) { const want = Math.max(-roomPL(), Math.min(panMax(), IN.x - cv.width / 2)); roomX += (want - roomX) * Math.min(1, dt * 3.5); clampPan(); if (d <= 1.5 && Math.abs(want - roomX) < 2) IN.follow = false; }
 }
 function inDraw(c, t) {
   const sc = inScale(IN.y), x = IN.x, y = IN.y;
@@ -5201,6 +5217,11 @@ function millUp() {
 const GAP_LO = 0.41, GAP_HI = 0.65;   // the green on the gauge
 const millSet = () => MILL.gap >= GAP_LO && MILL.gap <= GAP_HI;
 function millRope() {
+  // Starting is refused (with a nudge to the right step) until a sack is under the spout and wheat is in the hopper.
+  if (!MILL.on && MILL.spd <= 0.08) {
+    if (!MILL.grain) { blip(260, 0.08); return toast('🌾 Насип пшеницю в ківш!' + xlT(' · The hopper is empty. Put wheat in the hopper first.'), 3200); }
+    if (!MILL.sack) { blip(260, 0.08); return toast('🛍️ ' + 'Постав мішок під жолоб!' + xlT(' · Stand a sack under the spout first, or the flour lands on the floor.'), 3200); }
+  }
   MILL.on = !MILL.on; millFlash('tiahny'); blip(MILL.on ? 480 : 380, 0.1);
   if (MILL.on && !MILL.grain && !MILL.flour) MILL.mist++;   // let go of the brake with nothing to grind
 }
@@ -5251,6 +5272,9 @@ function millStep() {
   if (M.flour >= 1) return 'take';
   return (S.bag.pshenytsia || 0) ? 'hopper' : 'nowheat';
 }
+// The hint sits just under the row of HUD buttons, wherever that ends on this phone (re-measured each second).
+let hudB = { t: -9, y: 0 };
+function millBannerY() { if (nowT - hudB.t > 1) { const r = document.getElementById('hud')?.getBoundingClientRect(); hudB = { t: nowT, y: r && r.height ? (r.bottom + 8) * cv.width / innerWidth : cv.height * 0.1 }; } return hudB.y; }
 const MILL_STEPS = {
   sack: ['🛍️', 'Постав мішок під жолоб', 'Tap the dotted box under the spout: stand a sack there.'],
   hopper: ['🌾', 'Насип пшеницю в ківш', 'Tap the hopper up by the ladder: she climbs up and tips your wheat in.'],
@@ -5453,7 +5477,7 @@ function drawMill(t) {
   if (M.spd > 0.3) { c.fillStyle = 'rgba(255,250,235,.35)'; for (let i = 0; i < 18; i++) { const q = (t * 0.05 + i * 0.061) % 1; circ(c, ((i * 0.37 + Math.sin(t * 0.3 + i) * 0.02) % 1) * w, h * (0.9 - q * 0.7), 1.3); } }
   { const lights = [[MX.door * RW - roomX, fy - u * 0.2, u * 0.7], [MX.win * RW - roomX, h * 0.29, u * 0.5]]; paintSky(c, w, h, t, lights, false); }
   // the hint along the top: one step at a time, in Ukrainian, with the English under it until stage 3
-  { const [ic, uk, en] = MILL_STEPS[step], bx = Math.max(10, w * 0.03), bw = w - bx * 2, by = h * 0.092, fs = Math.round(Math.min(u * 0.052, 22 * (w / innerWidth))), en2 = xlT(en);
+  { const [ic, uk, en] = MILL_STEPS[step], bx = Math.max(10, w * 0.03), bw = w - bx * 2, by = millBannerY(), fs = Math.round(Math.min(u * 0.052, 22 * (w / innerWidth))), en2 = xlT(en);
     c.font = `600 ${Math.round(fs * 0.68)}px system-ui, sans-serif`;
     const words = en2.split(' '), lines = []; let ln = ''; for (const wd of words) { const tr = ln ? ln + ' ' + wd : wd; if (c.measureText(tr).width > bw - fs * 1.2 && ln) { lines.push(ln); ln = wd; } else ln = tr; } if (ln) lines.push(ln);
     const bh = fs * 1.6 + lines.length * fs * 0.85 + fs * 0.25;
@@ -5498,10 +5522,10 @@ function oliaTap(sx, py) {
   if (py > cv.height * 0.6) inWalkTo(px, py);   // the floor: walk there
 }
 function drawOlia(t) {
-  const h = cv.height, c = ctx, u = roomU(), RW = roomW(), wallB = h * 0.56, R = curRecipe(), ready = recipeReady(R), st = stage();
+  const h = cv.height, c = ctx, u = roomU(), RW = roomW(), PL = roomPL(), wallB = h * 0.56, R = curRecipe(), ready = recipeReady(R), st = stage();
   if (tour) {
     const a = t - tour.t0, ease = k => k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2, max = panMax();
-    const legs = [[tour.mid, 0, 1.8], [0, 0, 0.4], [0, max, 3.6], [max, max, 0.4], [max, tour.mid, 1.8]];
+    const mn = -roomPL(), legs = [[tour.mid, mn, 1.8], [mn, mn, 0.4], [mn, max, 3.6], [max, max, 0.4], [max, tour.mid, 1.8]];
     let k = a, i = 0;
     while (i < legs.length && k > legs[i][2]) { k -= legs[i][2]; i++; }
     if (i >= legs.length) { roomX = tour.mid; tour = null; }
@@ -5521,17 +5545,17 @@ function drawOlia(t) {
 
   // ---- whitewashed wall, the dark ceiling beam (сволок), and a painted Petrykivka garland under it
   const beamT = Math.max(h * 0.075, wallB - u * 0.88), beamB = beamT + u * 0.05;
-  c.fillStyle = '#fdf5e4'; c.fillRect(0, 0, RW, wallB);
+  c.fillStyle = '#fdf5e4'; c.fillRect(-PL, 0, RW + PL, wallB);
   c.fillStyle = 'rgba(190,150,100,.05)'; for (let i = 0; i < 46; i++) ell(c, ((i * 0.618) % 1) * RW, beamB + ((i * 0.377) % 1) * (wallB - beamB), u * 0.2, u * 0.05);
-  c.fillStyle = '#efe2c8'; c.fillRect(0, 0, RW, beamT);
-  c.fillStyle = 'rgba(120,80,40,.10)'; for (let x = 0; x < RW; x += u * 0.16) c.fillRect(x, 0, u * 0.006 + 1, beamT);
-  c.fillStyle = '#7a4e26'; c.fillRect(0, beamT, RW, beamB - beamT);
-  c.fillStyle = '#5e3a1b'; c.fillRect(0, beamB - u * 0.009, RW, u * 0.009);
-  c.fillStyle = 'rgba(255,230,190,.14)'; c.fillRect(0, beamT, RW, u * 0.007);
+  c.fillStyle = '#efe2c8'; c.fillRect(-PL, 0, RW + PL, beamT);
+  c.fillStyle = 'rgba(120,80,40,.10)'; for (let x = -PL; x < RW; x += u * 0.16) c.fillRect(x, 0, u * 0.006 + 1, beamT);
+  c.fillStyle = '#7a4e26'; c.fillRect(-PL, beamT, RW + PL, beamB - beamT);
+  c.fillStyle = '#5e3a1b'; c.fillRect(-PL, beamB - u * 0.009, RW + PL, u * 0.009);
+  c.fillStyle = 'rgba(255,230,190,.14)'; c.fillRect(-PL, beamT, RW + PL, u * 0.007);
   c.strokeStyle = 'rgba(60,35,15,.25)'; c.lineWidth = 1; for (let x = u * 0.1; x < RW; x += u * 0.37) { c.beginPath(); c.moveTo(x, beamT + u * 0.02); c.lineTo(x + u * 0.2, beamT + u * 0.024); c.stroke(); }
   const fk = u * 0.026, fy = beamB + fk * 2.1, vine = x => fy + Math.sin(x / fk * 0.5) * fk * 0.55;
-  c.strokeStyle = '#4f8f3a'; c.lineWidth = fk * 0.2; c.beginPath(); for (let x = 0; x <= RW; x += fk) { if (x) c.lineTo(x, vine(x)); else c.moveTo(x, vine(x)); } c.stroke();
-  for (let i = 0, x = fk * 3; x < RW; x += fk * 6.28, i++) {
+  c.strokeStyle = '#4f8f3a'; c.lineWidth = fk * 0.2; c.beginPath(); for (let x = -PL; x <= RW; x += fk) { if (x > -PL) c.lineTo(x, vine(x)); else c.moveTo(x, vine(x)); } c.stroke();
+  for (let i = 0, x = fk * 3 - Math.ceil(PL / (fk * 6.28)) * fk * 6.28; x < RW; x += fk * 6.28, i++) {
     const y = vine(x);
     leaf(x - fk * 0.7, y, fk * 0.8, Math.PI + 0.5); leaf(x + fk * 0.7, y, fk * 0.8, -0.5);
     if (i % 2) { c.fillStyle = '#3d7cc2'; circ(c, x - fk * 0.5, y - fk * 0.5, fk * 0.36); circ(c, x + fk * 0.4, y - fk * 0.7, fk * 0.36); circ(c, x, y - fk * 0.05, fk * 0.4); }
@@ -5561,11 +5585,12 @@ function drawOlia(t) {
   icon('pysanka', wx - u * 0.005, wb + 1, u * 0.06);
 
   // ---- the floor, and sunlight from the window lying across it
-  c.fillStyle = '#c4935c'; c.fillRect(0, wallB, RW, h - wallB);
+  c.fillStyle = '#c4935c'; c.fillRect(-PL, wallB, RW + PL, h - wallB);
   c.strokeStyle = 'rgba(120,80,40,.28)'; c.lineWidth = Math.max(2, h * 0.003);
-  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
-  c.fillStyle = '#4a90d9'; c.fillRect(0, wallB - h * 0.012, RW, h * 0.014);
-  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(0, wallB, RW, h * 0.05);
+  for (let i = 1; i < 9; i++) { const y = wallB + (h - wallB) * (i / 9) ** 1.25; c.beginPath(); c.moveTo(-PL, y); c.lineTo(RW, y); c.stroke(); }
+  c.fillStyle = '#4a90d9'; c.fillRect(-PL, wallB - h * 0.012, RW + PL, h * 0.014);
+  g = c.createLinearGradient(0, wallB, 0, wallB + h * 0.05); g.addColorStop(0, 'rgba(90,60,30,.25)'); g.addColorStop(1, 'rgba(90,60,30,0)'); c.fillStyle = g; c.fillRect(-PL, wallB, RW + PL, h * 0.05);
+  { const d = roomDoor(c, t, wallB); hit(d.x, d.y, d.w, d.h, exitHome); }   // the door out, at the far left
   c.fillStyle = 'rgba(255,238,170,.17)'; poly(c, [[wx - ww * 0.45, wallB + h * 0.03], [wx + ww * 0.45, wallB + h * 0.03], [wx + ww * 0.1, wallB + h * 0.2], [wx - ww * 1.0, wallB + h * 0.2]]);
   // the woven runner (доріжка) along the floor
   const ry = h * 0.855, rh = Math.min(h * 0.075, u * 0.13), rx0 = RW * 0.19, rx1 = RW * 0.965, band = u * 0.021;
