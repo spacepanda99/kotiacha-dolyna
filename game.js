@@ -551,15 +551,76 @@ const DRAW = {
     c.fillStyle = '#8a5a2b'; c.fillRect(-34, -30, 7, 30); c.fillRect(27, -30, 7, 30);
     c.fillStyle = '#c08a55'; rr(c, -42, -36, 84, 10, 3); rr(c, -42, -58, 84, 9, 3);
   },
-  stork(c) {
+  stork(c, o) {
+    const sea = treeSeason(o);
     c.fillStyle = '#8a5a2b'; c.fillRect(-3, -66, 6, 66);
-    c.fillStyle = '#a67c42'; ell(c, 0, -68, 26, 8);
+    c.fillStyle = '#a67c42'; ell(c, 0, -68, 26, 8); c.strokeStyle = '#7a5a2a'; c.lineWidth = 1.2; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(-24 + i * 8, -66); c.lineTo(-18 + i * 8, -72); c.stroke(); }
+    if (sea === 'osin' || sea === 'zyma') { if (sea === 'zyma') { c.fillStyle = '#ffffff'; ell(c, 0, -72, 24, 5); } return; }   // the storks are away for the winter
+    if (sea === 'lito') { c.fillStyle = '#ffffff'; for (const dx of [-12, -4]) { circ(c, dx, -76, 4); c.fillStyle = '#2d2d2d'; poly(c, [[dx + 3, -77], [dx + 8, -76], [dx + 3, -75]]); c.fillStyle = '#ffffff'; } }   // two chicks in the nest
+    const clack = Math.sin(((o && o.t) || 0) * 14) > 0.6 ? 2 : 0;
     c.strokeStyle = '#e2574c'; c.lineWidth = 2; c.beginPath(); c.moveTo(-3, -74); c.lineTo(-3, -84); c.moveTo(4, -74); c.lineTo(4, -84); c.stroke();
     c.fillStyle = '#2d2d2d'; poly(c, [[-16, -92], [-4, -96], [-4, -86]]);
     c.fillStyle = '#ffffff'; ell(c, 1, -90, 12, 7); c.fillRect(8, -104, 4, 14); circ(c, 11, -105, 5);
-    c.fillStyle = '#e2574c'; poly(c, [[15, -107], [29, -103], [15, -102]]);
+    c.fillStyle = '#e2574c'; poly(c, [[15, -107], [29, -103 - clack], [15, -102]]); poly(c, [[15, -104], [29, -102 + clack], [15, -101]]);   // the bill clacks now and then
     c.fillStyle = '#2d2d2d'; circ(c, 12, -106, 1.2);
   },
+  // A hedgehog: a round spiky back, a pointed face with a black nose, little feet.
+  yizhak(c, o) {
+    const t = (o && o.t) || 0, step = o && o.walk ? Math.sin(t * 10) * 2 : 0;
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 0, -1, 26, 5);
+    c.fillStyle = '#5b4636'; for (const [x, s] of [[-12, step], [10, -step]]) rr(c, x - 3, -8 + s * 0.3, 6, 8, 2);
+    c.fillStyle = '#6b4c32'; for (let i = 0; i < 16; i++) { const a = Math.PI * (1.02 + i / 15 * 0.98), r = 24; poly(c, [[Math.cos(a) * r * 0.75, -14 + Math.sin(a) * r * 0.6], [Math.cos(a) * (r + 7), -14 + Math.sin(a) * (r * 0.6 + 7)], [Math.cos(a + 0.12) * r * 0.75, -14 + Math.sin(a + 0.12) * r * 0.6]]); }
+    c.fillStyle = '#8a6440'; ell(c, -2, -14, 22, 13);
+    c.fillStyle = '#d9b48a'; poly(c, [[14, -18], [30, -8], [14, -4]]); ell(c, 16, -11, 7, 7);
+    c.fillStyle = '#2a1d14'; circ(c, 30, -8, 2.4); circ(c, 18, -14, 1.6);
+  },
+  // The hedgehog's winter bed: a heap of brown leaves under snow, a sleepy nose poking out, and a z.
+  kupka(c, o) {
+    const t = (o && o.t) || 0;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -1, 30, 6);
+    for (let i = 0; i < 18; i++) { const a = i * 2.3; c.fillStyle = ['#8a5a2b', '#a8381f', '#c0721a', '#6b4422'][i % 4]; ell(c, Math.cos(a) * 18 * (0.4 + (i % 3) * 0.3), -10 + Math.sin(a) * 6 - (i % 4) * 2, 6, 3); }
+    c.fillStyle = '#ffffff'; ell(c, -2, -18, 20, 6); ell(c, 8, -16, 10, 4);
+    c.fillStyle = '#d9b48a'; ell(c, 20, -6, 5, 3.5); c.fillStyle = '#2a1d14'; circ(c, 24, -6, 1.6);
+    c.fillStyle = 'rgba(74,44,26,.7)'; c.font = '700 10px system-ui'; c.textAlign = 'center'; c.fillText('z', 26 + Math.sin(t) * 2, -18 - ((t * 0.6) % 1) * 10);
+  },
+  // A nest of twigs.
+  hnizdo(c) { c.fillStyle = '#a67c42'; ell(c, 0, -14, 34, 12); c.strokeStyle = '#7a5a2a'; c.lineWidth = 2; for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(-32 + i * 8, -10); c.lineTo(-26 + i * 8, -20); c.stroke(); } c.fillStyle = '#5a3d20'; ell(c, 0, -20, 24, 5); },
+  // A crane: tall and grey, a long neck, a black-and-white head with a red crown.
+  zhuravel(c) {
+    c.strokeStyle = '#5b5b62'; c.lineWidth = 2.5; c.beginPath(); c.moveTo(-4, -2); c.lineTo(-2, -36); c.moveTo(6, -2); c.lineTo(4, -36); c.stroke();
+    c.fillStyle = '#9aa0a8'; ell(c, 0, -44, 22, 12); c.fillStyle = '#5b5b62'; poly(c, [[-18, -46], [-34, -36], [-20, -40]]);
+    c.strokeStyle = '#9aa0a8'; c.lineWidth = 5; c.beginPath(); c.moveTo(14, -48); c.quadraticCurveTo(22, -70, 18, -90); c.stroke();
+    c.fillStyle = '#2a2a2a'; circ(c, 19, -92, 6); c.fillStyle = '#ffffff'; c.fillRect(15, -88, 3, 14); c.fillStyle = '#d43a3a'; circ(c, 19, -97, 2.5);
+    c.fillStyle = '#5b5b62'; poly(c, [[24, -93], [38, -90], [24, -89]]);
+  },
+  // A blue tit: yellow front, blue cap and wings, white cheeks with a black stripe.
+  synytsia(c) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -1, 18, 4);
+    c.fillStyle = '#5b8fc9'; ell(c, -6, -26, 16, 10); poly(c, [[-18, -24], [-32, -18], [-20, -18]]);
+    c.fillStyle = '#ffd23f'; ell(c, 2, -22, 13, 12);
+    c.fillStyle = '#ffffff'; circ(c, 10, -38, 9); c.fillStyle = '#3d6fb0'; c.beginPath(); c.arc(10, -40, 9, Math.PI, 0); c.fill(); c.fillStyle = '#1d1d24'; c.fillRect(2, -36, 16, 2.5); circ(c, 13, -38, 1.6);
+    c.fillStyle = '#3a3a3a'; poly(c, [[18, -38], [24, -36], [18, -35]]); c.strokeStyle = '#5b5b62'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, -10); c.lineTo(0, -1); c.moveTo(6, -10); c.lineTo(6, -1); c.stroke();
+  },
+  // A bullfinch: a round red breast, a black cap, a grey back.
+  snihur(c) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -1, 18, 4);
+    c.fillStyle = '#7d8089'; ell(c, -6, -26, 16, 11); c.fillStyle = '#2a2a2a'; poly(c, [[-18, -24], [-32, -16], [-20, -18]]);
+    c.fillStyle = '#e04a3a'; ell(c, 3, -22, 13, 13);
+    c.fillStyle = '#7d8089'; circ(c, 10, -38, 9); c.fillStyle = '#1d1d24'; c.beginPath(); c.arc(10, -40, 9, Math.PI * 0.9, Math.PI * 0.1 + Math.PI * 2); c.fill(); circ(c, 14, -37, 1.6);
+    c.fillStyle = '#2a2a2a'; poly(c, [[18, -37], [23, -35], [18, -33]]);
+  },
+  // The bird feeder: a little wooden house on a post with a roof of snow, and birds on it once you've fed them.
+  hodivnychka(c, o) {
+    const t = (o && o.t) || 0, fed = S.feedT > now();
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 20, 5);
+    c.fillStyle = '#7a4b22'; c.fillRect(-3, -58, 6, 58);
+    c.fillStyle = '#a06a35'; c.fillRect(-20, -66, 40, 6); c.fillRect(-18, -82, 4, 16); c.fillRect(14, -82, 4, 16);
+    c.fillStyle = '#8a3b2b'; poly(c, [[-26, -80], [0, -98], [26, -80]]); c.fillStyle = '#ffffff'; poly(c, [[-26, -81], [0, -99], [26, -81], [20, -78], [0, -93], [-20, -78]]);
+    if (fed) { c.fillStyle = '#d9b27a'; for (let i = 0; i < 8; i++) ell(c, -14 + i * 4, -67, 1.6, 1); }
+    if (fed) for (let i = 0; i < 4; i++) { const hop = Math.abs(Math.sin(t * 5 + i * 1.7)) * 4, bx = [-12, 6, -26, 22][i], by = [-66, -66, -4, -4][i] - hop; c.save(); c.translate(bx, by); c.scale(0.45 * (i % 2 ? -1 : 1), 0.45); DRAW[i % 2 ? 'snihur' : 'synytsia'](c); c.restore(); }
+  },
+  // A snowball.
+  snizhka(c) { c.fillStyle = '#ffffff'; circ(c, 0, -26, 24); c.strokeStyle = '#c3d2e4'; c.lineWidth = 2; c.beginPath(); c.arc(0, -26, 24, 0.3, Math.PI - 0.3); c.stroke(); c.fillStyle = '#dbe5f2'; circ(c, 8, -32, 4); circ(c, -7, -20, 3); },
   hive(c) {
     c.fillStyle = '#8a5a2b'; c.fillRect(-20, -8, 6, 8); c.fillRect(14, -8, 6, 8);
     c.fillStyle = '#f2c230'; rr(c, -24, -54, 48, 48, 5);
@@ -1518,7 +1579,10 @@ function add(e) {
   add({ w: 'svynia', x: 29.4, y: 9.8, kind: 'animal', r: 1.0 });
   // Landmarks.
   rect(29, 3, 31, 5); add({ w: 'tserkva', x: 30.5, y: 6, s: 5.4 });
-  add({ w: 'leleka', x: 21.5, y: 7, s: 2.6, solid: true });
+  add({ w: 'leleka', k: 'nest', x: 21.5, y: 7, s: 2.6, solid: true });   // the stork's nest on its pole: storks in spring and summer, empty in autumn and winter
+  add({ w: 'yizhak', k: 'yizhak', x: 16.5, y: 10.6, s: 0.7, kind: 'crawl', cx: 16.5, cy: 10.6, ph: 0.7, only: ['lito', 'osin', 'vesna'] });   // a hedgehog pottering about by the bushes
+  add({ w: 'yizhak', k: 'yizhak_spyt', x: 15.2, y: 10.4, s: 0.9, only: ['zyma'], sleep: true });   // ...and asleep in his leaf pile all winter
+  add({ w: 'hodivnychka', k: 'feeder', x: 7.6, y: 12.9, s: 1.6, solid: true, only: ['zyma'] });   // the bird feeder by the cottage in winter
   rect(10, 2, 12, 4); add({ w: 'mlyn', x: 11.5, y: 5, s: 4.5, spin: true });
   // Market square.
   rect(17, 16, 21, 16); add({ w: 'rynok', x: 19.5, y: 17, s: 4.3, kind: 'shop' });
@@ -1668,8 +1732,9 @@ function seasonGround() { const s = season(); if (s !== 'zyma') groundW = null; 
   if (s === 'zyma') return groundW || (groundW = tintGround('screen', 'rgb(176,186,210)', 'rgba(248,251,255,.55)')); if (s === 'osin') return groundA || (groundA = tintGround('multiply', 'rgb(255,218,156)', null)); return ground; }
 // Winter: the pond freezes over, and the flowers, wheat, butterflies, bees, frogs and ducks are gone (the
 // stork and the swallows have flown south).
-const WINTER_GONE = new Set(['kvitka', 'soniashnyk', 'mak', 'pshenytsia', 'hryb', 'malva', 'chornobryvtsi', 'metelyk', 'bdzhola', 'ryba', 'zhaba', 'kachka', 'lastivka', 'leleka']);
-const goneNow = e => winter() && (WINTER_GONE.has(e.w) || e.water);
+const WINTER_GONE = new Set(['kvitka', 'soniashnyk', 'mak', 'pshenytsia', 'hryb', 'malva', 'chornobryvtsi', 'metelyk', 'bdzhola', 'ryba', 'zhaba', 'kachka', 'lastivka']);
+// Some things only appear in some seasons: e.only lists them (the hedgehog's winter leaf pile, the bird feeder).
+const goneNow = e => (e.only && !e.only.includes(season())) || (winter() && (WINTER_GONE.has(e.w) || e.water));
 function drawIce(c, t) {
   const x = POND.x * T, y = POND.y * T, rx = POND.rx * T, ry = POND.ry * T;
   c.fillStyle = 'rgba(214,234,248,.92)'; ell(c, x, y, rx * 1.02, ry * 1.02);
@@ -2428,6 +2493,13 @@ function fishCard(e) {
     ? { acts: [{ k: 'fish', fn: startFishing }] }
     : { note: `🎣 <b>${PH.need_rod.uk}</b>${xl(`<br>${PH.need_rod.en} Buy one at the market («${D.ui.tools[0]}» tab).`)}`, clips: ['p_need_rod'] });
 }
+// The bird feeder: put sunflower seeds out and blue tits and bullfinches come to it for a couple of minutes.
+function feederCard() {
+  const seeds = (S.bag.soniashnyk || 0) + (S.bag.pshenytsia || 0), fed = S.feedT > now();
+  learn('hodivnychka'); learn('synytsia'); learn('snihur');
+  wordCard('hodivnychka', { note: fed ? `🐦 ${W.synytsia.uk}, ${W.snihur.uk}${xl(' · The birds are eating!')}` : `🌻 ${W.soniashnyk.uk}: ${S.bag.soniashnyk || 0}${xl(seeds ? ' · Put out some seeds for the birds.' : ' · You need sunflower seeds (or wheat) for the birds. The market sells sunflower heads in winter («Овочі»).')}`,
+    acts: seeds && !fed ? [{ k: 'give', fn: () => { const it = (S.bag.soniashnyk || 0) > 0 ? 'soniashnyk' : 'pshenytsia'; S.bag[it]--; S.feedT = now() + 150e3; S.hearts += 1; hud(); save(); closeSheet(); blip(880, 0.08); toast(`🐦 ${W.synytsia.uk} · ${W.snihur.uk}  ❤️ +1`); say('w_synytsia', 'w_snihur'); } }] : [] });
+}
 // Fishing through the ice with your own auger (the same game as Taras's, with him beside you to help), once a minute.
 function iceFishStart() {
   closeSheet();
@@ -2499,6 +2571,9 @@ function interact(e) {
   }
   if (e.k === 'my_churn') return churnCard();
   if (e.k === 'board') return boardCard();
+  if (e.k === 'feeder') return feederCard();
+  if (e.k === 'yizhak_spyt') return wordCard('yizhak', { note: `💤 <b>${PH.yizhak_spyt.uk}</b>${xl('<br>' + PH.yizhak_spyt.en)}`, clips: ['p_yizhak_spyt'] });
+  if (e.k === 'nest') { const sea = season(); if (sea === 'osin' || sea === 'zyma') { learn('hnizdo'); return wordCard('hnizdo', { note: `🪺 ${W.leleka.uk}${xl(" · The storks have flown south for the winter. They'll be back in spring.")}` }); } }
   if (e.k === 'koloda') return chopStart();
   if (winter() && e.give === 'yabluko') return wordCard(e.w, { note: `❄️ ${W.zyma.uk}${xl(' · No apples in winter. The market sells them.')}` });
   if (e.k === 'my_mill') return millCard();
@@ -3170,19 +3245,23 @@ function cookDone() {
 //   Taras's fishing: закидай (flick to cast), wait for the bite, тягни (tap!) → fish
 const MG = { bohdan: { verbs: ['dmukhai', 'zbyrai'], rounds: 2 }, andriiko: { verbs: ['kydai', 'nesy'], rounds: 3 }, taras: { verbs: ['zakydai', 'tiahny'], rounds: 3 },
   // in winter they have different jobs (and two different verbs each)
-  bohdan_w: { verbs: ['zmety', 'nakryi'], rounds: 2 }, andriiko_w: { verbs: ['kachai', 'postav'], rounds: 3 }, taras_w: { verbs: ['sverdly', 'tiahny'], rounds: 2 } };
+  bohdan_w: { verbs: ['zmety', 'nakryi'], rounds: 2 }, andriiko_s: { verbs: ['kydai'], rounds: 1 }, andriiko_w: { verbs: ['kachai', 'postav'], rounds: 3 }, taras_w: { verbs: ['sverdly', 'tiahny'], rounds: 2 } };
 const mgPre = () => winter() ? 'mgw_' : 'mg_';
 let mg = null;
+// Which game a neighbour asks you to: in winter Andriiko takes turns between the snowman and a snowball fight.
+function mgKindFor(id) { if (!winter()) return id; if (id === 'andriiko') return S.andSnow ? 'andriiko_s' : 'andriiko_w'; return MG[id + '_w'] ? id + '_w' : id; }
+const preOf = kind => kind === 'andriiko_s' ? 'mgws_' : kind.endsWith('_w') ? 'mgw_' : 'mg_';
 function mgInvite(npc) {
   if (sheetOpen()) return;
   S.cd['mg_' + npc.id] = Math.max(S.cd['mg_' + npc.id] || 0, now() + 60e3);
-  const L = npc.lines[mgPre() + 'invite'], st = stage();
+  if (npc.id === 'andriiko' && winter()) S.andSnow = !S.andSnow;
+  const pre = preOf(mgKindFor(npc.id)), L = npc.lines[pre + 'invite'], st = stage();
   openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
-    <div class="row">${btn('hear', `v_${npc.id}_${mgPre()}invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
-  say(`v_${npc.id}_${mgPre()}invite`);
+    <div class="row">${btn('hear', `v_${npc.id}_${pre}invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
+  say(`v_${npc.id}_${pre}invite`);
 }
 function mgStart(id, force) {
-  const npc = NPC[id], kind = force || (winter() && MG[id + '_w'] ? id + '_w' : id), G = MG[kind];
+  const npc = NPC[id], kind = force || mgKindFor(id), G = MG[kind];
   mg = { id: kind, npc, G, round: 1, phase: '', t0: nowT, lastT: nowT, puffs: [], down: null, score: 0 };
   for (const v of G.verbs) learn(v);
   openSheet(`<div class="card gamecard"><div class="tag" id="mgTag"></div>
@@ -3284,7 +3363,7 @@ function mgRoundDone() {
   setTimeout(() => { if (mg && $('#mgPad')) mgBegin('a'); }, 900);
 }
 function mgFinish() {
-  const id = mg.npc.id, npc = mg.npc, st = stage(), done = mg.id.endsWith('_w') ? 'mgw_done' : 'mg_done';
+  const id = mg.npc.id, npc = mg.npc, st = stage(), done = preOf(mg.id) + 'done';
   const gift = id === 'bohdan' ? 'med' : id === 'taras' ? 'ryba' : null;
   if (gift) give(gift, id === 'taras' ? 2 : 1); S.hearts += 1; S.cd['mg_' + id] = now() + 120e3; hud(); save();
   const L = npc.lines[done]; mgStopVoice(); mg = null;
@@ -4142,7 +4221,39 @@ function chopFrame(me) {
   c.font = `800 ${Math.round(15 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🪵 ${chop.n}/${chop.logs}`, w - 12 * k, 24 * k);
   requestAnimationFrame(() => chopFrame(me));
 }
-const GAMES = { bohdan: BEE, bohdan_w: HIVEW, andriiko_w: SNOWMAN, taras_w: ICE };
+// The snowball fight: Andriiko pops up behind one of three snow forts; tap where to throw (кидай!) and the snowball
+// arcs over. Hit him six times. Now and then he throws one back and it splats on the screen.
+const SNOWBALL = {
+  FORTS: [0.24, 0.5, 0.76],
+  begin(step) { mg.hits = 0; mg.and = { fort: 1, up: false, nextT: nowT + 0.8, until: 0, threw: false, pop: 0 }; mg.balls = []; mg.splats = []; mg.puffs = []; mgLine('mgws_kydai', 'kydai', ['Торкнися, куди кинути сніжку', 'Tap where to throw the snowball']); },
+  press(x, y) { if (mg.phase !== 'a') return; if (mg.balls.length > 2) return; mg.balls.push({ tx: x, ty: y, t0: nowT }); mgAct('kydai', true); blip(560, 0.04); },
+  move() {}, release() {},
+  frame(c, w, h, t, k, dt) {
+    snowScene(c, w, h, t, k);
+    const A = mg.and, F = SNOWBALL.FORTS, fy = h * 0.66;
+    if (t > A.nextT) { if (A.up) { A.up = false; A.nextT = t + 0.5 + Math.random() * 0.9; } else { A.fort = Math.floor(Math.random() * 3); A.up = true; A.upT = t; A.until = t + 1.3 + Math.random() * 0.8; A.nextT = A.until; A.threw = false; } }
+    if (A.up && !A.threw && t - A.upT > 0.7 && Math.random() < 0.015) { A.threw = true; mg.splats.push({ x: 0.25 + Math.random() * 0.5, y: 0.35 + Math.random() * 0.3, t0: t + 0.45, r: 0.08 + Math.random() * 0.05 }); blip(300, 0.04); }
+    // Andriiko behind his fort, popping up and ducking
+    const ax = F[A.fort] * w, pop = A.up ? Math.min(1, (t - A.upT) / 0.2) * Math.min(1, (A.until - t) / 0.2) : 0;
+    if (pop > 0) person(c, ax, fy + h * 0.06 - pop * h * 0.2, Object.assign({}, NPC.andriiko.look, { armR: A.threw && t - A.upT < 1.1 ? -2.6 : undefined }), t, false, 1.1 * k);
+    if (mg.hitT && t - mg.hitT < 0.5) { c.fillStyle = 'rgba(255,255,255,.9)'; c.font = `900 ${Math.round(18 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('Ой!', mg.hitX, fy - h * 0.3 - (t - mg.hitT) * 30 * k); }
+    // the three snow forts
+    for (const f of F) { const x = f * w; c.fillStyle = 'rgba(0,0,0,.08)'; ell(c, x, fy + 4 * k, w * 0.13, h * 0.03); c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(x, fy, w * 0.12, h * 0.12, 0, Math.PI, 0); c.fill(); c.strokeStyle = '#c3d2e4'; c.lineWidth = 1.5 * k; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(x - w * 0.06 + i * w * 0.06, fy - h * 0.05, w * 0.03, Math.PI, 0); c.stroke(); } }
+    // snowballs flying from the bottom of the screen to where you tapped
+    mg.balls = mg.balls.filter(b => { const q = (t - b.t0) / 0.45; if (q >= 1) {
+        const hit = A.up && pop > 0.5 && Math.abs(b.tx - F[A.fort]) < 0.08 && b.ty > 0.36 && b.ty < 0.68;
+        for (let i = 0; i < 8; i++) mg.puffs.push({ x: b.tx, y: b.ty, vx: (Math.random() - 0.5) * 0.4, vy: -Math.random() * 0.3, t0: t });
+        if (hit) { mg.hits++; mg.hitT = t; mg.hitX = F[A.fort] * w; A.up = false; A.nextT = t + 0.8; blip(880, 0.08); useWord('snizhka', true); learn('snizhka'); if (mg.hits >= 6) { mg.phase = 'pause'; say('p_chudovo'); setTimeout(() => { if (mg && mg.id === 'andriiko_s') mgRoundDone(); }, 900); } } else blip(260, 0.03);
+        return false; }
+      const x = (0.5 + (b.tx - 0.5) * q) * w, y = (0.98 + (b.ty - 0.98) * q) * h - Math.sin(q * Math.PI) * h * 0.2, r = (12 - q * 6) * k; c.fillStyle = '#ffffff'; circ(c, x, y, r); c.strokeStyle = '#c3d2e4'; c.lineWidth = 1.5 * k; c.beginPath(); c.arc(x, y, r, 0.2, 2.6); c.stroke(); return true; });
+    mg.puffs = mg.puffs.filter(p => t - p.t0 < 0.5); c.fillStyle = 'rgba(255,255,255,.95)'; for (const p of mg.puffs) { const q = (t - p.t0) / 0.5; circ(c, (p.x + p.vx * q) * w, (p.y + p.vy * q + q * q * 0.15) * h, (4 - q * 3) * k); }
+    // his snowballs splatting on the screen
+    mg.splats = mg.splats.filter(s => t - s.t0 < 1.4); for (const s of mg.splats) { if (t < s.t0) continue; const q = (t - s.t0) / 1.4; c.globalAlpha = q < 0.6 ? 0.95 : (1 - q) / 0.4 * 0.95; c.fillStyle = '#ffffff'; circ(c, s.x * w, s.y * h, s.r * w); for (let i = 0; i < 7; i++) { const a = i * 0.9; circ(c, s.x * w + Math.cos(a) * s.r * w * 1.1, s.y * h + Math.sin(a) * s.r * w * 1.1 + q * 10 * k, s.r * w * 0.3); } c.globalAlpha = 1; }
+    // hits so far
+    c.font = `800 ${Math.round(14 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`❄️ ${mg.hits}/6`, w - 10 * k, 22 * k);
+  },
+};
+const GAMES = { bohdan: BEE, bohdan_w: HIVEW, andriiko_w: SNOWMAN, andriiko_s: SNOWBALL, taras_w: ICE };
 
 // ------------------------------------------------------------------ speaking
 // Say a word, and Gemini (through a small server that holds the key) gives a generous score. Chrome on Android.
@@ -4444,7 +4555,7 @@ let mode = 'world', roomX = 0, tour = null;
 // s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
   // against the back wall, left to right
-  pich: { x: 0.072, y: 0.578, s: 0.6, z: 1, hw: 0.85 }, hlechyk: { x: 0.185, y: 0.585, s: 0.3, z: 1, hw: 0.6 },
+  pich: { x: 0.072, y: 0.578, s: 0.6, z: 1, hw: 0.85 }, hlechyk: { x: 0.035, y: 0.8, s: 0.3, z: 4, hw: 0.6 },   // the clay jug stands on the floor in front of the stove, far left
   polytsia: { x: 0.43, y: 0.582, s: 0.55, z: 1, hw: 0.68 },
   lampa: { x: 0.6, y: 0.582, s: 0.56, z: 1, hw: 0.48 },
   kihtetochka: { x: 0.725, y: 0.58, s: 0.52, z: 1, hw: 0.9 },
@@ -4463,7 +4574,7 @@ const DECOR = {
   didukh: { x: 0.515, y: 0.585, s: 0.36, z: 1, hw: 0.4 },
   vyshyvanka: { x: 0.69, y: 0.39, s: 0.2, z: 0, wall: true, hw: 0.8 }, bandura: { x: 0.855, y: 0.38, s: 0.2, z: 0, wall: true, hw: 0.7 },
   tarilka: { x: 0.43, y: 0.262, s: 0.105, z: 0, wall: true, hw: 0.7 }, vinok: { x: 0.79, y: 0.37, s: 0.13, z: 0, wall: true, hw: 0.6 },
-  motanka: { x: 0.25, y: 0.8, s: 0.2, z: 4, hw: 0.4 }, skrynia: { x: 0.6, y: 0.74, s: 0.3, z: 1.6, hw: 0.8 },
+  motanka: { x: 0.958, y: 0.42, s: 0.15, z: 0, wall: true, hw: 0.5 },   // the motanka doll hangs on the wall above the bed skrynia: { x: 0.6, y: 0.74, s: 0.3, z: 1.6, hw: 0.8 },
   pysanka: { sill: 0.17, s: 0.1, z: 2, wall: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
@@ -4474,10 +4585,10 @@ const roomW = () => Math.max(cv.width, roomU() * 3.4); // a phone in portrait se
 const panMax = () => Math.max(0, roomW() - cv.width);
 const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
 // Cat things you can own more than one of: a cat bed for every cat, and a few of each toy.
-const MULTI = { lezhanka: D.cats.length, miachyk: 3, myshka: 3, kihtetochka: 2 };
+const MULTI = { lezhanka: 1, miachyk: 3, myshka: 3, kihtetochka: 2 };   // one cat bed: the other cats sleep on the cat trees, the bed and the stove
 // Where the second, third… of each stands (the first uses its DECOR spot): x across the room, y down the screen.
 const MORE_AT = {
-  kihtetochka: [[0.12, 0.79]],   // the second one: front left, by the stove
+  kihtetochka: [[0.185, 0.585]],   // the second one: against the back wall beside the stove
   lezhanka: [[0.3, 0.87], [0.55, 0.69], [0.8, 0.87], [0.975, 0.76], [0.34, 0.7], [0.63, 0.86], [0.23, 0.69]],
   miachyk: [[0.9, 0.88], [0.16, 0.88]],
   myshka: [[0.5, 0.88], [0.76, 0.71]],
@@ -4573,7 +4684,10 @@ function homeSpots() {
   const out = [toys.length ? toy(toys.shift()) : towel(), beds.length ? catBed(beds.shift()) : bed(), hasTree ? tree() : sill()];
   if (hasTree) out.push(sill());
   if (nPlaced('kihtetochka') > 1) { const r = decorRect('kihtetochka', 1); out.push({ kind: 'groom', x: r.cx + r.sz * 0.1, y: r.by - r.sz * 0.9, s: u * 0.16, groom: true }); }
-  const sleepers = [...(hadBed ? [bed()] : []), ...beds.map(catBed), stove()], players = toys.map(toy);
+  // more sleeping spots for a big family: a second place on the bed, and the box top of each cat tree
+  const bed2 = () => { const r = decorRect('lizhko'); return { kind: 'sleep', x: r.cx + r.sz * (BED_CAT[0] + 0.24), y: r.by - r.sz * BED_CAT[1], s: u * 0.19, sleep: true }; };
+  const treeBox = k => { const r = decorRect('kihtetochka', k), sg = k ? -1 : 1; return { kind: 'sleep', x: r.cx + sg * r.sz * 0.21, y: r.by - r.sz * 0.33, s: u * 0.14, sleep: true }; };
+  const sleepers = [...(hadBed ? [bed()] : []), bed2(), ...(hasTree ? [treeBox(0)] : []), ...(nPlaced('kihtetochka') > 1 ? [treeBox(1)] : []), ...beds.map(catBed), stove()], players = toys.map(toy);
   while (sleepers.length || players.length) { if (players.length) out.push(players.shift()); if (sleepers.length) out.push(sleepers.shift()); }
   if (hadToy) out.push(towel());
   FLOOR_SPOTS.forEach(([fx, fy], i) => out.push(i % 2 ? { kind: 'sleep', x: fx * roomW(), y: fy * h, s: u * 0.27, sleep: true } : { kind: 'sit', x: fx * roomW(), y: fy * h, s: u * 0.25 }));
@@ -4704,7 +4818,7 @@ function bedValley(c, w, h, p, t, nightA, wx) {
     c.save(); c.translate(sx2, sy2); c.rotate(t * 0.15); c.fillStyle = 'rgba(255,230,150,.35)'; for (let i = 0; i < 12; i++) { c.rotate(Math.PI / 6); poly(c, [[w * 0.07, -w * 0.012], [w * 0.16, 0], [w * 0.07, w * 0.012]]); } c.restore();
     const sr = Math.min(w, h) * 0.09; c.fillStyle = '#ffd23f'; circ(c, sx2, sy2, sr); c.fillStyle = '#ffe98a'; circ(c, sx2 - sr * 0.2, sy2 - sr * 0.2, sr * 0.62); }
   // clouds for a cloudy or rainy morning
-  if (p > 0.6 && (wx === 'cloud' || wx === 'rain')) { c.globalAlpha = Math.min(1, (p - 0.6) * 3); c.fillStyle = wx === 'rain' ? '#9aa7b8' : '#ffffff'; for (const [cx, cy, s] of [[0.2, 0.15, 1], [0.6, 0.1, 1.3], [0.85, 0.2, 0.9]]) { const x = (cx * w + t * 12) % (w * 1.2) - w * 0.1; ell(c, x, cy * h, w * 0.12 * s, h * 0.035 * s); ell(c, x + w * 0.06 * s, cy * h - h * 0.025 * s, w * 0.08 * s, h * 0.035 * s); ell(c, x - w * 0.06 * s, cy * h - h * 0.012 * s, w * 0.06 * s, h * 0.03 * s); } c.globalAlpha = 1; }
+  if (p > 0.6 && (wx === 'cloud' || wet(wx) || wx === 'fog')) { c.globalAlpha = Math.min(1, (p - 0.6) * 3); c.fillStyle = wet(wx) ? '#9aa7b8' : '#ffffff'; for (const [cx, cy, s] of [[0.2, 0.15, 1], [0.6, 0.1, 1.3], [0.85, 0.2, 0.9]]) { const x = (cx * w + t * 12) % (w * 1.2) - w * 0.1; ell(c, x, cy * h, w * 0.12 * s, h * 0.035 * s); ell(c, x + w * 0.06 * s, cy * h - h * 0.025 * s, w * 0.08 * s, h * 0.035 * s); ell(c, x - w * 0.06 * s, cy * h - h * 0.012 * s, w * 0.06 * s, h * 0.03 * s); } c.globalAlpha = 1; }
   // three rolling hills, the far ones paler; the near meadow by the season
   const GRASS = { lito: ['#7fc25a', '#5a9c3d'], vesna: ['#8fd46a', '#63ad44'], osin: ['#d9a64a', '#a87a2f'], zyma: ['#eef3fa', '#cfdcee'] }[sea];
   const shade = (col, k2) => mix(col, '#0e1330', k2);
@@ -4734,9 +4848,10 @@ function bedValley(c, w, h, p, t, nightA, wx) {
   for (const yy of [0.93, 0.96]) { c.lineWidth = 4; c.beginPath(); for (let i = 0; i <= 30; i++) { const x = i / 30 * w; c[i ? 'lineTo' : 'moveTo'](x, h * yy + Math.sin(i * 1.7) * 2); } c.stroke(); }
   // fireflies on a summer night; birds in the morning; snow or rain if that's the weather
   if (dim > 0.4 && sea === 'lito') for (let i = 0; i < 14; i++) { const on = Math.max(0, Math.sin(t * 1.8 + i * 2.1)); c.globalAlpha = on * dim; c.fillStyle = '#e6ff9a'; circ(c, (Math.sin(t * 0.2 + i * 7) * 0.5 + 0.5) * w, h * (0.7 + Math.sin(t * 0.3 + i) * 0.1), 2.5); c.globalAlpha = 1; }
-  if (p > 0.75 && wx !== 'rain' && wx !== 'snow') { c.strokeStyle = 'rgba(60,50,60,.7)'; c.lineWidth = 2; for (let i = 0; i < 4; i++) { const bx = ((t * 40 + i * 70) % (w + 100)) - 50, by = h * (0.2 + i * 0.05) + Math.sin(t * 2 + i) * 6, fl = Math.sin(t * 9 + i) * 5; c.beginPath(); c.moveTo(bx - 8, by - fl); c.quadraticCurveTo(bx - 3, by - 5, bx, by); c.quadraticCurveTo(bx + 3, by - 5, bx + 8, by - fl); c.stroke(); } }
+  if (p > 0.75 && !wet(wx) && wx !== 'snow') { c.strokeStyle = 'rgba(60,50,60,.7)'; c.lineWidth = 2; for (let i = 0; i < 4; i++) { const bx = ((t * 40 + i * 70) % (w + 100)) - 50, by = h * (0.2 + i * 0.05) + Math.sin(t * 2 + i) * 6, fl = Math.sin(t * 9 + i) * 5; c.beginPath(); c.moveTo(bx - 8, by - fl); c.quadraticCurveTo(bx - 3, by - 5, bx, by); c.quadraticCurveTo(bx + 3, by - 5, bx + 8, by - fl); c.stroke(); } }
   if (wx === 'snow' || (sea === 'zyma' && p < 0.6)) { c.fillStyle = 'rgba(255,255,255,.85)'; for (let i = 0; i < 60; i++) circ(c, ((i * 83.3 + Math.sin(t * 0.8 + i) * 20) % w + w) % w, (i * 151.7 + t * 40) % h, 1.4 + (i % 3)); }
-  if (wx === 'rain' && p > 0.6) { c.strokeStyle = 'rgba(210,225,255,.5)'; c.lineWidth = 1.5; c.beginPath(); for (let i = 0; i < 70; i++) { const x = ((i * 97.3 + t * 60) % (w + 60)) - 30, y = ((i * 211.7 + t * 800) % (h + 80)) - 40; c.moveTo(x, y); c.lineTo(x - w * 0.012, y + h * 0.03); } c.stroke(); }
+  if (wx === 'fog' && p > 0.6) { c.fillStyle = 'rgba(240,244,248,.45)'; for (let i = 0; i < 4; i++) { const x = ((i * 0.3 + t * 0.01) % 1.4 - 0.2) * w; ell(c, x, h * (0.62 + i * 0.07), w * 0.5, h * 0.05); } }
+  if (wet(wx) && p > 0.6) { c.strokeStyle = 'rgba(210,225,255,.5)'; c.lineWidth = 1.5; c.beginPath(); for (let i = 0; i < 70; i++) { const x = ((i * 97.3 + t * 60) % (w + 60)) - 30, y = ((i * 211.7 + t * 800) % (h + 80)) - 40; c.moveTo(x, y); c.lineTo(x - w * 0.012, y + h * 0.03); } c.stroke(); }
 }
 function drawBed(t) {
   if (bed.t0 == null) { bed.t0 = t; document.body.classList.add('bedtime'); }   // start timing on the first frame drawn; the coin bar and goal line step aside
@@ -4760,7 +4875,7 @@ function drawBed(t) {
     // --- 2.–4. the valley, faded in over the room and out again at the end
     const inA = fade(N, N + 1.1), outA = 1 - fade(T3 - 0.8, T3);
     const p = a < T1 ? 0 : a < T2 ? (a - T1) / (T2 - T1) : 1;
-    if (a > T1 + 0.6) once('morning', () => { if (bed.dev) { const r = Math.random(); S.wx = winter() ? (r < 0.4 ? 'snow' : r < 0.75 ? 'cloud' : 'sun') : r < 0.5 ? 'sun' : r < 0.78 ? 'cloud' : 'rain'; S.clock.t = 0.27; S.clock.ev = {}; S.clock.nightT = 0; } else newDay(); });   // the new day (and its weather) begins as the sky turns
+    if (a > T1 + 0.6) once('morning', () => { if (bed.dev) { const r = Math.random(); S.wx = dayWeather(season(), r); S.clock.t = 0.27; S.clock.ev = {}; S.clock.nightT = 0; } else newDay(); });   // the new day (and its weather) begins as the sky turns
     const wx = d.morning ? S.wx : null;
     c.save(); c.globalAlpha = inA * outA; bedValley(c, w, h, p, t, a - N, wx); c.restore();
     // the window frame of the cottage around the view, as if you're looking out
@@ -4776,10 +4891,14 @@ function drawBed(t) {
     }
     // good morning, the weather, a new season
     if (d.morning) {
-      once('hello', () => say('p_dobroho_ranku', 'w_' + WX[S.wx].w, ...(bed.season ? ['w_' + bed.season] : [])));
+      const firstSnow = S.firstSnow === S.clock.day, storks = bed.season === 'vesna';
+      once('hello', () => say('p_dobroho_ranku', firstSnow ? 'p_pershyi_snih' : 'w_' + WX[S.wx].w, ...(bed.season ? ['w_' + bed.season] : []), ...(storks ? ['p_leleky_povernulysia'] : [])));
+      if (storks) learn('leleka');
       const ma = Math.min(fade(T2 - 0.4, T2 + 0.4), outA), wxd = WX[S.wx];
       bedText(c, '☀️ ' + PH.dobroho_ranku.uk, PH.dobroho_ranku.en, h * 0.26, ma);
-      bedCard(c, w / 2, h * 0.43, wxd.ic, W[wxd.w].uk, W[wxd.w].en, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u);
+      if (firstSnow) bedCard(c, w / 2, h * 0.43, '❄️', PH.pershyi_snih.uk, PH.pershyi_snih.en, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u);
+      else bedCard(c, w / 2, h * 0.43, wxd.ic, W[wxd.w].uk, W[wxd.w].en, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u);
+      if (storks) bedCard(c, w / 2, h * 0.73, '@stork', PH.leleky_povernulysia.uk, PH.leleky_povernulysia.en, Math.min(fade(T2 + 1.5, T2 + 2.1), outA), u);
       if (bed.season) bedCard(c, w / 2, h * 0.58, SEASON_IC[bed.season], W[bed.season].uk, `${W[bed.season].en} is here!`, Math.min(fade(T2 + 0.9, T2 + 1.5), outA), u);
       if (a > T2 + 1.6 && a < T3 - 0.9 && stage() < 3) { c.save(); c.globalAlpha = 0.6 + 0.3 * Math.sin(t * 3); c.fillStyle = '#fff8ea'; c.font = `700 ${Math.round(u * 0.035)}px system-ui`; c.textAlign = 'center'; c.fillText('Tap to start the day', w / 2, h * 0.8); c.restore(); }
     }
@@ -5206,11 +5325,18 @@ function resize() {
 addEventListener('resize', resize); resize();
 
 // dt: game time (0 while a card is open). rdt: real time, for the camera and the smoothing.
-const WX = { snow: { w: 'snih', ic: '❄️' }, sun: { w: 'sontse', ic: '☀️' }, cloud: { w: 'khmara', ic: '☁️' }, rain: { w: 'doshch', ic: '🌧️' } };
+const WX = { snow: { w: 'snih', ic: '❄️' }, sun: { w: 'sontse', ic: '☀️' }, cloud: { w: 'khmara', ic: '☁️' }, rain: { w: 'doshch', ic: '🌧️' }, storm: { w: 'hroza', ic: '⛈️' }, fog: { w: 'tuman', ic: '🌫️' } };
+const wet = wx => wx === 'rain' || wx === 'storm';   // rain or a thunderstorm: either waters the garden
 const DAY_RATE = 0.6 / 600;   // morning to night in about ten minutes of play
 let clockSave = 0;
 function dayTick(dt) {
-  if (winter() && S.wx === 'rain') S.wx = 'snow'; else if (!winter() && S.wx === 'snow') S.wx = 'cloud';
+  if (winter() && wet(S.wx)) S.wx = 'snow'; else if (!winter() && S.wx === 'snow') S.wx = 'cloud';
+  { const Cl = S.clock; Cl.ev = Cl.ev || {};
+    if (wet(S.wx) && Cl.t >= 0.62 && !Cl.ev.rainbow) { Cl.ev.rainbow = 1; S.wx = 'sun'; S.rainbowDay = Cl.day; learn('veselka'); say('w_veselka'); toast(`🌈 ${W.veselka.uk}${stage() < 3 ? ' · the rain has stopped: a rainbow!' : '!'}`, 3200); }
+    if (S.wx === 'fog' && Cl.t >= 0.48) { S.wx = 'sun'; if (!Cl.ev.fogGone) { Cl.ev.fogGone = 1; toast(`☀️ ${W.tuman.uk}${stage() < 3 ? ' · the mist has lifted' : ''}`, 2400); } }
+    if (S.wx === 'storm' && !Cl.ev.storm) { Cl.ev.storm = 1; learn('hroza'); toast(`⛈️ ${W.hroza.uk}!${stage() < 3 ? ' · a thunderstorm' : ''}`, 2600); }
+    if (S.wx === 'fog' && !Cl.ev.fog) { Cl.ev.fog = 1; learn('tuman'); }
+  }
   const C = S.clock, was = C.t;
   C.t = Math.min(0.97, C.t + dt * DAY_RATE);
   if ((clockSave += dt) > 5) { clockSave = 0; save(); }
@@ -5224,7 +5350,7 @@ function dayTick(dt) {
     if (C.nightT > 50 && !C.ev.rem2) { C.ev.rem2 = 1; say('w_nich', 'p_chas_spaty'); toast(`😴 ${PH.chas_spaty.uk}${stage() < 3 ? ' · She’s very sleepy. Home to bed soon!' : ''}`, 3600); }
     if (C.nightT > 70 && !C.ev.home && !fishFx && mode === 'world') { C.ev.home = 1; toast(`🏠 ${PH.dobranich.uk}${stage() < 3 ? ' · Too sleepy: she heads home to bed.' : ''}`, 3000); P.path = []; setTimeout(() => { if (mode === 'world' && running) { const hm = ents.find(e => e.kind === 'home'); if (hm) { P.x = P.rx = hm.x; P.y = P.ry = hm.y + 1; S.x = P.x; S.y = P.y; } fadeThen(enterHomeNow); } }, 1400); }
   }
-  if (S.wx === 'rain') {   // the rain waters every bed that's planted
+  if (wet(S.wx)) {   // the rain waters every bed that's planted
     let n = 0; for (const p of S.plots) if (p.c && !p.wet) { p.wet = true; p.ready = now() + 50e3; n++; }
     if (n && !C.ev.rained) { C.ev.rained = 1; learn('doshch'); toast(`🌧️ ${W.doshch.uk}${stage() < 3 ? ' · the rain watered your garden' : ''}`, 2600); save(); }
   }
@@ -5244,7 +5370,7 @@ function paintSky(c, w, h, t, lights, outdoors) {
     if (vignetteKey !== w + 'x' + h) { vignetteKey = w + 'x' + h; vignetteSpr = document.createElement('canvas'); vignetteSpr.width = Math.max(1, w >> 2); vignetteSpr.height = Math.max(1, h >> 2); const vc = vignetteSpr.getContext('2d'), vw2 = vignetteSpr.width, vh2 = vignetteSpr.height, vg = vc.createRadialGradient(vw2 / 2, vh2 * 0.48, Math.min(vw2, vh2) * 0.42, vw2 / 2, vh2 * 0.48, Math.max(vw2, vh2) * 0.75); vg.addColorStop(0, 'rgba(40,30,20,0)'); vg.addColorStop(1, 'rgba(40,30,20,.32)'); vc.fillStyle = vg; vc.fillRect(0, 0, vw2, vh2); }
     c.drawImage(vignetteSpr, 0, 0, w, h);   // a gentle darkening at the edges draws the eye in
   }
-  if (outdoors && wx !== 'sun') { c.fillStyle = wx === 'snow' ? 'rgba(200,210,228,.14)' : wx === 'rain' ? 'rgba(70,86,112,.26)' : 'rgba(110,118,135,.16)'; c.fillRect(0, 0, w, h); }
+  if (outdoors && wx !== 'sun' && wx !== 'fog') { c.fillStyle = wx === 'snow' ? 'rgba(200,210,228,.14)' : wx === 'storm' ? 'rgba(40,50,78,.4)' : wx === 'rain' ? 'rgba(70,86,112,.26)' : 'rgba(110,118,135,.16)'; c.fillRect(0, 0, w, h); }
   c.save();
   c.globalCompositeOperation = 'multiply';
   if (L.dawn > 0) { c.globalAlpha = L.dawn * 0.35; c.fillStyle = 'rgb(255,190,200)'; c.fillRect(0, 0, w, h); }
@@ -5263,23 +5389,72 @@ function paintSky(c, w, h, t, lights, outdoors) {
   }
   c.restore();
   if (outdoors && wx === 'snow') { c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 70; i++) circ(c, ((i * 83.3 + Math.sin(t * 0.8 + i) * 24) % w + w) % w, (i * 151.7 + t * 45) % h, (1.4 + (i % 3)) * w / 390); }
-  if (outdoors && season() === 'osin' && wx !== 'rain') for (let i = 0; i < 14; i++) { const x = ((i * 127.3 + t * 18 + Math.sin(t + i) * 30) % w + w) % w, y = (i * 211.9 + t * 30) % h; c.save(); c.translate(x, y); c.rotate(t * 2 + i); c.fillStyle = ['#e0712c', '#d9a330', '#b8432b'][i % 3]; ell(c, 0, 0, 5 * w / 390, 2.6 * w / 390); c.restore(); }
-  if (outdoors && season() === 'vesna' && wx !== 'rain') { c.fillStyle = 'rgba(255,196,214,.85)'; for (let i = 0; i < 16; i++) ell(c, ((i * 97.7 + t * 22) % w), (i * 191.3 + t * 26) % h, 3.6 * w / 390, 2.2 * w / 390); }
-  if (outdoors && wx === 'rain') {
-    c.strokeStyle = 'rgba(210,225,255,.42)'; c.lineWidth = Math.max(1, w / 420); c.beginPath();
-    for (let i = 0; i < 90; i++) { const x = ((i * 97.3 + t * 60) % (w + 60)) - 30, y = ((i * 211.7 + t * 900) % (h + 80)) - 40; c.moveTo(x, y); c.lineTo(x - w * 0.012, y + h * 0.035); }
-    c.stroke();
-    c.fillStyle = 'rgba(220,232,255,.35)'; for (let i = 0; i < 12; i++) { const p = (t * 2.2 + i * 0.37) % 1; ell(c, ((i * 331.7) % w), ((i * 517.3) % h), 3 + p * 9, (3 + p * 9) * 0.35); }
+  if (outdoors && season() === 'osin' && !wet(wx)) for (let i = 0; i < 14; i++) { const x = ((i * 127.3 + t * 18 + Math.sin(t + i) * 30) % w + w) % w, y = (i * 211.9 + t * 30) % h; c.save(); c.translate(x, y); c.rotate(t * 2 + i); c.fillStyle = ['#e0712c', '#d9a330', '#b8432b'][i % 3]; ell(c, 0, 0, 5 * w / 390, 2.6 * w / 390); c.restore(); }
+  if (outdoors && season() === 'vesna' && !wet(wx)) { c.fillStyle = 'rgba(255,196,214,.85)'; for (let i = 0; i < 16; i++) ell(c, ((i * 97.7 + t * 22) % w), (i * 191.3 + t * 26) % h, 3.6 * w / 390, 2.2 * w / 390); }
+  if (outdoors) skyEvents(c, w, h, t, L);   // lightning, fog, the rainbow, the cranes going over
+  if (outdoors && wet(wx)) drawRain(c, w, h, t, wx === 'storm');
+}
+// Each season's weather: summer has thunderstorms, autumn and spring misty mornings, winter snow.
+function dayWeather(sea, r) {
+  if (sea === 'zyma') return r < 0.4 ? 'snow' : r < 0.7 ? 'cloud' : r < 0.9 ? 'sun' : 'fog';
+  if (sea === 'lito') return r < 0.45 ? 'sun' : r < 0.65 ? 'cloud' : r < 0.85 ? 'rain' : 'storm';
+  return r < 0.35 ? 'sun' : r < 0.55 ? 'cloud' : r < 0.78 ? 'rain' : 'fog';
+}
+// Over the village: a storm's lightning (and its thunder a moment later), the morning fog that thins as it lifts,
+// the rainbow after rain, and in autumn the cranes going over in a V on their way south.
+let flash = null, nextFlash = 0;
+function skyEvents(c, w, h, t, L) {
+  const wx = S.wx, Cl = S.clock;
+  if (wx === 'storm') {
+    if (t > nextFlash) { nextFlash = t + 4 + Math.random() * 6; flash = { t0: t, x: w * (0.15 + Math.random() * 0.7), seed: Math.random() * 99 }; learn('blyskavka'); setTimeout(() => { for (let i = 0; i < 4; i++) setTimeout(() => blip(55 + Math.random() * 30, 0.25), i * 90); learn('hrim'); }, 500 + Math.random() * 600); }
+    if (flash && t - flash.t0 < 0.35) { const q = (t - flash.t0) / 0.35; c.fillStyle = `rgba(255,255,255,${0.55 * (1 - q)})`; c.fillRect(0, 0, w, h);
+      if (q < 0.6) { c.strokeStyle = `rgba(255,250,210,${1 - q})`; c.lineWidth = Math.max(2, w / 160); c.beginPath(); let x = flash.x, y = 0; c.moveTo(x, y); const r = seeded(Math.floor(flash.seed * 1000)); while (y < h * 0.55) { x += (r() - 0.5) * w * 0.08; y += h * (0.04 + r() * 0.05); c.lineTo(x, y); } c.stroke(); } }
   }
+  if (wx === 'fog') { const lift = Math.max(0, Math.min(1, (Cl.t - 0.3) / 0.18)), a = 0.7 * (1 - lift);
+    if (a > 0.01) { c.fillStyle = `rgba(236,240,244,${a * 0.55})`; c.fillRect(0, 0, w, h); c.fillStyle = `rgba(250,252,253,${a * 0.5})`; for (let i = 0; i < 6; i++) { const x = ((i * 0.27 + t * 0.008 * (1 + i % 3)) % 1.5 - 0.25) * w; ell(c, x, h * (0.15 + i * 0.15), w * 0.55, h * 0.06); } } }
+  if (S.rainbowDay === Cl.day && Cl.t < 0.8 && !wet(wx)) {
+    const a = Math.min(1, (Cl.t - 0.62) * 25) * Math.min(1, (0.8 - Cl.t) * 12) * (1 - L.dark), cx = w * 0.62, cy = h * 0.62, R0 = Math.max(w, h) * 0.62;
+    if (a > 0) { c.save(); c.globalAlpha = a * 0.42; c.lineWidth = R0 * 0.028; ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#30b0ff', '#5856d6', '#af52de'].forEach((col, i) => { c.strokeStyle = col; c.beginPath(); c.arc(cx, cy, R0 - i * R0 * 0.027, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }); c.restore(); }
+  }
+  if (season() === 'osin' && L.dark < 0.5 && !wet(wx)) {
+    const per = 38, q = (t % per) / 14;
+    if (q < 1) { if (!Cl.ev.cranes) { Cl.ev.cranes = 1; learn('zhuravel'); say('p_zhuravli_letiat'); toast(`🕊️ ${PH.zhuravli_letiat.uk}${stage() < 3 ? ' · ' + PH.zhuravli_letiat.en : ''}`, 3400); }
+      const lx = w * (1.15 - q * 1.35), ly = h * 0.16, sp = w * 0.045;
+      for (let i = 0; i < 11; i++) { const row = i === 0 ? 0 : Math.ceil(i / 2), side = i === 0 ? 0 : i % 2 ? -1 : 1, x = lx + row * sp, y = ly + side * row * sp * 0.55, fl = Math.sin(t * 6 + i) * sp * 0.25;
+        c.strokeStyle = 'rgba(60,60,70,.75)'; c.lineWidth = Math.max(1.5, w / 260); c.beginPath(); c.moveTo(x - sp * 0.35, y - fl); c.quadraticCurveTo(x - sp * 0.1, y - sp * 0.1, x, y); c.quadraticCurveTo(x + sp * 0.1, y - sp * 0.1, x + sp * 0.35, y - fl); c.moveTo(x, y); c.lineTo(x - sp * 0.3, y + sp * 0.02); c.stroke(); }
+    }
+  }
+}
+const RAIN = (() => { const r = seeded(77), a = []; for (let i = 0; i < 260; i++) { const layer = i < 120 ? 0 : i < 210 ? 1 : 2; a.push({ x: r(), y: r(), sp: [0.55, 0.85, 1.25][layer] * (0.8 + r() * 0.4), len: [0.022, 0.036, 0.06][layer] * (0.7 + r() * 0.6), a: [0.4, 0.55, 0.75][layer] * (0.65 + r() * 0.45), lw: [0.9, 1.3, 2][layer], layer, ph: r() * 9 }); } return a; })();
+const SPLASH = (() => { const r = seeded(91), a = []; for (let i = 0; i < 40; i++) a.push({ x: r(), y: 0.15 + r() * 0.85, ph: r(), sp: 1.4 + r() * 1.2 }); return a; })();
+function drawRain(c, w, h, t, storm) {
+  const k = w / 390;
+  // the wind: a steady lean with slow gusts on top (stronger in a storm)
+  const gust = Math.sin(t * 0.37) * 0.5 + Math.sin(t * 1.13 + 2) * 0.3 + Math.sin(t * 2.9) * 0.12, lean = (storm ? 0.38 : 0.2) + gust * (storm ? 0.3 : 0.14);
+  c.lineCap = 'round';
+  for (let L = 0; L < 3; L++) {
+    c.lineWidth = Math.max(0.8, k) * [0.9, 1.3, 2][L] * (storm ? 1.15 : 1);
+    for (let i = 0; i < RAIN.length; i++) { const d = RAIN[i]; if (d.layer !== L || (!storm && i % 4 === 3)) continue;   // ordinary rain: three drops in four, at every depth
+      const fall = h * (1 + d.len) * (storm ? 1.25 : 1) * d.sp, yy = ((d.y * (h + 200) + t * fall + d.ph * 50) % (h + 200)) - 100, wob = Math.sin(t * 3 + d.ph) * 0.04;
+      const x = ((d.x * (w + 200) - yy * (lean + wob) + d.ph * 30) % (w + 200) + w + 200) % (w + 200) - 100, ln = d.len * h * (storm ? 1.3 : 1);
+      c.strokeStyle = `rgba(210,226,255,${d.a * (0.75 + 0.25 * Math.sin(t * 7 + d.ph))})`;
+      c.beginPath(); c.moveTo(x, yy); c.lineTo(x - ln * (lean + wob), yy + ln); c.stroke(); }
+  }
+  // where the drops land: a little crown of splash and a ring spreading on the ground, all at their own times
+  for (const s of SPLASH) { const p = ((t * s.sp + s.ph * 7) % 1), x = s.x * w, y = s.y * h;
+    if (p < 0.25) { const q = p / 0.25; c.fillStyle = `rgba(225,236,255,${0.55 * (1 - q)})`; for (let j = -1; j <= 1; j++) circ(c, x + j * (3 + q * 5) * k, y - Math.sin(q * Math.PI) * 5 * k, 1.2 * k); }
+    const q2 = p; c.strokeStyle = `rgba(225,236,255,${0.3 * (1 - q2)})`; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(x, y, (2 + q2 * 10) * k, (1 + q2 * 3.5) * k, 0, 0, 7); c.stroke(); }
+  // in a storm, sheets of heavier rain sweep across now and then
+  if (storm) { const sw = (t * 0.07) % 1; c.fillStyle = 'rgba(180,195,220,.08)'; c.fillRect((sw * 1.6 - 0.3) * w, 0, w * 0.35, h); }
 }
 // Morning: a new day with new weather.
 function newDay() {
   const r = Math.random();
   const was = seasonIx();
-  S.wx = r < 0.5 ? 'sun' : r < 0.78 ? 'cloud' : 'rain';
   S.clock = { day: (S.clock.day || 1) + 1, t: 0.27, ev: {} };
-  if (winter()) S.wx = r < 0.4 ? 'snow' : r < 0.75 ? 'cloud' : 'sun';
+  S.wx = dayWeather(season(), r);
   if (seasonIx() !== was && bed) bed.season = season();   // a new season starts this morning
+  if (seasonIx() !== was && winter()) { S.wx = 'snow'; S.firstSnow = S.clock.day; }   // the first morning of winter: the first snow
   learn('ranok'); learn(WX[S.wx].w); learn(season()); homeList = null; setGuide(); save();
 }
 // Footprints in the snow: a left and a right print every little stride while she walks, fading after a
@@ -5388,6 +5563,8 @@ function update(dt, t, rdt = dt) {
       const grazing = e.fetch ? FETCH.dip : e.st === 'idle' && e.act === 'graze' && Math.sin(t * 0.23 + e.hx * 3) > -0.55;
       e.dip += ((grazing ? 1 : 0) - e.dip) * (1 - Math.exp(-dt * 2.2));
       e.rest += ((e.st === 'idle' && e.act === 'rest' ? 1 : 0) - e.rest) * (1 - Math.exp(-dt * 1.8));
+    } else if (e.kind === 'crawl') {   // a little loop through the grass, nose first
+      const px = e.x; e.x = e.cx + Math.sin(t * 0.22 + e.ph) * 1.4; e.y = e.cy + Math.sin(t * 0.44 + e.ph) * 0.35; if (Math.abs(e.x - px) > 1e-4) e.face = e.x > px ? 1 : -1;
     } else if (e.kind === 'fly') {
       if (e.swoop) { e.x = e.cx + Math.sin(t * 0.8 + e.ph) * 3.2; e.y = e.cy + Math.sin(t * 1.6 + e.ph) * 0.7; e.face = Math.cos(t * 0.8 + e.ph) >= 0 ? 1 : -1; continue; }
       e.x = e.cx + Math.sin(t * 0.7 + e.ph) * 1.4 + Math.sin(t * 2.3 + e.ph) * 0.2;
@@ -5531,6 +5708,8 @@ function drawWorld(t) {
     }
     if (e.an) { drawAnimal(c, x, y, e, t); continue; }
     const s = e.s * T;
+    if (e.kind === 'crawl') { c.save(); c.translate(x, y); c.scale(e.face || 1, 1); drawIcon(c, e.ic, 0, 0, s, { t, walk: 1 }); c.restore(); continue; }
+    if (e.sleep) { drawIcon(c, '@kupka', x, y, s * 1.2, { t }); continue; }
     if (e.lift) { drawIcon(c, e.ic, x, y - e.lift * T, s, { t }); continue; }   // resting on top of something, so no ground shadow
     if (!e.flat && e.kind !== 'fly') { c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, y, s * (e.ic[0] === '@' ? 0.36 : 0.28), s * 0.09); }
     const hop = e.kind === 'animal' && e.walk ? Math.abs(Math.sin(t * 9 + e.x)) * 3 : e.kind === 'fly' ? Math.sin(t * 9 + e.ph) * 4 : 0;
@@ -5602,7 +5781,7 @@ function drawWorld(t) {
     paintSky(c, cv.width, cv.height, t, lights, true);
   }
   // specks of pollen drifting on the air
-  if (GFX.motes && !winter() && S.wx !== 'rain' && skyLight(S.clock.t).dark < 0.3) for (let i = 0; i < 14; i++) {
+  if (GFX.motes && !winter() && !wet(S.wx) && S.wx !== 'fog' && skyLight(S.clock.t).dark < 0.3) for (let i = 0; i < 14; i++) {
     const sp = 14 + (i % 5) * 6, mw = cv.width + 80, mh = cv.height + 80;
     let mx = (i * 173.3 + t * sp - camX * zoom * 0.5) % mw, my = (i * 311.7 + t * sp * 0.35 + Math.sin(t * 0.8 + i) * 20 - camY * zoom * 0.5) % mh;
     if (mx < 0) mx += mw; if (my < 0) my += mh;
@@ -6063,11 +6242,11 @@ function devMenu() {
   const sec = (title, items) => `<div style="font-weight:900;margin:12px 0 6px;color:#4a2c1a">${title}</div><div style="display:flex;flex-wrap:wrap;gap:6px">${items.map(([a, v, l]) => `<button class="b ghost" style="padding:8px 11px;font-size:14px;margin:0" data-a="${a}" data-v="${v}">${l}</button>`).join('')}</div>`;
   const ic = id => (W[id].ic[0] === '@' ? '' : W[id].ic + ' ');
   openSheet(`<div class="card" style="text-align:left"><h3><span>🛠️ Developer</span><small>${SEASON_IC[season()]} ${W[season()].uk}${seasonForce ? ' (set here)' : ''} · ${['day', 'evening', 'night'][S.clock.t >= 0.86 ? 2 : S.clock.t >= 0.78 ? 1 : 0]}</small></h3>
-    ${sec('Mini games', [['devGame', 'bohdan', '🐝 Bees'], ['devGame', 'andriiko', '🐕 Fetch'], ['devGame', 'taras', '🎣 Fishing'], ['devGame', 'bohdan_w', '❄️ Winter hive'], ['devGame', 'andriiko_w', '⛄ Snowman'], ['devGame', 'taras_w', '🧊 Ice fishing'], ['devGame', 'chop', '🪓 Chopping wood']])}
+    ${sec('Mini games', [['devGame', 'bohdan', '🐝 Bees'], ['devGame', 'andriiko', '🐕 Fetch'], ['devGame', 'taras', '🎣 Fishing'], ['devGame', 'bohdan_w', '❄️ Winter hive'], ['devGame', 'andriiko_w', '⛄ Snowman'], ['devGame', 'andriiko_s', '❄️ Snowball fight'], ['devGame', 'taras_w', '🧊 Ice fishing'], ['devGame', 'chop', '🪓 Chopping wood']])}
     ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].uk]))}
     ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].uk + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
     ${sec('Festivals', D.festivals.map(f => ['devFest', f.id, SEASON_IC[SEASONS[FEST_OF.indexOf(f.id)]] + ' ' + W[f.id].uk]))}
-    ${sec('Weather', [['devWx', 'sun', '☀️ ' + W.sontse.uk], ['devWx', 'cloud', '☁️ ' + W.khmara.uk], ['devWx', 'rain', '🌧️ ' + W.doshch.uk], ['devWx', 'snow', '❄️ ' + W.snih.uk]].map(([a2, v, l]) => [a2, v, l + (S.wx === v ? ' ✓' : '')]))}
+    ${sec('Weather', [['devWx', 'sun', '☀️ ' + W.sontse.uk], ['devWx', 'cloud', '☁️ ' + W.khmara.uk], ['devWx', 'rain', '🌧️ ' + W.doshch.uk], ['devWx', 'storm', '⛈️ ' + W.hroza.uk], ['devWx', 'fog', '🌫️ ' + W.tuman.uk], ['devWx', 'rainbow', '🌈 ' + W.veselka.uk], ['devWx', 'snow', '❄️ ' + W.snih.uk]].map(([a2, v, l]) => [a2, v, l + (S.wx === v ? ' ✓' : '')]))}
     ${sec('Day and night', [['devTime', 'morning', '🌅 Morning'], ['devTime', 'evening', '🌇 Evening'], ['devTime', 'night', '🌙 Night'], ['devTime', 'bed', '🛏️ Bedtime scene']])}
     <div class="row" style="margin-top:14px">${btn('close', '', lab('close'), 'ghost')}</div>
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
@@ -6423,7 +6602,7 @@ const A = {
   festReply() { festReply(); },
   wardrobe() { wardrobeSheet(); },
   wardTurn() { if (ward) { ward.view = (ward.view + 1) % 4; ward.t0 = nowT; blip(600, 0.03); } },
-  wear(v) { if (!S.wardrobe[v]) return; const keep = ward && ward.view; S.outfit = v; wearOutfit(v); useWord(v, true); save(); blip(880, 0.06); wardrobeSheet(); if (ward) { ward.view = keep || 0; ward.pop = nowT; } say('w_' + v, 'p_harno_vyhliadaiesh'); },
+  wear(v) { if (!S.wardrobe[v]) return; S.outfit = v; wearOutfit(v); useWord(v, true); save(); blip(880, 0.06); wardrobeSheet(); if (ward) { ward.view = 0; ward.t0 = nowT; ward.pop = nowT; } say('w_' + v, 'p_harno_vyhliadaiesh'); },
   devPin() { if (devOn) { A.start(); return setTimeout(devMenu, 700); } devCode = ''; devPinDraw(); },   // already unlocked on this device: straight in
   devOff() { devOn = false; setTimeout(hud, 50); try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
   devPinX() { $('#devpin').classList.remove('on'); },
@@ -6435,12 +6614,14 @@ const A = {
     else { devCode = ''; devPinDraw(true); blip(200, 0.15); }
   },
   devMenu() { if (devOn) devMenu(); },
-  devGame(v) { closeSheet(); if (v === 'chop') return setTimeout(chopStart, 150); setTimeout(() => mgStart(v.replace('_w', ''), v), 150); },
+  devGame(v) { closeSheet(); if (v === 'chop') return setTimeout(chopStart, 150); setTimeout(() => mgStart(v.replace(/_[ws]$/, ''), v), 150); },
   devCook(v) { const R = D.recipes.find(r => r.id === v); closeSheet(); setTimeout(() => cookScene(R, true), 150); },
   devSeason(v) { seasonForce = v === 'real' ? null : v; homeList = null; closeSheet(); setGuide(); toast(`${SEASON_IC[season()]} ${W[season()].uk}${v === 'real' ? ' · the real season' : ''}`); },
   devFest(v) { seasonForce = SEASONS[FEST_OF.indexOf(v)]; closeSheet(); devToWorld(); setTimeout(() => { startFest(); if (fest) fest.dev = true; }, 150); },
   devWx(v) {   // the weather now (rain turns to snow in winter, and snow to cloud outside it, as usual)
-    closeSheet(); devToWorld(); S.wx = v; S.clock.ev = S.clock.ev || {}; delete S.clock.ev.rained; save(); learn(WX[v].w);
+    closeSheet(); devToWorld(); S.clock.ev = S.clock.ev || {};
+    if (v === 'rainbow') { S.wx = 'sun'; S.rainbowDay = S.clock.day; S.clock.t = Math.min(Math.max(S.clock.t, 0.63), 0.7); learn('veselka'); say('w_veselka'); save(); return toast('🌈 ' + W.veselka.uk); }
+    S.wx = v; delete S.clock.ev.rained; delete S.clock.ev.rainbow; delete S.clock.ev.storm; if (v === 'fog') S.clock.t = Math.min(S.clock.t, 0.32); if (wet(v)) S.clock.t = Math.min(S.clock.t, 0.5); save(); learn(WX[v].w);
     toast(`${WX[v].ic} ${W[WX[v].w].uk}${(v === 'rain' && winter()) ? ' · in winter it falls as snow' : (v === 'snow' && !winter()) ? ' · snow only falls in winter' : ''}`, 2600);
   },
   devTime(v) {
