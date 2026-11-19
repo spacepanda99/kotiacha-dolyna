@@ -3403,6 +3403,7 @@ function cookFrame(me) {
     }
   }
   if (ck.done) { c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(0, 0, w, h); }
+  padFinish(c, w, h, k);
   ckFlash(c, w, h, k, t);
   requestAnimationFrame(() => cookFrame(me));
 }
@@ -3885,11 +3886,26 @@ function mgFrame() {
   const dtF = Math.min(0.05, Math.max(0, t - mg.lastT));
   if (GAMES[mg.id]) { GAMES[mg.id].frame(c, w, h, t, k, dtF);  } else if (mg.id === 'andriiko') fetchFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
   else fishFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
+  if (mg) padFinish(c, w, h, k);
   if (mg) mgFlash(c, w, h, k, t);
   mg && (mg.lastT = t);
   requestAnimationFrame(mgFrame);
 }
 
+// The same finish over every game scene, so they read as one polished set: a soft light from above, the
+// corners gently darkened, and a thin inner rim like a framed picture.
+let padFinishSpr = null;
+function padFinish(c, w, h, k) {
+  if (!padFinishSpr || padFinishSpr.width !== w || padFinishSpr.height !== h) {
+    const o = document.createElement('canvas'); o.width = w; o.height = h; const g2 = o.getContext('2d');
+    let g = g2.createLinearGradient(0, 0, 0, h * 0.4); g.addColorStop(0, 'rgba(255,252,235,.16)'); g.addColorStop(1, 'rgba(255,252,235,0)'); g2.fillStyle = g; g2.fillRect(0, 0, w, h * 0.4);
+    g = g2.createRadialGradient(w / 2, h * 0.55, Math.min(w, h) * 0.35, w / 2, h * 0.55, Math.hypot(w, h) * 0.62); g.addColorStop(0, 'rgba(40,25,10,0)'); g.addColorStop(1, 'rgba(40,25,10,.22)'); g2.fillStyle = g; g2.fillRect(0, 0, w, h);
+    g2.strokeStyle = 'rgba(60,35,15,.16)'; g2.lineWidth = 3 * k; g2.strokeRect(1.5 * k, 1.5 * k, w - 3 * k, h - 3 * k);
+    g2.strokeStyle = 'rgba(255,255,255,.25)'; g2.lineWidth = 1 * k; g2.strokeRect(4 * k, 4 * k, w - 8 * k, h - 8 * k);
+    padFinishSpr = o;
+  }
+  c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(padFinishSpr, 0, 0); c.restore();
+}
 // A game pad is as tall as it can be while the whole card still fits on the screen (no scrolling mid-game).
 function fitPad(pad, base) {
   pad.style.height = base + 'px';
@@ -3951,16 +3967,28 @@ const BEE = {
   cell(cl, w, h) { const r = Math.min(w * 0.05, h * 0.075), x0 = w * 0.5 - r * 1.75 * 3 - r * 0.43, y0 = h * 0.42; return [x0 + cl.q * r * 1.75 + (cl.r % 2) * r * 0.87, y0 + cl.r * r * 1.5, r]; },
   frame(c, w, h, t, k, dt) {
     // a summer apiary: sky, a meadow, a painted hive on its stand
-    let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#bfe8fb'); g.addColorStop(0.55, '#e9f7e0'); g.addColorStop(0.56, '#9bd673'); g.addColorStop(1, '#6fb34c'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    let g = c.createLinearGradient(0, 0, 0, h * 0.56); g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e6f6fb'); c.fillStyle = g; c.fillRect(0, 0, w, h * 0.57);
+    c.fillStyle = 'rgba(255,240,170,.45)'; circ(c, w * 0.86, h * 0.13, 26 * k); c.fillStyle = '#ffe680'; circ(c, w * 0.86, h * 0.13, 15 * k);   // the sun
+    c.fillStyle = 'rgba(255,255,255,.92)'; for (const [cx, cy, sc] of [[0.18, 0.12, 1], [0.58, 0.07, 0.75]]) { const x = ((cx * w + t * 5 * k) % (w * 1.3)) - w * 0.15; ell(c, x, cy * h, 30 * k * sc, 8 * k * sc); ell(c, x + 14 * k * sc, cy * h - 6 * k * sc, 18 * k * sc, 8 * k * sc); }
+    c.fillStyle = '#a9d98a'; ell(c, w * 0.2, h * 0.58, w * 0.42, h * 0.1); c.fillStyle = '#98cf76'; ell(c, w * 0.8, h * 0.59, w * 0.45, h * 0.11);   // far hills
+    for (const [tx, ts] of [[0.62, 1], [0.7, 0.8], [0.93, 1.1]]) { const x = w * tx, y = h * 0.55, r = 13 * k * ts; c.fillStyle = '#6b4a2b'; c.fillRect(x - 1.5 * k, y - r * 0.4, 3 * k, r * 0.9); c.fillStyle = '#4f9a48'; circ(c, x, y - r * 0.8, r); c.fillStyle = '#62ad55'; circ(c, x - r * 0.3, y - r, r * 0.6); }   // trees
+    g = c.createLinearGradient(0, h * 0.56, 0, h); g.addColorStop(0, '#a3d97b'); g.addColorStop(1, '#68ad47'); c.fillStyle = g; c.fillRect(0, h * 0.56, w, h * 0.44);
+    c.strokeStyle = '#8a5a2b'; c.lineWidth = 2 * k; for (let i = 0; i < 16; i++) { const x = w * (0.02 + i * 0.065); c.beginPath(); c.moveTo(x, h * 0.6); c.lineTo(x, h * 0.53); c.stroke(); }   // a wattle fence behind the hives
+    c.strokeStyle = '#a7743f'; c.lineWidth = 2.6 * k; for (const yy of [0.545, 0.575]) { c.beginPath(); c.moveTo(0, h * yy); c.lineTo(w, h * yy); c.stroke(); }
     for (let i = 0; i < 12; i++) { const x = w * ((i * 0.37 + 0.05) % 1), y = h * (0.62 + ((i * 0.61) % 1) * 0.32); c.fillStyle = ['#ffd23f', '#ffffff', '#ff7aa8', '#9b6bd6'][i % 4]; for (let p = 0; p < 5; p++) circ(c, x + Math.cos(p * 1.26) * 3 * k, y + Math.sin(p * 1.26) * 3 * k, 2 * k); c.fillStyle = '#f2b51d'; circ(c, x, y, 1.6 * k); }
     const T = mg.tool;
     if (mg.beeStep === 'a') {
       const hx = w * 0.26, hy = h * 0.86, hw = w * 0.24, hh = h * 0.36;
       c.fillStyle = '#7a4b22'; c.fillRect(hx - hw * 0.4, hy - 6 * k, 5 * k, 10 * k); c.fillRect(hx + hw * 0.4 - 5 * k, hy - 6 * k, 5 * k, 10 * k);
-      c.fillStyle = '#5d9ad3'; rr(c, hx - hw / 2, hy - hh, hw, hh * 0.92, 4 * k); c.fillStyle = '#ffd23f'; c.fillRect(hx - hw / 2, hy - hh * 0.52, hw, 4 * k);
-      c.fillStyle = '#fffdf5'; for (const dx of [-0.25, 0.25]) { circ(c, hx + dx * hw, hy - hh * 0.72, 4 * k); c.fillStyle = '#d43a3a'; circ(c, hx + dx * hw, hy - hh * 0.72, 2 * k); c.fillStyle = '#fffdf5'; }   // painted flowers
-      c.fillStyle = '#8a3b2b'; poly(c, [[hx - hw * 0.62, hy - hh * 0.92], [hx, hy - hh * 1.28], [hx + hw * 0.62, hy - hh * 0.92]]);
+      c.fillStyle = 'rgba(40,60,20,.22)'; ell(c, hx, hy + 3 * k, hw * 0.62, 6 * k);   // its shadow on the grass
+      c.fillStyle = '#5d9ad3'; rr(c, hx - hw / 2, hy - hh, hw, hh * 0.92, 4 * k);
+      c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(hx + hw * 0.32, hy - hh, hw * 0.18, hh * 0.92);   // the shaded side
+      c.strokeStyle = 'rgba(30,50,90,.25)'; c.lineWidth = 1 * k; for (let i = 1; i < 5; i++) { const y = hy - hh + hh * 0.92 * i / 5; c.beginPath(); c.moveTo(hx - hw / 2, y); c.lineTo(hx + hw / 2, y); c.stroke(); }   // the boards
+      c.fillStyle = '#ffd23f'; c.fillRect(hx - hw / 2, hy - hh * 0.52, hw, 4 * k);
+      for (const dx of [-0.27, 0.27]) { const fx = hx + dx * hw, fy = hy - hh * 0.76; c.fillStyle = '#d43a3a'; for (let p = 0; p < 5; p++) { const a = p * 1.2566 - 1.57; ell(c, fx + Math.cos(a) * 4.5 * k, fy + Math.sin(a) * 4.5 * k, 3 * k, 3 * k); } c.fillStyle = '#ffd23f'; circ(c, fx, fy, 2.4 * k); c.strokeStyle = '#3d8a3a'; c.lineWidth = 1.4 * k; c.beginPath(); c.moveTo(fx, fy + 6 * k); c.quadraticCurveTo(fx + 4 * k, fy + 12 * k, fx, fy + 16 * k); c.stroke(); }   // painted flowers
+      c.fillStyle = '#8a3b2b'; poly(c, [[hx - hw * 0.64, hy - hh * 0.9], [hx, hy - hh * 1.28], [hx + hw * 0.64, hy - hh * 0.9]]); c.fillStyle = '#6e2d20'; poly(c, [[hx, hy - hh * 1.28], [hx + hw * 0.64, hy - hh * 0.9], [hx + hw * 0.56, hy - hh * 0.9]]);   // a pitched roof
       c.fillStyle = '#3a2a1a'; rr(c, hx - hw * 0.2, hy - hh * 0.2, hw * 0.4, 5 * k, 2 * k);   // the entrance slit
+      c.fillStyle = '#a06a35'; c.fillRect(hx - hw * 0.26, hy - hh * 0.2 + 5 * k, hw * 0.52, 3 * k);   // and its landing board
       // the smoker puffs while you hold it; smoke drifts out from the nozzle and spreads
       if (T.held && (mg.puffT += dt) > 0.16) { mg.puffT = 0; mg.smoke.push({ x: T.x - 0.03, y: T.y - 0.155, vx: -0.12 - Math.random() * 0.08, vy: -0.05 - Math.random() * 0.05, t0: t }); }
       mg.smoke = mg.smoke.filter(s => t - s.t0 < 1.8);
@@ -4112,23 +4140,28 @@ const SNOWMAN = {
       const nx = Math.max(0.08, Math.min(0.36, x + T.ox)), d = Math.abs(nx - T.x); T.x = nx; T.rot += d * 30;
       const goal = SNOWMAN.sizes[mg.balls.length]; T.r = Math.min(goal, T.r + d * 0.55);
       if (d > 0.002) { mgAct('kachai'); mg.track.push(T.x); if (mg.track.length > 80) mg.track.shift(); }
-      if (T.r >= goal) { T.held = false; useWord('kachai', true); blip(880, 0.06); mgBegin('b'); }
+      if (T.r >= goal) { T.held = false; useWord('kachai', true); blip(880, 0.06); if (!mg.balls.length) mg.phase = 'roll'; else mgBegin('b'); }   // the bottom ball rolls on into place; the others are lifted up
     } else if (mg.phase === 'b') { T.x = Math.max(0.08, Math.min(0.92, x + T.ox)); T.y = Math.max(0.15, Math.min(0.9, y + T.oy)); }
   },
   release() {
     const T = mg.tool; if (!T) return; T.held = false;
     if (mg.phase !== 'b') return;
     const top = SNOWMAN.topY();
-    if (Math.abs(T.x - 0.5) < 0.12 && Math.abs(T.y - top) < 0.15) {
-      mg.balls.push(T.r); mg.cur = null; mg.tool = null; mg.placeT = nowT; mgAct('postav', true); useWord('postav', true); blip(700, 0.06);
+    if (Math.abs(T.x - 0.5) < 0.12 && Math.abs(T.y - top) < 0.15) SNOWMAN.place(T, 'postav');
+    else { T.y = 0.88; blip(300, 0.03); }   // not on the snowman: it drops back down
+  },
+  place(T, v) {
+    {
+      mg.balls.push(T.r); mg.cur = null; mg.tool = null; mg.placeT = nowT; mgAct(v, true); useWord(v, true); blip(700, 0.06);
       mg.phase = 'pause'; if (mg.balls.length >= 3) { mg.doneT = nowT; say('p_chudovo'); }
       setTimeout(() => { if (mg && mg.id === 'andriiko_w') mgRoundDone(); }, mg.balls.length >= 3 ? 2200 : 700);
-    } else { T.y = 0.88; blip(300, 0.03); }   // not on the snowman: it drops back down
+    }
   },
   topY() { let y = 0.92; for (const r of mg.balls) y -= r * 0.16 * 1.72; return y; },   // where the next ball sits (its bottom), in pad fractions
   frame(c, w, h, t, k, dt) {
     snowScene(c, w, h, t, k);
     const R0 = SNOWMAN.R0(h), sx = w * 0.5;
+    if (mg.phase === 'roll' && mg.cur) { const T = mg.cur, dx = 0.5 - T.x, st = Math.sign(dx) * Math.min(Math.abs(dx), dt * 0.32); T.x += st; T.rot += Math.abs(st) * 30; if (Math.abs(st) > 0) { mg.track.push(T.x); if (mg.track.length > 80) mg.track.shift(); } if (Math.abs(dx) < 0.003) SNOWMAN.place(T, 'kachai'); }
     // the track the rolling ball has pressed into the snow
     c.fillStyle = 'rgba(170,190,215,.35)'; for (const x of mg.track || []) ell(c, x * w, h * 0.92, 5 * k, 2.5 * k);
     person(c, w * 0.9, h * 0.97, NPC.andriiko.look, t, false, 1.2 * k);
@@ -4136,7 +4169,7 @@ const SNOWMAN = {
     let y = h * 0.92;
     mg.balls.forEach((r0, i) => { const r = R0 * r0, bounce = mg.placeT && i === mg.balls.length - 1 ? Math.max(0, 1 - (t - mg.placeT) / 0.4) * Math.sin((t - mg.placeT) * 25) * 4 * k : 0; c.fillStyle = 'rgba(0,0,0,.08)'; if (!i) ell(c, sx, y, r * 1.1, r * 0.2); c.fillStyle = '#ffffff'; circ(c, sx, y - r + bounce, r); c.strokeStyle = '#c3d2e4'; c.lineWidth = 2 * k; c.beginPath(); c.arc(sx, y - r + bounce, r, 0.2, Math.PI - 0.2); c.stroke(); c.fillStyle = '#e3ebf5'; circ(c, sx + r * 0.35, y - r * 1.35 + bounce, r * 0.18); y -= r * 1.72; });
     // where the next ball goes
-    if (mg.phase === 'b' && mg.tool && mg.tool.held) { const r = R0 * mg.cur.r; c.strokeStyle = 'rgba(255,210,63,.8)'; c.lineWidth = 3 * k; c.setLineDash([6 * k, 5 * k]); c.beginPath(); c.arc(sx, y - r, r, 0, 7); c.stroke(); c.setLineDash([]); }
+    if (mg.cur && (mg.phase === 'a' || mg.phase === 'roll' || mg.phase === 'b')) { const r = R0 * (mg.phase === 'a' ? SNOWMAN.sizes[mg.balls.length] : mg.cur.r), on = mg.phase === 'b' && mg.tool && mg.tool.held; c.strokeStyle = `rgba(255,210,63,${on ? 0.85 : 0.45 + 0.2 * Math.sin(t * 4)})`; c.lineWidth = 3 * k; c.setLineDash([6 * k, 5 * k]); c.beginPath(); c.arc(sx, y - r, r, 0, 7); c.stroke(); c.setLineDash([]); }
     // the finished snowman: coal eyes and buttons, a carrot nose, twig arms, a bucket for a hat
     if (mg.balls.length >= 3 && mg.doneT) {
       const q = Math.min(1, (t - mg.doneT) / 0.8), r2 = R0 * mg.balls[2], hy = y + r2 * 0.72 + r2 * 0.0, hcy = h * 0.92 - R0 * (mg.balls[0] * 1.72 + mg.balls[1] * 1.72) - r2;
@@ -4409,6 +4442,7 @@ function chopFrame(me) {
   if (chop.fl) { const q = (t - chop.fl) / 1.6; if (q >= 0 && q <= 1) { const a = flashA(q), sc = flashS(q); c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.font = `800 ${Math.round(15 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🪵 ${chop.n}/${chop.logs}`, w - 12 * k, 24 * k);
+  padFinish(c, w, h, k);
   requestAnimationFrame(() => chopFrame(me));
 }
 // The snowball fight: Andriiko pops up behind one of three snow forts; tap where to throw (кидай!) and the snowball
