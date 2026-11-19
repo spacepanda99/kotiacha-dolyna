@@ -4724,10 +4724,10 @@ const clampPan = () => { roomX = Math.max(-roomPL(), Math.min(panMax(), roomX));
 function roomDoor(c, t, base) {
   const u = roomU(), dx = -roomPL() + u * 0.24, dw = u * 0.22, top = base - u * 0.42, h = cv.height;
   c.fillStyle = '#5a381b'; rr(c, dx - dw / 2 - u * 0.025, top - u * 0.025, dw + u * 0.05, base - top + u * 0.025, u * 0.02);
-  c.save(); c.beginPath(); c.rect(dx - dw / 2, top, dw, base - top); c.clip(); windowView(c, dx - dw / 2, top, dw, base - top, t, 2, 1); c.restore();
+  c.save(); c.beginPath(); c.rect(dx - dw / 2, top, dw, base - top); c.clip(); windowView(c, dx - dw / 2, top, dw, base - top, t, 2, 1, true); c.restore();
   c.fillStyle = '#7a4e26'; c.save(); c.beginPath(); c.moveTo(dx - dw / 2, top); c.lineTo(dx - dw / 2 - u * 0.07, top + u * 0.03); c.lineTo(dx - dw / 2 - u * 0.07, base + u * 0.02); c.lineTo(dx - dw / 2, base); c.closePath(); c.fill(); c.restore();   // the door itself, swung open
   c.fillStyle = '#e0a93b'; circ(c, dx - dw / 2 - u * 0.055, (top + base) / 2 + u * 0.02, u * 0.01);
-  const L = skyLight(S.clock.t); c.fillStyle = `rgba(255,236,190,${0.16 * (1 - L.dark)})`; poly(c, [[dx - dw / 2, base], [dx + dw / 2, base], [dx + dw * 1.3, h], [dx - dw * 0.3, h]]);
+  const L = skyLight(S.clock.t), wxL = S.wx === 'sun' ? 1 : S.wx === 'cloud' ? 0.6 : 0.35; c.fillStyle = `rgba(255,236,190,${0.16 * wxL * (1 - L.dark)})`; poly(c, [[dx - dw / 2, base], [dx + dw / 2, base], [dx + dw * 1.3, h], [dx - dw * 0.3, h]]);
   return { x: dx - dw / 2 - u * 0.07, y: top, w: dw + u * 0.07, h: base - top + u * 0.05, cx: dx };
 }
 // Cat things you can own more than one of: a cat bed for every cat, and a few of each toy.
@@ -5333,7 +5333,7 @@ function drawMill(t) {
   // ---- the door, open to the day, light falling in across the floor
   { const dx = MX.door * RW, dw = u * 0.22, dt2 = fy - u * 0.42;
     c.fillStyle = '#5a381b'; rr(c, dx - dw / 2 - u * 0.02, dt2 - u * 0.02, dw + u * 0.04, fy - dt2 + u * 0.02, u * 0.02);
-    c.save(); c.beginPath(); c.rect(dx - dw / 2, dt2, dw, fy - dt2); c.clip(); windowView(c, dx - dw / 2, dt2, dw, fy - dt2, t, 2, 1); c.restore();
+    c.save(); c.beginPath(); c.rect(dx - dw / 2, dt2, dw, fy - dt2); c.clip(); windowView(c, dx - dw / 2, dt2, dw, fy - dt2, t, 2, 1, true); c.restore();
     const L = skyLight(S.clock.t); c.fillStyle = `rgba(255,236,190,${0.18 * (1 - L.dark)})`; poly(c, [[dx - dw / 2, fy], [dx + dw / 2, fy], [dx + dw * 1.4, h], [dx - dw * 0.2, h]]);
     hit(dx - dw / 2, dt2, dw, fy - dt2, () => exitHome(), dx, fy); }
   // ---- sacks of wheat by the door
@@ -6808,7 +6808,7 @@ const cozyFont = sz => `900 ${sz}px ${fontReady ? '"Cozy", system-ui, sans-serif
 // The view through a cottage window (already clipped to the glass by the caller), matching outside: the sky by
 // time of day and weather, hills by season, a tree by season, the garden (sunflowers in summer, flowers in
 // spring, blowing leaves in autumn, drifts in winter), and the rain, snow, fog, lightning or rainbow of the day.
-function windowView(c, x0, y0, ww, wh, t, nFlowers, seed) {
+function windowView(c, x0, y0, ww, wh, t, nFlowers, seed, open) {   // open: a doorway, so no frost on glass
   const sea = season(), wx = S.wx, L = skyLight(S.clock.t), day = 1 - L.dark, wb = y0 + wh, cx = x0 + ww / 2;
   const SK = { sun: ['#8fd3f4', '#e8f7ff'], cloud: ['#a9bccd', '#e1e7ec'], rain: ['#75859a', '#b2bdc9'], storm: ['#4a566b', '#8a96a6'], fog: ['#cfd6db', '#eceff1'], snow: ['#bccad8', '#eef2f6'] }[wx] || ['#8fd3f4', '#e8f7ff'];
   let gr = c.createLinearGradient(0, y0, 0, wb); gr.addColorStop(0, SK[0]); gr.addColorStop(1, SK[1]); c.fillStyle = gr; c.fillRect(x0, y0, ww, wh);
@@ -6843,7 +6843,7 @@ function windowView(c, x0, y0, ww, wh, t, nFlowers, seed) {
   if (wx === 'fog') { c.fillStyle = 'rgba(236,240,242,.55)'; c.fillRect(x0, y0, ww, wh); c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, x0 + ((t * 0.02) % 1) * ww, wb - wh * 0.2, ww * 0.5, wh * 0.08); }
   if (wx === 'storm') { const f = (t * 0.23 + seed * 0.5) % 1; if (f < 0.025) { c.fillStyle = `rgba(255,255,255,${0.7 * (1 - f / 0.025)})`; c.fillRect(x0, y0, ww, wh); } }   // a flash of lightning now and then
   if (L.dark > 0) { c.fillStyle = `rgba(14,22,52,${L.dark * 0.45})`; c.fillRect(x0, y0 + wh * 0.5, ww, wh * 0.5); }   // the garden in the dark too
-  if (sea === 'zyma') { c.fillStyle = 'rgba(255,255,255,.7)'; for (const [fx, fy] of [[0, 1], [1, 1], [0, 0], [1, 0]]) ell(c, x0 + fx * ww, y0 + fy * wh, ww * 0.12, wh * 0.1); }   // frost in the corners of the glass
+  if (sea === 'zyma' && !open) { c.fillStyle = 'rgba(255,255,255,.7)'; for (const [fx, fy] of [[0, 1], [1, 1], [0, 0], [1, 0]]) ell(c, x0 + fx * ww, y0 + fy * wh, ww * 0.12, wh * 0.1); }   // frost in the corners of the glass
 }
 function sunflower(c, x, y, h, t, ph) {
   const sway = Math.sin(t * 1.3 + ph) * h * 0.05, hx = x + sway, hy = y - h, r = h * 0.17;
