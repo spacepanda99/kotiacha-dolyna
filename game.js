@@ -1676,7 +1676,7 @@ function add(e) {
   // Grandma Olia's corner.
   rect(26, 8, 29, 10);   // (moved 3 tiles right, off the market stall)
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
-  rect(29, 27, 32, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 31, y: 30, s: 3.7 });  // Taras's cottage, bottom right, below the pond
+  rect(28, 26, 33, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 30.8, y: 30, s: 4.5 });  // the family cottage, bottom right, below the pond: Taras, Oksana and Andriiko live here, so it's bigger
   add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28, y: 11, s: 3.7 });
   add({ w: 'kurka', x: 25.4, y: 11.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens
   add({ w: 'kurka', x: 26.2, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
@@ -2751,7 +2751,7 @@ function interact(e) {
   }
   if (e.k === 'my_churn') return churnCard();
   if (e.k === 'board') return boardCard();
-  if (e.k === 'bohdanHome' || e.k === 'tarasHome') { const n = NPC[e.k === 'bohdanHome' ? 'bohdan' : 'taras']; return wordCard('khata', { owner: '🏠 ' + (e.k === 'bohdanHome' ? 'Хата пана Богдана' : 'Тарасова хата'), note: xl(`${n.nameEn}'s cottage`) }); }
+  if (e.k === 'bohdanHome' || e.k === 'tarasHome') { const n = NPC[e.k === 'bohdanHome' ? 'bohdan' : 'taras']; return wordCard('khata', { owner: '🏠 ' + (e.k === 'bohdanHome' ? 'Хата пана Богдана' : 'Хата Тараса й Оксани'), note: xl(e.k === 'bohdanHome' ? `${n.nameEn}'s cottage` : 'Taras the fisherman and Oksana from the market live here with their son Andriiko (and Brovko the dog).') }); }
   if (e.k === 'feeder') return feederCard();
   if (e.k === 'yizhak_spyt') return wordCard('yizhak', { note: `💤 <b>${PH.yizhak_spyt.uk}</b>${xl('<br>' + PH.yizhak_spyt.en)}`, clips: ['p_yizhak_spyt'] });
   if (e.k === 'nest') { const sea = season(); if (sea === 'osin' || sea === 'zyma') { learn('hnizdo'); return wordCard('hnizdo', { note: `🪺 ${W.leleka.uk}${xl(" · The storks have flown south for the winter. They'll be back in spring.")}` }); } }
