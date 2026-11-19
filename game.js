@@ -7170,9 +7170,9 @@ function startFest() {
 function festReply() {
   if (!fest) return;
   say('p_' + fest.F.reply); closeSheet();
-  festTradStart();
+  festDance();
 }
-// The dance, once the tradition is done.
+// The dance.
 function festDance() {
   if (!fest) return;
   const F = fest.F; fest.beats = Array.from({ length: 28 }, (_, i) => ({ t: (F.first || 0) + (i + 3) * (F.beat || 0.8), hit: 0 }));   // three beats to get going
@@ -7182,7 +7182,6 @@ function festDance() {
 }
 function festTap(ev) {
   const f = fest; if (!f) return;
-  if (f.phase === 'trad') { if (ev) { const k = cv.width / innerWidth; festTradTap(ev.clientX * k, ev.clientY * k); } return; }
   if (f.phase === 'dance') {
     const ft = festClock(); let best = null; for (const b of f.beats) if (!b.hit && Math.abs(ft - b.t) < 0.3 && (!best || Math.abs(ft - b.t) < Math.abs(ft - best.t))) best = b;
     f.stepT = nowT; f.boost += best ? 0 : 1; festAct('tantsiui');   // every tap: the circle steps round, everyone hops, «Танцюй!»
@@ -7232,271 +7231,6 @@ function carolStar(c, x, y, s, t) {
 // The verb said and flashed on each press in the festival: «Танцюй!» while dancing, «Стрибай!» / «Співай!» at
 // the finale. Like the games' action words, it's said over and over while you keep pressing, each time to the
 // end of the word, and the subtitle shows its one English word.
-// ------------------------------------------------------------------ each festival's tradition, before the dance
-// Every festival opens with its own custom, done by hand in a little scene of its own, while a "Why it matters"
-// panel underneath tells you about it, a new fact appearing as you go. Then comes the dance, then the celebration.
-//   Обжинки: gather the last stalks of the harvest, which are woven into the harvest wreath for the best reaper.
-//   Купала: float wreaths with candles down the river by the bonfire, then find the fern flower.
-//   Святвечір: watch for the first star, then set the twelve dishes on the table, кутя first.
-//   Великдень: write a pysanka with wax and dyes, light to dark, then melt the wax off at the candle.
-// Each one: facts (shown in turn), start(r), tap(r, X, Y) with X, Y as fractions of the scene, draw(c, S, t, r, u).
-const TRADS = {
-  obzhynky: {
-    uk: 'Збери останні колоски!', en: 'Gather the last stalks of the harvest.',
-    facts: [
-      'Обжинки is the feast at the end of the grain harvest, in late summer: the hard work of the year is done and the bread for the winter is safe.',
-      'The reapers leave the very last stalks standing, the «борода», the field\'s beard, as thanks to the land, so it will give a good harvest again next year.',
-      'The finest ears are woven into the обжинковий вінок, the harvest wreath, with cornflowers, poppies and ribbons, and the best reaper wears it home.',
-      'The wreath and the last sheaf are kept in the house until Christmas: the sheaf becomes the дідух, the spirit of the family\'s ancestors, at Святвечір.',
-    ],
-    instr(r) { return r.step === 'gather' ? ['Збери останні колоски!', 'Gather the last stalks of the harvest.'] : r.step === 'weave' ? ['Плетемо вінок…', 'The stalks are woven into the harvest wreath…'] : ['Обжинковий вінок!', 'The harvest wreath, for the best reaper.']; },
-    start(r) { r.items = Array.from({ length: 8 }, (_, i) => ({ x: 0.5 + (i - 3.5) * 0.045 + Math.sin(i * 7) * 0.01, h: 0.32 + (i % 3) * 0.03, gone: 0 })); r.step = 'gather'; },
-    fact(r) { return r.step === 'gather' ? (r.n < 3 ? 0 : 1) : r.step === 'weave' ? 2 : 3; },
-    tap(r, X, Y) {
-      if (r.step !== 'gather') return;
-      let best = null, bd = 9; for (const it of r.items) if (!it.gone) { const d = Math.abs(X - it.x); if (d < 0.05 && Y > 0.2 && Y < 0.95 && d < bd) { bd = d; best = it; } }
-      if (!best) return; best.gone = nowT; r.n++; festAct('zbyrai'); blip(620 + r.n * 40, 0.05);
-      if (r.n >= 8) { r.step = 'weave'; r.weaveT = nowT + 0.6; setTimeout(() => { if (fest && fest.trad === r) festAct('plety'); }, 700); setTimeout(() => { if (fest && fest.trad === r) { r.step = 'crown'; r.crownT = nowT; blip(990, 0.08); setTimeout(() => festTradDone(), 2600); } }, 3200); }
-    },
-    draw(c, S, t, r, u) {
-      const { x: sx, y: sy, w: sw, h: sh } = S, hz = sy + sh * 0.45;
-      // the evening sky over the stubble field, the sun low and warm, the village far off
-      let g = c.createLinearGradient(0, sy, 0, hz); g.addColorStop(0, '#f6a35c'); g.addColorStop(0.6, '#ffd08a'); g.addColorStop(1, '#fff0c8'); c.fillStyle = g; c.fillRect(sx, sy, sw, hz - sy + 1);
-      g = c.createRadialGradient(sx + sw * 0.78, hz - sh * 0.06, 0, sx + sw * 0.78, hz - sh * 0.06, sh * 0.35); g.addColorStop(0, 'rgba(255,240,190,.95)'); g.addColorStop(1, 'rgba(255,240,190,0)'); c.fillStyle = g; c.fillRect(sx, sy, sw, sh * 0.7);
-      c.fillStyle = '#fff4c8'; circ(c, sx + sw * 0.78, hz - sh * 0.06, sh * 0.06);
-      c.fillStyle = '#e0b06a'; ell(c, sx + sw * 0.3, hz + 2, sw * 0.5, sh * 0.06); padVillage(c, sx + sw * 0.28, hz - 2, u / 390 * 1.1, sw, t, false);
-      g = c.createLinearGradient(0, hz, 0, sy + sh); g.addColorStop(0, '#e4b44e'); g.addColorStop(1, '#b8842a'); c.fillStyle = g; c.fillRect(sx, hz, sw, sy + sh - hz);
-      c.strokeStyle = 'rgba(130,85,20,.35)'; c.lineWidth = 1.2; for (let i = 0; i < 9; i++) { c.beginPath(); c.moveTo(sx + sw * 0.5, hz); c.lineTo(sx + sw * (i / 8) * 1.6 - sw * 0.3, sy + sh); c.stroke(); }   // the stubble rows
-      for (const [fx, fy, sc] of [[0.12, 0.52, 0.7], [0.27, 0.5, 0.55], [0.9, 0.53, 0.65]]) { const x = sx + sw * fx, y = sy + sh * fy, ss = sh * 0.14 * sc;   // stooks of sheaves drying in the field
-        c.fillStyle = '#d9a84a'; poly(c, [[x - ss * 0.55, y], [x, y - ss], [x + ss * 0.55, y]]); c.strokeStyle = '#a8792a'; c.lineWidth = 1; for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x + k * ss * 0.1, y - ss * 0.85); c.lineTo(x + k * ss * 0.22, y); c.stroke(); } c.fillStyle = '#b8842a'; c.fillRect(x - ss * 0.2, y - ss * 0.5, ss * 0.4, ss * 0.05); }
-      // Grandma Olia, come out to the field; she wears the wreath at the end
-      const ox = sx + sw * 0.2, oy = sy + sh * 0.93, crown = r.step === 'crown';
-      const L = Object.assign({}, NPC.olia.look, crown ? { hat: 'wreath', hatCol: '#e8b84a', ribbons: ['#d43a3a', '#2c6ed5', '#f2c230', '#3d8a3a'] } : {});
-      c.fillStyle = 'rgba(80,50,10,.25)'; ell(c, ox, oy, sh * 0.06, sh * 0.015); person(c, ox, oy, L, t, false, sh * 0.0042);
-      // the last stalks, swaying; a tapped one flies to the sheaf in her arms
-      const ax = ox + sh * 0.09, ay = oy - sh * 0.2;
-      for (const it of r.items) {
-        const q = it.gone ? Math.min(1, (t - it.gone) / 0.6) : 0; if (q >= 1 && r.step !== 'gather') continue;
-        const bx = sx + sw * it.x, by = sy + sh * 0.92, x = bx + (ax - bx) * q, y = by + (ay - by) * q - Math.sin(q * Math.PI) * sh * 0.15, sway = Math.sin(t * 1.6 + it.x * 20) * sh * 0.012;
-        if (q >= 1) continue;
-        c.save(); c.translate(x, y); c.rotate(q * 1.1);
-        c.strokeStyle = '#b8862e'; c.lineWidth = Math.max(2, sh * 0.007); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(sway * 0.5, -sh * it.h * 0.5, sway, -sh * it.h); c.stroke();
-        c.strokeStyle = '#7a9a3a'; c.lineWidth = Math.max(1.5, sh * 0.004); c.beginPath(); c.moveTo(0, -sh * 0.08); c.quadraticCurveTo(-sh * 0.03, -sh * 0.1, -sh * 0.05, -sh * 0.08); c.stroke();
-        c.translate(sway, -sh * it.h); c.fillStyle = '#efc251'; for (let k = 0; k < 7; k++) { ell(c, -sh * 0.009, -k * sh * 0.016, sh * 0.009, sh * 0.015); ell(c, sh * 0.009, -sh * 0.006 - k * sh * 0.016, sh * 0.009, sh * 0.015); }
-        c.strokeStyle = 'rgba(200,150,50,.8)'; c.lineWidth = 1; for (let k = 0; k < 7; k++) { c.beginPath(); c.moveTo(0, -k * sh * 0.016); c.lineTo(sway * 0.5 + sh * 0.01, -k * sh * 0.016 - sh * 0.04); c.stroke(); }
-        c.restore();
-      }
-      if (r.step === 'gather') { const n = r.items.filter(q => q.gone && t - q.gone > 0.6).length; for (let k = 0; k < n; k++) { c.save(); c.translate(ax, ay + sh * 0.04); c.rotate(-0.5 + (k - n / 2) * 0.06); c.strokeStyle = '#b8862e'; c.lineWidth = Math.max(2, sh * 0.006); c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -sh * 0.14); c.stroke(); c.fillStyle = '#efc251'; ell(c, 0, -sh * 0.16, sh * 0.012, sh * 0.03); c.restore(); } }   // the sheaf she holds
-      // weaving: the ears curl round into a ring, flowers and ribbons go in, then it floats up onto her head
-      if (r.step === 'weave' || r.step === 'crown') {
-        const q = r.step === 'weave' ? Math.max(0, Math.min(1, (t - r.weaveT) / 2.4)) : 1, cq = r.step === 'crown' ? Math.min(1, (t - r.crownT) / 1.2) : 0;
-        const wx = sx + sw * 0.55 + (ox - sx - sw * 0.55) * cq, wy = sy + sh * 0.45 + (oy - sh * 0.36 - sy - sh * 0.45) * cq, R = sh * (0.13 - cq * 0.08);
-        if (cq < 1) { c.save(); c.translate(wx, wy);
-          const n = Math.round(24 * q); for (let k = 0; k < n; k++) { const a = k / 24 * Math.PI * 2 + t * 0.2; c.save(); c.rotate(a); c.fillStyle = k % 2 ? '#efc251' : '#d9a84a'; ell(c, R, 0, R * 0.12, R * 0.26); c.restore(); }
-          if (q > 0.5) { for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2 + t * 0.2, fx = Math.cos(a) * R, fy2 = Math.sin(a) * R; c.fillStyle = k % 2 ? '#3d6fd6' : '#d43a3a'; for (let p = 0; p < 5; p++) circ(c, fx + Math.cos(p * 1.26) * R * 0.07, fy2 + Math.sin(p * 1.26) * R * 0.07, R * 0.06); c.fillStyle = '#f2c230'; circ(c, fx, fy2, R * 0.04); } }
-          if (q > 0.85) { ['#d43a3a', '#2c6ed5', '#f2c230', '#3d8a3a'].forEach((col, k) => { c.strokeStyle = col; c.lineWidth = R * 0.07; c.beginPath(); c.moveTo((k - 1.5) * R * 0.1, R); c.quadraticCurveTo((k - 1.5) * R * 0.2 + Math.sin(t * 2 + k) * R * 0.2, R * 1.6, (k - 1.5) * R * 0.15, R * 2.2); c.stroke(); }); }
-          c.restore(); }
-        if (r.step === 'crown' && cq >= 1) padCheer(c, sx + sw, sy + sh, u / 390, r.crownT + 1.1, t);
-      }
-    },
-  },
-  kupala: {
-    uk: 'Пусти вінок на воду!', en: 'Tap a wreath to float it down the river.',
-    facts: [
-      'Купала Night is midsummer, the shortest night of the year (6 to 7 July). The whole village gathers by the river and lights a great bonfire.',
-      'Girls weave wreaths of wildflowers and herbs, set a candle in the middle and let them float away on the water.',
-      'Where your wreath drifts was said to show where your sweetheart lives; if it sails far and its candle stays alight, a long and happy life lies ahead.',
-      'Couples jump over the fire hand in hand for health and luck, and the bravest search the woods for the папороть, the magical fern flower said to bloom only on this one night.',
-    ],
-    instr(r) { return r.step === 'float' ? ['Пусти вінок на воду!', 'Tap a wreath to float it down the river.'] : r.step === 'fern' ? ['Знайди цвіт папороті!', 'Now find the fern flower glowing among the ferns by the bank!'] : ['Цвіт папороті!', 'The fern flower: luck for the whole year!']; },
-    start(r) { r.items = Array.from({ length: 3 }, (_, i) => ({ x: 0.56 + i * 0.13, out: 0, lane: 0.7 + i * 0.06 })); r.step = 'float'; },
-    fact(r) { return r.step === 'fern' ? 3 : r.step === 'found' ? 3 : Math.min(2, r.n); },
-    tap(r, X, Y) {
-      if (r.step === 'float') { const it = r.items.find(q => !q.out && Math.abs(X - q.x) < 0.07 && Math.abs(Y - 0.58) < 0.12); if (it) { it.out = nowT; r.n++; festAct('pusty'); blip(620, 0.06); if (r.n >= 3) setTimeout(() => { if (fest && fest.trad === r) { r.step = 'fern'; r.fernT = nowT; } }, 2200); } }
-      else if (r.step === 'fern' && nowT - r.fernT > 0.8 && Math.abs(X - 0.15) < 0.08 && Math.abs(Y - 0.86) < 0.1) { r.step = 'found'; r.foundT = nowT; festAct('znaidy'); blip(1320, 0.1); festTradDone(); }
-    },
-    draw(c, S, t, r, u) {
-      const { x: sx, y: sy, w: sw, h: sh } = S, wl = sy + sh * 0.5;
-      // the midsummer night: a deep sky, a full moon, stars; the far bank dark with trees
-      let g = c.createLinearGradient(0, sy, 0, wl); g.addColorStop(0, '#0e1638'); g.addColorStop(1, '#3a3a78'); c.fillStyle = g; c.fillRect(sx, sy, sw, wl - sy);
-      for (let i = 0; i < 30; i++) { c.fillStyle = `rgba(255,250,225,${0.4 + 0.4 * Math.sin(t * 1.5 + i)})`; circ(c, sx + ((i * 0.618) % 1) * sw, sy + ((i * 0.377) % 1) * sh * 0.4, 1 + (i % 3) * 0.5); }
-      g = c.createRadialGradient(sx + sw * 0.8, sy + sh * 0.14, 0, sx + sw * 0.8, sy + sh * 0.14, sh * 0.16); g.addColorStop(0, 'rgba(255,248,215,.7)'); g.addColorStop(1, 'rgba(255,248,215,0)'); c.fillStyle = g; c.fillRect(sx + sw * 0.6, sy, sw * 0.4, sh * 0.35); c.fillStyle = '#fff6d8'; circ(c, sx + sw * 0.8, sy + sh * 0.14, sh * 0.05);
-      c.fillStyle = '#1c2a3a'; c.beginPath(); c.moveTo(sx, wl); for (let i = 0; i <= 20; i++) c.lineTo(sx + sw * i / 20, wl - sh * (0.04 + 0.03 * Math.abs(Math.sin(i * 1.7)))); c.lineTo(sx + sw, wl); c.closePath(); c.fill();
-      // the river, the moon's path on it, ripples
-      g = c.createLinearGradient(0, wl, 0, sy + sh); g.addColorStop(0, '#24406a'); g.addColorStop(1, '#0f2240'); c.fillStyle = g; c.fillRect(sx, wl, sw, sy + sh - wl);
-      for (let i = 0; i < 12; i++) { const y = wl + sh * 0.02 + i * sh * 0.035, a = 0.35 * (1 - i / 12); c.strokeStyle = `rgba(255,248,215,${a})`; c.lineWidth = 2; const x = sx + sw * 0.8 + Math.sin(t * 1.2 + i) * sw * 0.02; c.beginPath(); c.moveTo(x - sw * 0.04 * (1 + i * 0.1), y); c.lineTo(x + sw * 0.04 * (1 + i * 0.1), y); c.stroke(); }
-      // the near bank with the bonfire, sparks rising, its glow on the water
-      c.fillStyle = '#1f3a24'; c.beginPath(); c.moveTo(sx, sy + sh * 0.64); c.quadraticCurveTo(sx + sw * 0.3, sy + sh * 0.6, sx + sw * 0.45, sy + sh * 0.72); c.lineTo(sx + sw * 0.45, sy + sh); c.lineTo(sx, sy + sh); c.closePath(); c.fill();
-      const fx = sx + sw * 0.25, fy = sy + sh * 0.7, fl = 1 + 0.12 * Math.sin(t * 9) + 0.08 * Math.sin(t * 17);
-      g = c.createRadialGradient(fx, fy - sh * 0.05, 0, fx, fy - sh * 0.05, sh * 0.35); g.addColorStop(0, 'rgba(255,170,70,.55)'); g.addColorStop(1, 'rgba(255,170,70,0)'); c.fillStyle = g; c.fillRect(sx, sy + sh * 0.3, sw * 0.6, sh * 0.7);
-      c.fillStyle = '#4a2c1a'; for (const a of [-0.5, 0, 0.5]) { c.save(); c.translate(fx, fy); c.rotate(a); c.fillRect(-sh * 0.07, -sh * 0.008, sh * 0.14, sh * 0.016); c.restore(); }
-      for (const [col, sc] of [['#ff7a1f', 1], ['#ffb43a', 0.7], ['#fff0a0', 0.4]]) { c.fillStyle = col; c.beginPath(); c.moveTo(fx - sh * 0.06 * sc, fy); c.quadraticCurveTo(fx - sh * 0.05 * sc, fy - sh * 0.1 * sc * fl, fx + Math.sin(t * 5) * sh * 0.01, fy - sh * 0.2 * sc * fl); c.quadraticCurveTo(fx + sh * 0.05 * sc, fy - sh * 0.1 * sc * fl, fx + sh * 0.06 * sc, fy); c.closePath(); c.fill(); }
-      for (let i = 0; i < 10; i++) { const q = (t * 0.5 + i / 10) % 1; c.fillStyle = `rgba(255,200,90,${1 - q})`; circ(c, fx + Math.sin(i * 3 + t) * sh * 0.05 * q, fy - sh * 0.15 - q * sh * 0.3, 1.6); }
-      // Oksana with her wreath, by the fire
-      person(c, sx + sw * 0.08, sy + sh * 0.93, Object.assign({}, NPC.oksana.look, { hat: 'wreath', hatCol: '#d43a3a', ribbons: ['#d43a3a', '#f2c230', '#2c6ed5'] }), t, false, sh * 0.0036);
-      // the ferns at the bank's edge; once the wreaths are away, the fern flower opens among them
-      for (let i = 0; i < 5; i++) { const x = sx + sw * (0.06 + i * 0.05), y = sy + sh * 0.97; c.strokeStyle = '#2f5a2a'; c.lineWidth = 2; for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo(x + k * sh * 0.02, y - sh * 0.08, x + k * sh * 0.05, y - sh * 0.1); c.stroke(); } }
-      if (r.step === 'fern' || r.step === 'found') { const q = Math.min(1, (t - r.fernT) / 1), x = sx + sw * 0.15, y = sy + sh * 0.86, p = r.step === 'found' ? 1.4 : 1 + 0.15 * Math.sin(t * 4);
-        g = c.createRadialGradient(x, y, 0, x, y, sh * 0.12 * p); g.addColorStop(0, `rgba(255,120,60,${0.8 * q})`); g.addColorStop(1, 'rgba(255,120,60,0)'); c.fillStyle = g; c.fillRect(x - sh * 0.15, y - sh * 0.15, sh * 0.3, sh * 0.3);
-        c.globalAlpha = q; for (let k = 0; k < 6; k++) { c.save(); c.translate(x, y); c.rotate(k * Math.PI / 3 + t * 0.4); c.fillStyle = k % 2 ? '#ff4a2a' : '#ffb43a'; ell(c, sh * 0.03 * p, 0, sh * 0.03 * p, sh * 0.012 * p); c.restore(); } c.fillStyle = '#fff3a0'; circ(c, x, y, sh * 0.012 * p); c.globalAlpha = 1;
-        if (r.step === 'found') padCheer(c, sx + sw, sy + sh, u / 390, r.foundT, t); }
-      // fireflies
-      for (let i = 0; i < 8; i++) { const a = 0.5 + 0.5 * Math.sin(t * 3 + i * 2); c.fillStyle = `rgba(220,255,150,${a})`; circ(c, sx + sw * (0.1 + ((i * 0.37) % 0.8)) + Math.sin(t * 0.7 + i) * 10, sy + sh * (0.45 + ((i * 0.53) % 0.4)) + Math.cos(t * 0.6 + i) * 8, 2); }
-      // the wreaths: waiting on the bank, then drifting off downstream, candle lit, reflection trembling under them
-      for (const it of r.items) {
-        const q = it.out ? Math.min(1, (t - it.out) / 7) : 0, x = sx + sw * (it.out ? it.x + q * (1.05 - it.x) : it.x), y = sy + sh * (it.out ? 0.58 + (it.lane - 0.7) * 0.6 + Math.sin(t * 1.4 + it.x * 9) * 0.008 : 0.58), a = 1 - Math.max(0, q - 0.8) * 5;
-        c.globalAlpha = Math.max(0, a);
-        if (it.out) { g = c.createRadialGradient(x, y - sh * 0.04, 0, x, y - sh * 0.04, sh * 0.12); g.addColorStop(0, 'rgba(255,210,120,.55)'); g.addColorStop(1, 'rgba(255,210,120,0)'); c.fillStyle = g; c.fillRect(x - sh * 0.12, y - sh * 0.16, sh * 0.24, sh * 0.24); c.strokeStyle = 'rgba(255,220,140,.45)'; c.lineWidth = 2; for (let k = 0; k < 4; k++) { c.beginPath(); c.moveTo(x - sh * 0.02, y + sh * (0.03 + k * 0.025)); c.lineTo(x + sh * 0.02, y + sh * (0.03 + k * 0.025)); c.stroke(); } }
-        drawIcon(c, W.vinok.ic, x, y + sh * 0.035, sh * 0.13); if (it.out) { c.fillStyle = '#f1d58a'; c.fillRect(x - 1.5, y - sh * 0.05, 3, sh * 0.03); chFlame(c, x, y - sh * 0.05, sh * 0.012, t, it.x * 7); }
-        c.globalAlpha = 1;
-      }
-    },
-  },
-  sviatvechir: {
-    uk: 'Знайди першу зірку!', en: 'Supper waits for the first star. Watch the sky through the window.',
-    facts: [
-      'On Святвечір, Holy Evening (Christmas Eve, now kept on 24 December), the family eats nothing all day and waits for the first star, the sign of Christ\'s birth.',
-      'When the star shows, everyone sits down to twelve dishes, all without meat, one for each of the twelve apostles (some say, for each month of the year).',
-      'The first dish is always кутя: boiled wheat with poppy seed and honey, a wish for a year of plenty, sweetness and a full house.',
-      'In the corner stands the дідух, a sheaf of the harvest\'s wheat for the family\'s ancestors, and a place is laid for those no longer with us.',
-    ],
-    instr(r) { return r.step === 'star' ? ['Знайди першу зірку!', 'Supper waits for the first star. Watch the sky through the window.'] : ['Накрий на стіл!', 'Tap the table to set the twelve dishes, кутя first.']; },
-    start(r) { r.step = 'star'; r.dishes = 0; },
-    fact(r) { return r.step === 'star' ? 0 : r.dishes < 1 ? 1 : r.dishes < 8 ? 2 : 3; },
-    tap(r, X, Y) {
-      if (r.step === 'star') { if (nowT - r.t0 > 2.2 && Math.abs(X - 0.3) < 0.08 && Math.abs(Y - 0.2) < 0.1) { r.step = 'table'; r.found = nowT; festAct('znaidy'); blip(1320, 0.1); } }
-      else if (r.step === 'table' && Y > 0.55 && r.dishes < 12) { r.dishes++; r.dishT = nowT; if (r.dishes === 1) learn('kutia'); festAct('postav'); blip(500 + r.dishes * 40, 0.05); if (r.dishes >= 12) festTradDone(); }
-    },
-    draw(c, S, t, r, u) {
-      const { x: sx, y: sy, w: sw, h: sh } = S;
-      // the cottage room by candlelight: whitewashed wall, a window onto the winter night, the table laid in white
-      let g = c.createLinearGradient(0, sy, 0, sy + sh); g.addColorStop(0, '#e9dcc2'); g.addColorStop(1, '#cdb894'); c.fillStyle = g; c.fillRect(sx, sy, sw, sh);
-      c.fillStyle = '#7a4e26'; c.fillRect(sx, sy, sw, sh * 0.05);   // the ceiling beam
-      const wx = sx + sw * 0.3, wy = sy + sh * 0.2, ww = sw * 0.36, wh = sh * 0.34;
-      c.save(); c.beginPath(); c.rect(wx - ww / 2, wy - wh / 2, ww, wh); c.clip();
-      g = c.createLinearGradient(0, wy - wh / 2, 0, wy + wh / 2); g.addColorStop(0, '#0f1840'); g.addColorStop(1, '#4a5f9a'); c.fillStyle = g; c.fillRect(wx - ww / 2, wy - wh / 2, ww, wh);
-      for (let i = 0; i < 10; i++) { c.fillStyle = `rgba(255,250,225,${0.3 + 0.3 * Math.sin(t * 2 + i)})`; circ(c, wx - ww / 2 + ((i * 0.618) % 1) * ww, wy - wh / 2 + ((i * 0.377) % 1) * wh * 0.6, 1); }
-      c.fillStyle = '#eef3fa'; ell(c, wx, wy + wh / 2, ww * 0.7, wh * 0.18); padVillage(c, wx - ww * 0.1, wy + wh * 0.42, u / 390 * 0.9, ww * 2, t, true);
-      const show = Math.min(1, Math.max(0, (t - r.t0 - 1.5) / 1.2)), stx = wx, sty = wy - wh * 0.08, R = sh * (0.025 + (r.found ? 0.012 : 0.004 * Math.sin(t * 4)));
-      if (show > 0) { c.globalAlpha = show; g = c.createRadialGradient(stx, sty, 0, stx, sty, R * 5); g.addColorStop(0, 'rgba(255,236,160,.85)'); g.addColorStop(1, 'rgba(255,236,160,0)'); c.fillStyle = g; c.fillRect(stx - R * 5, sty - R * 5, R * 10, R * 10); c.fillStyle = '#ffe680'; star4(c, stx, sty, R); c.globalAlpha = 1; }
-      c.restore();
-      c.strokeStyle = '#3d7cc2'; c.lineWidth = 4; c.strokeRect(wx - ww / 2, wy - wh / 2, ww, wh); c.lineWidth = 2; c.beginPath(); c.moveTo(wx, wy - wh / 2); c.lineTo(wx, wy + wh / 2); c.moveTo(wx - ww / 2, wy); c.lineTo(wx + ww / 2, wy); c.stroke();
-      windowRushnyk(c, wx, ww, wy - wh / 2, wy + wh / 2, u);
-      // the дідух in the corner, and a kolach with a candle
-      { const dx = sx + sw * 0.86, dy = sy + sh * 0.62; drawIcon(c, W.didukh.ic, dx, dy, sh * 0.32); }
-      // the table: white cloth with red embroidery, the twelve dishes appearing as you set them
-      const ty = sy + sh * 0.66; c.fillStyle = '#6b4422'; c.fillRect(sx + sw * 0.05, ty, sw * 0.7, sh * 0.05); c.fillStyle = '#fbf8f0'; c.fillRect(sx + sw * 0.04, ty - sh * 0.02, sw * 0.72, sh * 0.2);
-      c.fillStyle = '#c62828'; for (let i = 0; i < 18; i++) { const x = sx + sw * (0.06 + i * 0.039); poly(c, [[x, ty + sh * 0.16], [x + sw * 0.012, ty + sh * 0.145], [x + sw * 0.024, ty + sh * 0.16], [x + sw * 0.012, ty + sh * 0.175]]); }
-      const kx = sx + sw * 0.4, ky = ty + sh * 0.02; c.fillStyle = '#c99a52'; ell(c, kx, ky, sw * 0.07, sh * 0.03); c.fillStyle = '#e0b46a'; ell(c, kx, ky - sh * 0.012, sw * 0.06, sh * 0.022); c.fillStyle = '#f1d58a'; c.fillRect(kx - 2, ky - sh * 0.08, 4, sh * 0.06); chFlame(c, kx, ky - sh * 0.08, sh * 0.016, t, 3);   // the kolach and its candle
-      for (let i = 0; i < (r.dishes || 0); i++) { const q = i === r.dishes - 1 ? Math.min(1, (t - r.dishT) / 0.3) : 1, col = i % 6, row = Math.floor(i / 6), x = sx + sw * (0.1 + col * 0.11 + (row % 2) * 0.05), y = ty + sh * (0.07 + row * 0.06) - (1 - q) * sh * 0.05;
-        c.globalAlpha = q; c.fillStyle = '#ffffff'; ell(c, x, y, sw * 0.04, sh * 0.018); c.fillStyle = ['#7a5a3a', '#c9a05a', '#e2742a', '#6a8a3a', '#d6c08a', '#a84a3a'][i % 6]; ell(c, x, y - sh * 0.004, sw * 0.03, sh * 0.011); if (i === 0) { c.fillStyle = '#3a2a2a'; for (let p = 0; p < 6; p++) circ(c, x + Math.cos(p) * sw * 0.015, y - sh * 0.005 + Math.sin(p * 2) * sh * 0.004, 1.2); } c.globalAlpha = 1; }   // кутя first, with its poppy seed
-      if (r.found && t - r.found < 2.5) { const q = Math.min(1, (t - r.found) / 0.4); c.globalAlpha = q * Math.min(1, (2.5 - (t - r.found)) / 0.6); c.font = cozyFont(Math.round(sh * 0.08)); c.textAlign = 'center'; c.fillStyle = '#fff3c0'; c.strokeStyle = 'rgba(40,30,80,.75)'; c.lineWidth = 5; c.strokeText('Перша зірка!', sx + sw / 2, sy + sh * 0.5); c.fillText('Перша зірка!', sx + sw / 2, sy + sh * 0.5); c.globalAlpha = 1; }
-      if (r.step === 'table' && r.dishes < 12) { c.font = '700 ' + Math.max(14, Math.round(sh * 0.04)) + 'px system-ui'; c.textAlign = 'center'; c.fillStyle = '#4a2c1a'; c.fillText((stage() < 3 ? 'Tap the table to set the dishes · ' : '') + r.dishes + '/12', sx + sw * 0.4, ty + sh * 0.28); }
-      if (r.done) padCheer(c, sx + sw, sy + sh, u / 390, r.done, t);
-    },
-  },
-  velykden: {
-    uk: 'Розпиши писанку!', en: 'Write a pysanka: wax, dye, wax, dye, then melt the wax at the candle.',
-    facts: [
-      'A писанка is an egg that is «written», not painted: lines of hot beeswax are drawn on with a little pen, the кістка, and the egg is dipped in dyes from light to dark.',
-      'Wherever the wax goes, the colour underneath is kept. So the white, then the yellow, then the red stay hidden in the pattern until the very end.',
-      'Every colour means something: yellow is the sun and the harvest, red is life, joy and love, and black is the earth and eternity.',
-      'At the end the wax is warmed at a candle and wiped away, and the whole pattern appears. Pysanky are given at Easter as wishes of life, health and protection.',
-    ],
-    STEPS: [{ k: 'wax', n: 4 }, { k: 'dye', col: '#f2c230', name: 'yellow' }, { k: 'wax', n: 4 }, { k: 'dye', col: '#c62828', name: 'red' }, { k: 'wax', n: 2 }, { k: 'dye', col: '#2d2d2d', name: 'black' }, { k: 'melt' }],
-    instr(r) { const st = TRADS.velykden.STEPS[r.si]; return !st ? ['Писанка!', 'Your pysanka, finished.'] : st.k === 'wax' ? ['Пиши воском!', 'Draw with hot wax: tap the glowing circle.'] : st.k === 'dye' ? ['Занур у фарбу!', `Dip the egg in the ${st.name} dye.`] : ['Розтопи віск над свічкою!', 'Melt the wax away at the candle.']; },
-    start(r) { r.si = 0; r.marks = []; r.layer = '#fbf3e2'; r.cols = ['#fbf3e2']; r.spots = 0; },
-    fact(r) { return r.si < 2 ? (r.si === 0 ? 0 : 1) : r.si < 6 ? 2 : 3; },
-    spotsFor(si) { return si === 0 ? [[0.5, 0.2], [0.5, 0.64], [0.34, 0.42], [0.66, 0.42]] : si === 2 ? [[0.37, 0.25], [0.63, 0.25], [0.37, 0.59], [0.63, 0.59]] : [[0.5, 0.33], [0.5, 0.51]]; },
-    tap(r, X, Y) {
-      const T = TRADS.velykden, st = T.STEPS[r.si]; if (!st || r.dip) return;
-      if (st.k === 'wax') { const sp = T.spotsFor(r.si)[r.spots]; if (sp && Math.hypot(X - sp[0], (Y - sp[1]) * 0.7) < 0.08) { r.marks.push({ x: sp[0], y: sp[1], col: r.layer, kind: r.si === 0 ? (r.spots < 2 ? 'star' : 'wheat') : r.si === 2 ? 'dots' : 'belt', t: nowT }); r.spots++; festAct('pyshy'); blip(700, 0.04); if (r.spots >= st.n) { r.spots = 0; r.si++; } } }
-      else if (st.k === 'dye') { const jx = 0.75, jy = 0.62 + ['#f2c230', '#c62828', '#2d2d2d'].indexOf(st.col) * 0; if (X > 0.66 && X < 0.92 && Y > 0.45) { r.dip = nowT; festAct('zanur'); blip(300, 0.08); setTimeout(() => { if (fest && fest.trad === r) { r.layer = st.col; r.cols.push(st.col); r.dip = 0; r.si++; blip(620, 0.05); } }, 1200); } }
-      else if (st.k === 'melt') { if (X < 0.3 && Y > 0.45) { r.melt = nowT; festAct('roztopy'); blip(880, 0.06); setTimeout(() => { if (fest && fest.trad === r) { r.si++; festTradDone(); } }, 1800); } }
-    },
-    draw(c, S, t, r, u) {
-      const { x: sx, y: sy, w: sw, h: sh } = S, T = TRADS.velykden, st = T.STEPS[r.si];
-      // a spring table by the window: willow catkins in a jar, a candle for the wax, the dye jars
-      let g = c.createLinearGradient(0, sy, 0, sy + sh); g.addColorStop(0, '#eaf6dc'); g.addColorStop(0.6, '#d8ecc4'); g.addColorStop(0.61, '#c9945a'); g.addColorStop(1, '#a8743f'); c.fillStyle = g; c.fillRect(sx, sy, sw, sh);
-      c.save(); c.beginPath(); c.rect(sx + sw * 0.62, sy + sh * 0.08, sw * 0.3, sh * 0.38); c.clip(); windowView(c, sx + sw * 0.62, sy + sh * 0.08, sw * 0.3, sh * 0.38, t, 3, 0); c.restore(); c.strokeStyle = '#3d7cc2'; c.lineWidth = 3; c.strokeRect(sx + sw * 0.62, sy + sh * 0.08, sw * 0.3, sh * 0.38);   // the window
-      { const vx = sx + sw * 0.12, vy = sy + sh * 0.6; c.fillStyle = '#7fb0d8'; rr(c, vx - sw * 0.03, vy - sh * 0.1, sw * 0.06, sh * 0.1, 4); c.strokeStyle = '#6b4a2b'; c.lineWidth = 2; for (const a of [-0.3, 0, 0.25]) { c.beginPath(); c.moveTo(vx, vy - sh * 0.1); c.lineTo(vx + Math.sin(a) * sh * 0.3, vy - sh * 0.38); c.stroke(); for (let k = 1; k < 6; k++) { c.fillStyle = '#f4f1ea'; ell(c, vx + Math.sin(a) * sh * 0.3 * k / 6, vy - sh * 0.1 - sh * 0.28 * k / 6, 3, 4.5); } } }   // pussy willow
-      // the candle (for melting the wax)
-      const cx0 = sx + sw * 0.18, cy0 = sy + sh * 0.92; c.fillStyle = '#c99a32'; ell(c, cx0, cy0, sw * 0.04, sh * 0.015); c.fillStyle = '#f1d58a'; c.fillRect(cx0 - 4, cy0 - sh * 0.16, 8, sh * 0.16); chFlame(c, cx0, cy0 - sh * 0.16, sh * 0.02, t, 1);
-      // the dye jars
-      [['#f2c230', 'yellow'], ['#c62828', 'red'], ['#2d2d2d', 'black']].forEach(([col], i) => { const x = sx + sw * (0.72 + i * 0.08), y = sy + sh * 0.92, on = st && st.k === 'dye' && st.col === col; c.fillStyle = 'rgba(255,255,255,.6)'; rr(c, x - sw * 0.032, y - sh * 0.16, sw * 0.064, sh * 0.16, 6); c.fillStyle = col; rr(c, x - sw * 0.028, y - sh * 0.11, sw * 0.056, sh * 0.105, 4); if (on) { c.strokeStyle = `rgba(255,210,63,${0.6 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; rr(c, x - sw * 0.04, y - sh * 0.17, sw * 0.08, sh * 0.18, 8); c.stroke(); } });
-      // the egg: dipping into the jar, or held up on the stand
-      const dipq = r.dip ? Math.min(1, (t - r.dip) / 1.2) : 0, dipY = Math.sin(dipq * Math.PI) * sh * 0.28, ex = sx + sw * (0.45 + (r.dip ? Math.sin(dipq * Math.PI) * 0.3 : 0)), ey = sy + sh * 0.42 + dipY, ew = sh * 0.16, eh = sh * 0.22;
-      c.fillStyle = 'rgba(40,30,10,.25)'; ell(c, sx + sw * 0.45, sy + sh * 0.68, ew * 0.8, sh * 0.02);
-      const melt = r.melt ? Math.min(1, (t - r.melt) / 1.6) : 0;
-      c.save(); c.beginPath(); c.ellipse(ex, ey, ew, eh, 0, 0, 7); c.clip();
-      c.fillStyle = r.layer; c.fillRect(ex - ew, ey - eh, ew * 2, eh * 2);
-      g = c.createRadialGradient(ex - ew * 0.4, ey - eh * 0.5, 0, ex, ey, eh * 1.3); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(0,0,0,.18)'); c.fillStyle = g; c.fillRect(ex - ew, ey - eh, ew * 2, eh * 2);
-      // each wax mark keeps the colour it was drawn over; until the wax melts it shows as dark wax
-      const motif = (m, col) => { const mx = ex + (m.x - 0.5) * ew * 2.4, my = ey + (m.y - 0.42) * eh * 2.3, s2 = ew * 0.24; c.fillStyle = col; c.strokeStyle = col; c.lineWidth = Math.max(2, ew * 0.06); c.lineCap = 'round';
-        if (m.kind === 'star') { for (let k = 0; k < 8; k++) { c.save(); c.translate(mx, my); c.rotate(k * Math.PI / 4); ell(c, s2 * 0.5, 0, s2 * 0.45, s2 * 0.14); c.restore(); } circ(c, mx, my, s2 * 0.16); }
-        else if (m.kind === 'wheat') { c.beginPath(); c.moveTo(mx, my + s2); c.lineTo(mx, my - s2); c.stroke(); for (let k = 0; k < 4; k++) { ell(c, mx - s2 * 0.18, my - s2 * 0.7 + k * s2 * 0.35, s2 * 0.14, s2 * 0.22); ell(c, mx + s2 * 0.18, my - s2 * 0.55 + k * s2 * 0.35, s2 * 0.14, s2 * 0.22); } }
-        else if (m.kind === 'belt') { c.beginPath(); for (let k = 0; k <= 24; k++) { const x = ex - ew + k * ew / 12, y = my + Math.sin(k * 1.1) * s2 * 0.22; k ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); }   // an endless line all round the egg
-        else { for (let k = 0; k < 5; k++) circ(c, mx + Math.cos(k * 1.256) * s2 * 0.5, my + Math.sin(k * 1.256) * s2 * 0.5, s2 * 0.13); circ(c, mx, my, s2 * 0.18); }
-        c.lineCap = 'butt'; };
-      for (const m of r.marks) motif(m, melt > 0 ? m.col : `rgba(60,40,25,${0.55 + 0.35 * Math.min(1, (t - m.t) / 0.3)})`);
-      if (melt > 0 && melt < 1) { c.fillStyle = `rgba(255,240,200,${0.5 * Math.sin(melt * Math.PI)})`; c.fillRect(ex - ew, ey - eh, ew * 2, eh * 2); }
-      c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 2; c.beginPath(); c.ellipse(ex, ey, ew * 0.98, eh * 0.98, 0, Math.PI * 1.1, Math.PI * 1.45); c.stroke();
-      c.restore();
-      c.strokeStyle = 'rgba(80,50,20,.35)'; c.lineWidth = 2; c.beginPath(); c.ellipse(ex, ey, ew, eh, 0, 0, 7); c.stroke();
-      // where to put the next wax mark
-      if (st && st.k === 'wax') { const sp = T.spotsFor(r.si)[r.spots]; if (sp) { const mx = ex + (sp[0] - 0.5) * ew * 2.4, my = ey + (sp[1] - 0.42) * eh * 2.3; c.strokeStyle = `rgba(255,210,63,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.setLineDash([5, 5]); c.beginPath(); c.arc(mx, my, ew * 0.3, 0, 7); c.stroke(); c.setLineDash([]); } }
-      if (st && st.k === 'melt') { c.strokeStyle = `rgba(255,210,63,${0.5 + 0.4 * Math.sin(t * 6)})`; c.lineWidth = 3; c.beginPath(); c.arc(cx0, cy0 - sh * 0.18, sh * 0.06, 0, 7); c.stroke(); }
-      // what to do now, in small letters under the egg
-      const what = !st ? '' : st.k === 'wax' ? 'Tap the circle to draw with hot wax' : st.k === 'dye' ? `Tap the ${st.name} jar to dip the egg` : 'Tap the candle to melt the wax away';
-
-      if (r.done) padCheer(c, sx + sw, sy + sh, u / 390, r.done + 0.2, t);
-    },
-  },
-};
-function festTradStart() {
-  const f = fest, T0 = TRADS[f.F.id]; if (!T0) return festDance();
-  f.phase = 'trad'; f.trad = { t0: nowT, n: 0, done: 0 }; T0.start(f.trad);
-  for (const v of { obzhynky: ['zbyrai', 'plety'], kupala: ['pusty', 'znaidy'], sviatvechir: ['znaidy', 'postav'], velykden: ['pyshy', 'zanur', 'roztopy'] }[f.F.id] || []) learn(v);
-  if (f.F.id === 'obzhynky') { learn('zbyrai'); setTimeout(() => { if (fest && fest.phase === 'trad') say('w_zbyrai'); }, 700); }
-  if (f.F.id === 'kupala') { setTimeout(() => { if (fest && fest.phase === 'trad') say('w_vinok'); }, 700); }
-  if (f.F.id === 'velykden') { learn('pysanka'); setTimeout(() => { if (fest && fest.phase === 'trad') say('w_pysanka'); }, 700); }
-}
-function festTradDone() {
-  const f = fest; if (!f || f.trad.done) return; f.trad.done = nowT; blip(990, 0.1); setTimeout(() => blip(1320, 0.1), 110);
-  setTimeout(() => { if (fest === f && f.phase === 'trad') festDance(); }, 3600);   // time to read the last fact
-}
-// The scene sits in the top of the panel, the facts underneath.
-function festTradLayout(w, h) { const bx = w * 0.05, by = h * 0.19, bw = w * 0.9, bh = h * 0.74; return { bx, by, bw, bh, S: { x: bx, y: by, w: bw, h: bh * 0.66 } }; }
-function festTradTap(px, py) {
-  const f = fest, r = f.trad, T0 = TRADS[f.F.id]; if (!T0 || r.done) return;
-  const { S } = festTradLayout(cv.width, cv.height), X = (px - S.x) / S.w, Y = (py - S.y) / S.h;
-  T0.tap(r, X, Y);
-}
-// wrap a paragraph into lines that fit
-function wrapLines(c, text, maxW) { const out = []; let ln = ''; for (const wd of text.split(' ')) { const tr = ln ? ln + ' ' + wd : wd; if (c.measureText(tr).width > maxW && ln) { out.push(ln); ln = wd; } else ln = tr; } if (ln) out.push(ln); return out; }
-function drawFestTrad(c, w, h, u, t) {
-  const f = fest, r = f.trad, T0 = TRADS[f.F.id], st = stage(), { bx, by, bw, bh, S } = festTradLayout(w, h);
-  c.fillStyle = 'rgba(20,16,30,.45)'; c.fillRect(0, 0, w, h);
-  // the panel: the scene on top, the culture notes beneath on paper
-  c.save(); c.fillStyle = 'rgba(0,0,0,.25)'; rr(c, bx + 4, by + 6, bw, bh, u * 0.04); c.beginPath(); rr(c, bx, by, bw, bh, u * 0.04); c.clip();
-  c.fillStyle = '#fff8ea'; c.fillRect(bx, by, bw, bh);
-  c.save(); c.beginPath(); c.rect(S.x, S.y, S.w, S.h); c.clip(); T0.draw(c, S, t, r, u); c.restore();
-  c.fillStyle = 'rgba(60,35,15,.25)'; c.fillRect(bx, S.y + S.h, bw, 3);
-  // the embroidered band, then "Why it matters" and the fact for this moment
-  for (let x = bx + 10; x < bx + bw - 10; x += 12) { c.fillStyle = (x / 12 | 0) % 2 ? '#2d2d2d' : '#c62828'; poly(c, [[x + 6, S.y + S.h + 9], [x + 10, S.y + S.h + 13], [x + 6, S.y + S.h + 17], [x + 2, S.y + S.h + 13]]); }
-  const fi = Math.min(T0.facts.length - 1, T0.fact(r)); if (r.fi !== fi) { r.fi = fi; r.fiT = t; }
-  const fa = Math.min(1, (t - (r.fiT || t)) / 0.5), py = S.y + S.h + 24, pad = 14;
-  c.globalAlpha = fa; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = '#b8322b'; c.font = '800 ' + Math.max(14, Math.round(u * 0.036)) + 'px system-ui'; c.fillText('🇺🇦 ' + (st < 3 ? 'Why it matters' : 'Чому це важливо') + `  ${fi + 1}/${T0.facts.length}`, bx + pad, py);
-  c.fillStyle = '#3b2f2a'; const fs2 = Math.max(14, Math.round(u * 0.038)); c.font = '500 ' + fs2 + 'px system-ui';
-  wrapLines(c, T0.facts[fi], bw - pad * 2).slice(0, 5).forEach((ln, i) => c.fillText(ln, bx + pad, py + fs2 * 1.5 + i * fs2 * 1.3));
-  c.globalAlpha = 1; c.textBaseline = 'alphabetic';
-  c.restore();
-  // the instruction above the panel
-  const [iuk, ien] = T0.instr ? T0.instr(r) : [T0.uk, T0.en];
-  c.textAlign = 'center'; c.font = cozyFont(Math.round(u * 0.058)); c.fillStyle = '#fff8ea'; c.strokeStyle = 'rgba(40,25,10,.6)'; c.lineWidth = 5; c.strokeText(iuk, w / 2, h * 0.12); c.fillText(iuk, w / 2, h * 0.12);
-  if (st < 3) { c.font = '600 ' + Math.max(14, Math.round(u * 0.034)) + 'px system-ui'; c.lineWidth = 3; wrapLines(c, ien, w * 0.9).slice(0, 2).forEach((ln, i) => { c.strokeText(ln, w / 2, h * 0.155 + i * 18); c.fillText(ln, w / 2, h * 0.155 + i * 18); }); }
-  festFlash(c, w, h, u, t); canvasSub(c, w, h);   // the action word, flashed, with its subtitle at the same moment
-}
 function festAct(v) {
   const f = fest; if (!f) return; const t = nowT;
   if (!f.fl || f.fl.v !== v || t - f.fl.t > 0.35) f.fl = { v, t };
@@ -8078,7 +7812,7 @@ function frame(ms) {
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
   else if (mode === 'church') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawChurch(t); }
-  else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); if (fest && fest.phase === 'trad') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFestTrad(ctx, cv.width, cv.height, roomU(), t); } }   // the tradition, drawn over the festival scene
+  else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); }
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
 }

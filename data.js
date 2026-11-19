@@ -91,12 +91,6 @@ window.DATA = {
     { id: "vizmy", uk: "візьми", tr: "VIZ-my", en: "take! pick it up!", ic: "🤲", verb: true },
     { id: "postav", uk: "постав", tr: "po-STAV", en: "put! place!", ic: "👇", verb: true },
     { id: "nakryi", uk: "накрий", tr: "na-KRYI", en: "cover!", ic: "🧺", verb: true },
-    { id: "plety", uk: "плети", tr: "ple-TY", en: "weave!", ic: "🌾", verb: true },
-    { id: "pusty", uk: "пусти", tr: "pu-STY", en: "float! let go!", ic: "🌊", verb: true },
-    { id: "znaidy", uk: "знайди", tr: "znai-DY", en: "find!", ic: "🔍", verb: true },
-    { id: "pyshy", uk: "пиши", tr: "py-SHY", en: "write!", ic: "✍️", verb: true },
-    { id: "zanur", uk: "занур", tr: "za-NUR", en: "dip!", ic: "🫙", verb: true },
-    { id: "roztopy", uk: "розтопи", tr: "roz-TO-py", en: "melt!", ic: "🕯️", verb: true },
     { id: "zmety", uk: "змети", tr: "zme-TY", en: "sweep off!", ic: "🧹", verb: true },
     // Festivals and the village notice board
     { id: "doshka", uk: "дошка оголошень", tr: "DOSH-ka o-ho-LO-shen", en: "notice board", ic: "@doshka" },
