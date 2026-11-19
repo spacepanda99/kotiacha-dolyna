@@ -2495,6 +2495,7 @@ function wordCard(id, o = {}) {
     ${w.verb ? `<div class="tag" style="background:#ffd27a">🔶 дієслово${stage() < 3 ? ' · verb, an action word' : xl(' · verb')}</div>` : ''}
     <img class="big" src="${iconURL(id)}" alt="">
     <div class="word">${w.uk}</div>
+    ${o.owner ? `<div class="owner" style="font-weight:800;font-size:1.2em;color:#4a2c1a;margin:-2px 0 4px">${o.owner}</div>` : ''}
     ${st.l < 4 ? `<div class="tr">${w.tr}</div>` : ''}
     <div id="en">${en}</div>
     ${o.note ? `<div class="hint">${o.note}</div>` : ''}
@@ -2664,9 +2665,9 @@ function interact(e) {
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
-  if (e.k === 'oliaHome') return wordCard('khata', { note: `🏠 <b>Хата баби Олі</b>${xl(" · Grandma Olia's cottage. She is inside, cooking.")}`, acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
   if (e.w === 'mlyn') return wordCard('mlyn', { note: '⚙️ ' + xl('A working windmill: go in and grind wheat into flour.'), acts: [{ k: 'enter', fn: enterMill }] });
-  if (e.kind === 'home') return wordCard('khata', { note: `🏠 <b>${PH.moia_khata.uk}</b>${xl(' · This is your cottage.')}`, clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
+  if (e.kind === 'home') return wordCard('khata', { owner: '🏠 ' + PH.moia_khata.uk, note: xl('This is your cottage.'), clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
   if (e.w === 'krynytsia') {
     const have = S.bag.voda || 0;
     return wordCard('krynytsia', { note: `💧 ${have} / ${WATER_MAX}${xl((have < WATER_MAX ? ' · Fill your can here.' : ' · Your can is full.'))}`, acts: have < WATER_MAX ? [{ k: 'fill', fn: () => {
@@ -2675,7 +2676,7 @@ function interact(e) {
   }
   if (e.k === 'my_churn') return churnCard();
   if (e.k === 'board') return boardCard();
-  if (e.k === 'bohdanHome' || e.k === 'tarasHome') { const n = NPC[e.k === 'bohdanHome' ? 'bohdan' : 'taras']; return wordCard('khata', { note: `🏠 <b>${e.k === 'bohdanHome' ? 'Хата пана Богдана' : 'Тарасова хата'}</b>${xl(` · ${n.nameEn}'s cottage`)}` }); }
+  if (e.k === 'bohdanHome' || e.k === 'tarasHome') { const n = NPC[e.k === 'bohdanHome' ? 'bohdan' : 'taras']; return wordCard('khata', { owner: '🏠 ' + (e.k === 'bohdanHome' ? 'Хата пана Богдана' : 'Тарасова хата'), note: xl(`${n.nameEn}'s cottage`) }); }
   if (e.k === 'feeder') return feederCard();
   if (e.k === 'yizhak_spyt') return wordCard('yizhak', { note: `💤 <b>${PH.yizhak_spyt.uk}</b>${xl('<br>' + PH.yizhak_spyt.en)}`, clips: ['p_yizhak_spyt'] });
   if (e.k === 'nest') { const sea = season(); if (sea === 'osin' || sea === 'zyma') { learn('hnizdo'); return wordCard('hnizdo', { note: `🪺 ${W.leleka.uk}${xl(" · The storks have flown south for the winter. They'll be back in spring.")}` }); } }
@@ -6952,7 +6953,8 @@ function hitEnt(wx, wy) {
     const s = Math.max(0.75, e.s), cx = e.x, cy = e.kind === 'pond' ? e.y - 0.2 : e.flat ? e.y : e.y - s * 0.45;
     let d;
     if (e.kind === 'pond') { if (!inPond(wx, wy)) continue; d = 5; }
-    else { const dx = Math.abs(wx - cx) / (s * 0.5), dy = Math.abs(wy - cy) / (s * 0.55); if (dx > 1 || dy > 1) continue; d = Math.hypot(dx, dy) + (e.s > 2 ? 1 : 0); }
+    else { if (e.s > 3 && wy > e.y - 0.25) continue;   // big buildings: the ground just in front of one is for walking on
+      const dx = Math.abs(wx - cx) / (s * (e.s > 3 ? 0.4 : 0.5)), dy = Math.abs(wy - cy) / (s * 0.55); if (dx > 1 || dy > 1) continue; d = Math.hypot(dx, dy) + (e.s > 2 ? 1 : 0); }
     if (d < bd) { bd = d; best = e; }
   }
   return best;
