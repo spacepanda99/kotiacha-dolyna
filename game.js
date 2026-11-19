@@ -220,7 +220,7 @@ function musicTick(dt) {
   try { music.volume = Math.max(0, Math.min(1, musicVol)); } catch (e) {}
   if (!musicOn && musicVol < 0.01 && !music.paused) music.pause();
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden) { music.pause(); try { festMusic.pause(); } catch (e) {} } else if (mode === 'fest' && fest && fest.phase !== 'greet' && musicOn) festMusic.play().catch(() => {}); else startMusic(); });
+document.addEventListener('visibilitychange', () => { try { if (actx) { if (document.hidden) actx.suspend(); else actx.resume(); } } catch (e) {} if (document.hidden) { music.pause(); try { festMusic.pause(); } catch (e) {} } else if (mode === 'fest' && fest && fest.phase !== 'greet' && musicOn) festMusic.play().catch(() => {}); else startMusic(); });
 let actx = null;
 function blip(f = 660, d = 0.08) {
   try {
@@ -1635,6 +1635,13 @@ const POND = { x: 29.5, y: 20.5, rx: 3.7, ry: 2.6 };
 // The pond's edge wobbles with the angle, so it is not a perfect oval.
 const pondWob = a => 1 + 0.11 * Math.sin(2 * a + 0.8) + 0.07 * Math.sin(3 * a + 2.4) + 0.04 * Math.sin(5 * a + 1.1);
 const inPond = (x, y, g = 0) => { const dx = (x - POND.x) / POND.rx, dy = (y - POND.y) / POND.ry; return Math.hypot(dx, dy) < pondWob(Math.atan2(dy, dx)) * (1 + g / 3.1); };
+// The stream: it comes in from the east edge of the valley, winds down under a little plank bridge and drops
+// over a mossy rock ledge into the pond in a waterfall. Points are tiles; it widens a little toward the fall.
+const STREAM = [[36.8, 15.7], [35.6, 16.1], [34.7, 17.0], [34.0, 17.75], [33.35, 18.25]];
+const FALL = { x: 33.1, y: 18.5, bx: 32.75, by: 19.8 };   // the lip of the ledge, and where the water lands in the pond
+const BRIDGE = { x: 34.6, y: 17.1, a: -0.85 };             // across the stream, for the way down to the wheat strip
+function streamPath(c) { c.beginPath(); c.moveTo(STREAM[0][0] * T, STREAM[0][1] * T); for (let i = 1; i < STREAM.length - 1; i++) { const [x0, y0] = STREAM[i], [x1, y1] = STREAM[i + 1]; c.quadraticCurveTo(x0 * T, y0 * T, (x0 + x1) / 2 * T, (y0 + y1) / 2 * T); } const L = STREAM[STREAM.length - 1]; c.lineTo(L[0] * T, L[1] * T); }
+function streamPts(step = 0.15) { const out = []; for (let i = 0; i < STREAM.length - 1; i++) { const [x0, y0] = STREAM[i], [x1, y1] = STREAM[i + 1], n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / step); for (let j = 0; j < n; j++) out.push([x0 + (x1 - x0) * j / n, y0 + (y1 - y0) * j / n, Math.atan2(y1 - y0, x1 - x0), i]); } return out; }
 function pondPath(c, grow, stroke) {
   c.beginPath();
   for (let i = 0; i <= 72; i++) { const a = i / 72 * Math.PI * 2, w = pondWob(a); const px = (POND.x + Math.cos(a) * (POND.rx * w + grow)) * T, py = (POND.y + Math.sin(a) * (POND.ry * w + grow)) * T; i ? c.lineTo(px, py) : c.moveTo(px, py); }
@@ -1700,6 +1707,8 @@ function add(e) {
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
+  for (const [x, y] of streamPts(0.1)) { const tx = Math.floor(x), ty = Math.floor(y); if (Math.hypot(x - BRIDGE.x, y - BRIDGE.y) > 0.75) block(tx, ty); }   // the stream: wade-proof, but the bridge is open
+  block(Math.floor(FALL.x), Math.floor(FALL.y)); block(33, 18);   // the rocks of the ledge
   add({ w: 'choven', x: 32.2, y: 22.75, s: 1.4, flat: true });
   add({ w: 'ryba', x: 28.3, y: 21.6, s: 0.8, kind: 'animal', r: 0.8, water: true, give: 'ryba', cd: 60, hide: true });
   add({ w: 'kachka', x: 30.6, y: 19.4, kind: 'animal', r: 1.0, water: true });
@@ -1730,7 +1739,7 @@ function add(e) {
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
-  for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [34.5, 17.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
+  for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [35.7, 19.8], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [13.2, 9.7], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
@@ -1816,6 +1825,14 @@ function paintGround() {
     c.fillStyle = col; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257) * pr, y + Math.sin(k * 1.257) * pr, pr * 0.85);
     c.fillStyle = col === '#ffe36e' ? '#f08a2c' : '#ffd23f'; circ(c, x, y, pr * 0.7);
   }
+  // The stream: damp grass, a pebbly bank, then running water, painted before the pond so they join.
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.strokeStyle = 'rgba(88,156,76,.32)'; c.lineWidth = T * 1.5; streamPath(c); c.stroke();
+  c.strokeStyle = '#d9c590'; c.lineWidth = T * 1.12; streamPath(c); c.stroke();
+  c.strokeStyle = '#bba676'; c.lineWidth = T * 0.92; streamPath(c); c.stroke();
+  c.strokeStyle = '#4fa8dc'; c.lineWidth = T * 0.72; streamPath(c); c.stroke();
+  c.strokeStyle = '#7ccbef'; c.lineWidth = T * 0.36; streamPath(c); c.stroke();
+  { const r = seeded(77); for (const [x, y, a] of streamPts(0.35)) for (const sd of [-1, 1]) { if (r() < 0.45) continue; const px = (x - Math.sin(a) * 0.5 * sd) * T, py = (y + Math.cos(a) * 0.5 * sd) * T, rr2 = 2.5 + r() * 3; c.fillStyle = ['#a7a29a', '#bdb8ae', '#8f8a82'][(r() * 3) | 0]; ell(c, px, py, rr2 * 1.3, rr2); } }   // pebbles along the banks
   // The pond: damp grass, a sandy bank, wet sand, then water that deepens toward the middle.
   c.fillStyle = 'rgba(88,156,76,.32)'; pondPath(c, 0.55);
   c.fillStyle = '#e6d39b'; pondPath(c, 0.36);
@@ -1884,6 +1901,49 @@ function drawWater(c, t) {
       if (j) { c.fillStyle = '#7a4a26'; c.save(); c.translate(bx + sw, y - h); c.rotate(sw * 0.03); rr(c, -2.7, -11, 5.4, 12, 2.7); c.restore(); }
     }
   }
+}
+// The waterfall and the running stream, drawn every frame over the ground. In winter it all freezes: the
+// stream turns to ice and the fall hangs in icicles.
+const STREAM_PTS = streamPts(0.12);
+function drawFalls(c, t) {
+  const L = skyLight(S.clock.t), lx = FALL.x * T, ly = FALL.y * T, bx = FALL.bx * T, by = FALL.by * T, frozen = winter();
+  // the stream: in summer, ripples sliding downhill; in winter, a pale sheet of ice
+  if (frozen) { c.lineCap = 'round'; c.strokeStyle = 'rgba(225,238,250,.95)'; c.lineWidth = T * 0.74; streamPath(c); c.stroke(); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 2; streamPath(c); c.stroke(); }
+  else { c.lineCap = 'round'; for (let i = 0; i < STREAM_PTS.length; i += 2) { const [x, y, a] = STREAM_PTS[i], ph = (t * 1.6 - i * 0.12) % 1, al = Math.sin((ph < 0 ? ph + 1 : ph) * Math.PI) * 0.6, off = Math.sin(i * 2.3) * 0.18;
+      c.strokeStyle = `rgba(255,255,255,${al})`; c.lineWidth = 1.6; const px = (x - Math.sin(a) * off) * T, py = (y + Math.cos(a) * off) * T; c.beginPath(); c.moveTo(px - Math.cos(a) * 5, py - Math.sin(a) * 5); c.lineTo(px + Math.cos(a) * 5, py + Math.sin(a) * 5); c.stroke(); } }
+  // the little plank bridge, with a rail each side
+  { c.save(); c.translate(BRIDGE.x * T, BRIDGE.y * T); c.rotate(BRIDGE.a);
+    c.fillStyle = 'rgba(40,30,20,.25)'; c.fillRect(-T * 0.62, -T * 0.42, T * 1.24, T * 0.9);
+    for (let i = 0; i < 7; i++) { c.fillStyle = i % 2 ? '#a8743f' : '#b9824a'; c.fillRect(-T * 0.6 + i * T * 0.172, -T * 0.4, T * 0.16, T * 0.8); c.fillStyle = 'rgba(60,35,15,.35)'; c.fillRect(-T * 0.6 + i * T * 0.172, -T * 0.4, T * 0.016, T * 0.8); }
+    c.fillStyle = '#7a4e26'; c.fillRect(-T * 0.62, -T * 0.46, T * 1.24, T * 0.07); c.fillRect(-T * 0.62, T * 0.39, T * 1.24, T * 0.07);
+    for (const xx of [-0.58, 0, 0.55]) { c.fillRect(xx * T - 2, -T * 0.5, 4, T * 0.12); c.fillRect(xx * T - 2, T * 0.36, 4, T * 0.12); }
+    if (frozen) { c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(-T * 0.6, -T * 0.3, T * 1.2, T * 0.6); }   // snow on the planks, the edges showing
+    c.restore(); }
+  // the ledge: mossy grey rocks the water spills over
+  const rock = (x, y, r, col) => { c.fillStyle = 'rgba(30,40,30,.25)'; ell(c, x + r * 0.2, y + r * 0.55, r * 1.05, r * 0.4); c.fillStyle = col; ell(c, x, y, r * 1.1, r * 0.8); c.fillStyle = 'rgba(255,255,255,.18)'; ell(c, x - r * 0.3, y - r * 0.3, r * 0.45, r * 0.25); if (!frozen) { c.fillStyle = 'rgba(80,140,60,.7)'; ell(c, x - r * 0.1, y - r * 0.6, r * 0.6, r * 0.22); } else { c.fillStyle = '#ffffff'; ell(c, x - r * 0.05, y - r * 0.62, r * 0.75, r * 0.26); } };
+  rock(lx - T * 0.66, ly - T * 0.08, T * 0.36, '#8f8b84'); rock(lx + T * 0.58, ly - T * 0.18, T * 0.32, '#9a968e');   // the cliff each side of the fall, rocks stepping down
+  rock(lx - T * 0.62, ly + T * 0.42, T * 0.32, '#86827b'); rock(lx + T * 0.52, ly + T * 0.38, T * 0.34, '#918d86'); rock(lx - T * 0.55, ly + T * 0.85, T * 0.24, '#7f7b74'); rock(lx + T * 0.42, ly + T * 0.82, T * 0.26, '#8a867f');
+  // the water sheet falling from the lip down into the pond: bright at the top, streaked, foaming at the foot
+  const top = ly - T * 0.12, bot = by, wTop = T * 0.72, wBot = T * 0.95;
+  if (frozen) {
+    c.fillStyle = 'rgba(220,236,250,.95)'; poly(c, [[lx - wTop / 2, top], [lx + wTop / 2, top], [bx + wBot / 2, bot - T * 0.1], [bx - wBot / 2, bot - T * 0.1]]);
+    c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i < 9; i++) { const q = (i + 0.5) / 9, x = lx - wTop / 2 + q * wTop + (bx - lx) * 0.6, y0 = top + (bot - top) * 0.5, ln = T * (0.25 + ((i * 37) % 5) * 0.08); poly(c, [[x - 3, y0], [x + 3, y0], [x, y0 + ln]]); }   // icicles
+  } else {
+    const g = c.createLinearGradient(0, top, 0, bot); g.addColorStop(0, 'rgba(235,250,255,.95)'); g.addColorStop(0.5, 'rgba(160,220,245,.85)'); g.addColorStop(1, 'rgba(240,252,255,.95)');
+    c.fillStyle = g; c.beginPath(); c.moveTo(lx - wTop / 2, top); c.quadraticCurveTo(lx - wTop / 2 - T * 0.05, (top + bot) / 2, bx - wBot / 2, bot); c.lineTo(bx + wBot / 2, bot); c.quadraticCurveTo(lx + wTop / 2 + T * 0.05, (top + bot) / 2, lx + wTop / 2, top); c.closePath(); c.fill();
+    c.save(); c.clip(); c.lineCap = 'round';
+    for (let i = 0; i < 11; i++) { const q = (i + 0.5) / 11, sp = 0.9 + ((i * 7) % 5) * 0.12; for (let j = 0; j < 2; j++) { const ph = ((t * sp + i * 0.37 + j * 0.5) % 1), y = top + (bot - top) * ph, x = lx - wTop / 2 + q * wTop + (bx - lx) * ph + (wBot - wTop) * (q - 0.5) * ph;
+      c.strokeStyle = `rgba(255,255,255,${0.75 * Math.sin(ph * Math.PI)})`; c.lineWidth = 1.8; c.beginPath(); c.moveTo(x, y); c.lineTo(x + (bx - lx) * 0.08, y + T * 0.22); c.stroke(); } }
+    c.restore();
+    c.fillStyle = 'rgba(255,255,255,.9)'; ell(c, lx, top + 1, wTop * 0.55, T * 0.08);   // the bright lip where it spills
+    // foam where it lands, rings spreading into the pond, mist drifting up, and the odd sparkle
+    for (let i = 0; i < 3; i++) { const q = ((t * 0.55 + i / 3) % 1); c.strokeStyle = `rgba(255,255,255,${0.55 * (1 - q)})`; c.lineWidth = 1.8; c.beginPath(); c.ellipse(bx - T * 0.2 * q, bot + T * 0.12 + q * T * 0.2, wBot * (0.55 + q * 1.1), T * (0.16 + q * 0.32), 0, 0, 7); c.stroke(); }
+    for (let i = 0; i < 9; i++) { const a = i * 0.7 + t * 3, r = 0.6 + 0.4 * Math.sin(t * 7 + i * 2); c.fillStyle = 'rgba(255,255,255,.88)'; circ(c, bx + Math.cos(a) * wBot * 0.5, bot + Math.sin(a) * T * 0.1, (4 + 3 * r)); }
+    for (let i = 0; i < 6; i++) { const q = ((t * 0.3 + i / 6) % 1); c.fillStyle = `rgba(255,255,255,${0.28 * Math.sin(q * Math.PI)})`; circ(c, bx + Math.sin(i * 2.1 + t * 0.5) * T * 0.5, bot - q * T * 0.9, T * (0.12 + q * 0.25)); }
+    if (L.dark < 0.4) for (let i = 0; i < 3; i++) { const q = ((t * 0.9 + i * 0.33) % 1), sx = bx + Math.sin(i * 4.1) * T * 0.4, sy = bot - T * 0.2 - Math.cos(i * 2.7) * T * 0.3; c.fillStyle = `rgba(255,255,255,${Math.sin(q * Math.PI)})`; star4(c, sx, sy, 3 + 4 * Math.sin(q * Math.PI)); }
+    if (S.wx === 'sun' && L.dark < 0.3) { c.save(); c.globalAlpha = 0.22; c.lineWidth = 3; ['#e2574c', '#f2a23a', '#f2d23a', '#6cc04a', '#3d7cc2', '#7a52b3'].forEach((col, i) => { c.strokeStyle = col; c.beginPath(); c.arc(bx + T * 0.1, bot + T * 0.2, T * (0.55 + i * 0.07), Math.PI * 1.15, Math.PI * 1.75); c.stroke(); }); c.restore(); }   // a little rainbow in the spray
+  }
+  rock(lx - T * 0.25, top + T * 0.02, T * 0.2, '#a29e96');   // a stone in the lip that splits the flow
 }
 // Chimney smoke: soft puffs that rise, drift and fade.
 function smoke(c, x, y, t, k) {
@@ -6325,8 +6385,14 @@ function nightSounds(dt) {
   }
   if ((sea === 'vesna' || sea === 'lito') && (NS.frog -= dt) <= 0) { const d = Math.hypot(P.x - POND.x, P.y - POND.y); NS.frog = (sea === 'vesna' ? 1.6 : 3.5) + Math.random() * 3; if (d < 14) frogCroak(0.08 * (1 - d / 14) * L.dark); }
 }
+// The waterfall can be heard as you come near it (not in winter, when it is frozen).
+function fallsSound() {
+  if (!actx) return;   // no sound until the first tap has started audio
+  try { if (!NS.falls) NS.falls = sfxBed("bandpass", 900, 0.5);
+    const d = Math.hypot(P.x - FALL.bx, P.y - FALL.by), v = !winter() && d < 8 ? 0.07 * (1 - d / 8) : 0; NS.falls.g.gain.setTargetAtTime(v, actx.currentTime, 0.3); } catch (e) {}
+}
 function dayTick(dt) {
-  nightSounds(dt);
+  nightSounds(dt); fallsSound();
   if (winter() && wet(S.wx)) S.wx = 'snow'; else if (!winter() && S.wx === 'snow') S.wx = 'cloud';
   { const Cl = S.clock; Cl.ev = Cl.ev || {};
     if (wet(S.wx) && Cl.t >= 0.62 && !Cl.ev.rainbow) { Cl.ev.rainbow = 1; S.wx = 'sun'; S.rainbowDay = Cl.day; learn('veselka'); say('w_veselka'); toast(`🌈 ${W.veselka.uk}${stage() < 3 ? ' · the rain has stopped: a rainbow!' : '!'}`, 3200); }
@@ -6692,6 +6758,7 @@ function drawWorld(t) {
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
   c.drawImage(seasonGround(), 0, 0);
   if (winter()) { drawIce(c, t); drawPrints(c, t); } else if (GFX.water) drawWater(c, t);
+  drawFalls(c, t);
   const vw = cv.width / zoom, vh = cv.height / zoom;
   const list = ents.filter(e => !(e.hide && !ready(e)) && !goneNow(e) && e.x * T > camX - 200 && e.x * T < camX + vw + 200 && e.y * T > camY - 100 && e.y * T < camY + vh + 320);
   list.push({ me: true, y: P.ry, x: P.rx });
@@ -7548,6 +7615,7 @@ function frame(ms) {
   if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
   if ((mode === 'mill') !== document.body.classList.contains('inmill')) document.body.classList.toggle('inmill', mode === 'mill');   // the goal line steps aside for the mill's own hints
   if (mode !== 'mill' && MSFX.on) msfxStop();
+  if (mode !== 'world' && NS.falls && actx) NS.falls.g.gain.setTargetAtTime(0, actx.currentTime, 0.2);   // indoors: the waterfall can't be heard
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
