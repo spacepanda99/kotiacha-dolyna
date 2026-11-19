@@ -217,7 +217,8 @@ function musicTick(dt) {
     curTune = want; seekTo = want === 'theme' ? themePos : 0;
     music.src = 'music/' + want + '.mp3'; if (musicOn && !document.hidden && mode !== 'fest') music.play().catch(() => {});
   }
-  const target = musicOn && !sp && !switching ? 0.55 * duck : 0;   // silent for the whole speaking round, so the mic only hears you
+  const wolves = mode === 'world' && S.clock && S.clock.t >= 0.86 && S.clock.ev && S.clock.ev.wolf1;   // once the wolves howl the music stops: just the night, the crickets and the wolves
+  const target = musicOn && !sp && !switching && !wolves ? 0.55 * duck : 0;   // silent for the whole speaking round, so the mic only hears you
   musicVol += (target - musicVol) * Math.min(1, dt * 3);
   try { music.volume = Math.max(0, Math.min(1, musicVol)); } catch (e) {}
   if (!musicOn && musicVol < 0.01 && !music.paused) music.pause();
@@ -5270,18 +5271,25 @@ function drawBed(t) {
   if (bed.t0 == null) { bed.t0 = t; document.body.classList.add('bedtime'); }   // start timing on the first frame drawn; the coin bar and goal line step aside
   const c = ctx, h = cv.height, w = cv.width, d = bed.done, once = (k, fn) => { if (!d[k]) { d[k] = 1; fn(); } }, u = roomU();
   let a = t - bed.t0;
+  const lastT = bed.lt; bed.lt = t;
   const cats = homeCats(), fade = (x0, x1) => Math.max(0, Math.min(1, (a - x0) / (x1 - x0)));
-  // --- 1. supper indoors
-  if (winter() && a > 0.4 && a < 3.6) once('warm', () => { bed.warm = (S.bag.drova || 0) >= 2; if (bed.warm) S.bag.drova -= 2; hud(); save(); if (!cats.length) say(bed.warm ? 'p_zatopy_pich' : 'p_kholodno'); });
-  if ((cats.length || winter()) && a > 0.4 && a < 3.6) {
-    if (cats.length) once('feed', () => say(...(winter() ? [bed.warm ? 'p_zatopy_pich' : 'p_kholodno'] : []), 'p_yizhte_kotyky'));
-    if (winter()) bedText(c, bed.warm ? '🔥 ' + PH.zatopy_pich.uk : '🥶 ' + PH.kholodno.uk, bed.warm ? PH.zatopy_pich.en + ' (−2 ' + W.drova.en + ')' : PH.kholodno.en + ' Chop wood at the block by your cottage.', h * 0.31, Math.min(1, (a - 0.4) * 3, (3.6 - a) * 3));
-    cats.forEach((_, i) => { const p = catSpot(i), bx = p.x - roomX + p.s * 0.42, by = p.y;   // a bowl by each cat, and hearts
-      c.fillStyle = '#d43a3a'; ell(c, bx, by - p.s * 0.03, p.s * 0.16, p.s * 0.06); c.fillStyle = '#c99463'; ell(c, bx, by - p.s * 0.07, p.s * 0.12, p.s * 0.03);
-      const q = ((a - 0.4) * 0.8 + i * 0.23) % 1; c.globalAlpha = Math.sin(q * Math.PI); drawIcon(c, '❤️', p.x - roomX, p.y - p.s * (0.8 + q * 0.5), p.s * 0.22); c.globalAlpha = 1; });
-    if (cats.length) bedText(c, PH.yizhte_kotyky.uk, PH.yizhte_kotyky.en, h * 0.2, Math.min(1, (a - 0.4) * 3, (3.6 - a) * 3));
+  // --- 1. good night to the cats (skipped when there are none): the view glides from one cat to the next
+  const CT = cats.length ? 0.4 + Math.max(3.2, cats.length * 1.7) : 3.6;   // when the cats' part ends
+  if (cats.length && a > 0.4 && a < CT) {
+    const k = Math.min(cats.length - 1, Math.floor((a - 0.4) / 1.7)), p = catSpot(k), want = Math.max(-roomPL(), Math.min(panMax(), p.x - w / 2));
+    const dtb = Math.min(0.1, Math.max(0, t - (lastT || t))); roomX += (want - roomX) * Math.min(1, dtb * 4); clampPan();
   }
-  const N = cats.length || winter() ? 3.4 : 0.6;   // when the night outside begins
+  if (winter() && a > 0.4 && a < CT) once('warm', () => { bed.warm = (S.bag.drova || 0) >= 2; if (bed.warm) S.bag.drova -= 2; hud(); save(); if (!cats.length) say(bed.warm ? 'p_zatopy_pich' : 'p_kholodno'); });
+  if ((cats.length || winter()) && a > 0.4 && a < CT) {
+    if (cats.length) once('feed', () => say(...(winter() ? [bed.warm ? 'p_zatopy_pich' : 'p_kholodno'] : []), 'p_dobranich_kotyky'));
+    if (winter()) bedText(c, bed.warm ? '🔥 ' + PH.zatopy_pich.uk : '🥶 ' + PH.kholodno.uk, bed.warm ? PH.zatopy_pich.en + ' (−2 ' + W.drova.en + ')' : PH.kholodno.en + ' Chop wood at the block by your cottage.', h * 0.31, Math.min(1, (a - 0.4) * 3, (CT - a) * 3));
+    cats.forEach((_, i) => { const p = catSpot(i);   // a sleepy "z z" drifting up over each cat
+      c.save(); c.font = cozyFont(Math.round(p.s * 0.22)); c.fillStyle = '#fff8ea'; c.strokeStyle = 'rgba(74,44,26,.55)'; c.lineWidth = 3; c.textAlign = 'center';
+      for (let j = 0; j < 2; j++) { const q = ((a - 0.4) * 0.45 + j * 0.5 + i * 0.17) % 1; c.globalAlpha = Math.sin(q * Math.PI); const zx = p.x - roomX + p.s * (0.15 + q * 0.2), zy = p.y - p.s * (0.75 + q * 0.45); c.strokeText('z', zx, zy); c.fillText('z', zx, zy); }
+      c.restore(); });
+    if (cats.length) bedText(c, '🌙 ' + PH.dobranich_kotyky.uk, PH.dobranich_kotyky.en, h * 0.2, Math.min(1, (a - 0.4) * 3, (CT - a) * 3));
+  }
+  const N = cats.length || winter() ? CT - 0.2 : 0.6;   // when the night outside begins
   const T1 = N + 4.2, T2 = T1 + 3, T3 = T2 + 4.2;    // night, the night passing, morning, then back indoors
   if (bed.tap) { bed.tap = false; if (a > T2 + 1 && a < T3 - 0.8) { bed.t0 -= T3 - 0.8 - a; a = T3 - 0.8; } }   // a tap in the morning: on with the day
   if (a > N) {

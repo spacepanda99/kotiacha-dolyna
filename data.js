@@ -251,6 +251,7 @@ window.DATA = {
     { id: "shcho_vdiahnemo", uk: "Що вдягнемо?", en: "What shall we wear?" },
     { id: "harno_vyhliadaiesh", uk: "Гарно виглядаєш!", en: "You look lovely!" },
     { id: "yizhte_kotyky", uk: "Їжте, котики!", en: "Eat up, kitties!" },
+    { id: "dobranich_kotyky", uk: "Добраніч, котики, спіть солодко!", en: "Good night, kitties, sleep well!" },
     { id: "dobryi_den", uk: "Добрий день!", en: "Good day!" },
     { id: "diakuiu", uk: "Дякую!", en: "Thank you!" },
     { id: "bud_laska", uk: "Будь ласка.", en: "Please. / You're welcome." },
