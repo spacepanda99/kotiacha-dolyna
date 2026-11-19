@@ -5832,7 +5832,7 @@ function churchTap(sx, py) {
 // seconds). Every partial is a pair of slightly detuned tones, so the note warbles slowly as real bells do,
 // and the clapper's strike is a short metallic clang. It all rings into a long echo, like a tower over a valley.
 let bellVerb = null, bellComp = null;
-function bellBus() { if (bellComp) return bellComp; bellComp = actx.createDynamicsCompressor(); bellComp.threshold.value = -14; bellComp.knee.value = 8; bellComp.ratio.value = 4; bellComp.attack.value = 0.003; bellComp.release.value = 0.4; const mk = actx.createGain(); mk.gain.value = 1.8; bellComp.connect(mk); mk.connect(actx.destination); return bellComp; }
+function bellBus() { if (bellComp) return bellComp; bellComp = actx.createDynamicsCompressor(); bellComp.threshold.value = -18; bellComp.knee.value = 8; bellComp.ratio.value = 4; bellComp.attack.value = 0.003; bellComp.release.value = 0.4; const mk = actx.createGain(); mk.gain.value = 2.6; bellComp.connect(mk); mk.connect(actx.destination); return bellComp; }
 function bellReverb() {
   if (bellVerb) return bellVerb;
   const len = actx.sampleRate * 6, ir = actx.createBuffer(2, len, actx.sampleRate);
@@ -5840,31 +5840,25 @@ function bellReverb() {
   const cv2 = actx.createConvolver(); cv2.buffer = ir; const wet2 = actx.createGain(); wet2.gain.value = 0.6; cv2.connect(wet2); wet2.connect(bellBus());
   return (bellVerb = cv2);
 }
-// f0: the strike note. A big bell is low; the small bells of a peal ring high and short.
-function churchBell(vol = 1, f0 = 165, len = 1) {
+// The bell: one low tone, struck and left to ring on for a long while, as loud as it will go. It is a single
+// pitch (110 Hz). A pure tone that low barely sounds on a phone's little speaker, so the wave carries a little
+// of its own octave and twelfth, which phones can play: still one note to the ear, just one you can hear. Two
+// copies a hair apart in pitch give the slow swell of a big bell.
+let bellWave = null;
+function churchBell(vol = 1, f0 = 110, len = 1) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
-    const t0 = actx.currentTime + 0.01, out = actx.createGain(); out.gain.value = vol; out.connect(bellBus()); out.connect(bellReverb());
-    //  ratio to the strike note, loudness, how long it rings (s)
-    const P = [[0.5, 0.4, 24], [1, 0.5, 16], [1.183, 0.32, 13], [1.5, 0.16, 9], [2, 0.3, 8], [2.52, 0.12, 5], [2.67, 0.1, 4.5], [3.01, 0.08, 3.5], [4.07, 0.06, 2.2], [5.33, 0.04, 1.5]];   // a long, long hum
-    for (const [r, amp, d0] of P) for (const det of [-0.6, 0.6]) {   // each partial a detuned pair: the slow warble of a real bell
-      const o = actx.createOscillator(), g = actx.createGain(), d = d0 * len; o.type = 'sine'; o.frequency.value = f0 * r + det * (r < 1.1 ? 0.5 : 1);
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(amp * 0.5, t0 + 0.004 + r * 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+    if (!bellWave) bellWave = actx.createPeriodicWave(new Float32Array([0, 0, 0, 0, 0]), new Float32Array([0, 1, 0.55, 0.3, 0.12]));
+    const t0 = actx.currentTime + 0.01, d = 22 * len, out = actx.createGain(); out.gain.value = vol; out.connect(bellBus()); out.connect(bellReverb());
+    for (const det of [-0.35, 0.35]) {
+      const o = actx.createOscillator(), g = actx.createGain(); o.setPeriodicWave(bellWave); o.frequency.value = f0 + det;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.9, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.45, t0 + 1.5); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
       o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.05);
     }
-    // the clapper's strike: a short bright clang of noise
-    const n = actx.sampleRate * 0.08, buf = actx.createBuffer(1, n, actx.sampleRate), dd = buf.getChannelData(0); for (let i = 0; i < n; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
-    const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), sg = actx.createGain(); src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = f0 * 8; bp.Q.value = 2; sg.gain.value = 0.35;
-    src.connect(bp); bp.connect(sg); sg.connect(out); src.start(t0);
   } catch (e) {}
 }
-// A short Ukrainian peal (передзвін): the big bell, then the little bells chiming quickly down and back up.
-function churchPeal(vol = 1) {
-  churchBell(vol, 165, 1);
-  const small = [659, 587, 523, 440, 523, 587, 659, 523];
-  small.forEach((f, i) => setTimeout(() => churchBell(vol * 0.35, f, 0.35), 700 + i * 210));
-  setTimeout(() => churchBell(vol, 165, 1), 700 + small.length * 210 + 250);
-}
+// Pulling the rope: the one bell, rung twice.
+function churchPeal(vol = 1) { churchBell(vol); setTimeout(() => churchBell(vol), 3500); }
 function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.5; setTimeout(() => { duck = 1; }, 14000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
 // The only thing to do at the altar: put a few coins in the box. It counts what you've given, and that's all.
 function donateCard() {
@@ -6468,8 +6462,8 @@ function dayTick(dt) {
   C.ev = C.ev || {};
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
-    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = Math.max(0.45, Math.min(1, 1.05 - d * 0.02));   // loud near the church, still clear across the valley
-    duck = 0.3; setTimeout(() => { duck = 1; }, 16000); for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 2400);   // three slow strokes of the big bell
+    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 1;   // the noon bell rings out through the whole village, as loud as it goes
+    duck = 0.15; setTimeout(() => { duck = 1; }, 20000); for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 4000);   // three slow strokes of the big bell
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
   if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; setGuide(); learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
