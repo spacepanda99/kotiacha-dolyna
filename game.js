@@ -1910,6 +1910,7 @@ function drawWater(c, t) {
 const STREAM_PTS = streamPts(0.12);
 const FALLFX = { drops: [], rings: [], lt: 0 };   // the splash at the foot of the waterfall
 function drawFalls(c, t) {
+  { const vw = cv.width / zoom, vh = cv.height / zoom; if (31.5 * T > camX + vw || 37.5 * T < camX || 14.8 * T > camY + vh || 21 * T < camY) { FALLFX.lt = t; return; } }   // off screen: nothing to draw
   const L = skyLight(S.clock.t), lx = FALL.x * T, ly = FALL.y * T, bx = FALL.bx * T, by = FALL.by * T, frozen = winter();
   // the stream: in summer, ripples sliding downhill; in winter, a pale sheet of ice
   if (frozen) { c.lineCap = 'round'; c.strokeStyle = 'rgba(225,238,250,.95)'; c.lineWidth = T * 0.74; streamPath(c); c.stroke(); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 2; streamPath(c); c.stroke(); }
@@ -4973,7 +4974,8 @@ const DECOR = {
   didukh: { x: 0.515, y: 0.585, s: 0.36, z: 1, hw: 0.4 },
   vyshyvanka: { x: 0.69, y: 0.39, s: 0.2, z: 0, wall: true, hw: 0.8 }, bandura: { x: 0.855, y: 0.38, s: 0.2, z: 0, wall: true, hw: 0.7 },
   tarilka: { x: 0.43, y: 0.262, s: 0.105, z: 0, wall: true, hw: 0.7 }, vinok: { x: 0.79, y: 0.37, s: 0.13, z: 0, wall: true, hw: 0.6 },
-  motanka: { x: 0.958, y: 0.42, s: 0.15, z: 0, wall: true, hw: 0.5 },   // the motanka doll hangs on the wall above the bed skrynia: { x: 0.6, y: 0.74, s: 0.3, z: 1.6, hw: 0.8 },
+  motanka: { x: 0.958, y: 0.42, s: 0.15, z: 0, wall: true, hw: 0.5 },   // the motanka doll hangs on the wall above the bed
+  skrynia: { x: 0.6, y: 0.74, s: 0.3, z: 1.6, hw: 0.8 },   // the painted chest (this line had slipped into the comment above, so it could be bought but never placed)
   pysanka: { sill: 0.17, s: 0.1, z: 2, wall: true },
   // on the windowsill
   kvity: { sill: 0, s: 0.13, z: 2, wall: true }, chashka: { sill: -0.1, s: 0.09, z: 2, wall: true }, svichka: { sill: 0.1, s: 0.11, z: 2, wall: true },
