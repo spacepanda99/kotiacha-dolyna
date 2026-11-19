@@ -4689,7 +4689,7 @@ let mode = 'world', roomX = 0, tour = null;
 // s: size as a share of the room's height scale; z: drawing order among floor things.
 const DECOR = {
   // against the back wall, left to right
-  pich: { x: 0.072, y: 0.578, s: 0.6, z: 1, hw: 0.85 }, hlechyk: { x: 0.035, y: 0.8, s: 0.3, z: 4, hw: 0.6 },   // the clay jug stands on the floor in front of the stove, far left
+  pich: { x: 0.072, y: 0.578, s: 0.6, z: 1, hw: 0.85 }, hlechyk: { x: 0.356, y: 0.586, s: 0.3, z: 1.1, hw: 0.6 },   // the clay jug stands against the wall under the window, beside the bookshelf
   polytsia: { x: 0.43, y: 0.582, s: 0.55, z: 1, hw: 0.68 },
   lampa: { x: 0.6, y: 0.582, s: 0.56, z: 1, hw: 0.48 },
   kihtetochka: { x: 0.725, y: 0.58, s: 0.52, z: 1, hw: 0.9 },
@@ -4715,7 +4715,7 @@ const DECOR = {
 };
 const WIN_X = 0.3;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
-const roomW = () => Math.max(cv.width, roomU() * 3.4); // a phone in portrait sees under half the room at once
+const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 const clampPan = () => { roomX = Math.max(0, Math.min(panMax(), roomX)); };
 // Cat things you can own more than one of: a cat bed for every cat, and a few of each toy.
@@ -5115,8 +5115,11 @@ function drawHome(t) {
 // you can still drag to look around. Further down the floor is nearer, so she's a little bigger there.
 const IN = { x: 0, y: 0, tx: 0, ty: 0, wk: 0, step: 0, face: 1, dir: 'front', then: null, follow: false, lt: 0 };
 const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
-const inScale = y => { const [a, b] = inBand(); return roomU() * 0.0043 * (0.93 + 0.14 * (y - a) / Math.max(1, b - a)); };
-function inStart(fx) { const [a, b] = inBand(); IN.x = IN.tx = fx * roomW(); IN.y = IN.ty = b - (b - a) * 0.35; IN.wk = 0; IN.then = null; IN.face = 1; IN.dir = 'front'; IN.follow = false; }
+const inScale = y => { const [a, b] = inBand(); return roomU() * 0.0043 * (0.93 + 0.14 * (Math.max(a, Math.min(b, y)) - a) / Math.max(1, b - a)); };   // up a ladder she's as far back as the back wall
+function inStart(fx) { const [a, b] = inBand(); IN.x = IN.tx = fx * roomW(); IN.y = IN.ty = b - (b - a) * 0.35; IN.wk = 0; IN.then = null; IN.face = 1; IN.dir = 'front'; IN.follow = false; IN.path = null; IN.climb = false; IN.wait = 0; IN.pose = null; }
+// A scripted walk off the floor (up the mill's ladder and along the landing): points {x, y, climb, fn, wait, pose}
+// are walked in turn, with no clamping to the floor; then done() runs.
+function inPath(pts, done) { IN.path = pts.slice(); IN.pathDone = done || null; IN.then = null; IN.follow = true; IN.tx = IN.x; IN.ty = IN.y; }
 function inWalkTo(x, y, then) {
   const [a, b] = inBand(), u = roomU();
   IN.tx = Math.max(u * 0.1, Math.min(roomW() - u * 0.1, x)); IN.ty = Math.max(a, Math.min(b, y)); IN.then = then || null; IN.follow = true;
@@ -5126,9 +5129,16 @@ function inWalkTo(x, y, then) {
 function inGo(x, y, fn) { const [a] = inBand(), u = roomU(), near = Math.abs(IN.x - x) < u * 0.22 && IN.y >= a - 2; if (near) { IN.face = x >= IN.x ? 1 : -1; return fn(); } inWalkTo(x + (IN.x < x ? -1 : 1) * u * 0.12, Math.max(a, (y || a) + u * 0.03), () => { IN.face = x >= IN.x ? 1 : -1; fn(); }); }
 function inStep(t) {
   const dt = Math.min(0.05, Math.max(0, t - IN.lt)); IN.lt = t;
-  const u = roomU(), dx = IN.tx - IN.x, dy = IN.ty - IN.y, d = Math.hypot(dx, dy), sp = u * 1.05;
+  const u = roomU(), dx = IN.tx - IN.x, dy = IN.ty - IN.y, d = Math.hypot(dx, dy), sp = u * (IN.climb ? 0.45 : 1.05);
   if (d > 1.5) { const m = Math.min(d, sp * dt); IN.x += dx / d * m; IN.y += dy / d * m; IN.step += m / (u * 0.05); IN.wk = Math.min(1, IN.wk + dt * 6);
-    if (Math.abs(dx) > Math.abs(dy) * 0.5) { IN.face = dx > 0 ? 1 : -1; IN.dir = 'side'; } else IN.dir = dy > 0 ? 'front' : 'back'; }
+    if (IN.climb) IN.dir = 'back';
+    else if (Math.abs(dx) > Math.abs(dy) * 0.5) { IN.face = dx > 0 ? 1 : -1; IN.dir = 'side'; } else IN.dir = dy > 0 ? 'front' : 'back'; }
+  else if (IN.path) {
+    IN.wk = Math.max(0, IN.wk - dt * 6);
+    if (IN.wait > 0) IN.wait -= dt;
+    else if (IN.path.length) { const p = IN.path.shift(); IN.tx = p.x; IN.ty = p.y; IN.climb = !!p.climb; IN.pose = p.pose || null; if (p.face) IN.face = p.face; if (p.dir) IN.dir = p.dir; if (p.fn) p.fn(); IN.wait = p.wait || 0; }
+    else { IN.climb = false; IN.pose = null; const f = IN.pathDone; IN.path = null; IN.pathDone = null; if (f) f(); }
+  }
   else { IN.wk = Math.max(0, IN.wk - dt * 6); if (IN.wk < 0.05) IN.dir = 'front'; if (IN.then) { const f = IN.then; IN.then = null; f(); } }
   if (IN.follow && !down) { const want = Math.max(0, Math.min(panMax(), IN.x - cv.width / 2)); roomX += (want - roomX) * Math.min(1, dt * 3.5); clampPan(); if (d <= 1.5 && Math.abs(want - roomX) < 2) IN.follow = false; }
 }
@@ -5157,21 +5167,23 @@ function inDraw(c, t) {
 // on the floor. Doing it all without a slip makes you a real мірошник.
 const MILL = { on: false, spd: 0, rot: 0, sack: false, grain: 0, flour: 0, gap: 0.12, gapPh: 0, hold: false, mist: 0, warn: '', warnT: -9, spill: 0, parts: [], flash: null, lt: 0 };
 let millHits = [];
-const MX = { door: 0.07, wheat: 0.17, slate: 0.275, mid: 0.52, win: 0.76, sacks: 0.83, table: 0.92 };
+const MX = { door: 0.051, wheat: 0.135, mid: 0.451, win: 0.745, sacks: 0.836, table: 0.927 };
 function enterMill() { closeSheet(); fadeThen(enterMillNow); }
 function enterMillNow() {
   mode = 'mill'; learn('mlyn');
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
   roomX = MX.mid * roomW() - cv.width / 2; clampPan(); tour = null; blip(520);
   inStart(MX.mid - 0.04);
-  if (!S.millSeen) { S.millSeen = 1; save(); setTimeout(() => { if (mode === 'mill') toast('⚙️ ' + W.mlyn.uk + xlT(' · A working windmill! The slate on the wall shows how to grind wheat into flour.'), 5200); }, 600); }
+  MILL.stepK = '';
+  if (!S.millSeen) { S.millSeen = 1; save(); setTimeout(() => { if (mode === 'mill') toast('⚙️ ' + W.mlyn.uk + xlT(' · A working windmill! Follow the hint at the top and the bouncing arrow.'), 5200); }, 600); }
 }
 const xlT = s => stage() < 3 ? s : '';
 function millFlash(v) { MILL.flash = { v, t0: nowT }; if (W[v]) { useWord(v, true); say('w_' + v); subNow = { uk: verbEn1(v), en: '', a: null, t0: performance.now(), both: true }; } }
 function millWarn(key, uk, en) { if (MILL.warn === key && nowT - MILL.warnT < 6) return; MILL.warn = key; MILL.warnT = nowT; toast(uk + xlT(' · ' + en), 3400); blip(260, 0.08); }
 function millTap(sx, py) {
   const px = sx + roomX;
-  for (let i = millHits.length - 1; i >= 0; i--) { const r = millHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return inGo(r.gx, r.gy, r.fn); } }
+  if (IN.path) return;   // she's up the ladder: wait till she's back down
+  for (let i = millHits.length - 1; i >= 0; i--) { const r = millHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return r.now ? r.fn() : inGo(r.gx, r.gy, r.fn); } }
   if (py > cv.height * 0.78) { blip(560, 0.05); inWalkTo(px, py); }
 }
 function millDown(ev) {
@@ -5182,11 +5194,12 @@ function millDown(ev) {
 function millUp() {
   MILL.hold = false; blip(620, 0.05);
   const g = MILL.gap;
-  if (g >= 0.46 && g <= 0.6) toast('✅ ' + W.zhorna.uk + xlT(' · Just right: the stones are set.'), 2200);
-  else if (g < 0.46) toast('↔️ ' + xlT('Too tight: the stones will rub. Hold the wheel again.'), 2600);
+  if (millSet()) toast('✅ ' + W.zhorna.uk + xlT(' · Just right: the stones are set.'), 2200);
+  else if (g < GAP_LO) toast('↔️ ' + xlT('Too tight: the stones will rub. Hold the wheel again.'), 2600);
   else toast('↔️ ' + xlT('Too wide: the grain will come through whole. Hold the wheel again.'), 2600);
 }
-const millSet = () => MILL.gap >= 0.46 && MILL.gap <= 0.6;
+const GAP_LO = 0.41, GAP_HI = 0.65;   // the green on the gauge
+const millSet = () => MILL.gap >= GAP_LO && MILL.gap <= GAP_HI;
 function millRope() {
   MILL.on = !MILL.on; millFlash('tiahny'); blip(MILL.on ? 480 : 380, 0.1);
   if (MILL.on && !MILL.grain && !MILL.flour) MILL.mist++;   // let go of the brake with nothing to grind
@@ -5201,7 +5214,7 @@ function millHopper() {
 }
 function millSpout() {
   if (!MILL.sack) { MILL.sack = true; MILL.flour = 0; learn('mishok'); millFlash('postav'); return; }
-  if (MILL.spd > 0.08) return millWarn('stopfirst', '🛑 ' + W.tiahny.uk + '!', 'Stop the mill first: pull the brake rope.');
+  if (MILL.spd > 0.08) return millWarn('stopfirst', '🛑 ' + W.tiahny.uk + '!', 'Stop the mill first: pull the red lever.');
   const n = Math.floor(MILL.flour + 0.01);
   if (n < 1) return wordCard('mishok', { note: xl('The sack is still empty. Grind some wheat first.') });
   give('boroshno', n); learn('boroshno'); millFlash('vizmy'); MILL.sack = false; MILL.flour = 0; blip(900, 0.1);
@@ -5209,10 +5222,46 @@ function millSpout() {
   else toast(`🥣 ${W.boroshno.uk} × ${n}` + xlT(' · Into your bag.'), 2600);
   MILL.mist = 0; save();
 }
-function millSlate() {
-  const st = [['🛍️', 'Постав мішок під жолоб', 'Stand a sack under the spout'], ['🌾', 'Насип пшеницю в ківш', 'Tip the wheat into the hopper'], ['🪢', 'Тягни мотузку: млин рушить', 'Pull the rope: the mill starts'], ['🔄', 'Крути колесо: стрілка на зелене', 'Hold the wheel: needle on the green'], ['🪢', 'Тягни ще раз: стоп', 'Pull again: stop'], ['🥣', 'Візьми борошно', 'Take the flour']];
-  wordCard('mlyn', { note: `<b>${xl('How to grind flour:')}</b><br>` + st.map(([ic, uk, en], i) => `${i + 1}. ${ic} ${uk}${xl(` · ${en}`)}`).join('<br>') });
+// The hopper is up by the landing: tap it and she walks to the ladder, climbs it, goes along the landing,
+// tips her wheat in, and comes back down. No wheat (or a full hopper) says so straight away, without the climb.
+const MILLG = {};   // where the ladder and the hopper are this frame, set in drawMill
+function millHopperTap() {
+  if (!(S.bag.pshenytsia || 0) || 6 - Math.ceil(MILL.grain) <= 0) return millHopper();
+  const G = MILLG, [a] = inBand();
+  inWalkTo(G.ladX, a, () => inPath([
+    { x: G.ladX, y: G.fy },
+    { x: G.ladTopX, y: G.landY, climb: true },
+    { x: G.pourX, y: G.landY },
+    { x: G.pourX, y: G.landY, face: 1, dir: 'side', pose: 'pour', wait: 1.4, fn: () => setTimeout(() => { if (mode === 'mill') millHopper(); }, 600) },
+    { x: G.ladTopX, y: G.landY },
+    { x: G.ladX, y: G.fy, climb: true },
+    { x: G.ladX + roomU() * 0.1, y: a + roomU() * 0.03 },
+  ], () => { IN.dir = 'front'; }));
 }
+// What to do next, for the hint at the top and the bouncing arrow: the old slate's steps, one at a time.
+function millStep() {
+  const M = MILL;
+  if (IN.path) return 'climb';
+  if (!M.on && M.spd <= 0.08 && M.grain <= 0 && M.flour < 1 && !(S.bag.pshenytsia || 0)) return 'nowheat';
+  if (M.on && M.grain > 0) return M.spd > 0.3 && !millSet() ? 'wheel' : 'wait';
+  if (M.on) return M.spd > 0.45 ? 'stop' : 'wait';
+  if (M.spd > 0.08) return 'wait';
+  if (!M.sack) return 'sack';
+  if (M.grain > 0) return 'start';
+  if (M.flour >= 1) return 'take';
+  return (S.bag.pshenytsia || 0) ? 'hopper' : 'nowheat';
+}
+const MILL_STEPS = {
+  sack: ['🛍️', 'Постав мішок під жолоб', 'Tap the dotted box under the spout: stand a sack there.'],
+  hopper: ['🌾', 'Насип пшеницю в ківш', 'Tap the hopper up by the ladder: she climbs up and tips your wheat in.'],
+  climb: ['🪜', 'Насип пшеницю в ківш', 'Up the ladder with the wheat…'],
+  nowheat: ['🌾', 'Немає пшениці', 'You have no wheat to grind. Grow it in the strip by the pond (seeds at the market), then come back.'],
+  start: ['🔴', 'Тягни важіль: млин рушить', 'Pull the red lever: the sails turn and the stones start.'],
+  wheel: ['🔄', 'Крути колесо: стрілка на зелене', 'Hold the little wheel. Let go when the needle is on green.'],
+  wait: ['⏳', 'Мелемо…', 'Grinding: watch the flour pour into the sack.'],
+  stop: ['🔴', 'Тягни важіль ще раз: стоп', 'All ground! Pull the red lever again to stop the mill.'],
+  take: ['🥣', 'Візьми борошно', 'Tap the sack to take your flour.'],
+};
 // A sack of flour, tied at the neck.
 function sackArt(c, x, y, w2, h2, full, col) {
   const bulge = 0.8 + full * 0.25;
@@ -5228,17 +5277,17 @@ function drawMill(t) {
   const wind = S.wx === 'storm' ? 1.5 : wet(S.wx) ? 1.15 : S.wx === 'fog' ? 0.75 : 1;
   M.spd += ((M.on ? wind : 0) - M.spd) * Math.min(1, dt * (M.on ? 0.7 : 1.6));
   M.rot += M.spd * dt * 1.1;
-  if (M.hold) { M.gapPh += dt * 1.25; M.gap = 0.5 - 0.5 * Math.cos(M.gapPh); }
+  if (M.hold) { M.gapPh += dt * 0.7; M.gap = 0.5 - 0.5 * Math.cos(M.gapPh); }
   const grinding = M.spd > 0.45;
   let out = null;   // what's coming down the spout: 'flour', 'whole' or nothing
   if (grinding && M.grain > 0) {
     const used = Math.min(M.grain, dt * 0.22 * M.spd); M.grain -= used;
-    if (M.gap < 0.46) { millWarn('tight', '🔥 ' + W.zhorna.uk + '!', 'The stones are too tight: they rub and smoke. Hold the hand wheel to open them.'); M.grain += used * 0.85; if (Math.random() < 0.3) M.parts.push({ k: 'smoke', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 0.2 }); }
-    else if (M.gap > 0.6) { out = 'whole'; millWarn('wide', '🌾 ' + W.zhorna.uk + '!', 'The gap is too wide: the grain comes out whole. Hold the hand wheel to close it.'); }
+    if (M.gap < GAP_LO) { millWarn('tight', '🔥 ' + W.zhorna.uk + '!', 'The stones are too tight: they rub and smoke. Hold the hand wheel to open them.'); M.grain += used * 0.85; if (Math.random() < 0.3) M.parts.push({ k: 'smoke', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 0.2 }); }
+    else if (M.gap > GAP_HI) { out = 'whole'; millWarn('wide', '🌾 ' + W.zhorna.uk + '!', 'The gap is too wide: the grain comes out whole. Hold the hand wheel to close it.'); }
     else { out = 'flour'; if (M.sack) M.flour += used; else { M.spill += used; M.mist++; millWarn('spill', '🛍️ ' + W.mishok.uk + '!', 'No sack under the spout: the flour is going on the floor!'); } }
   }
   if (grinding && M.grain <= 0) M.dry = (M.dry || 0) + dt; else M.dry = Math.max(0, (M.dry || 0) - dt * 2);
-  if (M.dry > 1.2) { millWarn('dry', '⚡ ' + W.zhorna.uk + '!', 'Nothing to grind: the stones grind each other and spark! Pull the rope to stop.'); if (Math.random() < 0.6) M.parts.push({ k: 'spark', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 2, vy: -Math.random() }); if (!M.dryCounted) { M.mist++; M.dryCounted = true; } }
+  if (M.dry > 1.2) { millWarn('dry', '⚡ ' + W.zhorna.uk + '!', 'Nothing to grind: the stones grind each other and spark! Pull the red lever to stop.'); if (Math.random() < 0.6) M.parts.push({ k: 'spark', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 2, vy: -Math.random() }); if (!M.dryCounted) { M.mist++; M.dryCounted = true; } }
   if (!grinding) M.dryCounted = false;
 
   const cx = MX.mid * RW, fy = h * 0.8, platY = h * 0.63, bwY = h * 0.25, R = u * 0.2;
@@ -5267,12 +5316,6 @@ function drawMill(t) {
   { const sx = MX.wheat * RW; sackArt(c, sx - u * 0.06, fy, u * 0.13, u * 0.17, 0.8, '#d6b46a'); sackArt(c, sx + u * 0.07, fy, u * 0.12, u * 0.15, 0.6, '#cfae64'); sackArt(c, sx, fy - u * 0.13, u * 0.11, u * 0.12, 0.5, '#dcbb72');
     for (let i = 0; i < 5; i++) { c.save(); c.translate(sx + u * (0.0 + i * 0.012), fy - u * 0.25); c.rotate(-0.3 + i * 0.15); c.strokeStyle = '#b8902e'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -u * 0.07); c.stroke(); c.fillStyle = '#e0b84a'; ell(c, 0, -u * 0.08, u * 0.008, u * 0.02); c.restore(); }
     hit(sx - u * 0.13, fy - u * 0.33, u * 0.26, u * 0.33, word('pshenytsia'), sx, fy); }
-  // ---- the slate on the wall: how to grind
-  { const sx = MX.slate * RW, sy = h * 0.42, sw = u * 0.2, sh = u * 0.25;
-    c.fillStyle = '#8a5a2b'; rr(c, sx - sw / 2 - u * 0.012, sy - u * 0.012, sw + u * 0.024, sh + u * 0.024, u * 0.01); c.fillStyle = '#2f3a36'; c.fillRect(sx - sw / 2, sy, sw, sh);
-    c.font = `${Math.round(u * 0.03)}px system-ui`; c.textAlign = 'left'; c.textBaseline = 'middle';
-    ['🛍️', '🌾', '🪢', '🔄', '🪢', '🥣'].forEach((ic, i) => { const y = sy + sh * (0.1 + i * 0.158); c.fillStyle = 'rgba(255,255,255,.85)'; c.fillText(`${i + 1}.`, sx - sw * 0.42, y); c.fillText(ic, sx - sw * 0.2, y); c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1; c.beginPath(); c.moveTo(sx + sw * 0.08, y); c.lineTo(sx + sw * 0.4, y); c.stroke(); });
-    hit(sx - sw / 2, sy, sw, sh, millSlate, sx, fy); }
   // ---- the sails, seen turning past a small window high up on the wall
   { const wx = MX.win * RW, wy = h * 0.2, ws = u * 0.18;
     c.fillStyle = '#5a381b'; rr(c, wx - ws / 2 - u * 0.015, wy - u * 0.015, ws + u * 0.03, ws + u * 0.03, u * 0.01);
@@ -5285,6 +5328,7 @@ function drawMill(t) {
   // ---- the landing under the cap, with a ladder up to it
   c.fillStyle = '#7a4e26'; c.fillRect(cx - u * 0.75, h * 0.45, u * 0.55, u * 0.04); c.fillRect(cx + u * 0.2, h * 0.45, u * 0.5, u * 0.04);
   c.fillStyle = '#5a381b'; c.fillRect(cx - u * 0.75, h * 0.45 + u * 0.04, u * 1.45, u * 0.008);
+  { const lx = cx - u * 0.62; Object.assign(MILLG, { ladX: lx + u * 0.01, ladTopX: lx + u * 0.06, landY: h * 0.45, pourX: cx - u * 0.34, fy }); }
   { const lx = cx - u * 0.62; c.strokeStyle = '#6b4422'; c.lineWidth = u * 0.014; c.beginPath(); c.moveTo(lx - u * 0.05, fy); c.lineTo(lx, h * 0.45); c.moveTo(lx + u * 0.07, fy); c.lineTo(lx + u * 0.12, h * 0.45); c.stroke(); c.lineWidth = u * 0.01; for (let i = 1; i < 8; i++) { const q = i / 8, y = fy - (fy - h * 0.45) * q; c.beginPath(); c.moveTo(lx - u * 0.05 + u * 0.05 * q, y); c.lineTo(lx + u * 0.07 + u * 0.05 * q, y); c.stroke(); } }
   // ---- the brake wheel, face-on, its hub on the windshaft coming in from the sails; pegs round its face
   { c.save(); c.translate(cx, bwY);
@@ -5296,17 +5340,30 @@ function drawMill(t) {
     for (let i = 0; i < 28; i++) { const a = i * Math.PI * 2 / 28; c.save(); c.rotate(a); c.fillStyle = '#e0c08a'; c.fillRect(-R * 0.035, -R * 0.94, R * 0.07, R * 0.1); c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(-R * 0.035, -R * 0.85, R * 0.07, R * 0.012); c.restore(); }   // the cogs
     c.restore();
     c.fillStyle = '#4b4f55'; circ(c, 0, 0, R * 0.16); c.fillStyle = '#6d737b'; circ(c, 0, 0, R * 0.1); c.fillStyle = '#9aa1a8'; circ(c, -R * 0.03, -R * 0.03, R * 0.035);
-    // the brake: a wooden band round the top of the rim, the lever off to the left, the rope hanging from it
-    const lev = M.on ? -0.18 : 0.05;
-    c.strokeStyle = '#5a381b'; c.lineWidth = R * 0.08; c.beginPath(); c.arc(0, 0, R * 1.03, Math.PI * 1.05, Math.PI * 1.95); c.stroke();
-    c.save(); c.translate(-R * 1.0, -R * 0.1); c.rotate(lev); c.fillStyle = '#6b4422'; c.fillRect(-R * 0.9, -R * 0.05, R * 1.0, R * 0.1); c.restore();
+    // the brake: a wooden band round the top of the rim, its arm off to the right; a rope runs down from the
+    // end of the arm to the big red lever on the floor, so you can see the lever lifts the brake off
+    const lev = M.on ? 0.22 : -0.05;
+    c.strokeStyle = M.on ? '#6b4422' : '#5a381b'; c.lineWidth = R * 0.08; c.beginPath(); c.arc(0, 0, R * (M.on ? 1.08 : 1.03), Math.PI * 1.05, Math.PI * 1.95); c.stroke();
+    c.save(); c.translate(R * 0.95, -R * 0.1); c.rotate(lev); c.fillStyle = '#6b4422'; c.fillRect(-R * 0.1, -R * 0.05, R * 1.0, R * 0.1); c.restore();
     c.restore();
     hit(cx - R, bwY - R, R * 2, R * 2, word('shesternia'), cx, fy); }
-  // the rope from the brake lever
-  const ropeX = cx - R * 1.85, ropeTop = bwY - R * 0.1 + Math.sin(M.on ? -0.18 : 0.05) * -R * 0.9, ropeBot = h * 0.69 + (M.on ? -u * 0.04 : 0);
-  c.strokeStyle = '#c9a56a'; c.lineWidth = u * 0.008; c.beginPath(); c.moveTo(ropeX, ropeTop); c.quadraticCurveTo(ropeX + Math.sin(t * 1.3) * u * 0.01, (ropeTop + ropeBot) / 2, ropeX, ropeBot); c.stroke();
-  c.fillStyle = '#d43a3a'; rr(c, ropeX - u * 0.018, ropeBot, u * 0.036, u * 0.05, u * 0.012);
-  hit(ropeX - u * 0.08, ropeBot - u * 0.25, u * 0.16, u * 0.33, millRope, ropeX, fy);
+  // ---- the start/stop lever (важіль): a tall pole on the floor with a red knob, over a red/green plate.
+  // Back on the red STOP side the brake holds the wheel; pulled over to green, the brake lifts and it all turns.
+  const lvX = cx + u * 0.78, lvP = fy - u * 0.04, lvL = u * 0.4, lvA = M.on ? 0.5 : -0.32;
+  const knX = lvX + Math.sin(lvA) * lvL, knY = lvP - Math.cos(lvA) * lvL;
+  { const armX = cx + R * 0.95 + Math.cos(M.on ? 0.22 : -0.05) * R * 0.9, armY = bwY - R * 0.1 + Math.sin(M.on ? 0.22 : -0.05) * R * 0.9;
+    c.strokeStyle = '#c9a56a'; c.lineWidth = u * 0.007; c.beginPath(); c.moveTo(armX, armY); c.lineTo(knX - Math.sin(lvA) * lvL * 0.25, knY + Math.cos(lvA) * lvL * 0.25); c.stroke();
+    const pr = u * 0.13;   // the plate: red half (stop) on the left, green half (go) on the right
+    c.fillStyle = '#5a381b'; c.beginPath(); c.arc(lvX, lvP, pr + u * 0.012, Math.PI, 0); c.closePath(); c.fill();
+    c.fillStyle = '#d9443a'; c.beginPath(); c.moveTo(lvX, lvP); c.arc(lvX, lvP, pr, Math.PI, Math.PI * 1.5); c.closePath(); c.fill();
+    c.fillStyle = '#4fae4f'; c.beginPath(); c.moveTo(lvX, lvP); c.arc(lvX, lvP, pr, Math.PI * 1.5, 0); c.closePath(); c.fill();
+    c.font = `800 ${Math.round(u * 0.04)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
+    c.fillText('■', lvX - pr * 0.55, lvP - pr * 0.4); c.fillText('▶', lvX + pr * 0.55, lvP - pr * 0.4);
+    c.fillStyle = '#4a2c1a'; c.fillRect(lvX - u * 0.1, fy - u * 0.04, u * 0.2, u * 0.04);   // its wooden foot
+    c.strokeStyle = '#6b4422'; c.lineWidth = u * 0.026; c.lineCap = 'round'; c.beginPath(); c.moveTo(lvX, lvP); c.lineTo(knX, knY); c.stroke(); c.lineCap = 'butt';
+    c.fillStyle = '#d43a3a'; circ(c, knX, knY, u * 0.036); c.fillStyle = 'rgba(255,255,255,.45)'; circ(c, knX - u * 0.011, knY - u * 0.012, u * 0.012);
+    c.fillStyle = '#3a2412'; circ(c, lvX, lvP, u * 0.016);
+    hit(lvX - u * 0.16, lvP - lvL - u * 0.08, u * 0.36, lvL + u * 0.12, millRope, lvX - u * 0.12, fy); }
   // ---- the wallower: a lantern gear (two discs and staves) on top of the main shaft, driven by the cogs above
   const wlY = bwY + R + u * 0.035, wlR = u * 0.075, wlH = u * 0.065;
   c.fillStyle = '#6b4422'; ell(c, cx, wlY - wlH / 2, wlR, wlR * 0.28);
@@ -5336,16 +5393,17 @@ function drawMill(t) {
   M.parts = M.parts.filter(p => t - p.t0 < (p.k === 'spark' ? 0.4 : 1.6));
   for (const p of M.parts) { const q = (t - p.t0); if (p.k === 'smoke') { c.fillStyle = `rgba(120,110,100,${0.35 * (1 - q / 1.6)})`; circ(c, cx + sR * (p.vx * 4) + q * u * 0.05, runBot - q * u * 0.25, u * (0.015 + q * 0.03)); } else { c.fillStyle = `rgba(255,${180 + Math.random() * 60 | 0},60,${1 - q / 0.4})`; circ(c, cx + (p.vx > 0 ? sR : -sR) + p.vx * q * u * 0.25, runBot + (p.vy * q + q * q * 2) * u * 0.2, u * 0.006); } }
   // ---- the hopper above the runner, and the shoe that shakes grain down into the eye
-  const hx2 = cx + u * 0.15, hTop = runTop - u * 0.3, hBot = runTop - u * 0.16, shake = M.spd > 0.2 ? Math.sin(t * 30) * u * 0.004 * Math.min(1, M.spd) : 0;
-  c.strokeStyle = '#5a381b'; c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(hx2 - u * 0.1, hBot + u * 0.02); c.lineTo(hx2 - u * 0.14, runTop + u * 0.01); c.moveTo(hx2 + u * 0.1, hBot + u * 0.02); c.lineTo(hx2 + u * 0.15, platY); c.stroke();   // the frame it sits on
+  const hx2 = cx - u * 0.15, hTop = runTop - u * 0.3, hBot = runTop - u * 0.16, shake = M.spd > 0.2 ? Math.sin(t * 30) * u * 0.004 * Math.min(1, M.spd) : 0;
+  c.strokeStyle = '#5a381b'; c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(hx2 + u * 0.1, hBot + u * 0.02); c.lineTo(hx2 + u * 0.14, runTop + u * 0.01); c.moveTo(hx2 - u * 0.1, hBot + u * 0.02); c.lineTo(hx2 - u * 0.15, platY); c.stroke();   // the frame it sits on
   const hopper = () => poly(c, [[hx2 - u * 0.13, hTop], [hx2 + u * 0.13, hTop], [hx2 + u * 0.03, hBot], [hx2 - u * 0.03, hBot]]);
   c.fillStyle = '#a06a35'; hopper();
   if (M.grain > 0) { c.save(); hopper(); c.clip(); const lvl = hBot - (hBot - hTop) * Math.min(1, M.grain / 6) * 0.92; c.fillStyle = '#e0b84a'; c.fillRect(hx2 - u * 0.14, lvl, u * 0.28, hBot - lvl); c.fillStyle = '#f0cc66'; ell(c, hx2, lvl, u * 0.1 * (0.4 + 0.6 * (hBot - lvl) / (hBot - hTop)), u * 0.008); c.restore(); }
   c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.008; c.beginPath(); [[hx2 - u * 0.13, hTop], [hx2 + u * 0.13, hTop], [hx2 + u * 0.03, hBot], [hx2 - u * 0.03, hBot]].forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.stroke(); c.strokeStyle = 'rgba(0,0,0,.12)'; c.lineWidth = 1; for (let i = 1; i < 4; i++) { const y = hTop + (hBot - hTop) * i / 4; c.beginPath(); c.moveTo(hx2 - u * 0.13 + u * 0.1 * i / 4, y); c.lineTo(hx2 + u * 0.13 - u * 0.1 * i / 4, y); c.stroke(); }
-  const shTipX = cx + u * 0.025 + shake, shTipY = runTop - u * 0.045;
-  c.fillStyle = '#8a5a2b'; poly(c, [[hx2 - u * 0.025 + shake, hBot], [hx2 + u * 0.03 + shake, hBot], [shTipX + u * 0.01, shTipY + u * 0.012], [shTipX - u * 0.02, shTipY]]);   // the shoe
-  if (M.grain > 0 && M.spd > 0.2) { c.fillStyle = '#e0b84a'; for (let i = 0; i < 6; i++) { const q = ((t * 3 + i / 6) % 1); circ(c, shTipX - u * 0.01 + Math.sin(i * 7) * u * 0.004, shTipY + q * (runTop - shTipY + u * 0.01), u * 0.004); } }
-  hit(hx2 - u * 0.14, hTop - u * 0.04, u * 0.28, hBot - hTop + u * 0.06, millHopper, hx2, fy);
+  const shTipX = cx - u * 0.025 + shake, shTipY = runTop - u * 0.045;
+  c.fillStyle = '#8a5a2b'; poly(c, [[hx2 - u * 0.03 + shake, hBot], [hx2 + u * 0.025 + shake, hBot], [shTipX + u * 0.02, shTipY], [shTipX - u * 0.01, shTipY + u * 0.012]]);   // the shoe
+  if (M.grain > 0 && M.spd > 0.2) { c.fillStyle = '#e0b84a'; for (let i = 0; i < 6; i++) { const q = ((t * 3 + i / 6) % 1); circ(c, shTipX + u * 0.01 + Math.sin(i * 7) * u * 0.004, shTipY + q * (runTop - shTipY + u * 0.01), u * 0.004); } }
+  hit(hx2 - u * 0.14, hTop - u * 0.04, u * 0.28, hBot - hTop + u * 0.06, millHopperTap, hx2, fy, { now: true });
+  MILLG.hopX = hx2; MILLG.hopY = hTop;
   // ---- the spout from the stones, and the sack stood under it
   const spX = cx - sR - u * 0.01, spY = platY - u * 0.02, spEx = cx - u * 0.36, spEy = platY + u * 0.13;
   c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.04; c.lineCap = 'butt'; c.beginPath(); c.moveTo(spX + u * 0.02, spY); c.lineTo(spEx, spEy); c.stroke(); c.strokeStyle = '#5a381b'; c.lineWidth = u * 0.008; c.beginPath(); c.moveTo(spX + u * 0.02, spY - u * 0.02); c.lineTo(spEx, spEy - u * 0.02); c.stroke();
@@ -5357,15 +5415,15 @@ function drawMill(t) {
   if (M.sack && M.flour >= 0.99) { const n = Math.floor(M.flour + 0.01); c.font = `800 ${Math.round(u * 0.032)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#4a2c1a'; c.fillText(`${n}`, spEx, fy - (fy - spEy) * 0.4); }
   hit(spEx - sackW * 0.7, spEy - u * 0.04, sackW * 1.4, fy - spEy + u * 0.05, millSpout, spEx, fy);
   // ---- the hand wheel that sets the gap between the stones, and its gauge
-  { const gx = cx + u * 0.42, gy = platY + u * 0.09, gr = u * 0.045, ga = (M.gapPh || 0) * 2;
+  { const gx = cx + u * 0.42, gy = platY + u * 0.11, gr = u * 0.075, ga = (M.gapPh || 0) * 2;
     c.fillStyle = '#6b4422'; c.fillRect(gx - u * 0.01, gy, u * 0.02, fy - gy);
     c.strokeStyle = '#4b4f55'; c.lineWidth = u * 0.008; c.beginPath(); c.arc(gx, gy, gr, 0, 7); c.stroke(); for (let i = 0; i < 4; i++) { const a = ga + i * Math.PI / 2; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + Math.cos(a) * gr, gy + Math.sin(a) * gr); c.stroke(); } c.fillStyle = '#d43a3a'; circ(c, gx + Math.cos(ga) * gr, gy + Math.sin(ga) * gr, u * 0.01);
-    const dX = gx, dY = gy - u * 0.12, dr = u * 0.07;
+    const dX = gx, dY = gy - u * 0.2, dr = u * 0.14;
     c.fillStyle = '#f6efe0'; c.beginPath(); c.arc(dX, dY, dr, Math.PI, 0); c.closePath(); c.fill();
-    for (const [a0, a1, col] of [[0, 0.46, '#e2574c'], [0.46, 0.6, '#5cb85c'], [0.6, 1, '#f2a23a']]) { c.strokeStyle = col; c.lineWidth = dr * 0.18; c.beginPath(); c.arc(dX, dY, dr * 0.82, Math.PI + a0 * Math.PI, Math.PI + a1 * Math.PI); c.stroke(); }
-    const na = Math.PI + M.gap * Math.PI; c.strokeStyle = '#2d2d2d'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(dX, dY); c.lineTo(dX + Math.cos(na) * dr * 0.9, dY + Math.sin(na) * dr * 0.9); c.stroke(); c.fillStyle = '#2d2d2d'; circ(c, dX, dY, u * 0.009);
+    for (const [a0, a1, col] of [[0, GAP_LO, '#e2574c'], [GAP_LO, GAP_HI, '#5cb85c'], [GAP_HI, 1, '#f2a23a']]) { c.strokeStyle = col; c.lineWidth = dr * 0.18; c.beginPath(); c.arc(dX, dY, dr * 0.82, Math.PI + a0 * Math.PI, Math.PI + a1 * Math.PI); c.stroke(); }
+    const na = Math.PI + M.gap * Math.PI; c.strokeStyle = '#2d2d2d'; c.lineWidth = u * 0.009; c.beginPath(); c.moveTo(dX, dY); c.lineTo(dX + Math.cos(na) * dr * 0.9, dY + Math.sin(na) * dr * 0.9); c.stroke(); c.fillStyle = '#2d2d2d'; circ(c, dX, dY, u * 0.009);
     c.strokeStyle = '#8a5a2b'; c.lineWidth = u * 0.008; c.beginPath(); c.arc(dX, dY, dr, Math.PI, 0); c.closePath(); c.stroke();
-    if (M.spd > 0.3 && !millSet() && !M.hold) mgRing(c, gx, gy, gr * 1.6, u / 390, t);
+    MILLG.whX = gx; MILLG.whY = gy;
     hit(gx - gr * 2, dY - dr, gr * 4, gy - dY + dr + gr * 1.5, () => { if (!M.hold) toast('🔄 ' + W.kruty.uk + xlT(' · Hold the hand wheel and let go when the needle is on the green.'), 2600); }, gx, fy, { wheel: true }); }
   // ---- sacks of flour you've made, and the miller's table: bread, a mug, and a mouse after the crumbs
   { const sx = MX.sacks * RW, n = Math.min(4, S.bag.boroshno || 0);
@@ -5376,15 +5434,35 @@ function drawMill(t) {
     drawIcon(c, W.khlib.ic, tx - u * 0.04, ty + 1, u * 0.12); drawIcon(c, W.chashka.ic, tx + u * 0.08, ty + 1, u * 0.07);
     hit(tx - u * 0.1, ty - u * 0.1, u * 0.12, u * 0.11, word('khlib'), tx, fy);
   }
-  // ---- her
+  // ---- her; up on the landing she tips a sack of wheat into the hopper
   inDraw(c, t);
+  if (IN.pose === 'pour') {
+    const sc = inScale(IN.y), hx = IN.x + 16 * sc, hy = IN.y - 50 * sc;
+    c.save(); c.translate(hx, hy); c.rotate(1.9); sackArt(c, 0, 0, 26 * sc, 30 * sc, 0.6, '#d6b46a'); c.restore();
+    c.fillStyle = '#e0b84a'; for (let i = 0; i < 9; i++) { const q = ((t * 2.4 + i / 9) % 1), x0 = hx + 20 * sc, y0 = hy + 4 * sc; circ(c, x0 + (MILLG.hopX - u * 0.04 - x0) * q + Math.sin(i * 5) * u * 0.004, y0 + (MILLG.hopY + u * 0.02 - y0) * q * q, u * 0.005); }
+  }
+  // ---- what to do next: a bouncing arrow and a glowing ring on the thing to tap
+  const step = millStep(); MILL.stepK = step;
+  { const tg = { sack: [spEx, spEy], take: [spEx, spEy], hopper: [MILLG.hopX, MILLG.hopY], start: [knX, knY], stop: [knX, knY], wheel: [MILLG.whX, MILLG.whY], nowheat: [MX.door * RW, fy - u * 0.45] }[step];
+    if (tg) { const [ax, ay] = tg, bob = Math.abs(Math.sin(t * 4)) * u * 0.035, pulse = 0.5 + 0.5 * Math.sin(t * 6);
+      c.strokeStyle = `rgba(255,210,63,${0.5 + 0.4 * pulse})`; c.lineWidth = u * 0.01; c.beginPath(); c.arc(ax, ay, u * (0.075 + 0.012 * pulse), 0, 7); c.stroke();
+      c.save(); if (step === 'wheel') { c.translate(ax, ay); c.rotate(-Math.PI / 2); c.translate(-ax, -ay); } const tipY = ay - u * 0.1 - bob; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = u * 0.008;
+      c.beginPath(); c.moveTo(ax, tipY); c.lineTo(ax - u * 0.045, tipY - u * 0.05); c.lineTo(ax - u * 0.018, tipY - u * 0.05); c.lineTo(ax - u * 0.018, tipY - u * 0.1); c.lineTo(ax + u * 0.018, tipY - u * 0.1); c.lineTo(ax + u * 0.018, tipY - u * 0.05); c.lineTo(ax + u * 0.045, tipY - u * 0.05); c.closePath(); c.stroke(); c.fill(); c.restore(); }
+  }
   c.restore();
-  // a little dust in the air when it's running, the room warming toward evening
   if (M.spd > 0.3) { c.fillStyle = 'rgba(255,250,235,.35)'; for (let i = 0; i < 18; i++) { const q = (t * 0.05 + i * 0.061) % 1; circ(c, ((i * 0.37 + Math.sin(t * 0.3 + i) * 0.02) % 1) * w, h * (0.9 - q * 0.7), 1.3); } }
   { const lights = [[MX.door * RW - roomX, fy - u * 0.2, u * 0.7], [MX.win * RW - roomX, h * 0.29, u * 0.5]]; paintSky(c, w, h, t, lights, false); }
+  // the hint along the top: one step at a time, in Ukrainian, with the English under it until stage 3
+  { const [ic, uk, en] = MILL_STEPS[step], bx = Math.max(10, w * 0.03), bw = w - bx * 2, by = h * 0.092, fs = Math.round(Math.min(u * 0.052, 22 * (w / innerWidth))), en2 = xlT(en);
+    c.font = `600 ${Math.round(fs * 0.68)}px system-ui, sans-serif`;
+    const words = en2.split(' '), lines = []; let ln = ''; for (const wd of words) { const tr = ln ? ln + ' ' + wd : wd; if (c.measureText(tr).width > bw - fs * 1.2 && ln) { lines.push(ln); ln = wd; } else ln = tr; } if (ln) lines.push(ln);
+    const bh = fs * 1.6 + lines.length * fs * 0.85 + fs * 0.25;
+    c.fillStyle = 'rgba(47,42,38,.82)'; rr(c, bx, by, bw, bh, fs * 0.5);
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `800 ${fs}px system-ui, sans-serif`; c.fillStyle = '#ffd23f'; c.fillText(`${ic} ${uk}`, w / 2, by + fs * 0.95);
+    c.font = `600 ${Math.round(fs * 0.68)}px system-ui, sans-serif`; c.fillStyle = '#fff'; lines.forEach((l, i) => c.fillText(l, w / 2, by + fs * 1.85 + i * fs * 0.85)); }
   // the action word, big for a moment, and its English underneath
-  if (M.flash && W[M.flash.v]) { const q = (nowT - M.flash.t0) / 1.6; if (q < 1) { const s = q < 0.2 ? 0.6 + q * 2 : 1, a = q < 0.7 ? 1 : (1 - q) / 0.3; c.save(); c.globalAlpha = a; c.font = `900 ${Math.round(u * 0.1 * s)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = u * 0.014; c.strokeStyle = '#4a2c1a'; c.strokeText(W[M.flash.v].uk + '!', w / 2, h * 0.17); c.fillStyle = '#ffd23f'; c.fillText(W[M.flash.v].uk + '!', w / 2, h * 0.17);
-    if (subsOnNow()) { const en = verbEn1(M.flash.v); c.font = `700 ${Math.round(u * 0.045)}px system-ui, sans-serif`; const bw = c.measureText(en).width + u * 0.08; c.fillStyle = 'rgba(47,42,38,.85)'; rr(c, w / 2 - bw / 2, h * 0.215, bw, u * 0.075, u * 0.03); c.fillStyle = '#fff'; c.fillText(en, w / 2, h * 0.215 + u * 0.0375); }
+  if (M.flash && W[M.flash.v]) { const q = (nowT - M.flash.t0) / 1.6; if (q < 1) { const s = q < 0.2 ? 0.6 + q * 2 : 1, a = q < 0.7 ? 1 : (1 - q) / 0.3; c.save(); c.globalAlpha = a; c.font = `900 ${Math.round(u * 0.1 * s)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = u * 0.014; c.strokeStyle = '#4a2c1a'; c.strokeText(W[M.flash.v].uk + '!', w / 2, h * 0.27); c.fillStyle = '#ffd23f'; c.fillText(W[M.flash.v].uk + '!', w / 2, h * 0.27);
+    if (subsOnNow()) { const en = verbEn1(M.flash.v); c.font = `700 ${Math.round(u * 0.045)}px system-ui, sans-serif`; const bw = c.measureText(en).width + u * 0.08; c.fillStyle = 'rgba(47,42,38,.85)'; rr(c, w / 2 - bw / 2, h * 0.315, bw, u * 0.075, u * 0.03); c.fillStyle = '#fff'; c.fillText(en, w / 2, h * 0.315 + u * 0.0375); }
     c.restore(); } }
 }
 
@@ -6937,6 +7015,7 @@ function frame(ms) {
   if (running && !GFX.lock && GFX.cloud) { slowT = real > 0.04 && real < 0.5 ? slowT + real : Math.max(0, slowT - real * 2); if (slowT > 3) GFX.cloud = GFX.motes = GFX.smoke = GFX.sway = 0; }
   musicTick(dt);
   if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
+  if ((mode === 'mill') !== document.body.classList.contains('inmill')) document.body.classList.toggle('inmill', mode === 'mill');   // the goal line steps aside for the mill's own hints
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
