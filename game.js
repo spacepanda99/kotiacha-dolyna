@@ -3602,16 +3602,32 @@ function fetchRelease(d) {
   blip(640, 0.06); useWord('kydai', true); mgAct('kydai', true);
 }
 function fetchFrame(c, w, h, t, k, dt) {
-  // the meadow
-  let g = c.createLinearGradient(0, 0, 0, h * FE.hor); g.addColorStop(0, '#9fdcfb'); g.addColorStop(1, '#e3f5fb'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-  c.fillStyle = 'rgba(255,255,255,.9)'; for (const [cx, cy, s] of [[0.2, 0.12, 1], [0.7, 0.08, 0.8]]) { const x = ((cx * w + t * 6 * k) % (w * 1.3)) - w * 0.15; ell(c, x, cy * h, 34 * k * s, 9 * k * s); ell(c, x + 16 * k * s, cy * h - 6 * k * s, 20 * k * s, 9 * k * s); }
-  c.fillStyle = '#8fcf6a'; ell(c, w * 0.25, h * FE.hor + 6 * k, w * 0.45, h * 0.1); c.fillStyle = '#7fc25a'; ell(c, w * 0.85, h * FE.hor + 8 * k, w * 0.4, h * 0.09);
-  g = c.createLinearGradient(0, h * FE.hor, 0, h); g.addColorStop(0, '#9bd673'); g.addColorStop(1, '#6fb34c'); c.fillStyle = g; c.fillRect(0, h * FE.hor, w, h * (1 - FE.hor));
-  // a wattle fence along the far edge, and tufts of grass
+  // a summer meadow outside the village: a deep sky with the sun, layered hills with the village and its church
+  // on the far one, a wattle fence with sunflowers looking over it, and the grass mown in soft stripes
+  const H = h * FE.hor;
+  let g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#7cc8f2'); g.addColorStop(0.7, '#cdeefa'); g.addColorStop(1, '#f2f9ef'); c.fillStyle = g; c.fillRect(0, 0, w, H + 2);
+  g = c.createRadialGradient(w * 0.7, h * 0.11, 0, w * 0.7, h * 0.11, 60 * k); g.addColorStop(0, 'rgba(255,244,190,.9)'); g.addColorStop(1, 'rgba(255,244,190,0)'); c.fillStyle = g; c.fillRect(w * 0.7 - 60 * k, h * 0.11 - 60 * k, 120 * k, 120 * k);
+  c.fillStyle = '#fff1a8'; circ(c, w * 0.7, h * 0.11, 13 * k);
+  c.fillStyle = 'rgba(255,255,255,.95)'; for (const [cx, cy, sc] of [[0.15, 0.1, 1], [0.55, 0.06, 0.7], [0.95, 0.16, 0.85]]) { const x = ((cx * w + t * 5 * k) % (w * 1.3)) - w * 0.15, y = cy * h; ell(c, x, y, 30 * k * sc, 8 * k * sc); ell(c, x + 14 * k * sc, y - 6 * k * sc, 17 * k * sc, 8 * k * sc); ell(c, x - 12 * k * sc, y - 3 * k * sc, 12 * k * sc, 6 * k * sc); }
+  c.fillStyle = '#b9dca0'; ell(c, w * 0.7, H + 4 * k, w * 0.6, h * 0.14);   // the far hill, hazy
+  { const vx = w * 0.62, vy = H - h * 0.085;   // the village on it: white cottages with thatch, and the church with its domes
+    for (const [dx, sc] of [[-0.12, 0.8], [-0.05, 1], [0.1, 0.9], [0.17, 0.75]]) { const x = vx + dx * w, y = vy + h * 0.02, cw = 12 * k * sc; c.fillStyle = '#f4efe3'; c.fillRect(x - cw / 2, y - cw * 0.6, cw, cw * 0.6); c.fillStyle = '#c9a25a'; poly(c, [[x - cw * 0.7, y - cw * 0.55], [x, y - cw * 1.15], [x + cw * 0.7, y - cw * 0.55]]); }
+    const cx = vx + w * 0.03, cy = vy + h * 0.015; c.fillStyle = '#f7f3ea'; c.fillRect(cx - 8 * k, cy - 14 * k, 16 * k, 14 * k); c.fillRect(cx - 3.5 * k, cy - 22 * k, 7 * k, 8 * k);
+    c.fillStyle = '#6a9ed8'; ell(c, cx, cy - 24 * k, 4.5 * k, 4.5 * k); ell(c, cx - 8 * k, cy - 16 * k, 3 * k, 3 * k); ell(c, cx + 8 * k, cy - 16 * k, 3 * k, 3 * k);
+    c.fillStyle = '#f2c230'; c.fillRect(cx - 0.6 * k, cy - 33 * k, 1.2 * k, 6 * k); c.fillRect(cx - 2 * k, cy - 31 * k, 4 * k, 1.1 * k); }
+  c.fillStyle = '#9fd27e'; ell(c, w * 0.2, H + 6 * k, w * 0.5, h * 0.11); c.fillStyle = '#93ca70'; ell(c, w * 0.95, H + 9 * k, w * 0.35, h * 0.09);   // the nearer hills
+  for (const [tx, ts] of [[0.08, 1.1], [0.16, 0.85], [0.33, 0.95]]) { const x = w * tx, y = H + 2 * k, r = 12 * k * ts; c.fillStyle = '#6b4a2b'; c.fillRect(x - 1.5 * k, y - r * 0.5, 3 * k, r); c.fillStyle = '#4a9244'; circ(c, x, y - r, r); c.fillStyle = '#5ca852'; circ(c, x - r * 0.35, y - r * 1.2, r * 0.6); }
+  g = c.createLinearGradient(0, H, 0, h); g.addColorStop(0, '#a5da7c'); g.addColorStop(1, '#5fa83f'); c.fillStyle = g; c.fillRect(0, H, w, h - H);
+  c.fillStyle = 'rgba(255,255,255,.07)'; for (let i = 0; i < 6; i++) { const y0 = H + (h - H) * (i / 6) ** 1.4, y1 = H + (h - H) * ((i + 0.5) / 6) ** 1.4; c.fillRect(0, y0, w, y1 - y0); }   // mown stripes, wider nearer
+  // a wattle fence along the far edge, sunflowers looking over it
   c.strokeStyle = '#8a5a2b'; c.lineWidth = 2 * k; for (let i = 0; i < 14; i++) { const x = w * (0.04 + i * 0.072); c.beginPath(); c.moveTo(x, h * (FE.hor + 0.02)); c.lineTo(x, h * (FE.hor - 0.07)); c.stroke(); }
   c.strokeStyle = '#a7743f'; c.lineWidth = 3 * k; for (const yy of [-0.05, -0.02]) { c.beginPath(); c.moveTo(0, h * (FE.hor + yy)); c.lineTo(w, h * (FE.hor + yy)); c.stroke(); }
-  c.strokeStyle = '#5d9e3c'; c.lineWidth = 1.5 * k; for (let i = 0; i < 26; i++) { const x = ((i * 137.7) % 1) * w || (i * 0.039 * w), y = h * (FE.hor + 0.08 + ((i * 0.618) % 1) * 0.5), s = feScale(y / h) * 5 * k; for (const a of [-0.4, 0, 0.4]) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.sin(a + Math.sin(t + i) * 0.1) * s, y - s * 1.4); c.stroke(); } }
-  for (let i = 0; i < 7; i++) { const x = w * ((i * 0.37 + 0.11) % 1), y = h * (0.5 + ((i * 0.53) % 1) * 0.42); c.fillStyle = ['#ffd23f', '#ffffff', '#ff7aa8'][i % 3]; circ(c, x, y, 2.2 * k * feScale(y / h)); }
+  for (const fx of [0.44, 0.5, 0.9]) { const x = w * fx, base = H + 3 * k, top = H - h * 0.1 + Math.sin(fx * 9) * 3 * k, sw = Math.sin(t * 1.2 + fx * 7) * 1.5 * k;
+    c.strokeStyle = '#3f8f3f'; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(x, base); c.lineTo(x + sw, top); c.stroke(); c.fillStyle = '#4f9e48'; ell(c, x + 3 * k, (base + top) / 2, 4 * k, 2 * k);
+    c.fillStyle = '#f2b51a'; for (let p = 0; p < 10; p++) { const an = p * 0.628; ell(c, x + sw + Math.cos(an) * 5 * k, top + Math.sin(an) * 5 * k, 2.6 * k, 2.6 * k); } c.fillStyle = '#6b4422'; circ(c, x + sw, top, 3.4 * k); }
+  // tufts of grass and wildflowers, bigger nearer
+  c.strokeStyle = '#5d9e3c'; c.lineWidth = 1.5 * k; for (let i = 0; i < 30; i++) { const x = ((i * 0.377 + 0.13) % 1) * w, y = h * (FE.hor + 0.08 + ((i * 0.618) % 1) * 0.5), s2 = feScale(y / h) * 5 * k; for (const an of [-0.4, 0, 0.4]) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.sin(an + Math.sin(t + i) * 0.1) * s2, y - s2 * 1.4); c.stroke(); } }
+  for (let i = 0; i < 12; i++) { const x = w * ((i * 0.37 + 0.11) % 1), y = h * (0.5 + ((i * 0.53) % 1) * 0.42), r = 2.3 * k * feScale(y / h); c.fillStyle = ['#ffd23f', '#ffffff', '#ff7aa8', '#9b6bd6'][i % 4]; for (let p = 0; p < 5; p++) circ(c, x + Math.cos(p * 1.26) * r, y + Math.sin(p * 1.26) * r, r * 0.75); c.fillStyle = '#f2c230'; circ(c, x, y, r * 0.5); }
   // the target: a painted ring lying in the grass, with a little flag, popping up each round
   const T = mg.tg;
   if (T) {
@@ -4115,9 +4131,30 @@ const HIVEW = {
 };
 // A snowy yard: pale sky, a line of white hills, snow falling.
 function snowScene(c, w, h, t, k) {
-  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfdcee'); g.addColorStop(0.45, '#eef3fa'); g.addColorStop(0.46, '#f6f9fd'); g.addColorStop(1, '#dde7f3'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-  c.fillStyle = '#e6edf7'; ell(c, w * 0.25, h * 0.47, w * 0.4, h * 0.07); ell(c, w * 0.8, h * 0.48, w * 0.35, h * 0.06);
-  c.fillStyle = 'rgba(122,75,34,.7)'; for (let i = 0; i < 4; i++) { const x = w * (0.08 + i * 0.27); c.fillRect(x, h * 0.36, 3 * k, h * 0.1); c.fillStyle = 'rgba(80,120,80,.5)'; poly(c, [[x - 10 * k, h * 0.38], [x + 1.5 * k, h * 0.22], [x + 13 * k, h * 0.38]]); c.fillStyle = '#ffffff'; poly(c, [[x - 6 * k, h * 0.29], [x + 1.5 * k, h * 0.22], [x + 9 * k, h * 0.29]]); c.fillStyle = 'rgba(122,75,34,.7)'; }
+  // a still winter day: a pale sky warming at the horizon, the village under snow on the far hill with smoke
+  // rising from the chimneys, snowy firs in tiers, a half-buried wattle fence, and soft blue shadows in the snow
+  const H = h * 0.46;
+  let g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#a9c4e4'); g.addColorStop(0.75, '#e3ecf6'); g.addColorStop(1, '#f7efe6'); c.fillStyle = g; c.fillRect(0, 0, w, H + 2);
+  g = c.createRadialGradient(w * 0.2, h * 0.12, 0, w * 0.2, h * 0.12, 50 * k); g.addColorStop(0, 'rgba(255,250,230,.85)'); g.addColorStop(1, 'rgba(255,250,230,0)'); c.fillStyle = g; c.fillRect(w * 0.2 - 50 * k, h * 0.12 - 50 * k, 100 * k, 100 * k);
+  c.fillStyle = '#fffbea'; circ(c, w * 0.2, h * 0.12, 10 * k);   // a low winter sun
+  c.fillStyle = '#dfe8f3'; ell(c, w * 0.66, H + 3 * k, w * 0.6, h * 0.13);   // the far hill
+  { const vx = w * 0.6, vy = H - h * 0.07;   // the village under snow, smoke going straight up in the still air
+    for (const [dx, sc] of [[-0.14, 0.8], [-0.06, 1], [0.08, 0.9], [0.16, 0.75]]) { const x = vx + dx * w, y = vy + h * 0.02, cw = 12 * k * sc;
+      c.fillStyle = '#efe6d6'; c.fillRect(x - cw / 2, y - cw * 0.6, cw, cw * 0.6); c.fillStyle = '#ffd98a'; c.fillRect(x - cw * 0.15, y - cw * 0.42, cw * 0.3, cw * 0.25);
+      c.fillStyle = '#ffffff'; poly(c, [[x - cw * 0.72, y - cw * 0.55], [x, y - cw * 1.1], [x + cw * 0.72, y - cw * 0.55]]);
+      for (let i = 0; i < 4; i++) { const q = ((t * 0.12 + i * 0.25 + dx) % 1); c.fillStyle = `rgba(235,238,245,${0.6 * (1 - q)})`; circ(c, x + cw * 0.3 + Math.sin(q * 5 + dx * 9) * 2 * k, y - cw * 1.1 - q * 26 * k, (2 + q * 5) * k); } }
+    const cx = vx + w * 0.02, cy = vy + h * 0.015; c.fillStyle = '#f4f1ea'; c.fillRect(cx - 7 * k, cy - 13 * k, 14 * k, 13 * k); c.fillRect(cx - 3 * k, cy - 20 * k, 6 * k, 7 * k);
+    c.fillStyle = '#7fa8d8'; ell(c, cx, cy - 22 * k, 4 * k, 4 * k); c.fillStyle = '#ffffff'; ell(c, cx, cy - 24.5 * k, 3 * k, 1.5 * k); c.fillStyle = '#f2c230'; c.fillRect(cx - 0.6 * k, cy - 31 * k, 1.2 * k, 6 * k); c.fillRect(cx - 2 * k, cy - 29 * k, 4 * k, 1.1 * k); }
+  c.fillStyle = '#eef3fa'; ell(c, w * 0.22, H + 6 * k, w * 0.5, h * 0.1); c.fillStyle = '#e8eff8'; ell(c, w * 0.92, H + 8 * k, w * 0.35, h * 0.085);   // the nearer hills
+  const fir = (x, y, sc) => { const r = 14 * k * sc; c.fillStyle = '#6b4a2b'; c.fillRect(x - 1.5 * k * sc, y - r * 0.4, 3 * k * sc, r * 0.5);
+    for (let i = 0; i < 3; i++) { const yy = y - r * 0.35 - i * r * 0.55, ww = r * (0.95 - i * 0.22); c.fillStyle = '#3f6e52'; poly(c, [[x - ww, yy], [x, yy - r * 0.8], [x + ww, yy]]); c.fillStyle = '#ffffff'; poly(c, [[x - ww * 0.95, yy], [x - ww * 0.3, yy - r * 0.18], [x, yy - r * 0.05], [x + ww * 0.35, yy - r * 0.2], [x + ww * 0.95, yy]]); c.fillStyle = '#ffffff'; poly(c, [[x - ww * 0.25, yy - r * 0.6], [x, yy - r * 0.8], [x + ww * 0.25, yy - r * 0.6]]); } };
+  for (const [fx, sc] of [[0.05, 1], [0.13, 0.75], [0.36, 0.85], [0.86, 0.95], [0.96, 0.7]]) fir(w * fx, H + 4 * k, sc);
+  g = c.createLinearGradient(0, H, 0, h); g.addColorStop(0, '#f6f9fd'); g.addColorStop(1, '#dae5f2'); c.fillStyle = g; c.fillRect(0, H, w, h - H);
+  c.fillStyle = 'rgba(160,185,220,.18)'; for (let i = 0; i < 5; i++) { const x = w * ((i * 0.31 + 0.1) % 1), y = H + (h - H) * (0.25 + ((i * 0.53) % 1) * 0.6); ell(c, x, y, w * 0.18, h * 0.025); }   // soft blue dips in the snow
+  c.strokeStyle = '#8a6a48'; c.lineWidth = 2 * k; for (let i = 0; i < 15; i++) { const x = w * (0.03 + i * 0.07); c.beginPath(); c.moveTo(x, H + h * 0.03); c.lineTo(x, H - h * 0.035); c.stroke(); }   // the fence, half-buried
+  c.strokeStyle = '#9c7a52'; c.lineWidth = 2.4 * k; c.beginPath(); c.moveTo(0, H - h * 0.012); c.lineTo(w, H - h * 0.012); c.stroke();
+  c.fillStyle = '#ffffff'; for (let i = 0; i < 15; i++) ell(c, w * (0.03 + i * 0.07), H - h * 0.035, 2.4 * k, 1.4 * k);   // snow caps on the posts
+  c.fillStyle = '#f8fbff'; ell(c, w * 0.5, H + h * 0.035, w * 0.7, h * 0.03);   // a drift along the fence
   drawSnow(c, w, h, t, k, 0.6);
 }
 
@@ -4467,8 +4504,17 @@ const SNOWBALL = {
     const ax = F[A.fort] * w, pop = A.up ? Math.min(1, (t - A.upT) / 0.2) * Math.min(1, (A.until - t) / 0.2) : 0, hurt = A.hitT && t - A.hitT < 0.35 ? 1 - (t - A.hitT) / 0.35 : 0;
     if (pop > 0 || hurt > 0) { const lift = Math.max(pop, hurt * 0.7); c.save(); c.translate(ax, fy + h * 0.06 - lift * h * 0.2); c.rotate(hurt * Math.sin((t - A.hitT) * 40) * 0.15); person(c, 0, 0, Object.assign({}, NPC.andriiko.look, { armR: A.threw && t - A.throwT < 0.5 ? -2.7 + (t - A.throwT) * 4 : undefined }), t, false, 1.1 * k); c.restore(); }
     if (mg.hitT && t - mg.hitT < 0.6) { const q = (t - mg.hitT) / 0.6; c.save(); c.globalAlpha = 1 - q; c.font = `900 ${Math.round(20 * k)}px system-ui`; c.textAlign = 'center'; c.lineWidth = 4 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Ой!', mg.hitX, fy - h * 0.32 - q * 24 * k); c.fillStyle = '#fff8ea'; c.fillText('Ой!', mg.hitX, fy - h * 0.32 - q * 24 * k); c.restore(); }
-    // the three snow forts
-    for (const f of F) { const x = f * w; c.fillStyle = 'rgba(0,0,0,.08)'; ell(c, x, fy + 4 * k, w * 0.13, h * 0.03); c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(x, fy, w * 0.12, h * 0.12, 0, Math.PI, 0); c.fill(); c.strokeStyle = '#c3d2e4'; c.lineWidth = 1.5 * k; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(x - w * 0.06 + i * w * 0.06, fy - h * 0.05, w * 0.03, Math.PI, 0); c.stroke(); } }
+    // the three snow forts: walls of packed snow blocks, a snowy top, blue shade on the side, a flag on the middle one
+    for (const f2 of F) { const x = f2 * w, fw = w * 0.095, fh = h * 0.125, top = fy - fh;
+      c.fillStyle = 'rgba(110,135,170,.16)'; ell(c, x + 4 * k, fy + 3 * k, fw * 1.1, h * 0.028);
+      c.fillStyle = '#ffffff'; rr(c, x - fw, top, fw * 2, fh, 6 * k);
+      c.strokeStyle = 'rgba(150,175,210,.55)'; c.lineWidth = 1.2 * k;
+      for (let r = 0; r < 3; r++) { const y = top + fh * (r + 1) / 3.2; c.beginPath(); c.moveTo(x - fw + 2 * k, y); c.lineTo(x + fw - 2 * k, y); c.stroke();
+        for (let q = 0; q < 4; q++) { const bx = x - fw + fw * 2 * (q + (r % 2 ? 0.5 : 0)) / 4; if (bx <= x - fw + 3 * k || bx >= x + fw - 3 * k) continue; c.beginPath(); c.moveTo(bx, y); c.lineTo(bx, y - fh / 3.2); c.stroke(); } }
+      c.fillStyle = 'rgba(160,185,220,.35)'; rr(c, x + fw * 0.55, top + 3 * k, fw * 0.45, fh - 3 * k, 5 * k);   // the shaded side
+      c.fillStyle = '#ffffff'; for (let q = 0; q < 5; q++) ell(c, x - fw + fw * 2 * (q + 0.5) / 5, top + 1 * k, fw * 0.24, 4 * k);   // lumpy snow along the top
+      if (f2 === F[1]) { c.strokeStyle = '#6b4422'; c.lineWidth = 1.6 * k; c.beginPath(); c.moveTo(x + fw * 0.8, top); c.lineTo(x + fw * 0.8, top - 22 * k); c.stroke(); const wv = Math.sin(t * 4) * 1.5 * k; c.fillStyle = '#2c6ed5'; poly(c, [[x + fw * 0.8, top - 22 * k], [x + fw * 0.8 + 14 * k, top - 19 * k + wv], [x + fw * 0.8, top - 16 * k]]); c.fillStyle = '#f2c230'; poly(c, [[x + fw * 0.8, top - 16 * k], [x + fw * 0.8 + 14 * k, top - 13 * k + wv], [x + fw * 0.8, top - 10 * k]]); }
+    }
     // where you tapped: a little ring
     mg.aims = mg.aims.filter(a => t - a.t0 < 0.35); for (const a of mg.aims) { const q = (t - a.t0) / 0.35; c.strokeStyle = `rgba(255,210,63,${1 - q})`; c.lineWidth = 2.5 * k; c.beginPath(); c.arc(a.x * w, a.y * h, (6 + q * 10) * k, 0, 7); c.stroke(); }
     // your snowballs: from your mitten, in an arc, shrinking with distance, spinning, a shadow running below
