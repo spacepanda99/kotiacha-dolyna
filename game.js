@@ -205,7 +205,9 @@ addEventListener('load', () => { musicBtn(); startMusic(); });
 const ROOM_TUNES = { home: 'room-home2', olia: 'room-olia', mill: 'room-mill', church: 'room-church' };
 const tuneBad = {};
 let curTune = 'theme', themePos = 0, seekTo = 0;
-const wantTune = () => { const n = ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
+// The market has its own tune while its card is open (it's a card over the village, not a room).
+const shopOpen = () => mode === 'world' && sheetOpen() && !!sheet.querySelector('[data-shop]');
+const wantTune = () => { const n = shopOpen() ? 'room-market' : ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
 music.addEventListener('error', () => { if (curTune !== 'theme') tuneBad[curTune] = true; });
 music.addEventListener('loadedmetadata', () => { if (seekTo) { try { music.currentTime = seekTo; } catch (e) {} seekTo = 0; } });
 function musicTick(dt) {
@@ -2882,9 +2884,9 @@ let shopShown = null;   // the tab the shop was last drawn on
 // switch to another tab). Redrawing rebuilds the row, which would jump back to the first tab: shopTabsKeep()
 // puts it back where it was and makes sure the chosen tab is fully in view.
 function shopHead() {
-  const tabs = ['food', winter() ? 'veg' : 'seeds', 'tools', 'farm', 'home', 'clothes', 'cats', 'sell', 'help'];
+  const tabs = ['food', winter() ? 'veg' : 'seeds', 'tools', 'farm', 'home', 'clothes', 'cats', 'sell'];   // (the 'help out' rounds were taken out at the user's request)
   const tabBtn = k => `<button class="tab ${shopTab === k ? 'on' : ''}" data-a="tab" data-v="${k}">${D.ui[k][0]}${stage() < 3 ? `<small>${D.ui[k][1]}</small>` : ''}</button>`;
-  return `<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${devOn ? '∞' : S.coins} ₴</span></h3><div class="tabs">${tabs.map(tabBtn).join('')}</div>`;
+  return `<h3><span><span class="uk">${W.rynok.uk}</span> ${stage() < 2 ? `<small>${W.rynok.en}</small>` : ''}</span><span>💰 ${devOn ? '∞' : S.coins} ₴</span></h3><div class="tabs" data-shop="1">${tabs.map(tabBtn).join('')}</div>`;
 }
 const shopTabsX = () => { const r = sheetOpen() && sheet.querySelector('.tabs'); return r ? r.scrollLeft : null; };
 function shopTabsKeep(keepX) {
@@ -2897,13 +2899,13 @@ function shop() {
   let body = '';
   if (winter() && shopTab === 'seeds') shopTab = 'veg';   // in winter the seeds tab becomes vegetables
   if (!winter() && shopTab === 'veg') shopTab = 'seeds';
-  if (shopTab === 'help') return helpRound(0);
+  if (shopTab === 'help') shopTab = 'food';
   if (shopTab === 'clothes') {
     const st = stage();
     body = `<div class="outfits">${Object.keys(D.shop.clothes).map(k => { const had = owned(k), price = D.shop.clothes[k]; return `<div class="ocard ${had ? 'owned' : ''}">
       <img src="${bigIconURL(k)}" alt="">
       <div class="n">${W[k].uk}</div>${known(k) < 2 || st < 3 ? `<div class="e">${W[k].en}</div>` : ''}
-      ${had ? `<div class="have">✓ ${D.ui.have[0]}${st < 3 ? ' · in your wardrobe' : ''}</div>` : `<button class="b blue" data-a="buy" data-v="${k}">${lab('buy')} · ${devOn ? '∞' : price} ₴</button>`}
+      ${had ? `<div class="have">✓ ${D.ui.have[0]}${st < 3 ? ' · in your wardrobe' : ''}</div>` : `<button class="b blue" data-a="buy" data-v="${k}">${lab('buy')} · ${price} ₴</button>`}
       ${btn('hearWord', k, '🔊', 'round ghost')}</div>`; }).join('')}</div><div class="muted" style="font-size:14px;padding:2px 0 0">⟷ ${st < 3 ? 'Swipe to see them all' : ''}</div>`;
     setTimeout(() => sheet.classList.add('fixed'), 0);
     const keepX = shopTabsX(), row0 = shopShown === 'clothes' && sheet.querySelector('.outfits'), keepO = row0 ? row0.scrollLeft : 0;   // buying redraws the tab: the row stays where it was
