@@ -1723,7 +1723,7 @@ function add(e) {
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
   add({ w: 'pysanka', x: STALL.x + 0.8, y: STALL.y + 0.1, s: 0.6 });   // a basket of pysanky on the ground in front of the stall, by the right-hand crate
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
-  for (const [x, y] of [[34.3, 21.5], [34.3, 22.2], [34.3, 22.9], [34.3, 23.6], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0, give: 'pshenytsia', cd: 150, hide: true });   // a strip of wheat
+  for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) add({ w: 'pshenytsia', x: 33.35 + k * 0.72, y: 21.7 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 34.1 });   // a square little field of wheat by the pond
   for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) add({ w: 'pshenytsia', x: 32.6 + k * 0.72 + (r % 2) * 0.3, y: 2.9 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 33.8 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
@@ -5849,26 +5849,30 @@ function bellReverb() {
   const cv2 = actx.createConvolver(); cv2.buffer = ir; const wet2 = actx.createGain(); wet2.gain.value = 0.6; cv2.connect(wet2); wet2.connect(bellBus());
   return (bellVerb = cv2);
 }
-// The bell: one low tone, struck and left to ring on for a long while, as loud as it will go. It is a single
-// pitch (110 Hz). A pure tone that low barely sounds on a phone's little speaker, so the wave carries a little
-// of its own octave and twelfth, which phones can play: still one note to the ear, just one you can hear. Two
-// copies a hair apart in pitch give the slow swell of a big bell.
-let bellWave = null;
+// The bell: one big low note (110 Hz) that is struck and rings on for a long while. What makes it a bell and not a
+// plucked string is its overtones: a bell's don't sit on the string's neat harmonics but a little off them (the
+// ring an octave up, a minor third above that, the fifth, the bright nominal two octaves up), and they die away
+// well before the low hum does. Each sounds as a slightly detuned pair, so the note swells and shimmers slowly,
+// and a soft metallic tap marks the strike. The overtones also let a phone's small speaker carry the note.
 function churchBell(vol = 1, f0 = 110, len = 1) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
-    if (!bellWave) bellWave = actx.createPeriodicWave(new Float32Array([0, 0, 0, 0, 0]), new Float32Array([0, 1, 0.55, 0.3, 0.12]));
-    const t0 = actx.currentTime + 0.01, d = 22 * len, out = actx.createGain(); out.gain.value = vol; out.connect(bellBus()); out.connect(bellReverb());
-    for (const det of [-0.35, 0.35]) {
-      const o = actx.createOscillator(), g = actx.createGain(); o.setPeriodicWave(bellWave); o.frequency.value = f0 + det;
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.9, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.45, t0 + 1.5); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+    const t0 = actx.currentTime + 0.01, out = actx.createGain(); out.gain.value = vol; out.connect(bellBus()); out.connect(bellReverb());
+    //  ratio to the hum, loudness, how long it rings (s): the hum carries on longest; the overtones fade sooner
+    for (const [r, amp, d0, det] of [[1, 0.85, 22, 0.25], [2.0, 0.42, 13, 0.6], [2.4, 0.3, 9, 0.7], [3.0, 0.14, 6, 0.8], [4.0, 0.26, 7, 1.0], [5.05, 0.09, 3, 1.2], [5.4, 0.07, 2.4, 1.3]]) for (const sd of [-1, 1]) {
+      const o = actx.createOscillator(), g = actx.createGain(), d = d0 * len; o.type = 'sine'; o.frequency.value = f0 * r + sd * det * 0.5;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(amp * 0.5, t0 + 0.006); g.gain.exponentialRampToValueAtTime(amp * 0.3, t0 + Math.min(1.5, d * 0.1)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
       o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.05);
     }
+    // the strike: a short soft metallic tap
+    const n = actx.sampleRate * 0.05, buf = actx.createBuffer(1, n, actx.sampleRate), dd = buf.getChannelData(0); for (let i = 0; i < n; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 4);
+    const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), sg = actx.createGain(); src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 3; sg.gain.value = 0.18;
+    src.connect(bp); bp.connect(sg); sg.connect(out); src.start(t0);
   } catch (e) {}
 }
 // Pulling the rope: the one bell, rung twice.
 function churchPeal(vol = 1) { churchBell(vol); setTimeout(() => churchBell(vol), 3500); }
-function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.5; setTimeout(() => { duck = 1; }, 14000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
+function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.75; setTimeout(() => { duck = 1; }, 10000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
 // The only thing to do at the altar: put a few coins in the box. It counts what you've given, and that's all.
 function donateCard() {
   const st = stage(), have = S.coins || 0, given = S.churchGiven || 0;
@@ -6472,7 +6476,7 @@ function dayTick(dt) {
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
     const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 1;   // the noon bell rings out through the whole village, as loud as it goes
-    duck = 0.15; setTimeout(() => { duck = 1; }, 20000); for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 4000);   // three slow strokes of the big bell
+    duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 4000);   // three slow strokes of the big bell
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
   if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; setGuide(); learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
@@ -7007,11 +7011,51 @@ function boardCard() {
   const list = `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">${Object.entries(F.needs).map(([id, n]) => { const h = festHave(id), full = h >= n; return `<span style="text-align:center;min-width:54px;opacity:${h ? 1 : 0.55}"><img src="${iconURL(id)}" style="width:34px;height:34px" alt=""><br><b style="font-size:14px">${full ? '✓' : h + '/' + n}</b><br><small style="font-size:14px">${W[id].uk}</small></span>`; }).join('')}</div>`;
   const fact = W[F.id].fact;
   openSheet(`<div class="card">
-    <div style="display:flex;align-items:center;gap:10px;justify-content:center"><img src="${iconURL(F.id)}" style="width:48px;height:48px" alt=""><div style="text-align:left"><div class="word" style="font-size:28px">${W[F.id].uk}</div>${st < 3 ? `<div class="en" style="font-size:14px">${W[F.id].en}</div>` : ''}</div></div>
+    <canvas id="flyer" style="width:100%;height:210px;display:block" aria-label="${W[F.id].uk}"></canvas>${st < 3 ? `<div class="en" style="font-size:14px;margin-top:2px">${W[F.id].en}</div>` : ''}
     <div class="hint" style="margin-top:6px;padding:6px 10px">📋 ${W.doshka.uk}${xl(' · notice board')} · ${ready ? `🎉 <b>${PH.zi_sviatom.uk}</b>${xl(' Everything is ready!')}` : xl('The village needs:')}${list}</div>
     ${fact ? `<div class="muted" style="font-size:14px;padding:6px 2px 0;line-height:1.35">🌾 ${fact.uk}${st < 3 ? `<br><span style="opacity:.8">${fact.en}</span>` : ''}</div>` : ''}
     <div class="row">${btn('hear', 'w_' + F.id, '🔊', 'round blue')}${ready ? btn('festGo', '', lab('festgo')) : canGive ? btn('boardGive', '', lab('handover')) : ''}${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+  drawFlyer($('#flyer'), F, ready);
   if (first) say('w_' + F.id);
+}
+// The festival flyer on the notice board: a sheet of paper pinned up a little crooked, with an embroidered
+// border, the festival's name in big painted letters, its picture and the things that go with it, an
+// invitation, and how many days are left. Each festival has its own colours.
+const FLYER = {
+  obzhynky: { bg: '#fff4d6', ink: '#8a4b12', accent: '#d9a13a', deco: ['@pshenytsia', '@vinok', '@pshenytsia'], sky: '#f6d58a' },
+  kupala: { bg: '#e9f1ff', ink: '#1f3f7a', accent: '#e2574c', deco: ['@vinok', '🔥', '@vinok'], sky: '#2c4a8a' },
+  sviatvechir: { bg: '#eef2fb', ink: '#23407a', accent: '#d4a533', deco: ['@zirka', '@didukh', '@zirka'], sky: '#1d2d5c' },
+  velykden: { bg: '#f4fbe9', ink: '#3d6b2a', accent: '#d6476b', deco: ['@pysanka', '🌸', '@pysanka'], sky: '#bfe6a0' },
+};
+function drawFlyer(cv2, F, ready) {
+  if (!cv2) return; const dpr = Math.min(2, window.devicePixelRatio || 1), W0 = cv2.clientWidth, H0 = cv2.clientHeight; cv2.width = W0 * dpr; cv2.height = H0 * dpr;
+  const c = cv2.getContext('2d'); c.scale(dpr, dpr);
+  const P = FLYER[F.id] || FLYER.obzhynky, st = stage(), days = seasonDaysLeft(), pw = Math.min(W0 * 0.9, 330), ph = H0 - 16, px = (W0 - pw) / 2, py = 10;
+  const deco = id => id[0] === '@' ? (W[id.slice(1)] ? W[id.slice(1)].ic : '✨') : id;
+  // the cork of the board behind it
+  c.fillStyle = '#b5824e'; rr(c, 0, 0, W0, H0, 14); c.fillStyle = 'rgba(80,50,20,.18)'; for (let i = 0; i < 90; i++) { const x = (i * 97.3) % W0, y = (i * 53.7) % H0; circ(c, x, y, 1.4); }
+  c.save(); c.translate(W0 / 2, H0 / 2); c.rotate(-0.025); c.translate(-W0 / 2, -H0 / 2);
+  c.fillStyle = 'rgba(40,25,10,.3)'; rr(c, px + 4, py + 5, pw, ph, 6);   // its shadow on the cork
+  c.fillStyle = P.bg; rr(c, px, py, pw, ph, 6);
+  // a band of sky with the festival's colour at the top, under the title
+  let g = c.createLinearGradient(0, py, 0, py + ph * 0.55); g.addColorStop(0, P.sky); g.addColorStop(1, P.bg); c.fillStyle = g; rr(c, px + 8, py + 16, pw - 16, ph * 0.5, 4);
+  if (F.id === 'kupala' || F.id === 'sviatvechir') { c.fillStyle = 'rgba(255,250,220,.9)'; for (let i = 0; i < 16; i++) { const x = px + 14 + ((i * 0.618) % 1) * (pw - 28), y = py + 20 + ((i * 0.377) % 1) * ph * 0.3; star4(c, x, y, 1.5 + (i % 3)); } }   // stars on the night ones
+  // the embroidered border: red and black cross-stitch diamonds, top and bottom
+  const band = y => { for (let x = px + 10; x < px + pw - 10; x += 12) { c.fillStyle = (x / 12 | 0) % 2 ? '#2d2d2d' : '#c62828'; poly(c, [[x + 6, y - 4], [x + 10, y], [x + 6, y + 4], [x + 2, y]]); } c.fillStyle = '#c62828'; c.fillRect(px + 10, y + 6, pw - 20, 1.5); c.fillRect(px + 10, y - 7.5, pw - 20, 1.5); };
+  band(py + 11); band(py + ph - 11);
+  // the picture: the festival in the middle, its things either side
+  drawIcon(c, W[F.id].ic, W0 / 2, py + ph * 0.6, Math.min(78, ph * 0.42));
+  drawIcon(c, deco(P.deco[0]), px + pw * 0.17, py + ph * 0.56, 42); drawIcon(c, deco(P.deco[2]), px + pw * 0.83, py + ph * 0.56, 42);
+  // the title, painted big, and the invitation
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  const title = W[F.id].uk; let fs2 = 30; c.font = `900 ${fs2}px Georgia, "Times New Roman", serif`; while (c.measureText(title).width > pw - 40 && fs2 > 16) { fs2--; c.font = `900 ${fs2}px Georgia, "Times New Roman", serif`; }
+  c.lineWidth = 5; c.strokeStyle = 'rgba(255,255,255,.85)'; c.strokeText(title, W0 / 2, py + 34); c.fillStyle = P.ink; c.fillText(title, W0 / 2, py + 34);
+  c.font = '800 15px system-ui, sans-serif'; c.fillStyle = P.accent; c.fillText(ready ? '🎉 ' + PH.zi_sviatom.uk : 'Запрошуємо всіх!', W0 / 2, py + ph * 0.72);
+  c.font = '600 14px system-ui, sans-serif'; c.fillStyle = P.ink;
+  c.fillText(st < 3 ? (ready ? 'Everything is ready: come and celebrate!' : `Everyone's invited! · ${days} day${days > 1 ? 's' : ''} left this season`) : `${SEASON_IC[season()]} ${days}`, W0 / 2, py + ph * 0.82);
+  c.restore();
+  // a red drawing pin at the top
+  c.fillStyle = 'rgba(0,0,0,.25)'; circ(c, W0 / 2 + 2, py + 4, 6); c.fillStyle = '#d43a3a'; circ(c, W0 / 2, py + 2, 6); c.fillStyle = 'rgba(255,255,255,.6)'; circ(c, W0 / 2 - 2, py, 2);
 }
 function boardGive() {
   const F = curFest(); let n = 0;
