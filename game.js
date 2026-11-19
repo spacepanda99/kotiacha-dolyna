@@ -6425,28 +6425,48 @@ function newDay() {
   const was = seasonIx();
   S.clock = { day: (S.clock.day || 1) + 1, t: 0.27, ev: {} };
   S.wx = dayWeather(season(), r);
+  if (S.wx === 'snow' || seasonIx() !== was) { prints.length = 0; printLast = null; for (const e of ents) e.pl = null; }   // fresh snow covers the tracks
   if (seasonIx() !== was && bed) bed.season = season();   // a new season starts this morning
   if (seasonIx() !== was && winter()) { S.wx = 'snow'; S.firstSnow = S.clock.day; }   // the first morning of winter: the first snow
   learn('ranok'); learn(WX[S.wx].w); learn(season()); homeList = null; setGuide(); save();
 }
-// Footprints in the snow: a left and a right print every little stride while she walks, fading after a
-// minute or so (at most 160 kept).
+// Footprints in the snow. Hers (boots), the cats' and the dog's (paws), the cow's, horse's, goat's and pig's
+// (cloven hooves), the hens' and ducks' (three toes), and the villagers' as they walk home. They stay all day:
+// only a fresh fall of snow overnight covers them up (newDay). Kept to 1500, and only those on screen are drawn.
 const prints = []; let printLast = null, printSide = 1;
+const PRINT_OF = { cat: ['paw', 0.17, 0.8], dog: ['paw', 0.24, 1.15], cow: ['hoof', 0.34, 1.35], horse: ['hoof', 0.36, 1.4], goat: ['hoof', 0.24, 0.85], pig: ['hoof', 0.22, 0.85], hen: ['bird', 0.13, 0.8], rooster: ['bird', 0.15, 0.95], duck: ['bird', 0.16, 1] };
+function addPrint(o, x, y, kind, gap, sc) {
+  if (!o.pl) { o.pl = { x, y, side: 1 }; return; }
+  const dx = x - o.pl.x, dy = y - o.pl.y, d = Math.hypot(dx, dy);
+  if (d < gap) return;
+  if (d > 2) { o.pl = { x, y, side: 1 }; return; }   // jumped (a new spot, or carried indoors and back): no long stride
+  const ang = Math.atan2(dy, dx); o.pl.side = -o.pl.side;
+  const off = kind === 'boot' ? 0.09 : 0.05 * sc;
+  prints.push({ x: x - Math.sin(ang) * off * o.pl.side, y: y + Math.cos(ang) * off * o.pl.side, a: ang, k: kind, s: sc, t: nowT });
+  if (prints.length > 1500) { const i = prints.findIndex(q => q.k !== 'boot'); prints.splice(i >= 0 ? i : 0, 1); }   // animals' tracks give way first; hers stay longest
+  o.pl.x = x; o.pl.y = y;
+}
 function stepPrints() {
   if (!winter()) { prints.length = 0; printLast = null; return; }
-  if (!printLast) { printLast = { x: P.x, y: P.y }; return; }
-  const dx = P.x - printLast.x, dy = P.y - printLast.y, d = Math.hypot(dx, dy);
-  if (d < 0.3) return;
-  const a = Math.atan2(dy, dx); printSide = -printSide;
-  prints.push({ x: P.x - Math.sin(a) * 0.09 * printSide, y: P.y + Math.cos(a) * 0.09 * printSide, a, t: nowT });
-  if (prints.length > 160) prints.shift();
-  printLast = { x: P.x, y: P.y };
+  printLast = printLast || {}; addPrint(printLast, P.x, P.y, 'boot', 0.3, 1);
+  for (const e of ents) {
+    if (goneNow(e) || e.water) continue;
+    if (e.kind === 'npc') { if (e.route2) addPrint(e, e.x, e.y, 'boot', 0.3, 1); continue; }
+    const pk = e.kind === 'animal' && PRINT_OF[e.an]; if (!pk) continue;
+    addPrint(e, e.x, e.y, pk[0], pk[1], pk[2]);
+  }
 }
 function drawPrints(c, t) {
+  const vw = cv.width / zoom, vh = cv.height / zoom, x0 = camX - 30, x1 = camX + vw + 30, y0 = camY - 30, y1 = camY + vh + 30;
   for (const p of prints) {
-    const age = t - p.t, al = Math.max(0, 1 - age / 75); if (al <= 0) continue;
-    c.save(); c.translate(p.x * T, p.y * T); c.rotate(p.a); c.fillStyle = `rgba(120,140,175,${0.38 * al})`;
-    ell(c, 0, 0, 5.5, 2.8); ell(c, 6.5, 0, 2.6, 2.3); c.restore();
+    const px = p.x * T, py = p.y * T; if (px < x0 || px > x1 || py < y0 || py > y1) continue;
+    const al = Math.max(0.55, 1 - (t - p.t) / 90);   // fresh ones crisp, older ones settle a little, none vanish
+    c.save(); c.translate(px, py); c.rotate(p.a); c.scale(p.s, p.s); c.fillStyle = `rgba(120,140,175,${0.38 * al})`; c.strokeStyle = c.fillStyle;
+    if (p.k === 'boot') { ell(c, 0, 0, 5.5, 2.8); ell(c, 6.5, 0, 2.6, 2.3); }
+    else if (p.k === 'paw') { ell(c, 0, 0, 2.3, 2); for (const yy of [-1.9, 0, 1.9]) circ(c, 2.9, yy * 0.8, 0.95); circ(c, 2.3, -2.4, 0.8); }
+    else if (p.k === 'hoof') { ell(c, 0.6, -1.25, 2.6, 1.05); ell(c, 0.6, 1.25, 2.6, 1.05); }
+    else { c.lineWidth = 0.9; c.lineCap = 'round'; c.beginPath(); c.moveTo(-1.6, 0); c.lineTo(2.4, 0); c.moveTo(0, 0); c.lineTo(2.2, -1.8); c.moveTo(0, 0); c.lineTo(2.2, 1.8); c.stroke(); }
+    c.restore();
   }
 }
 function update(dt, t, rdt = dt) {
