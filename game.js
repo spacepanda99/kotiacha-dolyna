@@ -5020,10 +5020,8 @@ function drawHome(t) {
   // the window onto the valley
   const wx = WIN_X * RW, ww = u * 0.3, wt = h * 0.27, wb = h * 0.45;
   c.save(); c.beginPath(); c.rect(wx - ww / 2, wt, ww, wb - wt); c.clip();
-  let g = c.createLinearGradient(0, wt, 0, wb); g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e8f7ff'); c.fillStyle = g; c.fillRect(wx - ww / 2, wt, ww, wb - wt);
-  c.fillStyle = '#a6dc7c'; ell(c, wx - ww * 0.2, wb, ww * 0.5, (wb - wt) * 0.32); c.fillStyle = '#8fcf6a'; ell(c, wx + ww * 0.3, wb, ww * 0.5, (wb - wt) * 0.26);
-  c.fillStyle = '#fff'; ell(c, wx + ww * 0.15 + Math.sin(t * 0.2) * ww * 0.1, wt + (wb - wt) * 0.25, ww * 0.14, (wb - wt) * 0.07);
-  for (let i = 0; i < 4; i++) sunflower(c, wx - ww * 0.36 + i * ww * 0.24, wb + 2, (wb - wt) * 0.38, t, i);
+  let g;
+  windowView(c, wx - ww / 2, wt, ww, wb - wt, t, 4, 0);   // the season, weather and time of day outside
   c.restore();
   c.strokeStyle = '#3d7cc2'; c.lineWidth = u * 0.022; c.strokeRect(wx - ww / 2, wt, ww, wb - wt);
   c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(wx, wt); c.lineTo(wx, wb); c.moveTo(wx - ww / 2, (wt + wb) / 2); c.lineTo(wx + ww / 2, (wt + wb) / 2); c.stroke();
@@ -5135,10 +5133,8 @@ function drawOlia(t) {
   // ---- the window: lace along the top, the рушник draped over it, geraniums and a pysanka on the sill
   const wx = OX.win * RW, ww = u * 0.3, wb = wallB - u * 0.17, wt = wb - u * 0.27;
   c.save(); c.beginPath(); c.rect(wx - ww / 2, wt, ww, wb - wt); c.clip();
-  let g = c.createLinearGradient(0, wt, 0, wb); g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e8f7ff'); c.fillStyle = g; c.fillRect(wx - ww / 2, wt, ww, wb - wt);
-  c.fillStyle = '#a6dc7c'; ell(c, wx - ww * 0.2, wb, ww * 0.5, (wb - wt) * 0.3); c.fillStyle = '#8fcf6a'; ell(c, wx + ww * 0.3, wb, ww * 0.5, (wb - wt) * 0.24);
-  c.fillStyle = '#fff'; ell(c, wx - ww * 0.1 + Math.sin(t * 0.2) * ww * 0.1, wt + (wb - wt) * 0.3, ww * 0.14, (wb - wt) * 0.07);
-  for (let i = 0; i < 3; i++) sunflower(c, wx - ww * 0.3 + i * ww * 0.3, wb + 2, (wb - wt) * 0.34, t, i + 2);
+  let g;
+  windowView(c, wx - ww / 2, wt, ww, wb - wt, t, 3, 1);   // the season, weather and time of day outside
   c.fillStyle = 'rgba(255,255,255,.9)'; for (let i = 0; i <= 8; i++) circ(c, wx - ww / 2 + i * ww / 8, wt, ww / 14);
   c.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < 8; i++) circ(c, wx - ww / 2 + (i + 0.5) * ww / 8, wt + ww / 13, ww / 26);
   c.restore();
@@ -6373,6 +6369,46 @@ const DOTS = Array.from({ length: 70 }, () => [rT(), rT(), rT()]);
 const INK = '#4a2c1a';
 const cozyFont = sz => `900 ${sz}px ${fontReady ? '"Cozy", system-ui, sans-serif' : 'system-ui, sans-serif'}`;
 
+// The view through a cottage window (already clipped to the glass by the caller), matching outside: the sky by
+// time of day and weather, hills by season, a tree by season, the garden (sunflowers in summer, flowers in
+// spring, blowing leaves in autumn, drifts in winter), and the rain, snow, fog, lightning or rainbow of the day.
+function windowView(c, x0, y0, ww, wh, t, nFlowers, seed) {
+  const sea = season(), wx = S.wx, L = skyLight(S.clock.t), day = 1 - L.dark, wb = y0 + wh, cx = x0 + ww / 2;
+  const SK = { sun: ['#8fd3f4', '#e8f7ff'], cloud: ['#a9bccd', '#e1e7ec'], rain: ['#75859a', '#b2bdc9'], storm: ['#4a566b', '#8a96a6'], fog: ['#cfd6db', '#eceff1'], snow: ['#bccad8', '#eef2f6'] }[wx] || ['#8fd3f4', '#e8f7ff'];
+  let gr = c.createLinearGradient(0, y0, 0, wb); gr.addColorStop(0, SK[0]); gr.addColorStop(1, SK[1]); c.fillStyle = gr; c.fillRect(x0, y0, ww, wh);
+  if (L.warm > 0 || L.dawn > 0) { const a = Math.max(L.warm, L.dawn) * 0.6; gr = c.createLinearGradient(0, y0, 0, wb); gr.addColorStop(0, `rgba(240,130,90,${a * 0.5})`); gr.addColorStop(1, `rgba(255,196,120,${a})`); c.fillStyle = gr; c.fillRect(x0, y0, ww, wh); }   // sunrise and sunset
+  if (L.dark > 0) { c.fillStyle = `rgba(14,22,52,${L.dark * 0.88})`; c.fillRect(x0, y0, ww, wh);
+    if (L.dark > 0.4 && (wx === 'sun' || wx === 'cloud')) { c.fillStyle = `rgba(255,250,220,${(L.dark - 0.4) * 1.6})`; for (let i = 0; i < 14; i++) circ(c, x0 + ((i * 0.618 + seed * 0.37) % 1) * ww, y0 + ((i * 0.377) % 1) * wh * 0.5, (i % 3 ? 0.8 : 1.3) * (0.7 + 0.3 * Math.sin(t * 2 + i))); }   // stars on a clear night
+    if (L.dark > 0.4 && wx !== 'rain' && wx !== 'storm' && wx !== 'fog') { c.fillStyle = `rgba(255,248,210,${(L.dark - 0.4) * 1.6})`; circ(c, x0 + ww * 0.72, y0 + wh * 0.2, wh * 0.07); } }   // and the moon
+  else if (wx === 'sun') { c.fillStyle = 'rgba(255,240,170,.35)'; circ(c, x0 + ww * 0.76, y0 + wh * 0.2, wh * 0.13); c.fillStyle = '#ffe680'; circ(c, x0 + ww * 0.76, y0 + wh * 0.2, wh * 0.075); }   // the sun
+  if (S.rainbowDay === S.clock.day && S.clock.t < 0.8 && !wet(wx) && day > 0.5) { c.lineWidth = wh * 0.022; ['#e2574c', '#f2a23a', '#f2d23a', '#6cc04a', '#3d7cc2', '#7a52b3'].forEach((col, i) => { c.strokeStyle = col; c.globalAlpha = 0.5; c.beginPath(); c.arc(cx, wb, wh * (0.78 - i * 0.022), Math.PI, 0); c.stroke(); }); c.globalAlpha = 1; }
+  // clouds: one drifting on a fine day, more and greyer as the weather turns
+  const nc = { sun: 1, cloud: 3, rain: 3, storm: 4, fog: 0, snow: 3 }[wx] ?? 1, ccol = wx === 'storm' ? '#5d6878' : wx === 'rain' ? '#8995a5' : wx === 'snow' ? '#e4e9ef' : wx === 'cloud' ? '#eef1f4' : '#ffffff';
+  for (let i = 0; i < nc; i++) { const px = x0 + (((i * 0.41 + seed * 0.3 + t * 0.006 * (1 + i * 0.3)) % 1.4) - 0.2) * ww, py = y0 + wh * (0.14 + (i % 3) * 0.1); c.fillStyle = ccol; c.globalAlpha = 1 - L.dark * 0.7; ell(c, px, py, ww * 0.16, wh * 0.055); ell(c, px + ww * 0.07, py - wh * 0.03, ww * 0.09, wh * 0.05); ell(c, px - ww * 0.07, py - wh * 0.01, ww * 0.08, wh * 0.04); c.globalAlpha = 1; }
+  // hills, coloured by the season
+  const H = { lito: ['#a6dc7c', '#8fcf6a'], vesna: ['#b8e58e', '#97d36c'], osin: ['#d8bb6c', '#c39648'], zyma: ['#f4f8fc', '#d6e2ee'] }[sea];
+  c.fillStyle = H[0]; ell(c, cx - ww * 0.2, wb, ww * 0.55, wh * 0.32); c.fillStyle = H[1]; ell(c, cx + ww * 0.3, wb, ww * 0.5, wh * 0.25);
+  // a tree on the far hill: green in summer, blossom in spring, orange and gold in autumn, bare with snow in winter
+  { const tx = x0 + ww * (0.82 - (seed % 2) * 0.66), ty = wb - wh * 0.22, r = wh * 0.09;
+    c.fillStyle = '#6b4a2b'; c.fillRect(tx - r * 0.12, ty - r * 0.5, r * 0.24, r * 1.2);
+    if (sea === 'zyma') { c.strokeStyle = '#6b4a2b'; c.lineWidth = Math.max(1, r * 0.1); c.beginPath(); for (const a of [-0.7, -0.25, 0.3, 0.75]) { c.moveTo(tx, ty - r * 0.2); c.lineTo(tx + Math.sin(a) * r, ty - r * 0.2 - Math.cos(a) * r); } c.stroke(); c.fillStyle = '#ffffff'; for (const a of [-0.7, -0.25, 0.3, 0.75]) ell(c, tx + Math.sin(a) * r * 0.85, ty - r * 0.2 - Math.cos(a) * r * 0.9, r * 0.18, r * 0.07); }
+    else { const P = sea === 'osin' ? ['#c0461f', '#e07a24', '#f2b43a'] : sea === 'vesna' ? ['#64b85a', '#f6c6d8', '#ffffff'] : ['#2f8440', '#3f9a4a', '#55b35c']; c.fillStyle = P[0]; circ(c, tx, ty - r * 0.9, r * 0.75); c.fillStyle = P[1]; circ(c, tx - r * 0.35, ty - r, r * 0.45); c.fillStyle = P[2]; circ(c, tx + r * 0.3, ty - r * 1.15, r * 0.35); } }
+  // the garden in front
+  if (sea === 'lito') for (let i = 0; i < nFlowers; i++) sunflower(c, x0 + ww * (0.14 + i * 0.72 / Math.max(1, nFlowers - 1)), wb + 2, wh * 0.36, t, i + seed);
+  else if (sea === 'vesna') for (let i = 0; i < 7; i++) { const fx = x0 + ww * (0.08 + i * 0.14), fy = wb - wh * (0.05 + (i % 2) * 0.05); c.strokeStyle = '#4f9e48'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(fx, wb); c.lineTo(fx, fy); c.stroke(); c.fillStyle = ['#e2574c', '#ffd23f', '#ff7aa8', '#ffffff'][i % 4]; circ(c, fx, fy, wh * 0.03); c.fillStyle = '#f2c230'; circ(c, fx, fy, wh * 0.011); }
+  else if (sea === 'osin') { c.fillStyle = '#e07a24'; ell(c, x0 + ww * 0.3, wb - wh * 0.04, wh * 0.06, wh * 0.045); c.fillStyle = '#4f7a2a'; c.fillRect(x0 + ww * 0.3 - 1, wb - wh * 0.1, 2, wh * 0.03);   // a pumpkin in the garden
+    for (let i = 0; i < 5; i++) { const q = ((t * 0.12 + i / 5) % 1); c.save(); c.translate(x0 + ww * ((i * 0.29 + q * 0.8) % 1), y0 + wh * (0.25 + q * 0.7) + Math.sin(t * 2 + i) * 4); c.rotate(t * 2 + i); c.fillStyle = ['#c0461f', '#e07a24', '#f2b43a'][i % 3]; ell(c, 0, 0, 3, 1.6); c.restore(); } }   // leaves blowing past
+  else { c.fillStyle = '#ffffff'; ell(c, x0 + ww * 0.25, wb, ww * 0.35, wh * 0.08); ell(c, x0 + ww * 0.8, wb, ww * 0.3, wh * 0.06); }   // snowdrifts
+  // the weather itself, at window scale
+  c.save(); c.translate(x0, y0);
+  if (wx === 'rain' || wx === 'storm') drawRain(c, ww, wh, t, wx === 'storm');
+  if (wx === 'snow') drawSnow(c, ww, wh, t, 0.5, 0.5);
+  c.restore();
+  if (wx === 'fog') { c.fillStyle = 'rgba(236,240,242,.55)'; c.fillRect(x0, y0, ww, wh); c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, x0 + ((t * 0.02) % 1) * ww, wb - wh * 0.2, ww * 0.5, wh * 0.08); }
+  if (wx === 'storm') { const f = (t * 0.23 + seed * 0.5) % 1; if (f < 0.025) { c.fillStyle = `rgba(255,255,255,${0.7 * (1 - f / 0.025)})`; c.fillRect(x0, y0, ww, wh); } }   // a flash of lightning now and then
+  if (L.dark > 0) { c.fillStyle = `rgba(14,22,52,${L.dark * 0.45})`; c.fillRect(x0, y0 + wh * 0.5, ww, wh * 0.5); }   // the garden in the dark too
+  if (sea === 'zyma') { c.fillStyle = 'rgba(255,255,255,.7)'; for (const [fx, fy] of [[0, 1], [1, 1], [0, 0], [1, 0]]) ell(c, x0 + fx * ww, y0 + fy * wh, ww * 0.12, wh * 0.1); }   // frost in the corners of the glass
+}
 function sunflower(c, x, y, h, t, ph) {
   const sway = Math.sin(t * 1.3 + ph) * h * 0.05, hx = x + sway, hy = y - h, r = h * 0.17;
   c.strokeStyle = '#3f8f3f'; c.lineWidth = h * 0.045; c.lineCap = 'round';
