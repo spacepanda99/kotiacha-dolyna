@@ -1710,7 +1710,7 @@ function add(e) {
   for (const [x, y] of [[34.3, 21.5], [34.3, 22.2], [34.3, 22.9], [34.3, 23.6], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0, give: 'pshenytsia', cd: 150, hide: true });   // a strip of wheat
   for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) add({ w: 'pshenytsia', x: 32.6 + k * 0.72 + (r % 2) * 0.3, y: 2.9 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 33.8 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
-  for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28 });   // Grandma's wattle fence
+  for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
   add({ w: 'prapor', ic: '@praportop', x: 19.0, y: 18.17, s: 2.3, lift: 0.01 });   // the flag flies from the top of the fountain
   add({ w: 'koloda', k: 'koloda', x: 4.75, y: 12.75, s: 1.0, solid: true });   // the chopping block: split firewood
   add({ w: 'doshka', k: 'board', x: 23.6, y: 17.5, s: 1.35, solid: true });   // the notice board: what the next festival needs
@@ -7280,7 +7280,8 @@ function hitEnt(wx, wy) {
     const s = Math.max(0.75, e.s), cx = e.x, cy = e.kind === 'pond' ? e.y - 0.2 : e.flat ? e.y : e.y - s * 0.45;
     let d;
     if (e.kind === 'pond') { if (!inPond(wx, wy)) continue; d = 5; }
-    else { if (e.s > 3 && wy > e.y - 0.25) continue;   // big buildings: the ground just in front of one is for walking on
+    else { if (e.s > 3 && wy > e.y - 0.25) continue;
+      if (e.hitLow && wy < e.y - e.hitLow) continue;   // a low thing in front of a house (Grandma's fence): only its own bottom strip, so the house above gets the tap   // big buildings: the ground just in front of one is for walking on
       const dx = Math.abs(wx - cx) / (s * (e.hitW || (e.s > 3 ? 0.4 : 0.5))),   // hitW: a narrower box for tall thin things (the stork pole)
         dy = Math.abs(wy - cy) / (s * 0.55); if (dx > 1 || dy > 1) continue; d = Math.hypot(dx, dy) + (e.s > 2 ? 1 : 0); }
     if (d < bd) { bd = d; best = e; }
