@@ -21,6 +21,7 @@ window.DATA = {
     { id: "tserkva", uk: "церква", tr: "TSERK-va", en: "church", ic: "@church", acc: "церкву", fact: { uk: "Старі дерев'яні церкви є в Карпатах.", en: "Old wooden churches in the Carpathian mountains are on UNESCO's World Heritage list." } },
     { id: "mlyn", uk: "млин", tr: "mlyn", en: "windmill", ic: "@mill", fact: { uk: "Вітряки мололи зерно на борошно.", en: "Wooden windmills once stood on hills all over Ukraine, grinding grain into flour." } },
     { id: "lavka", uk: "лавка", tr: "LAV-ka", en: "bench", ic: "@bench", acc: "лавку" },
+    { id: "fontan", uk: "фонтан", tr: "fon-TAN", en: "fountain", ic: "@fontan" },
     { id: "leleka", uk: "лелека", tr: "le-LE-ka", en: "stork", ic: "@stork", acc: "лелеку", fact: { uk: "Лелека на даху приносить щастя.", en: "A stork nesting on the roof is said to bring good luck." } },
     { id: "vulyk", uk: "вулик", tr: "VU-lyk", en: "beehive", ic: "@hive", fact: { uk: "Українці здавна тримають бджіл.", en: "Ukraine is one of the world's biggest honey producers. The frame beehive was invented here by Petro Prokopovych in 1814." } },
     { id: "rynok", uk: "ринок", tr: "RY-nok", en: "market", ic: "@stall" },

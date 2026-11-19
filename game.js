@@ -338,6 +338,27 @@ const DRAW = {
     c.strokeStyle = '#c9ced4'; c.lineWidth = 4; c.beginPath(); for (let i = 0; i <= 16; i++) { const y = -40 + i * 2.4, x = Math.sin(i * 1.1) * 9; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
     c.fillStyle = '#e6e9ec'; poly(c, [[-9, -2], [9, -2], [0, 4]]);
   },
+  // A village fountain: a round stone basin with a painted band, a column with a bowl, water arching down into
+  // the pool with ripples and sparkle. In winter it's frozen, with icicles and snow on the rim.
+  fontan(c, o) {
+    const t = (o && o.t) || 0, cold = treeSeason(o) === 'zyma';
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 2, 50, 10);
+    c.fillStyle = '#cfc8b8'; c.beginPath(); c.ellipse(0, -10, 46, 15, 0, 0, Math.PI); c.lineTo(46, -22); c.ellipse(0, -22, 46, 15, 0, 0, Math.PI, true); c.closePath(); c.fill();
+    c.fillStyle = '#3d7cc2'; c.fillRect(-46, -19, 92, 3); c.fillStyle = '#d43a3a'; for (let i = -4; i <= 4; i++) { c.save(); c.translate(i * 10, -16); c.rotate(Math.PI / 4); c.fillRect(-2, -2, 4, 4); c.restore(); }   // a painted band round the basin
+    c.fillStyle = '#e4ded0'; ell(c, 0, -22, 46, 15); c.fillStyle = cold ? '#d6eaf8' : '#5fb1de'; ell(c, 0, -22, 40, 12);
+    if (!cold) { c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 1.2; for (let i = 0; i < 3; i++) { const r = ((t * 0.6 + i / 3) % 1); c.beginPath(); c.ellipse(0, -22, 6 + r * 30, (6 + r * 30) * 0.3, 0, 0, 7); c.stroke(); } c.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 5; i++) circ(c, Math.sin(t * 2 + i * 2) * 26, -22 + Math.cos(t * 1.7 + i) * 6, 1.2); }
+    else { c.strokeStyle = 'rgba(255,255,255,.85)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-20, -24); c.lineTo(-4, -20); c.lineTo(10, -25); c.stroke(); c.fillStyle = '#ffffff'; ell(c, -30, -33, 14, 4); ell(c, 26, -34, 16, 4); }
+    c.fillStyle = '#cfc8b8'; c.fillRect(-5, -56, 10, 34); c.fillStyle = '#bcb4a2'; c.fillRect(-5, -56, 3, 34);
+    c.fillStyle = '#d9d2c2'; ell(c, 0, -58, 18, 6); c.fillStyle = cold ? '#d6eaf8' : '#5fb1de'; ell(c, 0, -59, 14, 4);
+    c.fillStyle = '#cfc8b8'; c.fillRect(-2.5, -70, 5, 12); c.fillStyle = '#e8c35a'; circ(c, 0, -72, 4);
+    if (!cold) {   // water: a little spout on top, and streams arching from the bowl's lip into the pool
+      c.strokeStyle = 'rgba(190,225,250,.85)'; c.lineWidth = 2.2; c.lineCap = 'round';
+      for (const s of [-1, 1]) for (let j = 0; j < 2; j++) { c.beginPath(); c.moveTo(s * 13, -58); c.quadraticCurveTo(s * (20 + j * 6), -54, s * (24 + j * 8), -24); c.stroke(); }
+      c.beginPath(); c.moveTo(0, -74); c.quadraticCurveTo(0, -84, 0, -80); c.stroke();
+      c.fillStyle = 'rgba(220,240,255,.9)'; for (let i = 0; i < 10; i++) { const q = ((t * 1.3 + i / 10) % 1), s = i % 2 ? 1 : -1; circ(c, s * (13 + q * 14 + (i % 3) * 2), -58 + q * q * 36, 1.3); }
+      for (let i = 0; i < 4; i++) { const q = ((t * 0.9 + i / 4) % 1), s = i % 2 ? 1 : -1; c.strokeStyle = `rgba(255,255,255,${0.6 * (1 - q)})`; c.lineWidth = 1; c.beginPath(); c.ellipse(s * 26, -23, 3 + q * 6, 1 + q * 2, 0, 0, 7); c.stroke(); }
+    } else { c.fillStyle = '#e6f3fb'; for (const x of [-12, -6, 6, 12]) poly(c, [[x - 2, -57], [x + 2, -57], [x, -48 - Math.abs(x) * 0.3]]); c.fillStyle = '#ffffff'; ell(c, 0, -60, 14, 3.5); }
+  },
   // A chopping block (a thick round of trunk) with the axe stuck in it and a little stack of split logs.
   koloda(c) {
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 34, 6);
@@ -1590,8 +1611,9 @@ function add(e) {
   add({ w: 'hodivnychka', k: 'feeder', x: 6.0, y: 12.7, s: 1.6, solid: true, only: ['zyma'] });   // the bird feeder by the cottage in winter
   rect(10, 2, 12, 4); add({ w: 'mlyn', x: 11.5, y: 5, s: 4.5, spin: true });
   // Market square.
-  rect(17, 16, 21, 16); add({ w: 'rynok', x: 19.5, y: 17, s: 4.3, kind: 'shop' });
-  add({ w: 'lavka', x: 16.5, y: 18.9, s: 1.3, solid: true });
+  rect(17, 4, 21, 4); add({ w: 'rynok', x: 19.5, y: 5, s: 4.3, kind: 'shop' });   // the market stall, at the top of the village road where it meets the back path
+  add({ w: 'fontan', x: 19.4, y: 17.6, s: 2.3, solid: true });   // a fountain in the middle of the square
+  add({ w: 'lavka', x: 17.0, y: 18.6, s: 1.3, solid: true });   // and a bench beside it, facing the water
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
   add({ w: 'choven', x: 32.2, y: 22.75, s: 1.4, flat: true });
@@ -1616,14 +1638,14 @@ function add(e) {
   add({ w: 'doshka', k: 'board', x: 23.6, y: 17.5, s: 1.35, solid: true });   // the notice board: what the next festival needs
   add({ w: 'lastivka', x: 12.6, y: 6.9, s: 0.7, kind: 'fly', cx: 12.6, cy: 6.9, ph: 1.3, swoop: true });
   // The bandura and a wreath lean against the ends of Oksana's market stall.
-  add({ w: 'bandura', x: 17.5, y: 17.06, s: 0.95, lean: 0.16 });
-  add({ w: 'vinok', x: 21.55, y: 17.06, s: 0.62, lean: -0.12 });
+  add({ w: 'bandura', x: 17.5, y: 5.06, s: 0.95, lean: 0.16 });
+  add({ w: 'vinok', x: 21.55, y: 5.06, s: 0.62, lean: -0.12 });
   // Beehives and the sunflower field.
   for (let i = 0; i < 3; i++) add({ w: 'vulyk', x: 4.5 + i * 1.5, y: 19.9, s: 1.3, solid: true });
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
-  for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [20.5, 3.9], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [34.5, 17.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
+  for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [34.5, 17.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [21.5, 11.9], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
@@ -1634,7 +1656,7 @@ function add(e) {
   for (const e of ents) if (GROWS.has(e.w)) { if (!onRoadish(e.x, e.y) && !onRoadish(e.x, e.y - 0.45)) continue;
     for (const [dx, dy] of [[0, 0.8], [0, -0.8], [0.8, 0], [-0.8, 0], [0, 1.3], [0, -1.3], [1.3, 0], [-1.3, 0], [0.9, 0.9], [-0.9, -0.9], [0.9, -0.9], [-0.9, 0.9], [0, 1.9], [0, -1.9]]) { const nx = e.x + dx, ny = e.y + dy; if (!onRoadish(nx, ny) && !onRoadish(nx, ny - 0.45) && !solid[Math.floor(ny)][Math.floor(nx)]) { e.x = nx; e.y = ny; break; } } }
   // Villagers.
-  add({ w: 'khata', k: 'n_oksana', x: 19.5, y: 18.1, kind: 'npc', npc: 'oksana', s: 1.3 });
+  add({ w: 'khata', k: 'n_oksana', x: 19.5, y: 6.55, kind: 'npc', npc: 'oksana', s: 1.3 });   // Oksana sweeps the path in front of her stall
   add({ w: 'khata', k: 'n_taras', x: 25.3, y: 21.2, kind: 'npc', npc: 'taras', s: 1.3 });
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
   add({ w: 'sobaka', x: 15.4, y: 20.78, kind: 'animal', r: 1.0, fetch: true });   // plays fetch with Andriiko
@@ -4465,7 +4487,7 @@ const TUT = [
   { p: 'i_plant', ev: 'plant', en: 'Tap a garden bed beside your cottage.' },
   { p: 'i_water', ev: 'water', en: 'Tap the bed again. Each watering uses one 💧; refill at the well.' },
   { p: 'i_harvest', ev: 'harvest', en: 'Give it a moment, then tap the bed.' },
-  { p: 'i_market', ev: 'buy', en: 'Find the striped stall on the square and buy something.' },
+  { p: 'i_market', ev: 'buy', en: 'Find the striped stall at the top of the village road and buy something.' },
   { p: 'i_decor', ev: 'place', en: 'Go into your cottage and tap 🪑 Прикрасити (Decorate).' },
   { p: 'i_free', en: '' },
 ];
