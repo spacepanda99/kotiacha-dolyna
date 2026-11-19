@@ -140,7 +140,8 @@ function subsHTML() {
 }
 // The action word in the subtitles, exactly as it's flashed on the pad, with its English.
 // The action word in the subtitles: just its English, one word ("cut! chop!" → "Cut!").
-const verbEn1 = v => { const m = (W[v].en.match(/[A-Za-z']+/) || [''])[0]; return m ? m[0].toUpperCase() + m.slice(1) + '!' : ''; };
+const verbEn1 = v => { if (W[v] && !W[v].verb) { const e = W[v].en.replace(/\s*\(.*\)/, '').trim(); return e ? e[0].toUpperCase() + e.slice(1) + '!' : ''; }   // a thing, not an action: its whole name ("Wreath!")
+  const m = (W[v].en.match(/[A-Za-z']+/) || [''])[0]; return m ? m[0].toUpperCase() + m.slice(1) + '!' : ''; };
 function actSub(v, a) { subNow = { uk: verbEn1(v), en: '', a, t0: performance.now(), both: true }; subPaint(); }
 function subStart(id, a) {
   const uk = textOf(id); if (!uk) return;
@@ -7151,13 +7152,19 @@ function startFest() {
 function festReply() {
   if (!fest) return;
   say('p_' + fest.F.reply); closeSheet();
+  festTradStart();
+}
+// The dance, once the tradition is done.
+function festDance() {
+  if (!fest) return;
   const F = fest.F; fest.beats = Array.from({ length: 28 }, (_, i) => ({ t: (F.first || 0) + (i + 3) * (F.beat || 0.8), hit: 0 }));   // three beats to get going
   fest.phase = 'dance'; fest.danceT = nowT; fest.tune = false;
   try { music.pause(); if (!festMusic.src.endsWith(F.tune + '.mp3')) festMusic.src = 'music/' + F.tune + '.mp3'; festMusic.currentTime = 0; festMusic.volume = 0.6; if (musicOn) festMusic.play().then(() => { if (fest) { fest.tune = true; fest.danceT = nowT - festMusic.currentTime; } }).catch(() => {}); } catch (e) {}
   setTimeout(() => { if (fest) say('w_tantsiui'); learn('tantsiui'); }, 1300);
 }
-function festTap() {
+function festTap(ev) {
   const f = fest; if (!f) return;
+  if (f.phase === 'trad') { if (ev) { const k = cv.width / innerWidth; festTradTap(ev.clientX * k, ev.clientY * k); } return; }
   if (f.phase === 'dance') {
     const ft = festClock(); let best = null; for (const b of f.beats) if (!b.hit && Math.abs(ft - b.t) < 0.3 && (!best || Math.abs(ft - b.t) < Math.abs(ft - best.t))) best = b;
     f.stepT = nowT; f.boost += best ? 0 : 1; festAct('tantsiui');   // every tap: the circle steps round, everyone hops, «Танцюй!»
@@ -7207,6 +7214,88 @@ function carolStar(c, x, y, s, t) {
 // The verb said and flashed on each press in the festival: «Танцюй!» while dancing, «Стрибай!» / «Співай!» at
 // the finale. Like the games' action words, it's said over and over while you keep pressing, each time to the
 // end of the word, and the subtitle shows its one English word.
+// ------------------------------------------------------------------ each festival's tradition, before the dance
+//   Обжинки: the last stalks of the harvest are gathered by hand and bound into a sheaf with a red ribbon.
+//   Купала: girls float wreaths with a little candle down the river.
+//   Святвечір: supper waits until the first star shows in the sky, so everyone watches for it.
+//   Великдень: eggs are written with wax and dyed, band by band, into pysanky.
+const TRAD = {
+  obzhynky: { uk: 'Збери останні колоски!', en: 'Gather the last stalks of wheat into a sheaf!', n: 8, v: 'zbyrai' },
+  kupala: { uk: 'Пусти вінок на воду!', en: 'Tap a wreath to float it down the river!', n: 3, v: 'vinok' },
+  sviatvechir: { uk: 'Знайди першу зірку!', en: 'Supper starts when the first star comes out. Find it!', n: 1, v: null },
+  velykden: { uk: 'Розпиши писанку!', en: 'Tap a colour to paint each band of the pysanka!', n: 4, v: 'pysanka' },
+};
+const PYS_COL = ['#f2c230', '#e2742a', '#c62828', '#2d2d2d'];
+function festTradStart() {
+  const f = fest, T0 = TRAD[f.F.id]; if (!T0) return festDance();
+  f.phase = 'trad'; f.trad = { t0: nowT, n: 0, done: 0, items: [], bands: [], wrong: 0 };
+  const r = f.trad;
+  if (f.F.id === 'obzhynky') r.items = Array.from({ length: 8 }, (_, i) => ({ x: 0.2 + i * 0.086 + (i % 2) * 0.01, gone: 0 }));
+  if (f.F.id === 'kupala') r.items = Array.from({ length: 3 }, (_, i) => ({ x: 0.16 + i * 0.1, y: 0.6, out: 0 }));
+  if (f.F.id === 'sviatvechir') r.items = Array.from({ length: 14 }, (_, i) => ({ x: 0.15 + ((i * 0.618) % 1) * 0.7, y: 0.27 + ((i * 0.377) % 1) * 0.3, tw: 0 }));
+  if (T0.v) { learn(T0.v); setTimeout(() => { if (fest && fest.phase === 'trad') say('w_' + T0.v); }, 700); }
+}
+function festTradDone() {
+  const f = fest; if (!f || f.trad.done) return; f.trad.done = nowT; blip(990, 0.1); setTimeout(() => blip(1320, 0.1), 110);
+  setTimeout(() => { if (fest === f && f.phase === 'trad') festDance(); }, 1800);
+}
+function festTradTap(px, py) {
+  const f = fest, r = f.trad, w = cv.width, h = cv.height, id = f.F.id, T0 = TRAD[id]; if (r.done) return;
+  const X = px / w, Y = py / h;
+  if (id === 'obzhynky') { let best = null; for (const it of r.items) if (!it.gone && Math.abs(X - it.x) < 0.05 && Y > 0.4 && Y < 0.78) best = it; if (best) { best.gone = nowT; r.n++; festAct('zbyrai'); blip(700 + r.n * 40, 0.05); if (r.n >= T0.n) festTradDone(); } }
+  else if (id === 'kupala') { const it = r.items.find(q => !q.out && Math.hypot(X - q.x, (Y - q.y) * h / w) < 0.07); if (it) { it.out = nowT; r.n++; festAct('vinok'); blip(620, 0.06); if (r.n >= T0.n) setTimeout(festTradDone, 1200); } }
+  else if (id === 'sviatvechir') {
+    if (nowT - r.t0 > 2.2 && Math.hypot(X - 0.72, (Y - 0.24) * h / w) < 0.08) { r.n = 1; r.found = nowT; say('w_sviatvechir'); festTradDone(); }
+    else { const st = r.items.find(q => Math.hypot(X - q.x, (Y - q.y) * h / w) < 0.05); if (st) { st.tw = nowT; blip(1500, 0.03); } }
+  }
+  else if (id === 'velykden') { const sw = PYS_COL.findIndex((_, i) => Math.abs(X - (0.29 + i * 0.14)) < 0.06 && Math.abs(Y - 0.8) < 0.06); if (sw >= 0 && r.bands.length < 4) { r.bands.push({ col: PYS_COL[sw], t: nowT }); r.n++; festAct('pysanka'); blip(560 + r.n * 80, 0.06); if (r.n >= T0.n) festTradDone(); } }
+}
+function drawFestTrad(c, w, h, u, t) {
+  const f = fest, r = f.trad, id = f.F.id, T0 = TRAD[id], st = stage();
+  // a soft panel over the festival scene, and the instruction along the top
+  c.fillStyle = 'rgba(20,16,30,.35)'; c.fillRect(0, 0, w, h);
+  const bx = w * 0.06, by = h * 0.18, bw = w * 0.88, bh = h * 0.7;
+  c.save(); c.beginPath(); rr(c, bx, by, bw, bh, u * 0.04); c.clip();
+  if (id === 'obzhynky') {   // a golden stubble field at sunset, the last stalks standing, and the sheaf filling up
+    let g = c.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, '#ffc56b'); g.addColorStop(0.45, '#ffe2a0'); g.addColorStop(0.46, '#d9a84a'); g.addColorStop(1, '#b8862e'); c.fillStyle = g; c.fillRect(bx, by, bw, bh);
+    c.strokeStyle = 'rgba(120,80,20,.35)'; c.lineWidth = 1.5; for (let i = 0; i < 40; i++) { const x = bx + ((i * 0.37) % 1) * bw, y = by + bh * (0.5 + ((i * 0.61) % 1) * 0.45); c.beginPath(); c.moveTo(x, y); c.lineTo(x + 2, y - 6); c.stroke(); }
+    for (const it of r.items) { const q = it.gone ? Math.min(1, (t - it.gone) / 0.5) : 0, x0 = it.x * w, y0 = h * 0.7, x = x0 + (w * 0.5 - x0) * q, y = y0 + (h * 0.8 - y0) * q - Math.sin(q * Math.PI) * h * 0.12, sw = Math.sin(t * 2 + it.x * 9) * u * 0.006;
+      if (q >= 1) continue; c.save(); c.translate(x, y); c.rotate(sw * 0.02 + q * 1.2); c.strokeStyle = '#b8862e'; c.lineWidth = u * 0.011; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(sw * 3, -h * 0.1, sw * 5, -h * 0.2); c.stroke(); c.strokeStyle = '#7a9a3a'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(0, -h * 0.06); c.quadraticCurveTo(-u * 0.03, -h * 0.08, -u * 0.045, -h * 0.06); c.stroke();
+      c.save(); c.translate(sw * 5, -h * 0.2); c.fillStyle = '#e8b84a'; for (let k = 0; k < 7; k++) { ell(c, -u * 0.012, -k * u * 0.02, u * 0.012, u * 0.019); ell(c, u * 0.012, -u * 0.008 - k * u * 0.02, u * 0.012, u * 0.019); } c.strokeStyle = '#d9a13a'; c.lineWidth = 1; for (let k = 0; k < 7; k++) { c.beginPath(); c.moveTo(0, -k * u * 0.02); c.lineTo(sw * 2, -k * u * 0.02 - u * 0.05); c.stroke(); } c.restore(); c.restore(); }   // a stalk with a full ear and its whiskers
+    const n = r.items.filter(q => q.gone && t - q.gone > 0.5).length, sx = w * 0.5, sy = h * 0.82;   // the sheaf, thicker with every stalk
+    for (let k = 0; k < n; k++) { const a = (k - n / 2) * 0.08; c.save(); c.translate(sx, sy); c.rotate(a); c.strokeStyle = '#c99a32'; c.lineWidth = u * 0.007; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -h * 0.2); c.stroke(); c.fillStyle = '#e8b84a'; ell(c, 0, -h * 0.21, u * 0.012, u * 0.03); c.restore(); }
+    if (r.done) { c.fillStyle = '#c62828'; c.fillRect(sx - u * 0.05, sy - h * 0.1, u * 0.1, u * 0.02); c.fillStyle = '#c62828'; poly(c, [[sx, sy - h * 0.1], [sx - u * 0.04, sy - h * 0.05], [sx - u * 0.02, sy - h * 0.05]]); poly(c, [[sx, sy - h * 0.1], [sx + u * 0.04, sy - h * 0.05], [sx + u * 0.02, sy - h * 0.05]]); }   // tied with a red ribbon
+  } else if (id === 'kupala') {   // the river at dusk, wreaths waiting on the bank, the floated ones drifting away with their candles
+    let g = c.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, '#2c3c70'); g.addColorStop(0.45, '#6a5a9a'); g.addColorStop(0.46, '#2a5a8a'); g.addColorStop(1, '#173a5c'); c.fillStyle = g; c.fillRect(bx, by, bw, bh);
+    c.fillStyle = '#3f6e40'; c.beginPath(); c.moveTo(bx, by + bh * 0.62); c.quadraticCurveTo(bx + bw * 0.25, by + bh * 0.56, bx + bw * 0.42, by + bh * 0.66); c.lineTo(bx + bw * 0.42, by + bh); c.lineTo(bx, by + bh); c.closePath(); c.fill();   // the bank
+    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 1.5; for (let i = 0; i < 8; i++) { const y = by + bh * (0.5 + i * 0.06), x = bx + bw * (0.45 + ((i * 0.37 + t * 0.03) % 1) * 0.5); c.beginPath(); c.moveTo(x, y); c.lineTo(x + u * 0.06, y); c.stroke(); }
+    for (const it of r.items) { const q = it.out ? Math.min(1, (t - it.out) / 6) : 0, x = (it.out ? 0.46 + q * 0.55 : it.x) * w, y = (it.out ? 0.62 + Math.sin(t * 1.5 + it.x * 9) * 0.01 : it.y) * h, a = 1 - Math.max(0, q - 0.75) * 4;
+      c.globalAlpha = a; if (it.out) { const gl = c.createRadialGradient(x, y - u * 0.04, 0, x, y - u * 0.04, u * 0.12); gl.addColorStop(0, 'rgba(255,210,120,.55)'); gl.addColorStop(1, 'rgba(255,210,120,0)'); c.fillStyle = gl; c.fillRect(x - u * 0.12, y - u * 0.16, u * 0.24, u * 0.24); c.fillStyle = 'rgba(255,220,140,.35)'; ell(c, x, y + u * 0.03, u * 0.06, u * 0.012); }
+      drawIcon(c, W.vinok.ic, x, y + u * 0.03, u * 0.13); if (it.out) { c.fillStyle = '#f1d58a'; c.fillRect(x - u * 0.004, y - u * 0.05, u * 0.008, u * 0.03); chFlame(c, x, y - u * 0.05, u * 0.012, t, it.x * 7); } c.globalAlpha = 1; }
+  } else if (id === 'sviatvechir') {   // a deep winter sky over the snowy village; the first star comes out bright in the east
+    let g = c.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, '#0f1840'); g.addColorStop(0.7, '#3a4f8a'); g.addColorStop(1, '#e8eef8'); c.fillStyle = g; c.fillRect(bx, by, bw, bh);
+    c.fillStyle = '#eef3fa'; ell(c, w * 0.5, by + bh, bw * 0.7, bh * 0.16); padVillage(c, w * 0.45, by + bh * 0.9, u / 390 * 2.6, w, t, true);
+    for (const st2 of r.items) { const tw = st2.tw && t - st2.tw < 0.5 ? 1 - (t - st2.tw) / 0.5 : 0; c.fillStyle = 'rgba(255,250,225,' + Math.min(1, 0.5 + 0.3 * Math.sin(t * 2 + st2.x * 20) + tw * 0.4) + ')'; star4(c, st2.x * w, st2.y * h, u * (0.008 + tw * 0.01)); }
+    const show = Math.min(1, Math.max(0, (t - r.t0 - 1.5) / 1.2)), fx = w * 0.72, fy = h * 0.24, R2 = u * (0.03 + (r.found ? 0.02 : 0.006 * Math.sin(t * 4)));
+    if (show > 0) { c.globalAlpha = show; const gl = c.createRadialGradient(fx, fy, 0, fx, fy, R2 * 4); gl.addColorStop(0, 'rgba(255,236,160,.8)'); gl.addColorStop(1, 'rgba(255,236,160,0)'); c.fillStyle = gl; c.fillRect(fx - R2 * 4, fy - R2 * 4, R2 * 8, R2 * 8); c.fillStyle = '#ffe680'; star4(c, fx, fy, R2); c.globalAlpha = 1; }
+    if (r.found) { const q = Math.min(1, (t - r.found) / 0.4); c.globalAlpha = q; c.font = cozyFont(Math.round(u * 0.07)); c.textAlign = 'center'; c.fillStyle = '#fff3c0'; c.strokeStyle = 'rgba(40,30,80,.7)'; c.lineWidth = 5; c.strokeText('Перша зірка!', w / 2, h * 0.44); c.fillText('Перша зірка!', w / 2, h * 0.44); if (st < 3) { c.font = '700 ' + Math.round(u * 0.035) + 'px system-ui'; c.fillText('The first star!', w / 2, h * 0.5); } c.globalAlpha = 1; }
+  } else if (id === 'velykden') {   // an egg on a spring table, painted band by band, with the dyes below
+    let g = c.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, '#dff3c8'); g.addColorStop(1, '#bfe6a0'); c.fillStyle = g; c.fillRect(bx, by, bw, bh);
+    const ex = w * 0.5, ey = h * 0.5, ew = u * 0.17, eh = u * 0.23;
+    c.fillStyle = 'rgba(40,60,20,.2)'; ell(c, ex, ey + eh * 0.95, ew * 0.8, eh * 0.12);
+    c.save(); c.beginPath(); c.ellipse(ex, ey, ew, eh, 0, 0, 7); c.clip(); c.fillStyle = '#fbf3e2'; c.fillRect(ex - ew, ey - eh, ew * 2, eh * 2);
+    r.bands.forEach((b, i) => { const q = Math.min(1, (t - b.t) / 0.35), y0 = ey - eh + (eh * 2) * i / 4, bh2 = eh * 2 / 4; c.fillStyle = b.col; c.fillRect(ex - ew, y0, ew * 2 * q, bh2);
+      c.strokeStyle = i === 3 ? '#f2c230' : '#fff8ea'; c.lineWidth = 2; if (q >= 1) { if (i % 2 === 0) { c.beginPath(); for (let k = 0; k <= 12; k++) { const x = ex - ew + k * ew / 6, y = y0 + bh2 * (k % 2 ? 0.25 : 0.75); k ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); } else { c.fillStyle = c.strokeStyle; for (let k = 0; k < 7; k++) circ(c, ex - ew + (k + 0.5) * ew * 2 / 7, y0 + bh2 / 2, 2.2); } } });
+    c.restore(); c.strokeStyle = 'rgba(80,50,20,.35)'; c.lineWidth = 2; c.beginPath(); c.ellipse(ex, ey, ew, eh, 0, 0, 7); c.stroke();
+    PYS_COL.forEach((col, i) => { const x = w * (0.29 + i * 0.14), y = h * 0.8; c.fillStyle = '#ffffff'; circ(c, x, y, u * 0.045); c.fillStyle = col; circ(c, x, y, u * 0.035); });   // the dyes
+  }
+  c.restore();
+  // the instruction, and a count
+  c.textAlign = 'center'; c.font = cozyFont(Math.round(u * 0.058)); c.fillStyle = '#fff8ea'; c.strokeStyle = 'rgba(40,25,10,.6)'; c.lineWidth = 5; c.strokeText(T0.uk, w / 2, h * 0.13); c.fillText(T0.uk, w / 2, h * 0.13);
+  if (st < 3) { c.font = '600 ' + Math.max(14, Math.round(u * 0.034)) + 'px system-ui'; c.lineWidth = 3; c.strokeText(T0.en, w / 2, h * 0.165); c.fillText(T0.en, w / 2, h * 0.165); }
+  if (T0.n > 1) { const tx = `${r.n}/${T0.n}`; c.font = '800 ' + Math.round(u * 0.04) + 'px system-ui'; c.strokeText(tx, bx + bw - u * 0.06, by + u * 0.07); c.fillText(tx, bx + bw - u * 0.06, by + u * 0.07); }
+  if (r.done) padCheer(c, w, h, u / 390, r.done, t);
+}
 function festAct(v) {
   const f = fest; if (!f) return; const t = nowT;
   if (!f.fl || f.fl.v !== v || t - f.fl.t > 0.35) f.fl = { v, t };
@@ -7789,7 +7878,7 @@ function frame(ms) {
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
   else if (mode === 'church') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawChurch(t); }
-  else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); }
+  else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); if (fest && fest.phase === 'trad') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFestTrad(ctx, cv.width, cv.height, roomU(), t); } }   // the tradition, drawn over the festival scene
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
 }
@@ -7829,7 +7918,7 @@ cv.addEventListener('pointermove', ev => {
 });
 cv.addEventListener('pointercancel', () => { peeking = false; down = null; if (MILL.hold) millUp(); });
 cv.addEventListener('pointerdown', ev => { if (mode === 'mill') millDown(ev); });   // holding the mill's hand wheel
-cv.addEventListener('pointerdown', () => { if (mode === 'fest' && !sheetOpen()) festTap(); });
+cv.addEventListener('pointerdown', ev => { if (mode === 'fest' && !sheetOpen()) festTap(ev); });
 cv.addEventListener('pointerup', ev => {
   peeking = false;
   if (mode === 'mill' && MILL.hold) { millUp(); down = null; return; }   // let go of the mill's hand wheel
