@@ -1740,7 +1740,7 @@ function add(e) {
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
   for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [35.7, 19.8], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
-  for (const [x, y] of [[15.5, 9.9], [13.2, 9.7], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
+  for (const [x, y] of [[15.5, 9.9], [16.8, 8.7], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
   for (const [x, y] of [[3.4, 7.5], [15.3, 7.4], [26.4, 5.4], [13.3, 26.3], [32.8, 26.3]]) add({ w: 'hryb', x, y, s: 0.7, give: 'hryb', cd: 120, hide: true });
@@ -2320,6 +2320,13 @@ function drawDuck(c, x, y, t, e) {
 // her husband Taras the fisherman and their boy Andriiko with Brovko the dog: the three of them live in the
 // cottage at the bottom right. Mr. Bohdan goes home to his cottage at the bottom left. Butterflies and bees are
 // gone, and the farm animals lie down (or stand dozing) where they are. In the morning everyone is back.
+// The rainbow after the afternoon rain: it comes out as the rain stops (day time 0.62), shines a short while,
+// and fades away from 0.69 to 0.75, before dusk sets in at 0.78. 0..1, for the sky and the window views alike.
+function rainbowA() {
+  const C = S.clock; if (S.rainbowDay !== C.day || wet(S.wx)) return 0;
+  const k = (a, b, x) => Math.max(0, Math.min(1, (x - a) / (b - a))), sm = q => q * q * (3 - 2 * q);
+  return sm(k(0.62, 0.645, C.t)) * (1 - sm(k(0.69, 0.75, C.t)));
+}
 function nightNow() { return !!(S.clock && S.clock.t >= 0.86); }
 const NPC_HOME = { oksana: 'tarasHome', taras: 'tarasHome', andriiko: 'tarasHome', bohdan: 'bohdanHome' };
 const HOME_DELAY = { oksana: 1.5, bohdan: 3, taras: 4.5, andriiko: 6 };
@@ -5819,19 +5826,45 @@ function churchTap(sx, py) {
   for (let i = churchHits.length - 1; i >= 0; i--) { const r = churchHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return inGo(r.gx, r.gy, r.fn); } }
   if (py > cv.height * 0.68) { blip(560, 0.05); inWalkTo(px, py); }
 }
-// A church bell, made from its partials: a deep hum, the strike tone, and the bright overtones dying away.
-function churchBell(vol = 0.45) {
+// A church bell, built the way a cast bronze bell actually sounds: the hum an octave below the strike note,
+// the prime, the minor third that gives a bell its sombre colour, the fifth, the nominal an octave up, and the
+// bright inharmonic partials above, each dying away at its own rate (the high ones fast, the hum for many
+// seconds). Every partial is a pair of slightly detuned tones, so the note warbles slowly as real bells do,
+// and the clapper's strike is a short metallic clang. It all rings into a long echo, like a tower over a valley.
+let bellVerb = null;
+function bellReverb() {
+  if (bellVerb) return bellVerb;
+  const len = actx.sampleRate * 3.2, ir = actx.createBuffer(2, len, actx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6) * (i < actx.sampleRate * 0.02 ? i / (actx.sampleRate * 0.02) : 1); }
+  const cv2 = actx.createConvolver(); cv2.buffer = ir; const wet2 = actx.createGain(); wet2.gain.value = 0.45; cv2.connect(wet2); wet2.connect(actx.destination);
+  return (bellVerb = cv2);
+}
+// f0: the strike note. A big bell is low; the small bells of a peal ring high and short.
+function churchBell(vol = 0.45, f0 = 165, len = 1) {
   try {
-    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const t0 = actx.currentTime, out = actx.createGain(); out.gain.value = vol; out.connect(actx.destination);
-    for (const [f, a, d] of [[98, 0.5, 5], [196, 0.6, 4], [233, 0.35, 3], [294, 0.3, 2.6], [392, 0.25, 2.2], [494, 0.15, 1.6], [590, 0.1, 1.2]]) {
-      const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(a, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
-      o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.1);
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
+    const t0 = actx.currentTime + 0.01, out = actx.createGain(); out.gain.value = vol; out.connect(actx.destination); out.connect(bellReverb());
+    //  ratio to the strike note, loudness, how long it rings (s)
+    const P = [[0.5, 0.35, 9], [1, 0.5, 6], [1.183, 0.32, 5], [1.5, 0.16, 3.6], [2, 0.3, 3.4], [2.52, 0.12, 2], [2.67, 0.1, 1.8], [3.01, 0.08, 1.4], [4.07, 0.06, 0.9], [5.33, 0.04, 0.6]];
+    for (const [r, amp, d0] of P) for (const det of [-0.6, 0.6]) {   // each partial a detuned pair: the slow warble of a real bell
+      const o = actx.createOscillator(), g = actx.createGain(), d = d0 * len; o.type = 'sine'; o.frequency.value = f0 * r + det * (r < 1.1 ? 0.5 : 1);
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(amp * 0.5, t0 + 0.004 + r * 0.002); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+      o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.05);
     }
+    // the clapper's strike: a short bright clang of noise
+    const n = actx.sampleRate * 0.08, buf = actx.createBuffer(1, n, actx.sampleRate), dd = buf.getChannelData(0); for (let i = 0; i < n; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+    const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), sg = actx.createGain(); src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = f0 * 8; bp.Q.value = 2; sg.gain.value = 0.35;
+    src.connect(bp); bp.connect(sg); sg.connect(out); src.start(t0);
   } catch (e) {}
 }
-function churchRope() { if (nowT - CHURCH.bell < 1.4) return; CHURCH.bell = nowT; duck = 0.5; setTimeout(() => { duck = 1; }, 3500); churchBell(); setTimeout(churchBell, 1500); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
+// A short Ukrainian peal (передзвін): the big bell, then the little bells chiming quickly down and back up.
+function churchPeal(vol = 0.45) {
+  churchBell(vol, 165, 1);
+  const small = [659, 587, 523, 440, 523, 587, 659, 523];
+  small.forEach((f, i) => setTimeout(() => churchBell(vol * 0.35, f, 0.35), 700 + i * 210));
+  setTimeout(() => churchBell(vol, 165, 1), 700 + small.length * 210 + 250);
+}
+function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.5; setTimeout(() => { duck = 1; }, 6000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
 // The only thing to do at the altar: put a few coins in the box. It counts what you've given, and that's all.
 function donateCard() {
   const st = stage(), have = S.coins || 0, given = S.churchGiven || 0;
@@ -6435,7 +6468,7 @@ function dayTick(dt) {
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
     const d = Math.hypot(P.x - 30.5, P.y - 6), vol = Math.max(0.18, Math.min(0.5, 0.55 - d * 0.012));
-    duck = 0.45; setTimeout(() => { duck = 1; }, 5200); for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 1500);
+    duck = 0.45; setTimeout(() => { duck = 1; }, 8500); for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 2400);   // three slow strokes of the big bell
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
   if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; setGuide(); learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
@@ -6511,8 +6544,8 @@ function skyEvents(c, w, h, t, L) {
   }
   if (wx === 'fog') { const lift = Math.max(0, Math.min(1, (Cl.t - 0.3) / 0.18)), a = 0.7 * (1 - lift);
     if (a > 0.01) { c.fillStyle = `rgba(236,240,244,${a * 0.55})`; c.fillRect(0, 0, w, h); c.fillStyle = `rgba(250,252,253,${a * 0.5})`; for (let i = 0; i < 6; i++) { const x = ((i * 0.27 + t * 0.008 * (1 + i % 3)) % 1.5 - 0.25) * w; ell(c, x, h * (0.15 + i * 0.15), w * 0.55, h * 0.06); } } }
-  if (S.rainbowDay === Cl.day && Cl.t < 0.8 && !wet(wx)) {
-    const a = Math.min(1, (Cl.t - 0.62) * 25) * Math.min(1, (0.8 - Cl.t) * 12) * (1 - L.dark), cx = w * 0.62, cy = h * 0.62, R0 = Math.max(w, h) * 0.62;
+  if (rainbowA() > 0) {
+    const a = rainbowA() * (1 - L.dark), cx = w * 0.62, cy = h * 0.62, R0 = Math.max(w, h) * 0.62;
     if (a > 0) { c.save(); c.globalAlpha = a * 0.42; c.lineWidth = R0 * 0.028; ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#30b0ff', '#5856d6', '#af52de'].forEach((col, i) => { c.strokeStyle = col; c.beginPath(); c.arc(cx, cy, R0 - i * R0 * 0.027, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }); c.restore(); }
   }
   if (season() === 'osin' && L.dark < 0.5 && !wet(wx)) {
@@ -7418,7 +7451,7 @@ function windowView(c, x0, y0, ww, wh, t, nFlowers, seed, open) {   // open: a d
     if (L.dark > 0.4 && (wx === 'sun' || wx === 'cloud')) { c.fillStyle = `rgba(255,250,220,${(L.dark - 0.4) * 1.6})`; for (let i = 0; i < 14; i++) circ(c, x0 + ((i * 0.618 + seed * 0.37) % 1) * ww, y0 + ((i * 0.377) % 1) * wh * 0.5, (i % 3 ? 0.8 : 1.3) * (0.7 + 0.3 * Math.sin(t * 2 + i))); }   // stars on a clear night
     if (L.dark > 0.4 && wx !== 'rain' && wx !== 'storm' && wx !== 'fog') { c.fillStyle = `rgba(255,248,210,${(L.dark - 0.4) * 1.6})`; circ(c, x0 + ww * 0.72, y0 + wh * 0.2, wh * 0.07); } }   // and the moon
   else if (wx === 'sun') { c.fillStyle = 'rgba(255,240,170,.35)'; circ(c, x0 + ww * 0.76, y0 + wh * 0.2, wh * 0.13); c.fillStyle = '#ffe680'; circ(c, x0 + ww * 0.76, y0 + wh * 0.2, wh * 0.075); }   // the sun
-  if (S.rainbowDay === S.clock.day && S.clock.t < 0.8 && !wet(wx) && day > 0.5) { c.lineWidth = wh * 0.022; ['#e2574c', '#f2a23a', '#f2d23a', '#6cc04a', '#3d7cc2', '#7a52b3'].forEach((col, i) => { c.strokeStyle = col; c.globalAlpha = 0.5; c.beginPath(); c.arc(cx, wb, wh * (0.78 - i * 0.022), Math.PI, 0); c.stroke(); }); c.globalAlpha = 1; }
+  if (rainbowA() > 0 && day > 0.5) { const ra = rainbowA(); c.lineWidth = wh * 0.022; ['#e2574c', '#f2a23a', '#f2d23a', '#6cc04a', '#3d7cc2', '#7a52b3'].forEach((col, i) => { c.strokeStyle = col; c.globalAlpha = 0.5 * ra; c.beginPath(); c.arc(cx, wb, wh * (0.78 - i * 0.022), Math.PI, 0); c.stroke(); }); c.globalAlpha = 1; }
   // clouds: one drifting on a fine day, more and greyer as the weather turns
   const nc = { sun: 1, cloud: 3, rain: 3, storm: 4, fog: 0, snow: 3 }[wx] ?? 1, ccol = wx === 'storm' ? '#5d6878' : wx === 'rain' ? '#8995a5' : wx === 'snow' ? '#e4e9ef' : wx === 'cloud' ? '#eef1f4' : '#ffffff';
   for (let i = 0; i < nc; i++) { const px = x0 + (((i * 0.41 + seed * 0.3 + t * 0.006 * (1 + i * 0.3)) % 1.4) - 0.2) * ww, py = y0 + wh * (0.14 + (i % 3) * 0.1); c.fillStyle = ccol; c.globalAlpha = 1 - L.dark * 0.7; ell(c, px, py, ww * 0.16, wh * 0.055); ell(c, px + ww * 0.07, py - wh * 0.03, ww * 0.09, wh * 0.05); ell(c, px - ww * 0.07, py - wh * 0.01, ww * 0.08, wh * 0.04); c.globalAlpha = 1; }
