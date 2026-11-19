@@ -104,6 +104,7 @@ function textOf(id) {
   if (k === 's' || k === 'st') { const p = (D.story || []).find(q => q.clip === id); return p ? p.uk : ''; }
   if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].uk : '';
   if (k === 'qp') return W[b] ? D.payLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
+  if (k === 'tq') return W[b] ? D.thankLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
   if (k === 'q') return W[b] ? D.questLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
   return '';
 }
@@ -116,6 +117,7 @@ function enOf(id) {
   if (k === 's' || k === 'st') { const p = (D.story || []).find(q => q.clip === id); return p ? p.en : ''; }
   if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].en : '';
   if (k === 'qp') return W[b] ? D.payLine.en.replace('%s', W[b].en) : '';
+  if (k === 'tq') return W[b] ? D.thankLine.en.replace('%s', 'the ' + W[b].en) : '';
   if (k === 'q') return W[b] && D.questLine.en ? D.questLine.en.replace('%s', W[b].en) : '';
   return '';
 }
@@ -3644,7 +3646,7 @@ function mgRoundDone() {
 function mgFinish() {
   const id = mg.npc.id, npc = mg.npc, st = stage(), done = preOf(mg.id) + 'done';
   const gift = id === 'bohdan' ? 'med' : id === 'taras' ? 'ryba' : null;
-  if (gift) give(gift, id === 'taras' ? 2 : 1); S.hearts += 1; S.cd['mg_' + id] = now() + 120e3; hud(); save();
+  if (gift) give(gift, id === 'taras' ? 2 : 1); S.hearts += 1; S.cd['mg_' + id] = now() + 120e3; (S.npc[id] || (S.npc[id] = { met: true, q: null, k: 0 })).last = { k: 'game', g: mg.id, day: S.clock.day }; hud(); save();
   const L = npc.lines[done]; mgStopVoice(); mg = null;
   openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     ${gift ? `<img class="big" src="${iconURL(gift)}" alt=""><div class="hint">+${id === 'taras' ? 2 : 1} ${W[gift].uk} · ❤️ +1</div>` : `<div class="hint">❤️ +1</div>`}
@@ -4840,6 +4842,17 @@ function talk(npc) {
   const steps = [line(npc, 'greet')];
   if (!n.met) { steps.push(line(npc, 'intro')); n.met = true; }
   if (n.mad) return dialog(npc, [line(npc, 'angry')]);
+  if (npc.id !== 'olia') {
+    // what you did together last time, remembered once: a thank-you for what you brought, or "again?" after a game
+    const L = n.last; n.last = null;
+    if (L && L.k === 'gift' && W[L.item]) steps.push({ uk: D.thankLine.uk.replace('%s', W[L.item].acc || W[L.item].uk), en: D.thankLine.en.replace('%s', 'the ' + W[L.item].en), clip: `tq_${npc.id}_${L.item}` });
+    else if (L && L.k === 'game' && npc.lines['again_' + L.g]) steps.push(line(npc, 'again_' + L.g));
+    // small talk about the day, the season, the weather or the family, never the same twice running
+    else if (n.met && Math.random() < 0.7) {
+      const pool = ['chat_1', 'chat_2', 'chat_3', 'chat_' + season(), wet(S.wx) ? 'chat_rain' : null].filter(key => key && npc.lines[key] && key !== n.chat);
+      if (pool.length) { n.chat = pool[Math.floor(Math.random() * pool.length)]; steps.push(line(npc, n.chat)); }
+    }
+  }
   if (npc.id === 'olia') tutEvent('olia');
   if (npc.id === 'olia') return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
@@ -4850,7 +4863,7 @@ function talk(npc) {
       const item = n.q;
       const thanks = line(npc, 'thanks');
       thanks.after = () => { toast('+6 💰  +1 ❤️'); blip(990, 0.15); const ne = ents.find(q => q.npc === npc.id); if (ne) { fxHearts(ne.x, ne.y - 1.3); fxBurst(ne.x, ne.y - 1, '💰'); } };
-      S.bag[item]--; S.coins += 6; S.hearts++; n.q = null; useWord(item, true); hud(); setGuide(); save();
+      S.bag[item]--; S.coins += 6; S.hearts++; n.q = null; n.last = { k: 'gift', item, day: S.clock.day }; useWord(item, true); hud(); setGuide(); save();
       const hand = mine('os');
       steps.push(hand, thanks);
     } else steps.push(quest(n.q));

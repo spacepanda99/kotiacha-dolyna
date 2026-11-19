@@ -39,6 +39,7 @@ export function clips() {
       const w = D.words.find(x => x.id === item);
       if (n.id === 'olia') list.push({ id: `q_${n.id}_${item}`, text: D.questLine.uk.replace('%s', w.acc || w.uk), voice: n.voice, style: n.style });
       list.push({ id: `qp_${n.id}_${item}`, text: D.payLine.uk.replace('%s', w.acc || w.uk), voice: n.voice, style: n.style });
+      if (n.id !== 'olia' && D.thankLine) list.push({ id: `tq_${n.id}_${item}`, text: D.thankLine.uk.replace('%s', w.acc || w.uk), voice: n.voice, style: n.style });   // "thank you for ... last time"
     }
   }
   for (const ct of D.cats || []) list.push({ id: 'c_' + ct.id, text: ct.line, ...TEACHER });

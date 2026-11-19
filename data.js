@@ -355,6 +355,16 @@ window.DATA = {
       style: "A relaxed, friendly Ukrainian fisherman in his forties. Speaks Ukrainian clearly, unhurried.",
       look: { skin: "#eec39a", shirt: "#f7f3e8", trim: "#2c5fa8", skirt: "#3d5a80", hair: "#5a3a22", hat: "straw", hatCol: "#e8c66a" },
       lines: {
+        chat_1: { uk: "Моя Оксана працює на ринку.", en: "My Oksana works at the market." },
+        chat_2: { uk: "Андрійко цілий день бавиться з Бровком.", en: "Andriiko plays with Brovko all day long." },
+        chat_3: { uk: "Сьогодні риба добре клює!", en: "The fish are biting well today!" },
+        chat_lito: { uk: "Улітку я щоранку на ставку.", en: "In summer I'm at the pond every morning." },
+        chat_osin: { uk: "Восени риба ховається глибше.", en: "In autumn the fish hide deeper down." },
+        chat_zyma: { uk: "Узимку ловимо рибу з-під льоду.", en: "In winter we fish from under the ice." },
+        chat_vesna: { uk: "Навесні ставок прокидається.", en: "In spring the pond wakes up." },
+        chat_rain: { uk: "У дощ риба клює краще.", en: "Fish bite better in the rain." },
+        again_taras: { uk: "Порибалимо ще разок?", en: "Shall we go fishing once more?" },
+        again_taras_w: { uk: "Порибалимо ще на льоду?", en: "Shall we fish on the ice again?" },
         greet: { uk: "Привіт! Гарний день, правда?", en: "Hi! A lovely day, isn't it?" },
         mgw_invite: { uk: "Порибалимо на льоду?", en: "Shall we fish on the ice?" },
         mgw_sverdly: { uk: "Свердли лунку в льоду!", en: "Drill a hole in the ice!" },
@@ -376,6 +386,17 @@ window.DATA = {
       style: "A cheerful, playful young Ukrainian boy. Speaks Ukrainian brightly and clearly.",
       look: { skin: "#f6d2b3", shirt: "#ffffff", trim: "#2e9e5b", skirt: "#3a7d44", hair: "#e0b34c", hat: "none", hatCol: "#000", small: true },
       lines: {
+        chat_1: { uk: "Мама продає овочі, а тато ловить рибу.", en: "Mum sells vegetables, and Dad catches fish." },
+        chat_2: { uk: "Бровко — мій найкращий друг!", en: "Brovko is my best friend!" },
+        chat_3: { uk: "Пан Богдан дав мені меду!", en: "Mr. Bohdan gave me some honey!" },
+        chat_lito: { uk: "Улітку ми купаємося у ставку!", en: "In summer we swim in the pond!" },
+        chat_osin: { uk: "Восени я збираю каштани.", en: "In autumn I collect chestnuts." },
+        chat_zyma: { uk: "Я люблю сніг!", en: "I love snow!" },
+        chat_vesna: { uk: "Дивись, лелеки повернулися!", en: "Look, the storks are back!" },
+        chat_rain: { uk: "Я люблю стрибати по калюжах!", en: "I love jumping in puddles!" },
+        again_andriiko: { uk: "Ще пограємося з Бровком?", en: "Shall we play with Brovko again?" },
+        again_andriiko_w: { uk: "Зліпимо ще одного сніговика?", en: "Shall we build another snowman?" },
+        again_andriiko_s: { uk: "Ще раз у сніжки?", en: "Another snowball fight?" },
         greet: { uk: "Привіт! Пограємося?", en: "Hi! Shall we play?" },
         mgw_invite: { uk: "Зліпимо сніговика?", en: "Shall we build a snowman?" },
         mgws_invite: { uk: "Пограємо в сніжки?", en: "Shall we have a snowball fight?" },
@@ -400,6 +421,16 @@ window.DATA = {
       style: "A gentle, thoughtful older Ukrainian beekeeper. Speaks Ukrainian calmly and clearly.",
       look: { skin: "#eabf98", shirt: "#fff8e6", trim: "#c98a1a", skirt: "#6b4f2a", hair: "#8a8a8a", hat: "straw", hatCol: "#f1dfa0" },
       lines: {
+        chat_1: { uk: "Я тримаю бджіл уже сорок років.", en: "I've kept bees for forty years." },
+        chat_2: { uk: "Мої бджоли люблять соняшники й липу.", en: "My bees love sunflowers and linden." },
+        chat_3: { uk: "Андрійко часто приходить до мене по мед.", en: "Andriiko often comes to me for honey." },
+        chat_lito: { uk: "Улітку бджоли працюють з ранку до ночі.", en: "In summer the bees work from morning till night." },
+        chat_osin: { uk: "Восени я збираю останній мед.", en: "In autumn I gather the last of the honey." },
+        chat_zyma: { uk: "Узимку бджоли сплять у вулику.", en: "In winter the bees sleep in the hive." },
+        chat_vesna: { uk: "Навесні бджоли знову летять до квітів.", en: "In spring the bees fly to the flowers again." },
+        chat_rain: { uk: "У дощ бджоли сидять удома.", en: "In the rain the bees stay at home." },
+        again_bohdan: { uk: "Допоможеш мені знову з бджолами?", en: "Will you help me with the bees again?" },
+        again_bohdan_w: { uk: "Допоможеш знову з вуликом?", en: "Will you help with the hive again?" },
         greet: { uk: "Добрий день! Радий тебе бачити.", en: "Good day! Glad to see you." },
         mgw_invite: { uk: "Допоможеш укрити вулики на зиму?", en: "Will you help me cover the hives for winter?" },
         mgw_zmety: { uk: "Змети сніг з вулика!", en: "Sweep the snow off the hive!" },
@@ -424,6 +455,9 @@ window.DATA = {
       style: "A bright, welcoming young Ukrainian market seller. Speaks Ukrainian clearly and cheerfully.",
       look: { skin: "#f5cfae", shirt: "#ffffff", trim: "#d43a3a", skirt: "#2c5fa8", hair: "#6b3d1e", hat: "wreath", hatCol: "#ff7aa8" },
       lines: {
+        chat_1: { uk: "Мій Тарас приніс сьогодні свіжу рибу.", en: "My Taras brought fresh fish today." },
+        chat_2: { uk: "Андрійко знову загубив шапку!", en: "Andriiko has lost his hat again!" },
+        chat_3: { uk: "На ринку сьогодні все свіже!", en: "Everything at the market is fresh today!" },
         greet: { uk: "Доброго ранку! Що бажаєте?", en: "Good morning! What would you like?" },
         intro: { uk: "Я — Оксана. Тут усе свіже!", en: "I'm Oksana. Everything here is fresh!" },
         thanks: { uk: "Дякую за допомогу!", en: "Thank you for the help!" }
@@ -493,6 +527,8 @@ window.DATA = {
   // "Bring me, please, ..." — the item goes on the end in its acc form.
   questLine: { uk: "Принеси мені, будь ласка, %s.", en: "Bring me, please, %s." },
   // Villagers' errands: they offer to pay (6 ₴, the errand reward).
+  // A neighbour remembering last time: "Thank you for bringing me %s last time!" (the item in its acc form).
+  thankLine: { uk: "Дякую, що минулого разу принесла мені %s!", en: "Thank you for bringing me %s last time!" },
   payLine: { uk: "Я з радістю заплачу тобі шість гривень за %s.", en: "I'll gladly pay you 6 hryvnias for %s." },
 
   // Prices are spoken by Oksana. Ukrainian counts money in three ways: 2-4 гривні, 5+ гривень.
