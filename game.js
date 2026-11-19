@@ -5203,7 +5203,7 @@ let millHits = [];
 const MX = { door: 0.051, wheat: 0.135, mid: 0.451, win: 0.745, sacks: 0.836, table: 0.927 };
 function enterMill() { closeSheet(); fadeThen(enterMillNow); }
 function enterMillNow() {
-  mode = 'mill'; learn('mlyn');
+  mode = 'mill'; learn('mlyn'); msfxStart();
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
   roomX = MX.mid * roomW() - cv.width / 2; clampPan(); tour = null; blip(520);
   inStart(MX.mid - 0.04);
@@ -5239,7 +5239,7 @@ function millRope() {
     if (!MILL.grain) { blip(260, 0.08); return toast('🌾 Насип пшеницю в ківш!' + xlT(' · The hopper is empty. Put wheat in the hopper first.'), 3200); }
     if (!MILL.sack) { blip(260, 0.08); return toast('🛍️ ' + 'Постав мішок під жолоб!' + xlT(' · Stand a sack under the spout first, or the flour lands on the floor.'), 3200); }
   }
-  MILL.on = !MILL.on; millFlash('tiahny'); blip(MILL.on ? 480 : 380, 0.1);
+  MILL.on = !MILL.on; sfxThud(); sfxTone(MILL.on ? 700 : 500, MILL.on ? 980 : 320, 0.25, 0.04, 'triangle'); millFlash('tiahny'); blip(MILL.on ? 480 : 380, 0.1);
   if (MILL.on && !MILL.grain && !MILL.flour) MILL.mist++;   // let go of the brake with nothing to grind
 }
 function millHopper() {
@@ -5251,11 +5251,11 @@ function millHopper() {
   if (!MILL.sack) MILL.mist++;   // grain in before the sack is under the spout
 }
 function millSpout() {
-  if (!MILL.sack) { MILL.sack = true; MILL.flour = 0; learn('mishok'); millFlash('postav'); return; }
+  if (!MILL.sack) { MILL.sack = true; MILL.flour = 0; learn('mishok'); millFlash('postav'); sfxTone(110, 60, 0.2, 0.25); sfxHit(500, 0.12, 0.12, 'lowpass', 1); return; }
   if (MILL.spd > 0.08) return millWarn('stopfirst', '🛑 ' + W.tiahny.uk + '!', 'Stop the mill first: pull the red lever.');
   const n = Math.floor(MILL.flour + 0.01);
   if (n < 1) return wordCard('mishok', { note: xl('The sack is still empty. Grind some wheat first.') });
-  give('boroshno', n); learn('boroshno'); millFlash('vizmy'); MILL.sack = false; MILL.flour = 0; blip(900, 0.1);
+  give('boroshno', n); learn('boroshno'); millFlash('vizmy'); sfxThud(); MILL.sack = false; MILL.flour = 0; blip(900, 0.1);
   if (!MILL.mist) { learn('miroshnyk'); S.coins += 5; hud(); setTimeout(() => { toast(`🏅 ${W.miroshnyk.uk}! +5 💰` + xlT(` · ${n} flour, no slips: a real miller!`), 3600); say('w_miroshnyk'); }, 900); }
   else toast(`🥣 ${W.boroshno.uk} × ${n}` + xlT(' · Into your bag.'), 2600);
   MILL.mist = 0; save();
@@ -5270,7 +5270,7 @@ function millHopperTap() {
     { x: G.ladX, y: G.fy },
     { x: G.ladTopX, y: G.landY, climb: true },
     { x: G.pourX, y: G.landY },
-    { x: G.pourX, y: G.landY, face: 1, dir: 'side', pose: 'pour', wait: 1.4, fn: () => setTimeout(() => { if (mode === 'mill') millHopper(); }, 600) },
+    { x: G.pourX, y: G.landY, face: 1, dir: 'side', pose: 'pour', wait: 1.4, fn: () => { sfxPour(1.3); setTimeout(() => { if (mode === 'mill') millHopper(); }, 600); } },
     { x: G.ladTopX, y: G.landY },
     { x: G.ladX, y: G.fy, climb: true },
     { x: G.ladX + roomU() * 0.1, y: a + roomU() * 0.03 },
@@ -5310,6 +5310,74 @@ function sackArt(c, x, y, w2, h2, full, col) {
   c.strokeStyle = 'rgba(120,90,40,.35)'; c.lineWidth = 1; for (let i = 1; i < 5; i++) { c.beginPath(); c.moveTo(x - w2 * 0.45, y - h2 * i / 5); c.lineTo(x + w2 * 0.45, y - h2 * i / 5); c.stroke(); }
   c.fillStyle = '#8a5a2b'; c.fillRect(x - w2 * 0.32, y - h2 * 0.98, w2 * 0.64, h2 * 0.05);
 }
+// ---- the mill's sounds, all made on the spot with Web Audio (no files): the low rumble of the stones, the
+// sails swishing past, the wallower's staves clacking on the cogs, grain trickling down the shoe and flour
+// pouring into the sack, the ratchet of the hand wheel, the brake lever's thunk, and sparks crackling.
+const MSFX = { on: false, lt: 0, stave: 0, rat: 0, creakT: 3 };
+function sfxNoise() {
+  if (MSFX.buf) return MSFX.buf;
+  const n = actx.sampleRate * 2, b = actx.createBuffer(1, n, actx.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  return (MSFX.buf = b);
+}
+function sfxOut() { if (!MSFX.out) { MSFX.out = actx.createGain(); MSFX.out.gain.value = 0.9; MSFX.out.connect(actx.destination); } return MSFX.out; }
+// A looping noise bed through a filter, with its own gain we can ride: [gain node, filter node].
+function sfxBed(type, f, q) {
+  const src = actx.createBufferSource(); src.buffer = sfxNoise(); src.loop = true; src.loopStart = Math.random();
+  const fl = actx.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+  const g = actx.createGain(); g.gain.value = 0; src.connect(fl); fl.connect(g); g.connect(sfxOut()); src.start();
+  return { g, fl };
+}
+// A short burst: a click, a thud, a crackle.
+function sfxHit(f, dur, vol, type = 'bandpass', q = 4) {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = actx.currentTime, src = actx.createBufferSource(); src.buffer = sfxNoise();
+    const fl = actx.createBiquadFilter(); fl.type = type; fl.frequency.value = f; fl.Q.value = q;
+    const g = actx.createGain(); g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(fl); fl.connect(g); g.connect(sfxOut()); src.start(t0, Math.random() * 1.5); src.stop(t0 + dur + 0.02);
+  } catch (e) {}
+}
+function sfxTone(f0, f1, dur, vol, type = 'sine') {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = type;
+    o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    o.connect(g); g.connect(sfxOut()); o.start(t0); o.stop(t0 + dur + 0.02);
+  } catch (e) {}
+}
+const sfxThud = () => { sfxTone(140, 55, 0.25, 0.35); sfxHit(900, 0.05, 0.25); };                  // a wooden thunk (lever, sack down)
+const sfxPour = (dur = 1.2) => { for (let i = 0; i < 14; i++) setTimeout(() => sfxHit(2600 + Math.random() * 1500, 0.12, 0.05, 'bandpass', 1.5), i * dur * 1000 / 14); };   // grain tipping in
+function msfxStart() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
+    if (!MSFX.beds) MSFX.beds = { rumble: sfxBed('lowpass', 110, 0.8), grind: sfxBed('bandpass', 260, 1.2), wind: sfxBed('bandpass', 420, 0.6), trickle: sfxBed('bandpass', 3200, 1), flour: sfxBed('bandpass', 1400, 0.8) };
+    MSFX.on = true;
+  } catch (e) {}
+}
+function msfxStop() { if (!MSFX.beds) return; MSFX.on = false; const t0 = actx.currentTime; for (const b of Object.values(MSFX.beds)) { b.g.gain.cancelScheduledValues(t0); b.g.gain.setTargetAtTime(0, t0, 0.15); } }
+function msfxTick(t, out) {
+  if (!MSFX.on || !MSFX.beds || !actx) return;
+  const M = MILL, B = MSFX.beds, t0 = actx.currentTime, ride = (b, v) => b.g.gain.setTargetAtTime(v, t0, 0.12), sp = Math.min(1.5, M.spd);
+  const dt = Math.min(0.1, Math.max(0, t - MSFX.lt)); MSFX.lt = t;
+  ride(B.rumble, 0.55 * Math.min(1, sp));                                                     // the runner stone turning
+  ride(B.grind, M.grain > 0 && sp > 0.45 ? 0.12 * sp : (M.dry > 0.6 ? 0.2 : 0));               // grain being ground (and a rasp when it runs dry)
+  ride(B.wind, 0.06 * sp * (0.55 + 0.45 * Math.abs(Math.sin(M.rot * 2))));                     // the sails sweeping past, four to a turn
+  ride(B.trickle, M.grain > 0 && M.spd > 0.2 ? 0.045 : 0);                                     // grain trickling down the shoe
+  ride(B.flour, out ? 0.06 : 0);                                                                // flour (or whole grain) pouring out of the spout
+  B.grind.fl.frequency.setTargetAtTime(M.gap < GAP_LO ? 160 : 260 + M.gap * 200, t0, 0.2);     // tight stones growl lower
+  // the staves of the wallower knocking on the brake wheel's cogs
+  const st = Math.floor(M.rot * 3.2 / (Math.PI * 2 / 10));
+  if (st !== MSFX.stave) { if (M.spd > 0.05 && st - MSFX.stave < 4) sfxHit(1700 + Math.random() * 300, 0.035, 0.08 * Math.min(1, sp + 0.3), 'bandpass', 6); MSFX.stave = st; }
+  // the hand wheel's ratchet while you hold it
+  const rt = Math.floor((M.gapPh || 0) * 6);
+  if (rt !== MSFX.rat) { if (M.hold) sfxHit(3800, 0.02, 0.09, 'highpass', 1); MSFX.rat = rt; }
+  // now and then the old wooden frame creaks while it's working
+  if (sp > 0.3 && (MSFX.creakT -= dt) < 0) { MSFX.creakT = 2.5 + Math.random() * 4; sfxTone(180 + Math.random() * 80, 120 + Math.random() * 40, 0.45, 0.05, 'sawtooth'); }
+  // sparks
+  if (M.dry > 1.2 && Math.random() < 0.3) sfxHit(5000 + Math.random() * 3000, 0.015, 0.12, 'highpass', 1);
+}
 function drawMill(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), M = MILL;
   const dt = Math.min(0.05, Math.max(0, t - M.lt)); M.lt = t;
@@ -5330,6 +5398,7 @@ function drawMill(t) {
   if (grinding && M.grain <= 0) M.dry = (M.dry || 0) + dt; else M.dry = Math.max(0, (M.dry || 0) - dt * 2);
   if (M.dry > 1.2) { millWarn('dry', '⚡ ' + W.zhorna.uk + '!', 'Nothing to grind: the stones grind each other and spark! Pull the red lever to stop.'); if (Math.random() < 0.6) M.parts.push({ k: 'spark', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 2, vy: -Math.random() }); if (!M.dryCounted) { M.mist++; M.dryCounted = true; } }
   if (!grinding) M.dryCounted = false;
+  msfxTick(t, out);
 
   const cx = MX.mid * RW, fy = h * 0.8, platY = h * 0.63, bwY = h * 0.25, R = u * 0.2;
   millHits = [];
@@ -5522,10 +5591,10 @@ function churchTap(sx, py) {
   if (py > cv.height * 0.68) { blip(560, 0.05); inWalkTo(px, py); }
 }
 // A church bell, made from its partials: a deep hum, the strike tone, and the bright overtones dying away.
-function churchBell() {
+function churchBell(vol = 0.45) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-    const t0 = actx.currentTime, out = actx.createGain(); out.gain.value = 0.45; out.connect(actx.destination);
+    const t0 = actx.currentTime, out = actx.createGain(); out.gain.value = vol; out.connect(actx.destination);
     for (const [f, a, d] of [[98, 0.5, 5], [196, 0.6, 4], [233, 0.35, 3], [294, 0.3, 2.6], [392, 0.25, 2.2], [494, 0.15, 1.6], [590, 0.1, 1.2]]) {
       const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine'; o.frequency.value = f;
       g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(a, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
@@ -6088,6 +6157,11 @@ function dayTick(dt) {
   C.t = Math.min(0.97, C.t + dt * DAY_RATE);
   if ((clockSave += dt) > 5) { clockSave = 0; save(); }
   C.ev = C.ev || {};
+  // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
+  if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
+    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = Math.max(0.18, Math.min(0.5, 0.55 - d * 0.012));
+    duck = 0.45; setTimeout(() => { duck = 1; }, 5200); for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 1500);
+    S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
   if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
   // Out after dark: two reminders to go home to bed, then she walks home by herself.
@@ -7263,6 +7337,7 @@ function frame(ms) {
   musicTick(dt);
   if (!running && $('#start').style.display !== 'none') { tctx.setTransform(1, 0, 0, 1, 0, 0); drawTitle(t); requestAnimationFrame(frame); return; }
   if ((mode === 'mill') !== document.body.classList.contains('inmill')) document.body.classList.toggle('inmill', mode === 'mill');   // the goal line steps aside for the mill's own hints
+  if (mode !== 'mill' && MSFX.on) msfxStop();
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
