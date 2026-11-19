@@ -7256,7 +7256,7 @@ const TRADS = {
       if (r.step !== 'gather') return;
       let best = null, bd = 9; for (const it of r.items) if (!it.gone) { const d = Math.abs(X - it.x); if (d < 0.05 && Y > 0.2 && Y < 0.95 && d < bd) { bd = d; best = it; } }
       if (!best) return; best.gone = nowT; r.n++; festAct('zbyrai'); blip(620 + r.n * 40, 0.05);
-      if (r.n >= 8) { r.step = 'weave'; r.weaveT = nowT + 0.6; setTimeout(() => { if (fest && fest.trad === r) { r.step = 'crown'; r.crownT = nowT; blip(990, 0.08); setTimeout(() => festTradDone(), 2600); } }, 3200); }
+      if (r.n >= 8) { r.step = 'weave'; r.weaveT = nowT + 0.6; setTimeout(() => { if (fest && fest.trad === r) festAct('plety'); }, 700); setTimeout(() => { if (fest && fest.trad === r) { r.step = 'crown'; r.crownT = nowT; blip(990, 0.08); setTimeout(() => festTradDone(), 2600); } }, 3200); }
     },
     draw(c, S, t, r, u) {
       const { x: sx, y: sy, w: sw, h: sh } = S, hz = sy + sh * 0.45;
@@ -7312,8 +7312,8 @@ const TRADS = {
     start(r) { r.items = Array.from({ length: 3 }, (_, i) => ({ x: 0.56 + i * 0.13, out: 0, lane: 0.7 + i * 0.06 })); r.step = 'float'; },
     fact(r) { return r.step === 'fern' ? 3 : r.step === 'found' ? 3 : Math.min(2, r.n); },
     tap(r, X, Y) {
-      if (r.step === 'float') { const it = r.items.find(q => !q.out && Math.abs(X - q.x) < 0.07 && Math.abs(Y - 0.58) < 0.12); if (it) { it.out = nowT; r.n++; festAct('vinok'); blip(620, 0.06); if (r.n >= 3) setTimeout(() => { if (fest && fest.trad === r) { r.step = 'fern'; r.fernT = nowT; } }, 2200); } }
-      else if (r.step === 'fern' && nowT - r.fernT > 0.8 && Math.abs(X - 0.15) < 0.08 && Math.abs(Y - 0.86) < 0.1) { r.step = 'found'; r.foundT = nowT; blip(1320, 0.1); festTradDone(); }
+      if (r.step === 'float') { const it = r.items.find(q => !q.out && Math.abs(X - q.x) < 0.07 && Math.abs(Y - 0.58) < 0.12); if (it) { it.out = nowT; r.n++; festAct('pusty'); blip(620, 0.06); if (r.n >= 3) setTimeout(() => { if (fest && fest.trad === r) { r.step = 'fern'; r.fernT = nowT; } }, 2200); } }
+      else if (r.step === 'fern' && nowT - r.fernT > 0.8 && Math.abs(X - 0.15) < 0.08 && Math.abs(Y - 0.86) < 0.1) { r.step = 'found'; r.foundT = nowT; festAct('znaidy'); blip(1320, 0.1); festTradDone(); }
     },
     draw(c, S, t, r, u) {
       const { x: sx, y: sy, w: sw, h: sh } = S, wl = sy + sh * 0.5;
@@ -7364,8 +7364,8 @@ const TRADS = {
     start(r) { r.step = 'star'; r.dishes = 0; },
     fact(r) { return r.step === 'star' ? 0 : r.dishes < 1 ? 1 : r.dishes < 8 ? 2 : 3; },
     tap(r, X, Y) {
-      if (r.step === 'star') { if (nowT - r.t0 > 2.2 && Math.abs(X - 0.3) < 0.08 && Math.abs(Y - 0.2) < 0.1) { r.step = 'table'; r.found = nowT; say('w_sviatvechir'); blip(1320, 0.1); } }
-      else if (r.step === 'table' && Y > 0.55 && r.dishes < 12) { r.dishes++; r.dishT = nowT; if (r.dishes === 1) { learn('kutia'); say('w_kutia'); festAct('kutia'); } blip(500 + r.dishes * 40, 0.05); if (r.dishes >= 12) festTradDone(); }
+      if (r.step === 'star') { if (nowT - r.t0 > 2.2 && Math.abs(X - 0.3) < 0.08 && Math.abs(Y - 0.2) < 0.1) { r.step = 'table'; r.found = nowT; festAct('znaidy'); blip(1320, 0.1); } }
+      else if (r.step === 'table' && Y > 0.55 && r.dishes < 12) { r.dishes++; r.dishT = nowT; if (r.dishes === 1) learn('kutia'); festAct('postav'); blip(500 + r.dishes * 40, 0.05); if (r.dishes >= 12) festTradDone(); }
     },
     draw(c, S, t, r, u) {
       const { x: sx, y: sy, w: sw, h: sh } = S;
@@ -7410,9 +7410,9 @@ const TRADS = {
     spotsFor(si) { return si === 0 ? [[0.5, 0.2], [0.5, 0.64], [0.34, 0.42], [0.66, 0.42]] : si === 2 ? [[0.37, 0.25], [0.63, 0.25], [0.37, 0.59], [0.63, 0.59]] : [[0.5, 0.33], [0.5, 0.51]]; },
     tap(r, X, Y) {
       const T = TRADS.velykden, st = T.STEPS[r.si]; if (!st || r.dip) return;
-      if (st.k === 'wax') { const sp = T.spotsFor(r.si)[r.spots]; if (sp && Math.hypot(X - sp[0], (Y - sp[1]) * 0.7) < 0.08) { r.marks.push({ x: sp[0], y: sp[1], col: r.layer, kind: r.si === 0 ? (r.spots < 2 ? 'star' : 'wheat') : r.si === 2 ? 'dots' : 'belt', t: nowT }); r.spots++; festAct('pysanka'); blip(700, 0.04); if (r.spots >= st.n) { r.spots = 0; r.si++; } } }
-      else if (st.k === 'dye') { const jx = 0.75, jy = 0.62 + ['#f2c230', '#c62828', '#2d2d2d'].indexOf(st.col) * 0; if (X > 0.66 && X < 0.92 && Y > 0.45) { r.dip = nowT; blip(300, 0.08); setTimeout(() => { if (fest && fest.trad === r) { r.layer = st.col; r.cols.push(st.col); r.dip = 0; r.si++; blip(620, 0.05); } }, 1200); } }
-      else if (st.k === 'melt') { if (X < 0.3 && Y > 0.45) { r.melt = nowT; blip(880, 0.06); setTimeout(() => { if (fest && fest.trad === r) { r.si++; festTradDone(); } }, 1800); } }
+      if (st.k === 'wax') { const sp = T.spotsFor(r.si)[r.spots]; if (sp && Math.hypot(X - sp[0], (Y - sp[1]) * 0.7) < 0.08) { r.marks.push({ x: sp[0], y: sp[1], col: r.layer, kind: r.si === 0 ? (r.spots < 2 ? 'star' : 'wheat') : r.si === 2 ? 'dots' : 'belt', t: nowT }); r.spots++; festAct('pyshy'); blip(700, 0.04); if (r.spots >= st.n) { r.spots = 0; r.si++; } } }
+      else if (st.k === 'dye') { const jx = 0.75, jy = 0.62 + ['#f2c230', '#c62828', '#2d2d2d'].indexOf(st.col) * 0; if (X > 0.66 && X < 0.92 && Y > 0.45) { r.dip = nowT; festAct('zanur'); blip(300, 0.08); setTimeout(() => { if (fest && fest.trad === r) { r.layer = st.col; r.cols.push(st.col); r.dip = 0; r.si++; blip(620, 0.05); } }, 1200); } }
+      else if (st.k === 'melt') { if (X < 0.3 && Y > 0.45) { r.melt = nowT; festAct('roztopy'); blip(880, 0.06); setTimeout(() => { if (fest && fest.trad === r) { r.si++; festTradDone(); } }, 1800); } }
     },
     draw(c, S, t, r, u) {
       const { x: sx, y: sy, w: sw, h: sh } = S, T = TRADS.velykden, st = T.STEPS[r.si];
@@ -7456,6 +7456,7 @@ const TRADS = {
 function festTradStart() {
   const f = fest, T0 = TRADS[f.F.id]; if (!T0) return festDance();
   f.phase = 'trad'; f.trad = { t0: nowT, n: 0, done: 0 }; T0.start(f.trad);
+  for (const v of { obzhynky: ['zbyrai', 'plety'], kupala: ['pusty', 'znaidy'], sviatvechir: ['znaidy', 'postav'], velykden: ['pyshy', 'zanur', 'roztopy'] }[f.F.id] || []) learn(v);
   if (f.F.id === 'obzhynky') { learn('zbyrai'); setTimeout(() => { if (fest && fest.phase === 'trad') say('w_zbyrai'); }, 700); }
   if (f.F.id === 'kupala') { setTimeout(() => { if (fest && fest.phase === 'trad') say('w_vinok'); }, 700); }
   if (f.F.id === 'velykden') { learn('pysanka'); setTimeout(() => { if (fest && fest.phase === 'trad') say('w_pysanka'); }, 700); }
@@ -7494,6 +7495,7 @@ function drawFestTrad(c, w, h, u, t) {
   const [iuk, ien] = T0.instr ? T0.instr(r) : [T0.uk, T0.en];
   c.textAlign = 'center'; c.font = cozyFont(Math.round(u * 0.058)); c.fillStyle = '#fff8ea'; c.strokeStyle = 'rgba(40,25,10,.6)'; c.lineWidth = 5; c.strokeText(iuk, w / 2, h * 0.12); c.fillText(iuk, w / 2, h * 0.12);
   if (st < 3) { c.font = '600 ' + Math.max(14, Math.round(u * 0.034)) + 'px system-ui'; c.lineWidth = 3; wrapLines(c, ien, w * 0.9).slice(0, 2).forEach((ln, i) => { c.strokeText(ln, w / 2, h * 0.155 + i * 18); c.fillText(ln, w / 2, h * 0.155 + i * 18); }); }
+  festFlash(c, w, h, u, t); canvasSub(c, w, h);   // the action word, flashed, with its subtitle at the same moment
 }
 function festAct(v) {
   const f = fest; if (!f) return; const t = nowT;
@@ -7662,7 +7664,9 @@ function drawFest(t) {
   // joined hands: an arm from each dancer to the next one round the circle
   const ring = dancers.slice().sort((a, b) => a.i - b.i), arms = [];
   for (let i = 0; i < ring.length; i++) { const A = ring[i], B = ring[(i + 1) % ring.length]; if (Math.abs(A.i - B.i) > 1 && !(A.i === looks.length - 1 && B.i === 0)) continue; arms.push({ A, B, back: Math.sin(A.a) + Math.sin(B.a) < 0 }); }
-  const drawArm = ({ A, B }) => { const ay = A.y - A.bob - A.sc * 40, by2 = B.y - B.bob - B.sc * 40, dir = B.x > A.x ? 1 : -1, x1 = A.x + dir * A.sc * 12, x2 = B.x - dir * B.sc * 12, my = (ay + by2) / 2 + u * 0.012 + Math.sin(t * 6) * 2; c.strokeStyle = '#f3cfb0'; c.lineWidth = Math.max(2, (A.sc + B.sc) * 2.6); c.lineCap = 'round'; c.beginPath(); c.moveTo(x1, ay); c.quadraticCurveTo((x1 + x2) / 2, my, x2, by2); c.stroke(); c.fillStyle = '#f3cfb0'; circ(c, (x1 + x2) / 2, my - u * 0.005, Math.max(2, (A.sc + B.sc) * 2.4)); };
+  const drawArm = ({ A, B }) => { const ka = A.sc * (A.L.small ? 0.78 : 1), kb = B.sc * (B.L.small ? 0.78 : 1), ay = A.y - A.bob - ka * 40, by2 = B.y - B.bob - kb * 40, dir = B.x > A.x ? 1 : -1, x1 = A.x + dir * ka * 12, x2 = B.x - dir * kb * 12, wa = A.L.small && !B.L.small ? 0.3 : B.L.small && !A.L.small ? 0.7 : 0.5, hx = x1 + (x2 - x1) * wa, hy2 = ay + (by2 - ay) * wa + u * 0.012 + Math.sin(t * 6) * 2;   // the hands meet nearer the child, so the grown-up does the reaching
+    c.strokeStyle = '#f3cfb0'; c.lineCap = 'round'; c.lineWidth = Math.max(2, ka * 5.2); c.beginPath(); c.moveTo(x1, ay); c.quadraticCurveTo((x1 + hx) / 2, (ay + hy2) / 2 + u * 0.006, hx, hy2); c.stroke(); c.lineWidth = Math.max(2, kb * 5.2); c.beginPath(); c.moveTo(x2, by2); c.quadraticCurveTo((x2 + hx) / 2, (by2 + hy2) / 2 + u * 0.006, hx, hy2); c.stroke();
+    c.fillStyle = '#f3cfb0'; circ(c, hx, hy2 - u * 0.005, Math.max(2, (ka + kb) * 2.4)); };
   dancers.filter(d => Math.sin(d.a) < 0).sort((a, b) => a.y - b.y).forEach(drawD);
   const waving = f.phase === 'farewell';
   if (!waving) arms.filter(m => m.back).forEach(drawArm);
