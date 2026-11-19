@@ -7831,7 +7831,7 @@ function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill
 // ------------------------------------------------------------------ the title screen, drawn
 const tcv = $('#tc'), tctx = tcv.getContext('2d');
 let fontReady = false;
-try { document.fonts.load('900 40px Cozy', 'Котяча Долина Kotiacha Dolyna Cat Valley').then(() => { fontReady = true; }).catch(() => { fontReady = true; }); } catch (e) { fontReady = true; }
+try { document.fonts.load('900 40px Cozy', 'Котяча Долина Kotiacha Dolyna Cat Valley Vickies Valley Долина Вікі').then(() => { fontReady = true; }).catch(() => { fontReady = true; }); } catch (e) { fontReady = true; }
 function sizeTitle() { const dpr = Math.min(2, window.devicePixelRatio || 1); tcv.width = Math.round(innerWidth * dpr); tcv.height = Math.round(innerHeight * dpr); }
 addEventListener('resize', sizeTitle); sizeTitle();
 let seedT = 11; const rT = () => (seedT = (seedT * 16807) % 2147483647) / 2147483647;
@@ -8050,19 +8050,16 @@ function drawTitle(t) {
   sunflower(c, W * 0.83, H, hs * (land ? 0.4 : 0.58), t, 12);
   // butterflies
   for (let i = 0; i < 2; i++) { const bx = W * (0.3 + 0.4 * i) + Math.sin(t * 0.6 + i * 2) * W * 0.1, by = gy - S * 0.08 + Math.cos(t * 0.9 + i) * S * 0.04; c.save(); c.translate(bx, by); c.scale(1, Math.abs(Math.sin(t * 9 + i)) * 0.6 + 0.4); c.fillStyle = i ? '#ff8fb1' : '#ffd23f'; ell(c, -S * 0.012, 0, S * 0.012, S * 0.016); ell(c, S * 0.012, 0, S * 0.012, S * 0.016); c.restore(); }
-  // the logo
+  // the logo: Vickie's Valley in the big painted letters, and its Ukrainian name, «Долина Вікі», on the red sign
   const top = H * 0.05;
   if (land) {
-    const s1 = fancyText(c, 'Котяча Долина', W / 2, top + H * 0.13, W * 0.6, H * 0.135, t);
-    fancyText(c, 'Kotiacha Dolyna', W / 2, top + H * 0.13 + s1 * 0.74, W * 0.36, s1 * 0.4, t, { fill: '#fff8ea', thick: 0.22, bob: 0.02, tilt: 0.02 });
-    ribbon(c, 'Cat Valley', W / 2, top + H * 0.13 + s1 * 1.24, s1 * 0.24);
+    const s1 = fancyText(c, "Vickie's Valley", W / 2, top + H * 0.13, W * 0.66, H * 0.14, t);
+    ribbon(c, 'Долина Вікі', W / 2, top + H * 0.13 + s1 * 0.95, s1 * 0.36);
   } else {
     const big = Math.min(W * 0.2, H * 0.1);
-    const s1 = fancyText(c, 'Котяча', W / 2, top + big * 1.05, W * 0.84, big, t);
-    fancyText(c, 'Долина', W / 2, top + big * 1.05 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
-    const y3 = top + big * 1.05 + s1 * 1.66;
-    fancyText(c, 'Kotiacha Dolyna', W / 2, y3, W * 0.72, s1 * 0.38, t, { fill: '#fff8ea', thick: 0.22, bob: 0.02, tilt: 0.02 });
-    ribbon(c, 'Cat Valley', W / 2, y3 + s1 * 0.56, s1 * 0.25);
+    const s1 = fancyText(c, "Vickie's", W / 2, top + big * 1.05, W * 0.84, big, t);
+    fancyText(c, 'Valley', W / 2, top + big * 1.05 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
+    ribbon(c, 'Долина Вікі', W / 2, top + big * 1.05 + s1 * 1.72, s1 * 0.36);
   }
 }
 
