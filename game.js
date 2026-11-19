@@ -3083,7 +3083,7 @@ function cookSetup(kind, st) {
   const n = Math.max(1, st.n || { chop: 6, peel: 5, knead: 6, shape: 5, add: 2, shake: 3, taste: 1 }[kind] || 1);
   const S0 = { kind, st, n, ev: 0, tool: { x: 0.78, y: 0.3, hx: 0.78, hy: 0.3, held: false }, bits: [], fx: [], armed: true, acc: 0, lastY: null, lastX: null };
   if (kind === 'peel') S0.tool = { x: 0.74, y: 0.28, hx: 0.74, hy: 0.28 };
-  if (kind === 'chop') S0.tool = { x: 0.8, y: 0.16, hx: 0.8, hy: 0.16 };
+  if (kind === 'chop') S0.tool = { x: 0.8, y: 0.18, hx: 0.8, hy: 0.18 };
   if (kind === 'knead') S0.tool = { x: 0.5, y: 0.22, hx: 0.5, hy: 0.22 };
   if (kind === 'grate' || kind === 'wash') S0.tool = { x: 0.22, y: 0.4, hx: 0.22, hy: 0.4 };
   if (kind === 'roll') S0.tool = { x: 0.5, y: 0.86, hx: 0.5, hy: 0.86 };
@@ -3136,13 +3136,15 @@ function cookMove(x, y) {
   const s = ck.s, T = s.tool, k = s.kind;
   const py = T.y;
   if (k === 'chop') {
-    // T is where the blade meets the handle; the blade hangs straight down from it, its tip 0.26 of the pad lower.
-    // Lift the tip above the vegetable, then bring it down to the board on the dashed line: one slice.
-    T.x = Math.max(0.18, Math.min(0.88, x)); T.y = Math.max(0.06, Math.min(0.53, y));
-    if (T.y < 0.16) s.armed = true;
-    if (s.armed && T.y >= 0.51) { s.armed = false;
-      if (Math.abs(T.x - ckGuide()) < 0.07) { cookAct(true); const b0 = ckLeft(); cookEv(); s.bits.push({ a: ckLeft(), b: b0, t: nowT }); blip(300 + Math.random() * 120, 0.04); }
-      else { blip(220, 0.03); s.missCut = nowT; }   // off the line: the knife only taps the board
+    // T is the handle; the blade lies flat to its left, edge down. Lift the edge above the dashed line, then
+    // bring it down onto the line with the blade over the vegetable: one slice comes off the top.
+    const pad0 = $("#cookPad"), edge = 0.024 * (pad0 ? pad0.width / pad0.height : 1.5), over = x => x - CK_BLADE + 0.04 < 0.5 && x - 0.04 > 0.5, gY = ckGuide();
+    T.x = Math.max(0.32, Math.min(0.92, x));
+    T.y = Math.max(0.06, Math.min(over(T.x) && !ck.done ? gY - edge + 0.004 : 0.72, y));   // over the vegetable the blade rests on the cut line
+    if (T.y + edge < gY - 0.09) s.armed = true;
+    if (s.armed && T.y + edge >= gY - 0.002) { s.armed = false;
+      if (over(T.x)) { cookAct(true); const b0 = ckLeft(); cookEv(); s.bits.push({ a: ckLeft(), b: b0, t: nowT }); blip(300 + Math.random() * 120, 0.04); }
+      else { blip(220, 0.03); s.missCut = nowT; }   // not over the vegetable: the knife only taps the board
     }
   } else if (k === 'peel') {
     T.x = Math.max(0.3, Math.min(0.92, x)); T.y = Math.max(0.12, Math.min(0.78, y));
@@ -3217,7 +3219,14 @@ function cookStopVoice(s) { if (s && s.vo) { try { s.vo.pause(); } catch (e) {} 
 // Chopping: how much of the vegetable is still whole (a fraction of its width, from the left), and the colour
 // of its inside where it's been cut.
 const ckLeft = () => 1 - Math.min(1, ck.prog) * 0.82;
-function ckGuide() { const pad = $('#cookPad'), a = pad ? pad.height / pad.width : 0.7, S = 0.42 * a, s = ck.s, nextLeft = Math.max(0.05, ckLeft() - 0.82 / Math.max(1, s.n)), carrot = s.st.w === 'morkva'; return 0.5 - S / 2 + S * (carrot ? 1.05 : 1) * nextLeft; }
+// The vegetable lies turned so the cuts run the same way as the knife blade (across), and slices come off the
+// top first, working down. ckGuide() is the height of the next cut, as a fraction of the pad's height.
+const CK_VEG = { y: 0.6, S: 0.42 };   // its centre height and size (of the pad height)
+function ckGuide() { const s = ck.s, nextLeft = Math.max(0.05, ckLeft() - 0.82 / Math.max(1, s.n)), p = 1 - nextLeft;
+  if (s.st.w === 'morkva') return 0.64 - 0.9 * CK_VEG.S * (-0.5 + 1.05 * nextLeft);   // the carrot stands tip up; coins come off the tip
+  return CK_VEG.y - CK_VEG.S / 2 + CK_VEG.S * p; }
+// The knife blade (flat, edge down) spans this much of the pad's width to the left of the handle.
+const CK_BLADE = 0.27;
 const CK_FLESH = { yabluko: '#fff4d6', tsybulia: '#f7f3e8', kapusta: '#e6f3c8', morkva: '#ff9a3a', kartoplia: '#f6e7a8', buriak: '#8a1f4a', pomidor: '#e8463c' };
 const ckImgs = {};
 function ckImg(id) { if (!ckImgs[id]) { const im = new Image(); im.src = iconURL(id); ckImgs[id] = im; } return ckImgs[id]; }
@@ -3234,8 +3243,11 @@ function ckCarrot(c, w, h, k, t, s) {
   if (end < 0.999) { const ex = x0 + len * end, r = rad(end); c.fillStyle = '#ffa64a'; ell(c, ex, y, r * 0.35, r); c.fillStyle = '#ffd08a'; ell(c, ex, y, r * 0.16, r * 0.45); }
   else { c.fillStyle = '#ff8a1f'; circ(c, x0 + len, y, S * 0.02); }
   s.bits.forEach((b, i) => {   // the coins: each was the slice between two cuts
-    const q = Math.min(1, (t - b.t) / 0.35), mid = (b.a + b.b) / 2, r = rad(Math.min(1, mid)), bx = x0 + len * mid + (14 * k + i * 4 * k) * q, by = y + S * 0.05 + (i % 3) * 5 * k * q;
-    c.fillStyle = '#e8741a'; ell(c, bx, by + 1.5 * k, r, r * (1 - q * 0.6)); c.fillStyle = '#ffa64a'; ell(c, bx, by, r, r * (1 - q * 0.6)); c.fillStyle = '#ffd08a'; ell(c, bx, by, r * 0.45, r * 0.45 * (1 - q * 0.6));
+    // (in the carrot's own frame: its x runs up the screen, its y across, since it's drawn turned tip up)
+    const q = Math.min(1, (t - b.t) / 0.4), mid = (b.a + b.b) / 2, r = rad(Math.min(1, mid)), side = i % 2 ? 1 : -1;
+    const sx = x0 + len * mid, ex = w * 0.5 - S * 0.12 + (i >> 1) * 2 * k, ey = y + side * (S * 0.42 + (i >> 1) * 7 * k);
+    const bx = sx + (ex - sx) * q + Math.sin(q * Math.PI) * 12 * k, by = y + (ey - y) * q, fl = 1 - q * 0.6;
+    c.fillStyle = '#e8741a'; ell(c, bx - 1.5 * k, by, r * fl, r); c.fillStyle = '#ffa64a'; ell(c, bx, by, r * fl, r); c.fillStyle = '#ffd08a'; ell(c, bx, by, r * 0.45 * fl, r * 0.45);
   });
 }
 // Drawing helpers for the kitchen.
@@ -3275,27 +3287,32 @@ function cookFrame(me) {
   if (kind === 'chop' || kind === 'peel') {
     ckBoard(c, w, h, k);
     const im = kind === 'chop' ? ckImg(st.w) : null;
-    if (kind === 'chop' && st.w === 'morkva') ckCarrot(c, w, h, k, t, s);
+    if (kind === 'chop' && st.w === 'morkva') { c.save(); c.translate(w * 0.5, h * 0.64); c.rotate(-Math.PI / 2); c.scale(0.9, 0.9); c.translate(-w * 0.5, -h * 0.64); ckCarrot(c, w, h, k, t, s); c.restore(); }
     else if (im && im.complete && im.naturalWidth) {
-      const S = h * 0.42, fx = w * 0.5, fy = h * 0.6, left = ckLeft(), FL = CK_FLESH[st.w] || '#fff4d6';
-      // what's left of it, cut straight down where the knife has been
-      c.drawImage(im, 0, 0, 128 * left, 128, fx - S / 2, fy - S / 2, S * left, S);
-      if (left < 0.999) { c.fillStyle = FL; ell(c, fx - S / 2 + S * left, fy + S * 0.06, 2.5 * k, S * 0.27); }
-      // the slices, toppled over to the right, their cut faces showing
-      s.bits.forEach((b, i) => { const q = Math.min(1, (t - b.t) / 0.3), wid = S * (b.b - b.a), sx = fx - S / 2 + S * b.a + (10 * k + i * 6 * k) * q;
-        c.save(); c.translate(sx + wid / 2, fy + S * 0.1); c.rotate(q * (0.25 + (i % 3) * 0.12)); c.drawImage(im, 128 * b.a, 0, 128 * (b.b - b.a), 128, -wid / 2, -S / 2 + S * 0.04, wid, S); c.fillStyle = FL; ell(c, -wid / 2 + 1.2 * k, S * 0.05, 2.2 * k, S * 0.25);
-        if (st.w === 'tsybulia' || st.w === 'yabluko') { c.strokeStyle = st.w === 'tsybulia' ? 'rgba(200,180,150,.6)' : 'rgba(150,90,40,.5)'; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(-wid / 2 + 1.2 * k, S * 0.05, 1.4 * k, S * (st.w === 'tsybulia' ? 0.15 : 0.06), 0, 0, 7); c.stroke(); }   // onion rings, apple pips
+      const S = h * CK_VEG.S, fx = w * 0.5, fy = h * CK_VEG.y, p = 1 - ckLeft(), FL = CK_FLESH[st.w] || '#fff4d6';
+      // Drawn a quarter turn round (its picture's left edge at the top), so the slices are cut across. What's left
+      // is the lower part, cut flat across where the knife has been.
+      c.save(); c.translate(fx, fy); c.rotate(Math.PI / 2);
+      c.drawImage(im, 128 * p, 0, 128 * (1 - p), 128, -S / 2 + S * p, -S / 2, S * (1 - p), S);
+      if (p > 0.001) { c.fillStyle = FL; ell(c, -S / 2 + S * p, 0, 2.5 * k, S * 0.27); }
+      c.restore();
+      // the slices, each the band between two cuts, tipping off the top and fanning out to the sides, cut faces showing
+      s.bits.forEach((b, i) => { const q = Math.min(1, (t - b.t) / 0.4), a0 = 1 - b.b, a1 = 1 - b.a, th = S * (a1 - a0), side = i % 2 ? 1 : -1;
+        const y0 = fy - S / 2 + S * (a0 + a1) / 2, y1 = fy + S * 0.3 - (i >> 1) * 2 * k, cx = fx + side * (S * 0.66 + (i >> 1) * 7 * k) * q, cy = y0 + (y1 - y0) * q - Math.sin(q * Math.PI) * 12 * k;
+        c.save(); c.translate(cx, cy); c.rotate(Math.PI / 2 + side * q * (0.08 + (i % 3) * 0.05));
+        c.drawImage(im, 128 * a0, 0, 128 * (a1 - a0), 128, -th / 2, -S / 2, th, S); c.fillStyle = FL; ell(c, th / 2 - 1.2 * k, 0, 2.2 * k, S * 0.25);
+        if (st.w === 'tsybulia' || st.w === 'yabluko') { c.strokeStyle = st.w === 'tsybulia' ? 'rgba(200,180,150,.6)' : 'rgba(150,90,40,.5)'; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(th / 2 - 1.2 * k, 0, 1.4 * k, S * (st.w === 'tsybulia' ? 0.15 : 0.06), 0, 0, 7); c.stroke(); }   // onion rings, apple pips
         c.restore(); });
     } else food(w * 0.5, h * 0.6, h * 0.36, 0);
     for (const b of (kind === 'chop' ? [] : s.bits)) { const q = Math.min(1, (t - b.t) / 0.5); if (kind === 'chop') { c.fillStyle = '#fff'; drawIcon(c, W[st.w].ic, w * (b.x - 0.05 - q * 0.08), h * (0.66 + q * 0.06), h * 0.11); } else { c.strokeStyle = st.w === 'buriak' ? '#7a1f3d' : '#b5824e'; c.lineWidth = 3 * k; c.beginPath(); const x = w * b.x, y = h * (0.6 + q * 0.2); c.moveTo(x, y); c.quadraticCurveTo(x + 10 * k, y + 8 * k, x, y + 14 * k); c.stroke(); } }
     // the knife: handle in your hand (right), blade over the food, edge down
     const bx = T.x * w, by = T.y * h;
     if (kind === 'chop') {
-      // the dashed line where the next slice is cut, and the knife upright above it, handle up, tip down
-      if (!ck.done) { const gx = ckGuide() * w; c.save(); c.strokeStyle = `rgba(255,255,255,${0.55 + 0.3 * Math.sin(t * 6)})`; c.lineWidth = 2.5 * k; c.setLineDash([6 * k, 6 * k]); c.beginPath(); c.moveTo(gx, h * 0.36); c.lineTo(gx, h * 0.84); c.stroke(); c.restore(); }
-      if (s.missCut && t - s.missCut < 0.6) { c.fillStyle = 'rgba(255,255,255,.9)'; c.font = `800 ${Math.round(12 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⟷', bx, by - h * 0.12); }
-      ckKnife(c, bx, by, w * 0.2, k, -Math.PI / 2);
-      ring(bx, by - w * 0.05, 24 * k);
+      // the dashed line across the vegetable where the next slice is cut, and the knife lying flat, edge down
+      if (!ck.done) { const gy = ckGuide() * h; c.save(); c.strokeStyle = `rgba(255,255,255,${0.55 + 0.3 * Math.sin(t * 6)})`; c.lineWidth = 2.5 * k; c.setLineDash([6 * k, 6 * k]); c.beginPath(); c.moveTo(w * 0.3, gy); c.lineTo(w * 0.7, gy); c.stroke(); c.restore(); }
+      if (s.missCut && t - s.missCut < 0.6) { c.fillStyle = 'rgba(255,255,255,.9)'; c.font = `800 ${Math.round(14 * k)}px system-ui`; c.textAlign = 'center'; c.fillText('⟷', bx - w * 0.12, by - h * 0.08); }
+      ckKnife(c, bx, by, w * 0.3, k, 0);
+      ring(bx + w * 0.05, by, 24 * k);
     } else {
       ckKnife(c, bx, by, w * 0.22, k, -0.15);
       ring(bx + w * 0.06, by, 26 * k);
