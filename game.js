@@ -749,6 +749,13 @@ const DRAW = {
     // crates on the ground in front
     const crate = (x, col) => { c.fillStyle = '#b5824e'; c.fillRect(x - 9, -9, 18, 9); c.strokeStyle = '#8a5a2b'; c.lineWidth = 0.8; c.strokeRect(x - 9, -9, 18, 9); c.beginPath(); c.moveTo(x - 9, -4.5); c.lineTo(x + 9, -4.5); c.stroke(); c.fillStyle = col; for (let i = 0; i < 4; i++) circ(c, x - 6 + i * 4, -10, 2.4); };
     crate(-33, '#c9a05a'); crate(33, '#e2392f');
+    if (nightNow()) {   // closed: a sacking cloth over the produce and the crates, and a board hung up saying so
+      c.fillStyle = '#b89a68'; c.beginPath(); c.moveTo(-49, -57); c.quadraticCurveTo(0, -61, 49, -57); c.lineTo(50, -30); c.quadraticCurveTo(25, -26, 0, -30); c.quadraticCurveTo(-25, -26, -50, -30); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(90,60,30,.35)'; c.lineWidth = 0.8; for (let x = -40; x < 48; x += 10) { c.beginPath(); c.moveTo(x, -58); c.quadraticCurveTo(x + 2, -44, x, -29); c.stroke(); }
+      c.fillStyle = '#a5875a'; for (const x of [-33, 33]) rr(c, x - 10, -11, 20, 11, 2);
+      c.strokeStyle = '#5a381b'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-14, -74); c.lineTo(-10, -66); c.moveTo(14, -74); c.lineTo(10, -66); c.stroke();
+      c.fillStyle = '#6b4422'; rr(c, -18, -67, 36, 11, 2); c.fillStyle = '#fffaf0'; c.font = '700 6.5px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ЗАЧИНЕНО', 0, -61.3);
+    }
   },
   plot(c) {
     c.fillStyle = '#8a5a3c'; rr(c, -46, -72, 92, 64, 10);
@@ -1853,7 +1860,7 @@ function seasonGround() { const s = season(); if (s !== 'zyma') groundW = null; 
 // stork and the swallows have flown south).
 const WINTER_GONE = new Set(['kvitka', 'soniashnyk', 'mak', 'pshenytsia', 'hryb', 'malva', 'chornobryvtsi', 'metelyk', 'bdzhola', 'ryba', 'zhaba', 'kachka', 'lastivka']);
 // Some things only appear in some seasons: e.only lists them (the hedgehog's winter leaf pile, the bird feeder).
-const goneNow = e => (e.only && !e.only.includes(season())) || (winter() && (WINTER_GONE.has(e.w) || e.water));
+const goneNow = e => e.asleep || (NIGHT_GONE.has(e.w) && nightNow()) || (e.only && !e.only.includes(season())) || (winter() && (WINTER_GONE.has(e.w) || e.water));
 function drawIce(c, t) {
   const x = POND.x * T, y = POND.y * T, rx = POND.rx * T, ry = POND.ry * T;
   c.fillStyle = 'rgba(214,234,248,.92)'; ell(c, x, y, rx * 1.02, ry * 1.02);
@@ -2238,7 +2245,46 @@ function drawDuck(c, x, y, t, e) {
   c.fillStyle = '#1d191c'; circ(c, 12.5, -19.5, 1.2);
   c.restore();
 }
+// ------------------------------------------------------------------ bedtime for the village
+// When it's time for her to go to bed, the village goes too. Oksana covers her stall and walks home, and so do
+// her husband Taras the fisherman and their boy Andriiko with Brovko the dog: the three of them live in the
+// cottage at the bottom right. Mr. Bohdan goes home to his cottage at the bottom left. Butterflies and bees are
+// gone, and the farm animals lie down (or stand dozing) where they are. In the morning everyone is back.
+function nightNow() { return !!(S.clock && S.clock.t >= 0.86); }
+const NPC_HOME = { oksana: 'tarasHome', taras: 'tarasHome', andriiko: 'tarasHome', bohdan: 'bohdanHome' };
+const HOME_DELAY = { oksana: 1.5, bohdan: 3, taras: 4.5, andriiko: 6 };
+const NIGHT_GONE = new Set(['metelyk', 'bdzhola', 'lastivka']);
+let villageNightT = 0;
+function villageNight(dt) {
+  if (!nightNow()) {
+    if (villageNightT) { villageNightT = 0; for (const e of ents) if (e.x0 !== undefined) { e.x = e.x0; e.y = e.y0; e.asleep = false; e.route2 = null; e.x0 = undefined; } }
+    return;
+  }
+  villageNightT += dt;
+  for (const e of ents) {
+    const who = e.kind === 'npc' ? e.npc : e.fetch ? 'andriiko' : null;
+    if (!who || !NPC_HOME[who] || e.asleep) continue;
+    if (!e.route2) {
+      if (villageNightT < HOME_DELAY[who] + (e.fetch ? 0.7 : 0)) continue;
+      const H = ents.find(q => q.k === NPC_HOME[who]); if (!H) continue;
+      e.x0 = e.x; e.y0 = e.y; e.route2 = findPath(H.x, H.y + 0.5, null, e); e.homeGo = 0;
+      if (!e.route2.length) { e.asleep = true; continue; }
+    }
+    const n = e.route2[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = (e.fetch ? 1.9 : 1.6) * dt;
+    if (Math.abs(dx) > 0.02) { e.wface = dx > 0 ? 1 : -1; if (e.fetch) { e.face = e.fs = dx > 0 ? -1 : 1; } }
+    if (e.fetch) { e.wk = 1; e.walk = true; e.step = (e.step || 0) + sp; e.vel = 1; }
+    if (d <= sp) { e.x = n.x; e.y = n.y; e.route2.shift(); if (!e.route2.length) e.asleep = true; }
+    else { e.x += dx / d * sp; e.y += dy / d * sp; }
+    e.homeGo += sp;
+  }
+}
+// a little "z z" over an animal asleep for the night
+function sleepZ(c, x, y, t, k) { if (!nightNow()) return; c.save(); c.font = `700 ${Math.round(11 * k)}px system-ui, sans-serif`; c.textAlign = 'center'; for (let i = 0; i < 2; i++) { const q = (t * 0.35 + i * 0.5 + x * 0.01) % 1; c.globalAlpha = Math.sin(q * Math.PI) * 0.85; c.fillStyle = '#e8eefc'; c.fillText('z', x + 10 * k + q * 10 * k, y - 34 * k - q * 18 * k); } c.restore(); }
 function drawAnimal(c, x, y, e, t) {
+  if (nightNow() && e.an !== 'cat' && e.an !== 'frog' && !e.route2) { const k = e.an === 'cow' || e.an === 'horse' ? 1.3 : 0.9; if (BIRD[e.an]) { c.save(); c.beginPath(); c.rect(x - 60, y - 100, 120, 101); c.clip(); drawAnimal0(c, x, y + 7, e, t); c.restore(); } else drawAnimal0(c, x, y, e, t); return sleepZ(c, x, y - (e.an === 'hen' || e.an === 'rooster' ? -14 : 0), t, k); }
+  return drawAnimal0(c, x, y, e, t);
+}
+function drawAnimal0(c, x, y, e, t) {
   if (e.an === 'frog') {
     // hops in little arcs while moving; sits with a slow throat-puff otherwise
     const ph = e.walk ? ((e.step || 0) * 2.4) % 1 : 0, lift = e.walk ? Math.sin(Math.PI * ph) * 16 : (e.tl || 0) * 4, dir = -turnX(e);
@@ -2335,8 +2381,8 @@ function catRoam(e) {
   }
   return false;
 }
-function findPath(tx, ty, ent) {
-  const sx = Math.floor(P.x), sy = Math.floor(P.y);
+function findPath(tx, ty, ent, from) {
+  const sx = Math.floor(from ? from.x : P.x), sy = Math.floor(from ? from.y : P.y);
   const dist = new Int16Array(MW * MH).fill(-1), prev = new Int32Array(MW * MH).fill(-1);
   const q = [sy * MW + sx]; dist[q[0]] = 0;
   for (let h = 0; h < q.length; h++) {
@@ -2678,8 +2724,10 @@ function interact(e) {
   if (e.w === 'ryba' || e.kind === 'pond') return fishCard(e);
   if (e.cat) return catSheet(e);
   talkNpc = e.kind === 'npc' ? e.npc : e.kind === 'shop' ? 'oksana' : null;
+  if (e.kind === 'npc' && e.route2) return toast('🌙 ' + PH.dobranich.uk + '!' + (stage() < 3 ? ' · Everyone is heading home for the night.' : ''), 2400);
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
+  if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
   if (e.w === 'tserkva') return wordCard('tserkva', { note: '⛪ ' + xl('The village church. Go in: it is quiet and beautiful inside.'), acts: [{ k: 'enter', fn: enterChurch }] });
@@ -6352,14 +6400,17 @@ function update(dt, t, rdt = dt) {
     P.va = cur + P.vav * rdt;
     if (Math.abs(P.vav) < 0.01 && Math.abs(goal - P.va) < 0.003) { P.va = ((goal % TAU) + TAU) % TAU; P.vav = 0; }
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
+  villageNight(dt);
   for (const e of ents) {
-    if (e.face !== undefined) turnTo(e, e.face, dt, TURN_SLOW[e.an] || 1);
+    if (e.face !== undefined && !e.route2) turnTo(e, e.face, dt, TURN_SLOW[e.an] || 1);
+    if (e.route2 || e.asleep) continue;   // heading home for the night
     if (e.npc === 'oksana') oksanaStep(e, dt, t);
     if (e.kind === 'npc') {   // turn to face you (side-on, towards whichever side you're on) while you talk
       const goal = sheetOpen() && talkNpc === e.npc ? (P.x >= e.x ? 1 : -1) : 0;
       e.tv = (e.tv || 0) + (goal - (e.tv || 0)) * (1 - Math.exp(-rdt * 7));   // real time: game time stops while a card is open
       if (Math.abs(e.tv - goal) < 0.002) e.tv = goal;
     }
+    if (e.kind === 'animal' && nightNow() && !e.cat && !e.fetch && !e.water) { e.st = 'idle'; e.act = (QUAD[e.an] || {}).rest ? 'rest' : 'look'; e.tw = 3; e.vel = 0; }   // night: lie down and sleep
     if (e.kind === 'animal') {
       // Stand a good while (grazing, looking about, lying down), then stroll somewhere else: turn first, set off
       // gently, slow down on arriving. A new spot is only chosen while standing, never part-way through a walk.
@@ -6506,6 +6557,7 @@ function drawWorld(t) {
       c.save(); c.translate(x, y - mid * 4); c.scale((view === 3 ? -1 : 1) * (1 - mid * 0.4), 1);
       if (view === 1 || view === 3) personSide(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
       c.restore(); continue; }
+    if (e.kind === 'npc' && e.route2) { const L = Object.assign({}, NPC[e.npc].look, { armR: undefined, armL: undefined }); c.save(); c.translate(x, y); c.scale(e.wface || 1, 1); personSide(c, 0, 0, L, t, 1, 1, e.homeGo * 3.7); c.restore(); continue; }
     if (e.kind === 'npc') {
       const ok = e.npc === 'oksana', a = Math.abs(e.tv || 0), L = NPC[e.npc].look, tt = ok ? t + 19.5 : t + e.x;
       chore(c, x, y, e.npc, t, 0);
@@ -6570,6 +6622,7 @@ function drawWorld(t) {
   for (const e of list) {
     if (e.me || e.kind === 'plot' || e.quiet) continue;
     const x = e.x * T, y = e.y * T;
+    if (e.kind === 'npc' && e.route2) continue;   // no bubbles on the way home to bed
     if (e.kind === 'npc') {
       const n = S.npc[e.npc], top = y - T * 1.45;
       if (n && n.met && (n.k || 0) < 3 && e.npc !== 'oksana') offer(e, NPC[e.npc].name);   // Oksana's chats open the shop and never count up, so she'd be labelled for ever
