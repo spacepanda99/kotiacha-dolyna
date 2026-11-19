@@ -199,8 +199,23 @@ function startMusic() { if (mode === 'fest') return; if (musicOn && music.paused
 document.addEventListener('pointerdown', startMusic, true);
 document.addEventListener('keydown', startMusic, true);
 addEventListener('load', () => { musicBtn(); startMusic(); });
+// Each interior has its own theme (music/room-<mode>.mp3, made with tools/music.mjs). Going in or out fades the
+// music down, swaps the track and fades back up; the village theme picks up where it left off. A room whose file
+// is missing (not made yet) just keeps the village theme.
+const ROOM_TUNES = { home: 'room-home', olia: 'room-olia', mill: 'room-mill', church: 'room-church' };
+const tuneBad = {};
+let curTune = 'theme', themePos = 0, seekTo = 0;
+const wantTune = () => { const n = ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
+music.addEventListener('error', () => { if (curTune !== 'theme') tuneBad[curTune] = true; });
+music.addEventListener('loadedmetadata', () => { if (seekTo) { try { music.currentTime = seekTo; } catch (e) {} seekTo = 0; } });
 function musicTick(dt) {
-  const target = musicOn && !sp ? 0.55 * duck : 0;   // silent for the whole speaking round, so the mic only hears you
+  const want = wantTune(), switching = want !== curTune;
+  if (switching && (musicVol < 0.03 || music.paused)) {
+    if (curTune === 'theme') themePos = music.currentTime || 0;
+    curTune = want; seekTo = want === 'theme' ? themePos : 0;
+    music.src = 'music/' + want + '.mp3'; if (musicOn && !document.hidden && mode !== 'fest') music.play().catch(() => {});
+  }
+  const target = musicOn && !sp && !switching ? 0.55 * duck : 0;   // silent for the whole speaking round, so the mic only hears you
   musicVol += (target - musicVol) * Math.min(1, dt * 3);
   try { music.volume = Math.max(0, Math.min(1, musicVol)); } catch (e) {}
   if (!musicOn && musicVol < 0.01 && !music.paused) music.pause();
@@ -2666,6 +2681,7 @@ function interact(e) {
   if (e.kind === 'plot') return plotSheet(e.i);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.w === 'tserkva') return wordCard('tserkva', { note: '⛪ ' + xl('The village church. Go in: it is quiet and beautiful inside.'), acts: [{ k: 'enter', fn: enterChurch }] });
   if (e.w === 'mlyn') return wordCard('mlyn', { note: '⚙️ ' + xl('A working windmill: go in and grind wheat into flour.'), acts: [{ k: 'enter', fn: enterMill }] });
   if (e.kind === 'home') return wordCard('khata', { owner: '🏠 ' + PH.moia_khata.uk, note: xl('This is your cottage.'), clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
   if (e.w === 'krynytsia') {
@@ -4715,7 +4731,7 @@ const DECOR = {
 };
 const WIN_X = 0.3;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
-const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
+const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : mode === 'church' ? 3.0 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 // Your cottage and Grandma's have a strip of room left of x = 0, with the door out, so the view can pan to -roomPL().
 const roomPL = () => mode === 'home' || mode === 'olia' ? roomU() * 0.5 : 0;
@@ -5130,7 +5146,7 @@ function drawHome(t) {
 // there; tap something and she walks over to it first, then it opens. The view follows her as she goes, and
 // you can still drag to look around. Further down the floor is nearer, so she's a little bigger there.
 const IN = { x: 0, y: 0, tx: 0, ty: 0, wk: 0, step: 0, face: 1, dir: 'front', then: null, follow: false, lt: 0 };
-const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
+const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : mode === 'church' ? [h * 0.72, h * 0.9] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
 const inScale = y => { const [a, b] = inBand(); return roomU() * 0.0043 * (0.93 + 0.14 * (Math.max(a, Math.min(b, y)) - a) / Math.max(1, b - a)); };   // up a ladder she's as far back as the back wall
 function inStart(fx) { const [a, b] = inBand(); IN.x = IN.tx = fx * roomW(); IN.y = IN.ty = b - (b - a) * 0.35; IN.wk = 0; IN.then = null; IN.face = 1; IN.dir = 'front'; IN.follow = false; IN.path = null; IN.climb = false; IN.wait = 0; IN.pose = null; }
 // A scripted walk off the floor (up the mill's ladder and along the landing): points {x, y, climb, fn, wait, pose}
@@ -5488,6 +5504,195 @@ function drawMill(t) {
   if (M.flash && W[M.flash.v]) { const q = (nowT - M.flash.t0) / 1.6; if (q < 1) { const s = q < 0.2 ? 0.6 + q * 2 : 1, a = q < 0.7 ? 1 : (1 - q) / 0.3; c.save(); c.globalAlpha = a; c.font = `900 ${Math.round(u * 0.1 * s)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = u * 0.014; c.strokeStyle = '#4a2c1a'; c.strokeText(W[M.flash.v].uk + '!', w / 2, h * 0.27); c.fillStyle = '#ffd23f'; c.fillText(W[M.flash.v].uk + '!', w / 2, h * 0.27);
     if (subsOnNow()) { const en = verbEn1(M.flash.v); c.font = `700 ${Math.round(u * 0.045)}px system-ui, sans-serif`; const bw = c.measureText(en).width + u * 0.08; c.fillStyle = 'rgba(47,42,38,.85)'; rr(c, w / 2 - bw / 2, h * 0.315, bw, u * 0.075, u * 0.03); c.fillStyle = '#fff'; c.fillText(en, w / 2, h * 0.315 + u * 0.0375); }
     c.restore(); } }
+}
+
+// ------------------------------------------------------------------ inside the church (церква)
+// Not a game, just a beautiful, quiet place. A painted vault of gold stars on deep blue, and under it the
+// iconostasis: a gilded screen of icons in two tiers, a cross on top, the carved royal doors in the middle, two
+// of the icons dressed with embroidered рушники as village churches do. Tall arched windows let in the day
+// (the real season and weather outside), slanting light falls through drifting incense, a candle chandelier
+// (панікадило) sways gently, and beeswax candles flicker on two stands. You can light a candle there, and pull
+// the bell rope by the door to ring the bell up in the tower.
+const CH = { cx: 0.52, door: 0.075, rope: 0.15, standL: 0.215, standR: 0.875, lect: 0.815, winL: 0.2, winR: 0.875 };
+let churchHits = [];
+const CHURCH = { lit: [0, 0], bell: -9 };
+function enterChurch() { closeSheet(); fadeThen(enterChurchNow); }
+function enterChurchNow() {
+  mode = 'church'; learn('tserkva');
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
+  roomX = CH.cx * roomW() - cv.width / 2; clampPan(); tour = null; blip(520);
+  inStart(CH.cx - 0.08);
+  if (!S.churchDay || S.churchDay.d !== S.clock.day) S.churchDay = { d: S.clock.day, lit: [0, 0] };
+  CHURCH.lit = S.churchDay.lit;
+  if (!S.churchSeen) { S.churchSeen = 1; save(); setTimeout(() => { if (mode === 'church') toast('⛪ ' + W.tserkva.uk + xlT(' · Look around. Light a candle at a stand, or pull the bell rope by the door.'), 5200); }, 700); }
+}
+function churchTap(sx, py) {
+  const px = sx + roomX;
+  for (let i = churchHits.length - 1; i >= 0; i--) { const r = churchHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return inGo(r.gx, r.gy, r.fn); } }
+  if (py > cv.height * 0.68) { blip(560, 0.05); inWalkTo(px, py); }
+}
+// A church bell, made from its partials: a deep hum, the strike tone, and the bright overtones dying away.
+function churchBell() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = actx.currentTime, out = actx.createGain(); out.gain.value = 0.45; out.connect(actx.destination);
+    for (const [f, a, d] of [[98, 0.5, 5], [196, 0.6, 4], [233, 0.35, 3], [294, 0.3, 2.6], [392, 0.25, 2.2], [494, 0.15, 1.6], [590, 0.1, 1.2]]) {
+      const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(a, t0 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+      o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.1);
+    }
+  } catch (e) {}
+}
+function churchRope() { if (nowT - CHURCH.bell < 1.4) return; CHURCH.bell = nowT; duck = 0.5; setTimeout(() => { duck = 1; }, 3500); churchBell(); setTimeout(churchBell, 1500); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
+function churchCandle(i) {
+  if (CHURCH.lit[i] >= 9) return toast('🕯️ ' + xlT('Every candle here is burning.'), 1800);
+  CHURCH.lit[i]++; S.churchDay.lit = CHURCH.lit; save(); learn('svichka'); useWord('svichka', true); say('w_svichka'); blip(880, 0.06);
+  toast('🕯️ ' + W.svichka.uk + xlT(' · You light a candle.'), 2000);
+}
+// A candle flame: a soft glow, a teardrop that flickers, a white-hot core.
+function chFlame(c, x, y, s, t, ph) {
+  const fl = 0.85 + 0.15 * Math.sin(t * 11 + ph * 3.1) + 0.06 * Math.sin(t * 23 + ph), sway = Math.sin(t * 3 + ph) * s * 0.12;
+  const g = c.createRadialGradient(x, y - s * 0.4, 0, x, y - s * 0.4, s * 2.6); g.addColorStop(0, 'rgba(255,200,90,.35)'); g.addColorStop(1, 'rgba(255,200,90,0)'); c.fillStyle = g; c.fillRect(x - s * 2.6, y - s * 3, s * 5.2, s * 5.2);
+  c.fillStyle = '#ff9a2e'; c.beginPath(); c.moveTo(x + sway, y - s * 1.25 * fl); c.quadraticCurveTo(x + s * 0.42, y - s * 0.3, x, y); c.quadraticCurveTo(x - s * 0.42, y - s * 0.3, x + sway, y - s * 1.25 * fl); c.fill();
+  c.fillStyle = '#fff3c0'; c.beginPath(); c.moveTo(x + sway * 0.6, y - s * 0.8 * fl); c.quadraticCurveTo(x + s * 0.2, y - s * 0.2, x, y - s * 0.05); c.quadraticCurveTo(x - s * 0.2, y - s * 0.2, x + sway * 0.6, y - s * 0.8 * fl); c.fill();
+}
+// An icon on gold leaf under a rounded arch: a haloed figure in a deep robe and mantle, painted simply.
+function chIcon(c, x, y, w, h, k) {
+  const u = roomU(), P = [['#8e1f2a', '#1f3f7a'], ['#1f3f7a', '#8e1f2a'], ['#2f6b4a', '#8e1f2a'], ['#6a2a6e', '#1f3f7a']][k % 4];
+  c.save(); c.beginPath(); c.moveTo(x, y + h); c.lineTo(x, y + w * 0.5); c.arc(x + w / 2, y + w * 0.5, w / 2, Math.PI, 0); c.lineTo(x + w, y + h); c.closePath();
+  c.fillStyle = '#7a5418'; c.fill(); c.clip();
+  const g = c.createLinearGradient(x, y, x + w, y + h); g.addColorStop(0, '#f3d27a'); g.addColorStop(0.5, '#d9a93e'); g.addColorStop(1, '#f0c862'); c.fillStyle = g; c.fillRect(x + w * 0.06, y + w * 0.06, w * 0.88, h - w * 0.08);
+  const fx = x + w / 2, fyy = y + Math.min(h * 0.33, w * 0.62), fr = w * 0.13;
+  c.fillStyle = '#ffe9a6'; circ(c, fx, fyy, fr * 2.05); c.strokeStyle = '#a8791f'; c.lineWidth = Math.max(1, w * 0.02); c.beginPath(); c.arc(fx, fyy, fr * 2.05, 0, 7); c.stroke();   // the halo
+  c.fillStyle = P[0]; c.beginPath(); c.moveTo(fx - w * 0.3, y + h); c.quadraticCurveTo(fx - w * 0.3, fyy + fr * 1.4, fx, fyy + fr * 1.1); c.quadraticCurveTo(fx + w * 0.3, fyy + fr * 1.4, fx + w * 0.3, y + h); c.fill();   // the robe
+  c.fillStyle = P[1]; c.beginPath(); c.moveTo(fx - w * 0.34, y + h); c.quadraticCurveTo(fx - w * 0.28, fyy + fr * 0.4, fx, fyy - fr * 1.15); c.quadraticCurveTo(fx + w * 0.28, fyy + fr * 0.4, fx + w * 0.34, y + h); c.lineTo(fx + w * 0.16, y + h); c.quadraticCurveTo(fx + w * 0.12, fyy + fr * 1.6, fx, fyy + fr * 1.2); c.quadraticCurveTo(fx - w * 0.12, fyy + fr * 1.6, fx - w * 0.16, y + h); c.closePath(); c.fill();   // the mantle over the head
+  c.strokeStyle = '#e8b84a'; c.lineWidth = Math.max(1, w * 0.012); c.beginPath(); c.moveTo(fx - w * 0.2, y + h * 0.95); c.quadraticCurveTo(fx - w * 0.17, fyy + fr * 2, fx - w * 0.06, fyy + fr * 1.3); c.moveTo(fx + w * 0.2, y + h * 0.95); c.quadraticCurveTo(fx + w * 0.17, fyy + fr * 2, fx + w * 0.06, fyy + fr * 1.3); c.stroke();   // gold edging
+  c.fillStyle = '#d9a982'; ell(c, fx, fyy, fr * 0.78, fr);   // the face
+  c.fillStyle = '#5a3a24'; ell(c, fx - fr * 0.3, fyy - fr * 0.05, fr * 0.1, fr * 0.06); ell(c, fx + fr * 0.3, fyy - fr * 0.05, fr * 0.1, fr * 0.06);
+  c.strokeStyle = 'rgba(90,58,36,.6)'; c.lineWidth = Math.max(1, w * 0.008); c.beginPath(); c.moveTo(fx, fyy); c.lineTo(fx, fyy + fr * 0.4); c.stroke();
+  if (k === 0) { c.fillStyle = '#ffe9a6'; circ(c, fx + w * 0.12, fyy + fr * 2.1, fr * 0.9); c.fillStyle = '#d9a982'; circ(c, fx + w * 0.12, fyy + fr * 2.1, fr * 0.45); c.fillStyle = '#e8d6b0'; ell(c, fx + w * 0.12, fyy + fr * 3, fr * 0.5, fr * 0.7); }   // the Mother of God holds the Child
+  if (k === 1) { c.fillStyle = '#f6efe0'; c.fillRect(fx - w * 0.1, fyy + fr * 2.2, w * 0.2, h * 0.2); c.strokeStyle = '#7a5418'; c.lineWidth = Math.max(1, w * 0.02); c.strokeRect(fx - w * 0.1, fyy + fr * 2.2, w * 0.2, h * 0.2); c.fillStyle = '#8e1f2a'; c.fillRect(fx - w * 0.015, fyy + fr * 2.4, w * 0.03, h * 0.14); c.fillRect(fx - w * 0.06, fyy + fr * 2.8, w * 0.12, w * 0.03); }   // Christ holds the Gospel
+  c.restore();
+  c.strokeStyle = '#b88a2a'; c.lineWidth = Math.max(1.5, u * 0.006); c.beginPath(); c.moveTo(x, y + h); c.lineTo(x, y + w * 0.5); c.arc(x + w / 2, y + w * 0.5, w / 2, Math.PI, 0); c.lineTo(x + w, y + h); c.stroke();
+}
+// A рушник hung over the top of an icon, its two ends falling either side, red-and-black cross-stitch at the ends.
+function chRushnyk(c, x, y, w, h, u) {
+  c.fillStyle = '#f8f3e8'; c.beginPath(); c.moveTo(x - w * 0.06, y + w * 0.3); c.quadraticCurveTo(x + w * 0.5, y - w * 0.12, x + w * 1.06, y + w * 0.3); c.lineTo(x + w * 1.06, y + w * 0.42); c.quadraticCurveTo(x + w * 0.5, y + w * 0.02, x - w * 0.06, y + w * 0.42); c.closePath(); c.fill();
+  for (const sx of [x - w * 0.12, x + w * 0.96]) { const L = h * 0.62, bw = w * 0.16; c.fillStyle = '#f8f3e8'; c.fillRect(sx, y + w * 0.32, bw, L);
+    for (let i = 0; i < 3; i++) { const yy = y + w * 0.32 + L * (0.55 + i * 0.13); c.fillStyle = i === 1 ? '#2d2d2d' : '#c62828'; for (let j = 0; j < 3; j++) poly(c, [[sx + bw * (j + 0.5) / 3, yy - bw * 0.12], [sx + bw * (j + 0.85) / 3, yy], [sx + bw * (j + 0.5) / 3, yy + bw * 0.12], [sx + bw * (j + 0.15) / 3, yy]]); }
+    c.fillStyle = '#c62828'; for (let j = 0; j < 4; j++) c.fillRect(sx + bw * j / 4 + 1, y + w * 0.32 + L, Math.max(1, bw / 10), u * 0.015); }
+}
+function drawChurch(t) {
+  const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), fy = h * 0.66, cx = CH.cx * RW, L = skyLight(S.clock.t), day = 1 - L.dark;
+  const wxL = S.wx === 'sun' ? 1 : S.wx === 'cloud' ? 0.6 : 0.35;
+  clampPan(); inStep(t);
+  churchHits = [];
+  const hit = (x, y, ww, hh, fn, gx) => churchHits.push({ x, y, w: ww, h: hh, fn, gx: gx ?? x + ww / 2, gy: fy });
+  const word = id => () => wordCard(id);
+  let g;
+  c.save(); c.translate(-roomX, 0);
+  // ---- the walls: warm plaster, painted with a vine border; the vault overhead: deep blue with gold stars
+  g = c.createLinearGradient(0, 0, 0, fy); g.addColorStop(0, '#e9d9b8'); g.addColorStop(1, '#f6ead2'); c.fillStyle = g; c.fillRect(0, 0, RW, fy);
+  const vB = h * 0.17, vault = q => vB * 0.75 + Math.sin(q * Math.PI * 5) ** 2 * vB * 0.3;
+  c.fillStyle = '#1d2d5c'; c.beginPath(); c.moveTo(0, 0); c.lineTo(RW, 0); for (let i = 0; i <= 48; i++) { const q = i / 48; c.lineTo(RW - q * RW, vault(q)); } c.closePath(); c.fill();   // the vault, coming down in arches
+  for (let i = 0; i < 70; i++) { const x = ((i * 0.618) % 1) * RW, y = ((i * 0.377) % 1) * vB * 0.8, s = u * (0.006 + (i % 3) * 0.003), tw = 0.6 + 0.4 * Math.sin(t * 1.5 + i); c.fillStyle = `rgba(242,200,90,${tw})`; c.beginPath(); for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, r = k % 2 ? s * 0.4 : s; c.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); } c.closePath(); c.fill(); }
+  c.strokeStyle = '#c89a3a'; c.lineWidth = u * 0.008; c.beginPath(); for (let i = 0; i <= 48; i++) { const q = i / 48; if (i) c.lineTo(RW - q * RW, vault(q)); else c.moveTo(RW, vault(0)); } c.stroke();
+  { const by = vB * 1.12, k = u * 0.022;   // a painted border along the wall: a red and green vine
+    c.strokeStyle = '#4f8f3a'; c.lineWidth = k * 0.18; c.beginPath(); for (let x = 0; x <= RW; x += k) { const y = by + Math.sin(x / k * 0.5) * k * 0.5; if (x) c.lineTo(x, y); else c.moveTo(x, y); } c.stroke();
+    for (let x = k * 3; x < RW; x += k * 6.28) { const y = by + Math.sin(x / k * 0.5) * k * 0.5; c.fillStyle = '#b8322c'; for (let p = 0; p < 5; p++) { const a = p * 1.2566; circ(c, x + Math.cos(a) * k * 0.45, y + Math.sin(a) * k * 0.45, k * 0.32); } c.fillStyle = '#e8b84a'; circ(c, x, y, k * 0.25); } }
+  c.fillStyle = 'rgba(120,80,40,.08)'; for (let x = u * 0.4; x < RW; x += u * 0.8) c.fillRect(x, vB * 1.25, u * 0.04, fy - vB * 1.25);   // pilasters
+  // ---- tall arched windows with the real day outside, and light slanting in across the floor
+  const arch = (x, y, ww, hh) => { c.beginPath(); c.moveTo(x - ww / 2, y + hh); c.lineTo(x - ww / 2, y + ww / 2); c.arc(x, y + ww / 2, ww / 2, Math.PI, 0); c.lineTo(x + ww / 2, y + hh); c.closePath(); };
+  for (const [fx, sd] of [[CH.winL, 0], [CH.winR, 1]]) { const x = fx * RW, ww = u * 0.17, wt = h * 0.24, wh = u * 0.52;
+    c.fillStyle = '#9a7a52'; arch(x, wt - u * 0.02, ww + u * 0.04, wh + u * 0.04); c.fill();
+    c.save(); arch(x, wt, ww, wh); c.clip(); windowView(c, x - ww / 2, wt, ww, wh, t, 1, sd); c.restore();
+    c.strokeStyle = '#6b4a2b'; c.lineWidth = u * 0.008; c.beginPath(); c.moveTo(x, wt + u * 0.02); c.lineTo(x, wt + wh); for (let i = 1; i < 4; i++) { c.moveTo(x - ww / 2, wt + ww / 2 + (wh - ww / 2) * i / 4); c.lineTo(x + ww / 2, wt + ww / 2 + (wh - ww / 2) * i / 4); } c.stroke();
+    c.fillStyle = '#c9b28a'; c.fillRect(x - ww / 2 - u * 0.03, wt + wh, ww + u * 0.06, u * 0.02);
+    hit(x - ww / 2, wt, ww, wh, word('sontse'), x);
+    const a = 0.13 * wxL * day; if (a > 0.01) { const dir = sd ? -1 : 1; g = c.createLinearGradient(x, wt, x + dir * u * 0.6, h); g.addColorStop(0, `rgba(255,240,200,${a})`); g.addColorStop(1, 'rgba(255,240,200,0)'); c.fillStyle = g; poly(c, [[x - ww / 2, wt + ww * 0.3], [x + ww / 2, wt + ww * 0.3], [x + ww / 2 + dir * u * 0.55 + u * 0.1, h], [x - ww / 2 + dir * u * 0.55 - u * 0.1, h]]); } }
+  // ---- the floor: stone tiles in two colours, and a red runner up to the royal doors
+  c.fillStyle = '#cdbb9c'; c.fillRect(0, fy, RW, h - fy);
+  for (let r = 0; r < 7; r++) { const y0 = fy + (h - fy) * (r / 7) ** 1.3, y1 = fy + (h - fy) * ((r + 1) / 7) ** 1.3, tw = u * (0.12 + r * 0.025);
+    for (let x = -((r % 2) * tw / 2), j = 0; x < RW; x += tw / 2, j++) if (j % 2 === 0) { c.fillStyle = 'rgba(120,95,70,.25)'; c.fillRect(x, y0, tw / 2, y1 - y0); } }
+  c.fillStyle = 'rgba(60,40,20,.25)'; c.fillRect(0, fy - h * 0.004, RW, h * 0.008);
+  c.fillStyle = '#9e2a2a'; poly(c, [[cx - u * 0.14, fy], [cx + u * 0.14, fy], [cx + u * 0.3, h], [cx - u * 0.3, h]]);
+  c.strokeStyle = '#e8b84a'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(cx - u * 0.12, fy); c.lineTo(cx - u * 0.26, h); c.moveTo(cx + u * 0.12, fy); c.lineTo(cx + u * 0.26, h); c.stroke();
+  // ---- the door in, at the far left, and the bell rope hanging by it
+  { const dx = CH.door * RW, dw = u * 0.2, top = fy - u * 0.4;
+    c.fillStyle = '#5a381b'; arch(dx, top - u * 0.025, dw + u * 0.05, fy - top + u * 0.025); c.fill();
+    c.save(); arch(dx, top, dw, fy - top); c.clip(); windowView(c, dx - dw / 2, top, dw, fy - top, t, 2, 1, true); c.restore();
+    c.fillStyle = `rgba(255,236,190,${0.14 * wxL * day})`; poly(c, [[dx - dw / 2, fy], [dx + dw / 2, fy], [dx + dw * 1.3, h], [dx - dw * 0.3, h]]);
+    hit(dx - dw / 2, top, dw, fy - top, () => exitHome(), dx); }
+  { const rx = CH.rope * RW, ago = nowT - CHURCH.bell, sw = ago < 3 ? Math.sin(ago * 6) * (1 - ago / 3) * u * 0.03 : 0, bot = fy - u * 0.06 + (ago < 0.4 ? u * 0.05 : 0);
+    c.strokeStyle = '#c9a56a'; c.lineWidth = u * 0.009; c.beginPath(); c.moveTo(rx, 0); c.quadraticCurveTo(rx + sw, bot * 0.6, rx + sw * 1.4, bot); c.stroke();
+    c.fillStyle = '#b8322c'; rr(c, rx + sw * 1.4 - u * 0.014, bot - u * 0.12, u * 0.028, u * 0.1, u * 0.01); c.fillStyle = '#e8b84a'; circ(c, rx + sw * 1.4, bot - u * 0.01, u * 0.016);
+    hit(rx - u * 0.07, bot - u * 0.3, u * 0.14, u * 0.34, churchRope, rx + u * 0.05); }
+  // ---- the iconostasis: gilded tiers of icons, the royal doors in the middle, a cross on top
+  { const IW = u * 1.5, x0 = cx - IW / 2, t1 = fy - u * 0.52, t2 = t1 - u * 0.3, top = t2 - u * 0.1;
+    g = c.createLinearGradient(0, top, 0, fy); g.addColorStop(0, '#a87a22'); g.addColorStop(1, '#7a5418'); c.fillStyle = g; c.fillRect(x0 - u * 0.03, t2 - u * 0.03, IW + u * 0.06, fy - t2 + u * 0.03);
+    c.fillStyle = '#e0b44a'; c.fillRect(x0 - u * 0.03, t1 - u * 0.02, IW + u * 0.06, u * 0.02); c.fillRect(x0 - u * 0.03, t2 - u * 0.03, IW + u * 0.06, u * 0.018);
+    // the pediment and the cross
+    c.fillStyle = '#c99a32'; poly(c, [[cx - u * 0.36, t2 - u * 0.03], [cx + u * 0.36, t2 - u * 0.03], [cx, t2 - u * 0.22]]);
+    const crX = cx, crY = t2 - u * 0.24, cs = u * 0.022;
+    const gl = c.createRadialGradient(crX, crY - cs * 2, 0, crX, crY - cs * 2, u * 0.16); gl.addColorStop(0, `rgba(255,226,140,${0.3 + 0.1 * Math.sin(t)})`); gl.addColorStop(1, 'rgba(255,226,140,0)'); c.fillStyle = gl; c.fillRect(crX - u * 0.16, crY - cs * 2 - u * 0.16, u * 0.32, u * 0.32);
+    c.fillStyle = '#f2cc66';
+    c.fillRect(crX - cs * 0.35, crY - cs * 4.2, cs * 0.7, cs * 5); c.fillRect(crX - cs * 1.6, crY - cs * 3, cs * 3.2, cs * 0.6); c.fillRect(crX - cs * 0.9, crY - cs * 3.9, cs * 1.8, cs * 0.45);
+    c.save(); c.translate(crX, crY - cs * 0.6); c.rotate(-0.35); c.fillRect(-cs * 1.1, -cs * 0.22, cs * 2.2, cs * 0.45); c.restore();   // the slanted footrest of the Orthodox cross
+    // the upper tier: seven small icons
+    for (let i = 0; i < 7; i++) { const iw = IW / 7, ix = x0 + i * iw + iw * 0.12; chIcon(c, ix, t2 + u * 0.02, iw * 0.76, u * 0.25, (i + 2) % 4); }
+    hit(x0, t2, IW, t1 - t2, word('tserkva'), cx);
+    // the lower tier: two large icons each side of the doors, the Mother of God on the left, Christ on the right
+    const dW = u * 0.34, sideW = (IW - dW) / 2, lw = sideW / 2;
+    [[x0, 2], [x0 + lw, 0], [cx + dW / 2, 1], [cx + dW / 2 + lw, 3]].forEach(([ix, k]) => chIcon(c, ix + lw * 0.1, t1 + u * 0.03, lw * 0.8, u * 0.44, k));
+    chRushnyk(c, x0 + lw + lw * 0.1, t1 + u * 0.03, lw * 0.8, u * 0.44, u); chRushnyk(c, cx + dW / 2 + lw * 0.1, t1 + u * 0.03, lw * 0.8, u * 0.44, u);
+    hit(x0, t1, sideW, fy - t1, word('rushnyk'), x0 + sideW / 2); hit(cx + dW / 2, t1, sideW, fy - t1, word('rushnyk'), cx + dW / 2 + sideW / 2);
+    // the royal doors: two arched leaves of gilded openwork vine, a small round icon at the top of each
+    const dT = t1 + u * 0.02;
+    c.fillStyle = '#3a2412'; arch(cx, dT, dW, fy - dT); c.fill();
+    for (const s of [-1, 1]) { const lx = cx + s * dW / 4, lw2 = dW / 2 - u * 0.008;
+      c.save(); arch(cx, dT, dW, fy - dT); c.clip(); c.beginPath(); c.rect(s < 0 ? cx - dW / 2 : cx + u * 0.004, dT, lw2, fy - dT); c.clip();
+      c.strokeStyle = '#e0b44a'; c.lineWidth = u * 0.008; c.strokeRect(lx - lw2 / 2 + u * 0.006, dT, lw2 - u * 0.012, fy - dT);
+      for (let r = 0; r < 5; r++) { const yy = dT + u * 0.14 + r * u * 0.075; c.beginPath(); c.arc(lx, yy, u * 0.032, 0, 7); c.stroke(); c.beginPath(); c.moveTo(lx - lw2 * 0.4, yy + u * 0.035); c.quadraticCurveTo(lx, yy - u * 0.01, lx + lw2 * 0.4, yy + u * 0.035); c.stroke(); c.fillStyle = '#e0b44a'; circ(c, lx, yy, u * 0.01); }
+      c.restore();
+      c.fillStyle = '#f2cc66'; circ(c, lx, dT + u * 0.07, u * 0.045); c.fillStyle = '#1f3f7a'; circ(c, lx, dT + u * 0.075, u * 0.032); c.fillStyle = '#ffe9a6'; circ(c, lx, dT + u * 0.06, u * 0.015); }
+    c.strokeStyle = '#e0b44a'; c.lineWidth = u * 0.01; arch(cx, dT, dW, fy - dT); c.stroke();
+    hit(cx - dW / 2, dT, dW, fy - dT, word('tserkva'), cx); }
+  // ---- the candle stands, each a brass bowl of sand on a tall foot, with the candles you've lit burning in it
+  for (const [fx, i] of [[CH.standL, 0], [CH.standR, 1]]) { const x = fx * RW, top = fy - u * 0.2, n = 3 + CHURCH.lit[i];
+    c.fillStyle = '#a87a22'; c.fillRect(x - u * 0.012, top, u * 0.024, fy - top); ell(c, x, fy, u * 0.07, u * 0.014); c.fillStyle = '#c99a32'; ell(c, x, top, u * 0.11, u * 0.025); c.fillStyle = '#e8c35e'; ell(c, x, top - u * 0.004, u * 0.1, u * 0.02);
+    for (let k = 0; k < n; k++) { const q = (k + 0.5) / n, cxk = x - u * 0.085 + q * u * 0.17, ht = u * (0.05 + ((k * 37) % 5) * 0.01), by = top - u * 0.008 + Math.sin(q * Math.PI) * u * 0.006;
+      c.fillStyle = '#f1d58a'; c.fillRect(cxk - u * 0.005, by - ht, u * 0.01, ht); chFlame(c, cxk, by - ht - u * 0.002, u * 0.016, t, k + i * 5); }
+    hit(x - u * 0.13, top - u * 0.15, u * 0.26, fy - top + u * 0.15, () => churchCandle(i), x + u * 0.16); }
+  // ---- the lectern (тетрапод) with a рушник and a candle
+  { const x = CH.lect * RW, top = fy - u * 0.24; c.fillStyle = '#7a4e26'; c.fillRect(x - u * 0.06, top, u * 0.12, fy - top); c.fillStyle = '#f8f3e8'; c.fillRect(x - u * 0.07, top - u * 0.01, u * 0.14, u * 0.06); c.fillStyle = '#c62828'; for (let j = 0; j < 5; j++) c.fillRect(x - u * 0.065 + j * u * 0.028, top + u * 0.035, u * 0.016, u * 0.012);
+    c.save(); c.translate(x, top - u * 0.01); c.rotate(-0.12); c.fillStyle = '#6a2a1a'; c.fillRect(-u * 0.05, -u * 0.04, u * 0.1, u * 0.04); c.fillStyle = '#e0b44a'; c.fillRect(-u * 0.008, -u * 0.035, u * 0.016, u * 0.03); c.restore();
+    c.fillStyle = '#f1d58a'; c.fillRect(x + u * 0.05, top - u * 0.08, u * 0.01, u * 0.07); chFlame(c, x + u * 0.055, top - u * 0.082, u * 0.016, t, 9);
+    hit(x - u * 0.09, top - u * 0.1, u * 0.18, fy - top + u * 0.1, word('svichka'), x); }
+  // ---- the chandelier: two tiers of candles on gilded rings, hanging from the vault on a chain and swaying slightly
+  { const ax = cx, sw = Math.sin(t * 0.6) * 0.025, cy0 = h * 0.19;
+    c.save(); c.translate(ax, 0); c.rotate(sw); c.strokeStyle = '#a87a22'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, cy0 - u * 0.1); c.stroke();
+    for (let i = 0; i < 10; i++) { c.strokeStyle = '#c99a32'; c.beginPath(); c.ellipse(0, i * (cy0 - u * 0.1) / 10, u * 0.006, u * 0.012, 0, 0, 7); c.stroke(); }
+    const ring = (y, R, n, ph) => {
+      const pts = Array.from({ length: n }, (_, k) => { const a = k / n * Math.PI * 2 + t * 0.05 + ph; return { x: Math.cos(a) * R, z: Math.sin(a) }; });
+      const cand = p => { const yy = y - u * 0.02 + p.z * R * 0.18; c.fillStyle = '#f1d58a'; c.fillRect(p.x - u * 0.004, yy - u * 0.035, u * 0.008, u * 0.035); chFlame(c, p.x, yy - u * 0.036, u * 0.012 * (0.85 + p.z * 0.15), t, p.x); };
+      pts.filter(p => p.z < 0).forEach(cand);
+      c.strokeStyle = '#d9a93e'; c.lineWidth = u * 0.012; c.beginPath(); c.ellipse(0, y, R, R * 0.18, 0, 0, 7); c.stroke();
+      c.strokeStyle = '#a87a22'; c.lineWidth = u * 0.004; for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.4; c.beginPath(); c.moveTo(0, cy0 - u * 0.08); c.lineTo(Math.cos(a) * R, y + Math.sin(a) * R * 0.18); c.stroke(); }
+      pts.filter(p => p.z >= 0).forEach(cand);
+    };
+    ring(cy0 + u * 0.08, u * 0.19, 10, 0); ring(cy0 + u * 0.18, u * 0.11, 6, 0.3);
+    c.fillStyle = '#e0b44a'; circ(c, 0, cy0 + u * 0.24, u * 0.026); c.fillStyle = '#f2cc66'; circ(c, -u * 0.007, cy0 + u * 0.233, u * 0.009); c.fillStyle = '#c99a32'; poly(c, [[-u * 0.013, cy0 + u * 0.262], [u * 0.013, cy0 + u * 0.262], [0, cy0 + u * 0.31]]);
+    c.restore();
+    hit(ax - u * 0.26, cy0 - u * 0.05, u * 0.52, u * 0.42, word('svichka'), ax); }
+  // ---- her
+  inDraw(c, t);
+  // incense haze drifting up through the light
+  for (let i = 0; i < 9; i++) { const q = (t * 0.02 + i / 9) % 1, x = CH.lect * RW + Math.sin(t * 0.3 + i * 2) * u * 0.3 - u * 0.4 + i * u * 0.1, y = fy - q * h * 0.5; c.fillStyle = `rgba(255,250,240,${0.06 * Math.sin(q * Math.PI)})`; ell(c, x, y, u * (0.12 + q * 0.2), u * (0.05 + q * 0.06)); }
+  c.restore();
+  // dust motes turning in the window light
+  if (day > 0.3) { c.fillStyle = `rgba(255,248,225,${0.5 * wxL})`; for (let i = 0; i < 26; i++) { const q = (t * 0.015 + i * 0.037) % 1; circ(c, ((i * 0.37 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
+  { const lights = [[CH.standL * RW - roomX, fy - u * 0.26, u * 0.55], [CH.standR * RW - roomX, fy - u * 0.26, u * 0.55], [CH.cx * RW - roomX, h * 0.19 + u * 0.12, u * 0.8], [CH.lect * RW - roomX, fy - u * 0.32, u * 0.3]];
+    paintSky(c, w, h, t, lights, false); }
 }
 
 // ------------------------------------------------------------------ inside Grandma Olia's cottage
@@ -6792,7 +6997,7 @@ function devMenu() {
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
 }
 // Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
-function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
+function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill' || mode === 'church') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
 
 // ------------------------------------------------------------------ the title screen, drawn
 const tcv = $('#tc'), tctx = tcv.getContext('2d');
@@ -7044,6 +7249,7 @@ function frame(ms) {
   if (mode === 'home') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawHome(t); }
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
+  else if (mode === 'church') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawChurch(t); }
   else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); }
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
@@ -7094,6 +7300,7 @@ cv.addEventListener('pointerup', ev => {
   if (mode === 'home') return homeTap(px, py);
   if (mode === 'olia') return oliaTap(px, py);
   if (mode === 'mill') return millTap(px, py);
+  if (mode === 'church') return churchTap(px, py);
   if (mode === 'fest') return;   // the festival takes its taps on pointerdown, for the beat
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
