@@ -202,7 +202,7 @@ addEventListener('load', () => { musicBtn(); startMusic(); });
 // Each interior has its own theme (music/room-<mode>.mp3, made with tools/music.mjs). Going in or out fades the
 // music down, swaps the track and fades back up; the village theme picks up where it left off. A room whose file
 // is missing (not made yet) just keeps the village theme.
-const ROOM_TUNES = { home: 'room-home', olia: 'room-olia', mill: 'room-mill', church: 'room-church' };
+const ROOM_TUNES = { home: 'room-home2', olia: 'room-olia', mill: 'room-mill', church: 'room-church' };
 const tuneBad = {};
 let curTune = 'theme', themePos = 0, seekTo = 0;
 const wantTune = () => { const n = ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
