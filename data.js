@@ -196,6 +196,9 @@ window.DATA = {
     { id: "plakhta", uk: "плахта", tr: "PLAKH-ta", en: "checked wrap skirt", ic: "@o_plakhta", fact: { uk: "Плахту ткали з вовни, у клітинку.", en: "A plakhta is a wrap skirt woven from wool in a bright check." } },
     { id: "fartukh", uk: "фартух", tr: "FAR-tukh", en: "apron", ic: "@o_fartukh" },
     { id: "strichky", uk: "стрічки", tr: "STRICH-ky", en: "ribbons", ic: "@o_strichky", fact: { uk: "До вінка пришивали довгі кольорові стрічки.", en: "Long coloured ribbons were sewn to the back of a flower crown." } },
+    { id: "plashch", uk: "плащ", tr: "plashch", en: "raincoat", ic: "@o_plashch" },
+    { id: "puhovyk", uk: "пуховик", tr: "pu-kho-VYK", en: "winter parka", ic: "@o_puhovyk" },
+    { id: "sarafan", uk: "сарафан", tr: "sa-ra-FAN", en: "sarafan (summer dress)", ic: "@o_sarafan" },
     { id: "kozhushok", uk: "кожушок", tr: "ko-zhu-SHOK", en: "sheepskin coat", ic: "@o_kozhushok", fact: { uk: "Кожушок шили з овечої шкури: у ньому тепло взимку.", en: "A kozhushok is a short sheepskin coat: warm all winter." } },
     // Wildlife through the year, and the weather
     { id: "hnizdo", uk: "гніздо", tr: "HNIZ-do", en: "nest", ic: "@hnizdo" },
@@ -494,7 +497,7 @@ window.DATA = {
     veg: { soniashnyk: 2, kartoplia: 4, kapusta: 4, buriak: 3, morkva: 3, tsybulia: 3, chasnyk: 3, pomidor: 4, yabluko: 3, pshenytsia: 3, mak: 3 },
     tools: { vudka: 6, lodobur: 15, maslobiika: 10, zhorna: 12 },
     // Clothes: each is a whole outfit, added to the wardrobe in her cottage.
-    clothes: { fartukh: 18, kersetka: 28, plakhta: 30, strichky: 34, kozhushok: 40 },
+    clothes: { fartukh: 18, plashch: 24, sarafan: 26, kersetka: 28, plakhta: 30, strichky: 34, puhovyk: 38, kozhushok: 40 },
     // Animals of your own: they live by your cottage, and you collect their eggs and milk.
     farm: { kurka: 15, korova: 40 },
     cats: { kihtetochka: 30, lezhanka: 16, miachyk: 6, myshka: 6 },
