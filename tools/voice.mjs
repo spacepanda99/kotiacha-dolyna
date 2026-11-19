@@ -33,7 +33,7 @@ export function clips() {
   }
   for (const ct of D.cats || []) list.push({ id: 'c_' + ct.id, text: ct.line, ...TEACHER });
   const olia = D.npcs.find(n => n.id === 'olia');
-  (D.story || []).forEach((st, i) => list.push({ id: 's_' + i, text: st.uk, voice: olia.voice, style: olia.style }));
+  (D.story || []).forEach(st => list.push({ id: st.clip, text: st.uk, voice: olia.voice, style: olia.style }));   // pages keep their clip when their line is unchanged
   const ok = D.npcs.find(n => n.id === 'oksana');
   for (const [num, text] of Object.entries(D.prices)) list.push({ id: 'n_' + num, text, voice: ok.voice, style: ok.style });
   return list;
@@ -93,10 +93,11 @@ const shape = (o, d = 0) => (o && typeof o === 'object')
 const cmd = process.argv[2];
 const all = clips();
 fs.mkdirSync(OUT, { recursive: true });
-const missing = all.filter(c => !fs.existsSync(path.join(OUT, c.id + '.mp3')));
+const missing = all.filter(c => !fs.existsSync(path.join(OUT, c.id + '.mp3')) && (!process.env.ONLY || c.id.startsWith(process.env.ONLY)));   // ONLY=st_ makes just those
 
 if (cmd === 'list') {
   console.log(`${all.length} clips, ${missing.length} missing, ${all.reduce((s, c) => s + c.text.length, 0)} characters of Ukrainian in total`);
+  for (const c of missing) console.log('  missing', c.id, c.text);
 } else if (cmd === 'test') {
   const c = all.find(x => x.id === (process.argv[3] || 'w_khlib'));
   const res = await tts(c);

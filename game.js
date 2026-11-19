@@ -101,7 +101,7 @@ function textOf(id) {
   if (k === 'p') return PH[id.slice(2)] ? PH[id.slice(2)].uk : '';
   if (k === 'n') return D.prices[a] || '';
   if (k === 'c') { const ct = (D.cats || []).find(x => x.id === id.slice(2)); return ct ? ct.line : ''; }
-  if (k === 's') return D.story && D.story[+a] ? D.story[+a].uk : '';
+  if (k === 's' || k === 'st') { const p = (D.story || []).find(q => q.clip === id); return p ? p.uk : ''; }
   if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].uk : '';
   if (k === 'qp') return W[b] ? D.payLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
   if (k === 'q') return W[b] ? D.questLine.uk.replace('%s', W[b].acc || W[b].uk) : '';
@@ -113,7 +113,7 @@ function enOf(id) {
   if (k === 'w') return W[id.slice(2)] ? W[id.slice(2)].en : '';
   if (k === 'p') return PH[id.slice(2)] ? PH[id.slice(2)].en : '';
   if (k === 'c') { const ct = (D.cats || []).find(x => x.id === id.slice(2)); return ct ? ct.lineEn : ''; }
-  if (k === 's') return D.story && D.story[+a] ? D.story[+a].en : '';
+  if (k === 's' || k === 'st') { const p = (D.story || []).find(q => q.clip === id); return p ? p.en : ''; }
   if (k === 'v') return NPC[a] && NPC[a].lines[b] ? NPC[a].lines[b].en : '';
   if (k === 'qp') return W[b] ? D.payLine.en.replace('%s', W[b].en) : '';
   if (k === 'q') return W[b] && D.questLine.en ? D.questLine.en.replace('%s', W[b].en) : '';
@@ -1905,6 +1905,7 @@ function drawWater(c, t) {
 // The waterfall and the running stream, drawn every frame over the ground. In winter it all freezes: the
 // stream turns to ice and the fall hangs in icicles.
 const STREAM_PTS = streamPts(0.12);
+const FALLFX = { drops: [], rings: [], lt: 0 };   // the splash at the foot of the waterfall
 function drawFalls(c, t) {
   const L = skyLight(S.clock.t), lx = FALL.x * T, ly = FALL.y * T, bx = FALL.bx * T, by = FALL.by * T, frozen = winter();
   // the stream: in summer, ripples sliding downhill; in winter, a pale sheet of ice
@@ -1937,8 +1938,16 @@ function drawFalls(c, t) {
     c.restore();
     c.fillStyle = 'rgba(255,255,255,.9)'; ell(c, lx, top + 1, wTop * 0.55, T * 0.08);   // the bright lip where it spills
     // foam where it lands, rings spreading into the pond, mist drifting up, and the odd sparkle
-    for (let i = 0; i < 3; i++) { const q = ((t * 0.55 + i / 3) % 1); c.strokeStyle = `rgba(255,255,255,${0.55 * (1 - q)})`; c.lineWidth = 1.8; c.beginPath(); c.ellipse(bx - T * 0.2 * q, bot + T * 0.12 + q * T * 0.2, wBot * (0.55 + q * 1.1), T * (0.16 + q * 0.32), 0, 0, 7); c.stroke(); }
-    for (let i = 0; i < 9; i++) { const a = i * 0.7 + t * 3, r = 0.6 + 0.4 * Math.sin(t * 7 + i * 2); c.fillStyle = 'rgba(255,255,255,.88)'; circ(c, bx + Math.cos(a) * wBot * 0.5, bot + Math.sin(a) * T * 0.1, (4 + 3 * r)); }
+    // the splash where it lands: churning white water, droplets jumping up at random and falling back, and small
+    // uneven rings popping out here and there across the foot of the fall (no neat circles going round)
+    const dtF = Math.min(0.05, Math.max(0, t - (FALLFX.lt || t))); FALLFX.lt = t;
+    if (Math.random() < dtF * 26) { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.4, sp = T * (0.9 + Math.random() * 1.6); FALLFX.drops.push({ x: bx + (Math.random() - 0.5) * wBot * 0.9, y: bot + T * 0.04, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 1.5 + Math.random() * 2.5, t0: t }); }
+    if (Math.random() < dtF * 3.2) FALLFX.rings.push({ x: bx + (Math.random() - 0.5) * wBot * 1.3 - T * 0.15, y: bot + T * (0.08 + Math.random() * 0.25), s: 0.5 + Math.random() * 0.7, sq: 0.25 + Math.random() * 0.2, t0: t, life: 0.7 + Math.random() * 0.8 });
+    FALLFX.rings = FALLFX.rings.filter(r => t - r.t0 < r.life).slice(-14);
+    for (const r of FALLFX.rings) { const q = (t - r.t0) / r.life; c.strokeStyle = `rgba(255,255,255,${0.6 * (1 - q)})`; c.lineWidth = 1.5; c.beginPath(); c.ellipse(r.x, r.y, T * r.s * (0.15 + q * 0.6), T * r.s * (0.15 + q * 0.6) * r.sq, 0, 0, 7); c.stroke(); }
+    for (let i = 0; i < 7; i++) { const jx = Math.sin(t * (5 + i) + i * 2.3) * wBot * 0.32 + Math.sin(t * 13 + i) * 2, jy = Math.abs(Math.sin(t * (7 + i * 1.3) + i)) * T * 0.07, r = 3.5 + 2.5 * Math.abs(Math.sin(t * 9 + i * 3)); c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, bx + jx, bot - jy, r); }   // the churning foam, each bubble bobbing on its own
+    FALLFX.drops = FALLFX.drops.filter(d => t - d.t0 < 0.7 && d.y < bot + T * 0.3).slice(-60);
+    for (const d of FALLFX.drops) { d.vy += T * 5.5 * dtF; d.x += d.vx * dtF; d.y += d.vy * dtF; c.fillStyle = `rgba(255,255,255,${0.9 * (1 - (t - d.t0) / 0.7)})`; circ(c, d.x, d.y, d.r); }
     for (let i = 0; i < 6; i++) { const q = ((t * 0.3 + i / 6) % 1); c.fillStyle = `rgba(255,255,255,${0.28 * Math.sin(q * Math.PI)})`; circ(c, bx + Math.sin(i * 2.1 + t * 0.5) * T * 0.5, bot - q * T * 0.9, T * (0.12 + q * 0.25)); }
     if (L.dark < 0.4) for (let i = 0; i < 3; i++) { const q = ((t * 0.9 + i * 0.33) % 1), sx = bx + Math.sin(i * 4.1) * T * 0.4, sy = bot - T * 0.2 - Math.cos(i * 2.7) * T * 0.3; c.fillStyle = `rgba(255,255,255,${Math.sin(q * Math.PI)})`; star4(c, sx, sy, 3 + 4 * Math.sin(q * Math.PI)); }
     if (S.wx === 'sun' && L.dark < 0.3) { c.save(); c.globalAlpha = 0.22; c.lineWidth = 3; ['#e2574c', '#f2a23a', '#f2d23a', '#6cc04a', '#3d7cc2', '#7a52b3'].forEach((col, i) => { c.strokeStyle = col; c.beginPath(); c.arc(bx + T * 0.1, bot + T * 0.2, T * (0.55 + i * 0.07), Math.PI * 1.15, Math.PI * 1.75); c.stroke(); }); c.restore(); }   // a little rainbow in the spray
@@ -7752,13 +7761,13 @@ function storyShow(i) {
     <div class="enl">${st.en}</div>
     <div class="dots">${pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
     <div class="nav">
-      ${i > 0 ? btn('storyGo', i - 1, '←', 'ghost round') : ''}
-      ${btn('hear', 's_' + i, '🔊', 'round blue')}
+      ${btn('storyGo', Math.max(0, i - 1), '←', 'ghost round' + (i > 0 ? '' : ' hide'))}
+      ${btn('hear', st.clip, '🔊', 'round blue')}
       ${last ? btn('storyStart', '', 'Почати<small>Start</small>') : btn('storyGo', i + 1, 'Далі<small>Next</small>')}
     </div>`;
   box.classList.add('show');
-  box.querySelector('.paper').scrollTop = 0;
-  say('s_' + i);
+  box.querySelector('.enl').scrollTop = 0;
+  say(st.clip);
 }
 function storyClose() { $('#story').classList.remove('show'); sayToken++; for (const k in clipCache) { try { clipCache[k].pause(); } catch (e) {} } }
 

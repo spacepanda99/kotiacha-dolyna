@@ -165,7 +165,7 @@
 
   #story { position:fixed; inset:0; z-index:40; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(60,45,30,.45); }
   #story.show { display:flex; }
-  #story .paper { position:relative; width:min(100%, 460px); max-height:100%; overflow:auto; touch-action:pan-y; background:#fffaf0; border-radius:22px; padding:22px 20px 18px; box-shadow:0 10px 40px rgba(40,30,20,.35); text-align:center; background-image:repeating-linear-gradient(transparent 0 31px, rgba(90,169,230,.12) 31px 32px); }
+  #story .paper { position:relative; width:min(100%, 460px); height:min(100%, 640px); overflow:hidden; display:flex; flex-direction:column; touch-action:pan-y; background:#fffaf0; border-radius:22px; padding:22px 20px 18px; box-shadow:0 10px 40px rgba(40,30,20,.35); text-align:center; background-image:repeating-linear-gradient(transparent 0 31px, rgba(90,169,230,.12) 31px 32px); }
   #story .paper::before { content:""; position:absolute; left:0; right:0; top:0; height:10px; border-radius:22px 22px 0 0; background:repeating-linear-gradient(90deg, #d43a3a 0 14px, #fffaf0 14px 20px, #2d2d2d 20px 24px, #fffaf0 24px 30px); }
   #story .pics { display:flex; justify-content:center; align-items:flex-end; gap:8px; min-height:104px; margin:6px 0 4px; }
   #story .pics img { width:92px; height:92px; animation:pop .35s ease-out backwards; }
@@ -181,6 +181,9 @@
   #story .dots i { width:9px; height:9px; border-radius:50%; background:#e3d6bf; }
   #story .dots i.on { background:var(--rose); }
   #story .nav { display:flex; gap:10px; justify-content:center; align-items:center; margin-top:14px; flex-wrap:wrap; }
+  #story .pics { flex:none; } #story .ukl { flex:none; min-height:2.4em; display:flex; align-items:center; justify-content:center; } #story .tr { flex:none; min-height:2.6em; }
+  #story .enl { flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+  #story .dots, #story .nav { flex:none; } #story .nav { flex-wrap:nowrap; } #story .nav .hide { visibility:hidden; }
   #story .x { position:absolute; right:10px; top:14px; background:none; font-size:22px; color:var(--soft); padding:6px 8px; }
   #update { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(84px + env(safe-area-inset-bottom)); z-index:35; display:none; background:var(--ink); color:#fff; border-radius:999px; padding:10px 16px; font-weight:800; font-size:15px; box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap; }
   #update small { font-weight:600; opacity:.85; }
@@ -270,12 +273,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v185</div>
+  <div class="ver">v186</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '185';</script>
-<script src="data.js?v=185"></script>
-<script src="game.js?v=185"></script>
+<script>window.APP_VERSION = '186';</script>
+<script src="data.js?v=186"></script>
+<script src="game.js?v=186"></script>
 </body>
 </html>
