@@ -4686,7 +4686,9 @@ function setGuide() {
   const g = $('#guide'), s = TUT[S.tut], st = stage();
   let uk, en, full;
   const active = D.npcs.filter(n => S.npc[n.id] && S.npc[n.id].q && !S.npc[n.id].mad);
-  if (s.ev) {
+  if (nightNow()) {   // night: the only goal is home to bed
+    uk = PH.chas_spaty.uk + ' 🏠'; full = 'Time for bed. Go home and go to sleep.'; en = st < 3 ? full : ''; guideClip = 'p_chas_spaty';
+  } else if (s.ev) {
     uk = PH[s.p].uk + (s.need ? ` ${S.tutN}/${s.need}` : '');
     full = `${PH[s.p].en} ${s.en}`; en = st < 3 ? full : '';
     guideClip = 'p_' + s.p;
@@ -6211,7 +6213,7 @@ function dayTick(dt) {
     duck = 0.45; setTimeout(() => { duck = 1; }, 5200); for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 1500);
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
-  if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
+  if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; setGuide(); learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
   // Out after dark: two reminders to go home to bed, then she walks home by herself.
   if (C.t >= 0.86) {
     C.nightT = (C.nightT || 0) + dt;
