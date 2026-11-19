@@ -2391,7 +2391,7 @@ function catSheet(e) {
   if (S.cats[ct.id]) return wordCard(ct.word, { note: `❤️ ${ct.name} · ${PH.mur.uk}`, clips: ['p_mur'] });
   const has = (S.bag[ct.wants] || 0) > 0, st = stage();
   wordCard(ct.word, {
-    note: `<b>${ct.line}</b>${st < 2 ? `<br>${ct.lineEn}` : `<span class="xl"><br>${ct.lineEn}</span>`}${!has ? xl(`<br><small>${sourceHint(ct.wants)}</small>`) : ''}`,
+    note: `<b>${ct.line}</b>${st < 3 ? `<br>${ct.lineEn}` : `<span class="xl"><br>${ct.lineEn}</span>`}<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 2px"><img src="${iconURL(ct.wants)}" style="width:44px;height:44px" alt=""><span style="text-align:left"><b>${W[ct.wants].uk}</b>${st < 3 ? `<br><span style="font-size:14px;opacity:.8">${W[ct.wants].en}${has ? ' · you have some!' : ''}</span>` : ''}</span></div>${!has ? xl(`<small>${sourceHint(ct.wants)}</small>`) : ''}`,
     clips: ['c_' + ct.id],
     acts: has ? [{ k: 'give', fn: () => {
       S.bag[ct.wants]--; S.cats[ct.id] = 'f'; S.hearts += 2; { const ce = ents.find(q => q.cat === ct.id); if (ce) fxHearts(ce.x, ce.y - 0.6); } learn(ct.wants); useWord(ct.wants, true);
@@ -2636,7 +2636,7 @@ function wordCard(id, o = {}) {
   acts = o.acts || [];
   // The eye also shows when only the note has English tucked away (a cat's "wants fish" at stage 2),
   // even though the word itself is still shown in English.
-  const peekBtn = `<button class="peek" data-a="peek">👁 ${D.ui.show[0]}</button>`;
+  const peekBtn = `<button class="peek" data-a="peek">👁 ${D.ui.show[0]}${stage() < 3 ? ' · ' + D.ui.show[1] : ''}</button>`;
   const en = hideEn || stage() >= 3 ? peekBtn : `<div class="en">${w.en}</div>${/class="xl"/.test(o.note || '') ? peekBtn : ''}`;
   openSheet(`<div class="card">
     ${isNew ? `<div class="tag">✨ ${PH.nove_slovo.uk}${stage() >= 3 ? xl(' · ' + PH.nove_slovo.en) : ''}</div>` : ''}
@@ -2968,7 +2968,7 @@ function dialog(npc, steps, i = 0) {
   const s = stage();
   const face = st.me ? faceURL(ME) : faceURL(npc.look);
   const who = st.me ? (s < 3 ? 'Ти · You' : 'Ти') : npc.name + (s < 2 ? ` · ${npc.nameEn}` : '');
-  const en = s < 2 ? `<div class="en">${st.en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}</button>`;
+  const en = s < 2 ? `<div class="en">${st.en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}${stage() < 3 ? " · " + D.ui.show[1] : ""}</button>`;
   const choices = st.choices ? `<div class="choices">${st.choices.map((c, k) => `<button class="b ghost" data-a="choose" data-v="${k}">${c.uk}<small class="cen"${s < 2 ? '' : ' style="display:none"'}>${c.en}</small></button>`).join('')}</div>` : '';
   openSheet(`<div class="dlg"><img class="face" src="${face}" alt=""><div style="flex:1"><div class="who">${who}</div>
     <div class="line">${st.uk}</div>${s < 2 ? `<div class="tr">${translit(st.uk)}</div>` : ''}<div id="en">${en}</div></div></div>
@@ -3033,7 +3033,7 @@ function mealScene(R) {
       <img src="${faceURL(ME)}" style="width:76px;height:76px;border-radius:18px;background:#e8f4d9" alt="">
     </div>
     <div class="word" style="font-size:30px">${npc.lines['ready_' + R.id].uk}</div>
-    <div id="en">${st < 3 ? `<div class="en">${npc.lines['ready_' + R.id].en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}</button>`}</div>
+    <div id="en">${st < 3 ? `<div class="en">${npc.lines['ready_' + R.id].en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}${stage() < 3 ? " · " + D.ui.show[1] : ""}</button>`}</div>
     <div class="row">${btn('hear', 'v_olia_ready_' + R.id, '🔊', 'round blue')}${btn('eatMeal', '', `${PH.duzhe_smachno.uk}<small class="cen"${st < 3 ? '' : ' style="display:none"'}>${PH.duzhe_smachno.en}</small>`)}</div></div>`);
   say('v_olia_ready_' + R.id);
 }
@@ -6926,7 +6926,7 @@ function drawWorld(t) {
     if (e.cat) {
       const ct = D.cats.find(k => k.id === e.cat), top = y - T * 0.85 + Math.sin(t * 2.5 + e.hx) * 2;
       if (S.cats[e.cat]) drawIcon(c, '❤️', x, top + 8, 18);
-      else { bubble(c, x, top, 15); drawIcon(c, stage() < 2 && W[ct.wants].ic[0] !== '@' ? W[ct.wants].ic : '❔', x, top + 9, 21); }
+      else { bubble(c, x, top, 15); drawIcon(c, stage() < 3 ? W[ct.wants].ic : '❔', x, top + 9, 21); }
       if (S.words[e.w] && known(e.w) <= 1) offer(e, S.cats[e.cat] ? ct.name : W[e.w].uk);
       continue;
     }
