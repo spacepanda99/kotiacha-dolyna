@@ -3,6 +3,15 @@
 //   node tools/voice.mjs test           make ONE clip and print the response shape (a few cents at most)
 //   node tools/voice.mjs make [limit]   make all missing clips (paid). Safe to re-run: skips what exists.
 // The API key is read from disk and never printed. Spend is appended to tools/voice-usage.json.
+//
+// RULE: record with the full model (gemini-3.8-flash-tts) only, never the lite one: the lite clips don't match
+// the rest. If the full model's daily limit is used up, wait for tomorrow. This script refuses a lite model.
+// The one exception kept on purpose: w_zmety (the lite take is the only one heard clearly as «змети»).
+//
+// STILL TO RE-RECORD (made with the lite model back when the full one ran out): the ids in
+// tools/rerecord-todo.json (40 neighbour lines v_*, 9 of Oksana's prices n_*). To redo them: back up and delete
+// those files from audio/, run "make", then "LIST=tools/rerecord-todo.json node tools/voice.mjs audit" (audit a
+// clip on its own again if a batch looks shifted by one), and empty the list when done.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -11,6 +20,7 @@ const root = path.resolve(path.dirname(decodeURIComponent(new URL(import.meta.ur
 const OUT = path.join(root, 'audio');
 const USAGE = path.join(root, 'tools', 'voice-usage.json');
 const MODEL = process.env.VOICE_MODEL || 'gemini-3.8-flash-tts';
+if (/lite/i.test(MODEL)) { console.log('Refusing to record with a lite voice model (' + MODEL + '): the clips must all be made with gemini-3.8-flash-tts. Wait for its daily limit to reset.'); process.exit(1); }
 const TEACHER = { voice: 'kore', style: 'A warm, patient Ukrainian language teacher. Native Ukrainian pronunciation, slow and very clear.' };
 
 const win = {};
@@ -136,7 +146,7 @@ if (cmd === 'list') {
   // Clips that don't match are deleted so the next "make" redoes them.
   const norm = t => t.toLowerCase().replace(/[^а-яіїєґ' ]/g, ' ').replace(/'/g, '').replace(/\s+/g, ' ').trim();
   const have = all.filter(c => fs.existsSync(path.join(OUT, c.id + '.mp3')));
-  const only = process.argv[3] && !process.argv[3].startsWith('--') ? have.filter(c => c.id.startsWith(process.argv[3])) : have;
+  const only = process.env.LIST ? have.filter(c => JSON.parse(fs.readFileSync(process.env.LIST, 'utf8')).includes(c.id)) : process.argv[3] && !process.argv[3].startsWith('--') ? have.filter(c => c.id.startsWith(process.argv[3])) : have;   // LIST=file.json: just those ids
   const bad = [];
   for (let i = 0; i < only.length; i += 16) {
     const batch = only.slice(i, i + 16);
