@@ -3636,7 +3636,7 @@ function mgCatch() {
   setTimeout(() => { if (mg && mg.phase === 'catch') mgRoundDone(); }, 1300);
 }
 function mgRoundDone() {
-  mg.score++;
+  mg.score++; mg.cheer = nowT; blip(990, 0.08); setTimeout(() => blip(1320, 0.08), 90);
   if (mg.round >= mg.G.rounds) return mgFinish();
   mg.round++; mg.phase = 'pause';
   setTimeout(() => { if (mg && $('#mgPad')) mgBegin('a'); }, 900);
@@ -3795,7 +3795,7 @@ function fetchFrame(c, w, h, t, k, dt) {
   items.sort((a, z) => a.y - z.y).forEach(o => o.f());
   if (P) { c.fillStyle = `rgba(255,255,255,${0.5 + P.f * 0.4})`; rr(c, w * 0.04, h * 0.06, w * 0.2, 7 * k, 4 * k); c.fillStyle = '#ffd23f'; rr(c, w * 0.04, h * 0.06, w * 0.2 * P.f, 7 * k, 4 * k); }
   if (mg.pop && t - mg.pop.t < 1.8) { const q = (t - mg.pop.t) / 1.8; c.save(); c.globalAlpha = Math.max(0, q < 0.7 ? 1 : 1 - (q - 0.7) / 0.3); c.font = `900 ${Math.round(24 * k)}px system-ui`; c.textAlign = 'center'; c.lineWidth = 5 * k; c.strokeStyle = '#4a2c1a'; c.strokeText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.fillStyle = '#ffd23f'; c.fillText(mg.pop.txt, w * 0.6, h * 0.3 - q * 20 * k); c.restore(); }
-  c.font = `800 ${Math.round(13 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🎯 ${mg.hits || 0}`, w - 10 * k, 20 * k);
+  padBadge(c, w, k, `🎯 ${mg.hits || 0}`);
 }
 const fxTick = () => blip(1040, 0.04);
 function feScore(b, t) { if (!b.hit || b.scored) return; b.scored = 1; mg.hits = (mg.hits || 0) + 1; mg.hitFx = { t }; mg.pop = { t, txt: PH.chudovo.uk }; say('p_chudovo'); blip(990, 0.1); }
@@ -3911,7 +3911,10 @@ function fishFrame(c, w, h, t, k, dt) {
   // sky, far bank, water, near bank
   let g = c.createLinearGradient(0, 0, 0, wl); g.addColorStop(0, '#9fdcfb'); g.addColorStop(1, '#e8f6fb'); c.fillStyle = g; c.fillRect(0, 0, w, wl);
   c.fillStyle = 'rgba(255,255,255,.9)'; { const x = ((w * 0.6 + t * 5 * k) % (w * 1.3)) - w * 0.15; ell(c, x, h * 0.12, 30 * k, 8 * k); ell(c, x + 14 * k, h * 0.09, 18 * k, 8 * k); }
-  c.fillStyle = '#7fc25a'; ell(c, w * 0.75, wl + 2 * k, w * 0.5, h * 0.06); c.fillStyle = '#5d9e3c'; for (let i = 0; i < 5; i++) drawIcon(c, '🌳', w * (0.45 + i * 0.13), wl - 12 * k, 26 * k);
+  { const sg = c.createRadialGradient(w * 0.82, h * 0.12, 0, w * 0.82, h * 0.12, 50 * k); sg.addColorStop(0, 'rgba(255,244,190,.85)'); sg.addColorStop(1, 'rgba(255,244,190,0)'); c.fillStyle = sg; c.fillRect(w * 0.82 - 50 * k, h * 0.12 - 50 * k, 100 * k, 100 * k); c.fillStyle = '#fff1a8'; circ(c, w * 0.82, h * 0.12, 11 * k); }   // the sun
+  c.fillStyle = '#b9dca0'; ell(c, w * 0.55, wl + 3 * k, w * 0.55, h * 0.1); padVillage(c, w * 0.5, wl - h * 0.035, k, w, t, false);   // the far hill and the village on it
+  c.fillStyle = '#7fc25a'; ell(c, w * 0.75, wl + 2 * k, w * 0.5, h * 0.06); for (const [fx, sc] of [[0.38, 0.9], [0.62, 1.1], [0.7, 0.8], [0.9, 1.15], [0.97, 0.85]]) padTree(c, w * fx, wl + 2 * k, 11 * k * sc, k);
+  for (let i = 0; i < 6; i++) { const a = 0.4 + 0.4 * Math.sin(t * 1.3 + i * 1.7); c.strokeStyle = `rgba(255,250,215,${0.5 * a})`; c.lineWidth = 1.6 * k; const x = w * (0.72 + (i % 3) * 0.07) + Math.sin(t * 0.6 + i) * 4 * k, y = wl + (8 + i * 6) * k; c.beginPath(); c.moveTo(x - 7 * k, y); c.lineTo(x + 7 * k, y); c.stroke(); }   // the sun glinting on the water
   g = c.createLinearGradient(0, wl, 0, h); g.addColorStop(0, '#5fb1de'); g.addColorStop(1, '#2c6f9e'); c.fillStyle = g; c.fillRect(0, wl, w, h - wl);
   c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.5 * k; for (let i = 0; i < 9; i++) { const yy = wl + (6 + i * 11) * k, xx = ((i * 97 + t * 14 * (1 + i % 3)) % (w + 60)) - 30; c.beginPath(); c.moveTo(xx, yy); c.lineTo(xx + 22 * k, yy); c.stroke(); }
   c.fillStyle = '#5e9f3f'; ell(c, w * 0.95, wl + h * 0.34, 14 * k, 5 * k); c.fillStyle = '#ff9fc0'; circ(c, w * 0.95 + 4 * k, wl + h * 0.34 - 3 * k, 3 * k);   // a water lily
@@ -3993,8 +3996,8 @@ function fishFrame(c, w, h, t, k, dt) {
   c.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 5; i < pts.length; i += 3) circ(c, pts[i][0], pts[i][1], 1.6 * k);   // line guides
   { const gp = [handN[0] + Math.cos(R.a) * 13 * hs, handN[1] + Math.sin(R.a) * 13 * hs]; c.fillStyle = ME.skin; circ(c, gp[0], gp[1], 3.6 * hs); circ(c, handN[0], handN[1], 3.8 * hs); c.fillStyle = 'rgba(0,0,0,.12)'; circ(c, handN[0] + 0.8 * hs, handN[1] + 1 * hs, 2.4 * hs); }   // her hands closed round the grip
   // the pull meter while you draw the rod back
-  if (mg.pulling) { c.fillStyle = 'rgba(255,255,255,.7)'; rr(c, w * 0.62, h * 0.06, w * 0.32, 8 * k, 4 * k); c.fillStyle = '#ffd23f'; rr(c, w * 0.62, h * 0.06, w * 0.32 * mg.pull, 8 * k, 4 * k); }
-  c.font = `800 ${Math.round(13 * k)}px system-ui`; c.fillStyle = '#ffffff'; c.textAlign = 'right'; c.fillText(`🐟 ${mg.score}`, w - 10 * k, h - 10 * k);
+  if (mg.pulling) { c.fillStyle = 'rgba(47,42,38,.45)'; rr(c, w * 0.3 - 2 * k, 10 * k, w * 0.4 + 4 * k, 12 * k, 6 * k); c.fillStyle = 'rgba(255,255,255,.75)'; rr(c, w * 0.3, 12 * k, w * 0.4, 8 * k, 4 * k); c.fillStyle = '#ffd23f'; rr(c, w * 0.3, 12 * k, w * 0.4 * mg.pull, 8 * k, 4 * k); }   // top middle, clear of the score
+  padBadge(c, w, k, `🐟 ${mg.score}`);
 }
 
 const cellPos = (i, w, h) => { const r = Math.min(w, h) * 0.075, col = i % 5, row = Math.floor(i / 5); return [w * 0.5 + (col - 2) * r * 1.8 + (row % 2) * r * 0.9, h * 0.55 + (row - 0.5) * r * 1.6, r]; };
@@ -4011,11 +4014,31 @@ function mgFrame() {
   if (GAMES[mg.id]) { GAMES[mg.id].frame(c, w, h, t, k, dtF);  } else if (mg.id === 'andriiko') fetchFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
   else fishFrame(c, w, h, t, k, Math.min(0.05, Math.max(0, t - mg.lastT)));
   if (mg) padFinish(c, w, h, k);
+  if (mg) padCheer(c, w, h, k, mg.cheer, t);
   if (mg) mgFlash(c, w, h, k, t);
   mg && (mg.lastT = t);
   requestAnimationFrame(mgFrame);
 }
 
+// Scenery shared by the game pads: a leafy tree, a snowy fir, and the village on a far hill with its church.
+function padTree(c, x, y, r, k) { c.fillStyle = '#6b4a2b'; c.fillRect(x - 1.5 * k, y - r * 0.5, 3 * k, r * 0.9); c.fillStyle = '#4a9244'; circ(c, x, y - r, r); c.fillStyle = '#5ca852'; circ(c, x - r * 0.35, y - r * 1.2, r * 0.6); c.fillStyle = 'rgba(255,255,255,.12)'; circ(c, x - r * 0.4, y - r * 1.35, r * 0.3); }
+function padFir(c, x, y, sc, k, snowy) { const r = 14 * k * sc; c.fillStyle = '#6b4a2b'; c.fillRect(x - 1.5 * k * sc, y - r * 0.4, 3 * k * sc, r * 0.5);
+  for (let i = 0; i < 3; i++) { const yy = y - r * 0.35 - i * r * 0.55, ww = r * (0.95 - i * 0.22); c.fillStyle = '#3f6e52'; poly(c, [[x - ww, yy], [x, yy - r * 0.8], [x + ww, yy]]); if (snowy) { c.fillStyle = '#ffffff'; poly(c, [[x - ww * 0.95, yy], [x - ww * 0.3, yy - r * 0.18], [x, yy - r * 0.05], [x + ww * 0.35, yy - r * 0.2], [x + ww * 0.95, yy]]); poly(c, [[x - ww * 0.25, yy - r * 0.6], [x, yy - r * 0.8], [x + ww * 0.25, yy - r * 0.6]]); } } }
+function padVillage(c, vx, vy, k, w, t, snowy) {
+  for (const [dx, sc] of [[-0.12, 0.8], [-0.05, 1], [0.1, 0.9], [0.17, 0.75]]) { const x = vx + dx * w, y = vy, cw = 12 * k * sc; c.fillStyle = snowy ? '#efe6d6' : '#f4efe3'; c.fillRect(x - cw / 2, y - cw * 0.6, cw, cw * 0.6); c.fillStyle = snowy ? '#ffffff' : '#c9a25a'; poly(c, [[x - cw * 0.7, y - cw * 0.55], [x, y - cw * 1.15], [x + cw * 0.7, y - cw * 0.55]]);
+    if (snowy) for (let i = 0; i < 3; i++) { const q = ((t * 0.12 + i * 0.33 + dx) % 1); c.fillStyle = `rgba(235,238,245,${0.6 * (1 - q)})`; circ(c, x + cw * 0.3, y - cw * 1.1 - q * 22 * k, (2 + q * 4) * k); } }
+  const cx = vx + w * 0.03, cy = vy - 0.5 * k; c.fillStyle = '#f7f3ea'; c.fillRect(cx - 7 * k, cy - 13 * k, 14 * k, 13 * k); c.fillRect(cx - 3 * k, cy - 20 * k, 6 * k, 7 * k);
+  c.fillStyle = '#6a9ed8'; ell(c, cx, cy - 22 * k, 4 * k, 4 * k); if (snowy) { c.fillStyle = '#fff'; ell(c, cx, cy - 24.5 * k, 3 * k, 1.5 * k); } c.fillStyle = '#f2c230'; c.fillRect(cx - 0.6 * k, cy - 31 * k, 1.2 * k, 6 * k); c.fillRect(cx - 2 * k, cy - 29 * k, 4 * k, 1.1 * k);
+}
+// The score, the same in every game: a little dark pill in the top right corner.
+function padBadge(c, w, k, text) { c.save(); c.font = `800 ${Math.round(14 * k)}px system-ui, sans-serif`; const tw = c.measureText(text).width, bw = tw + 18 * k, bh = 24 * k, x = w - bw - 8 * k, y = 8 * k; c.fillStyle = "rgba(47,42,38,.72)"; rr(c, x, y, bw, bh, bh / 2); c.fillStyle = "#fff"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, x + bw / 2, y + bh / 2 + 1); c.restore(); }
+// A round won: a soft glow and a burst of sparkles from the middle of the pad.
+function padCheer(c, w, h, k, t0, t) {
+  const q = (t - t0) / 0.9; if (!t0 || q < 0 || q > 1) return;
+  const g = c.createRadialGradient(w / 2, h * 0.45, 0, w / 2, h * 0.45, Math.max(w, h) * 0.5); g.addColorStop(0, `rgba(255,240,170,${0.35 * (1 - q)})`); g.addColorStop(1, 'rgba(255,240,170,0)'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + i * 0.3, r = (20 + q * Math.min(w, h) * 0.45) * (0.7 + (i % 3) * 0.15); c.globalAlpha = 1 - q; c.fillStyle = ['#ffd23f', '#ffffff', '#ff9fc0', '#9fe3ff'][i % 4]; star4(c, w / 2 + Math.cos(a) * r, h * 0.45 + Math.sin(a) * r * 0.8, (5 + (i % 3) * 2) * k * (1 - q * 0.5)); }
+  c.globalAlpha = 1;
+}
 // The same finish over every game scene, so they read as one polished set: a soft light from above, the
 // corners gently darkened, and a thin inner rim like a framed picture.
 let padFinishSpr = null;
@@ -4393,7 +4416,9 @@ const ICE = {
     // sky and the far snowy bank
     let g = c.createLinearGradient(0, 0, 0, S0); g.addColorStop(0, '#cfdcee'); g.addColorStop(1, '#f2f6fb'); c.fillStyle = g; c.fillRect(0, 0, w, S0);
     c.fillStyle = '#e6edf7'; ell(c, w * 0.2, S0 - h * 0.04, w * 0.35, h * 0.06); ell(c, w * 0.85, S0 - h * 0.035, w * 0.3, h * 0.05);
-    for (let i = 0; i < 4; i++) { const x = w * (0.06 + i * 0.29); c.fillStyle = 'rgba(80,120,80,.45)'; poly(c, [[x - 9 * k, S0 - h * 0.05], [x, S0 - h * 0.2], [x + 9 * k, S0 - h * 0.05]]); c.fillStyle = '#fff'; poly(c, [[x - 5 * k, S0 - h * 0.13], [x, S0 - h * 0.2], [x + 5 * k, S0 - h * 0.13]]); }
+    { const sg = c.createRadialGradient(w * 0.18, h * 0.1, 0, w * 0.18, h * 0.1, 44 * k); sg.addColorStop(0, 'rgba(255,250,230,.85)'); sg.addColorStop(1, 'rgba(255,250,230,0)'); c.fillStyle = sg; c.fillRect(w * 0.18 - 44 * k, h * 0.1 - 44 * k, 88 * k, 88 * k); c.fillStyle = '#fffbea'; circ(c, w * 0.18, h * 0.1, 9 * k); }
+    padVillage(c, w * 0.6, S0 - h * 0.06, k, w, t, true);
+    for (const [fx, sc] of [[0.05, 1], [0.13, 0.75], [0.34, 0.85], [0.86, 0.95], [0.95, 0.7]]) padFir(c, w * fx, S0 - h * 0.035, sc, k, true);
     // the water under the ice, darker deeper down, with light coming through the hole
     g = c.createLinearGradient(0, B0, 0, h); g.addColorStop(0, '#2f6a99'); g.addColorStop(1, '#173a5c'); c.fillStyle = g; c.fillRect(0, B0, w, h - B0);
     if (mg.hole) { const lg = c.createLinearGradient(0, B0, 0, h); lg.addColorStop(0, 'rgba(190,225,255,.35)'); lg.addColorStop(1, 'rgba(190,225,255,0)'); c.fillStyle = lg; poly(c, [[hx - w * 0.04, B0], [hx + w * 0.04, B0], [hx + w * 0.14, h], [hx - w * 0.14, h]]); }
@@ -4524,7 +4549,7 @@ function chopHit() {
   for (let i = 0; i < 12; i++) chop.chips.push({ x: 0.5, y: 0.6, vx: (Math.random() - 0.5) * 1.4, vy: -0.4 - Math.random() * 0.8, r: Math.random() * 6, t0: nowT });
   setTimeout(() => {
     if (!chop) return;
-    chop.n++; give('drova'); chop.split = null; chop.logIn = nowT;
+    chop.n++; give('drova'); chop.split = null; chop.logIn = nowT; chop.cheer = nowT;
     if (chop.n >= chop.logs) { S.cd.chop = now() + 60e3; save(); const n = chop.n, me = chop; setTimeout(() => { if (chop !== me) return; chopStopVoice(); chop = null; if ($('#chopPad')) { closeSheet(); toast(`+${n} 🪵 ${W.drova.uk} (${S.bag.drova})`); say('w_drova'); } }, 900); }
   }, 650);
 }
@@ -4544,6 +4569,14 @@ function chopFrame(me) {
   // the cottage wall behind (whitewashed, with a timber sill), the yard in front
   c.fillStyle = '#f4efe2'; c.fillRect(-10, 0, w + 20, h * 0.6); c.fillStyle = 'rgba(180,160,120,.25)'; for (let i = 0; i < 6; i++) c.fillRect(w * (0.05 + i * 0.17), h * 0.08, w * 0.002 + 1, h * 0.5);
   c.fillStyle = '#8a5a2b'; c.fillRect(-10, h * 0.56, w + 20, h * 0.05);
+  { const eh = h * 0.09; c.fillStyle = wi ? '#f6f8fc' : '#c9a25a'; c.fillRect(-10, 0, w + 20, eh); c.strokeStyle = wi ? 'rgba(170,190,215,.6)' : 'rgba(120,85,40,.45)'; c.lineWidth = 1.2 * k; for (let x = -6; x < w + 10; x += 5 * k) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 2 * k, eh + (x % 3) * k); c.stroke(); }   // the thatched eaves
+    c.fillStyle = 'rgba(60,40,20,.18)'; c.fillRect(-10, eh, w + 20, 4 * k);
+    if (wi) { c.fillStyle = 'rgba(230,242,252,.95)'; for (let i = 0; i < 16; i++) { const x = w * (0.03 + i * 0.065), ln = (6 + (i * 37) % 9) * k; poly(c, [[x - 2.5 * k, eh], [x + 2.5 * k, eh], [x, eh + ln]]); } }   // icicles
+    const wx = w * 0.8, wy = h * 0.16, ww = w * 0.16, wh = h * 0.26;   // a window, with the real weather outside
+    c.save(); c.beginPath(); c.rect(wx - ww / 2, wy, ww, wh); c.clip(); windowView(c, wx - ww / 2, wy, ww, wh, t, 2, 1); c.restore();
+    c.strokeStyle = '#3d7cc2'; c.lineWidth = 3 * k; c.strokeRect(wx - ww / 2, wy, ww, wh); c.lineWidth = 1.6 * k; c.beginPath(); c.moveTo(wx, wy); c.lineTo(wx, wy + wh); c.moveTo(wx - ww / 2, wy + wh / 2); c.lineTo(wx + ww / 2, wy + wh / 2); c.stroke();
+    c.fillStyle = '#c08a55'; c.fillRect(wx - ww / 2 - 3 * k, wy + wh, ww + 6 * k, 4 * k);
+    c.fillStyle = '#b5653a'; poly(c, [[wx - 5 * k, wy + wh - 8 * k], [wx + 5 * k, wy + wh - 8 * k], [wx + 4 * k, wy + wh], [wx - 4 * k, wy + wh]]); c.fillStyle = wi ? '#7a8a6a' : '#e2574c'; circ(c, wx - 2 * k, wy + wh - 11 * k, 2.6 * k); circ(c, wx + 2.5 * k, wy + wh - 12 * k, 2.4 * k); }   // a geranium on the sill
   const g = c.createLinearGradient(0, h * 0.6, 0, h); g.addColorStop(0, wi ? '#eef3fa' : '#a6d67c'); g.addColorStop(1, wi ? '#d6e2f0' : '#7fc25a'); c.fillStyle = g; c.fillRect(-10, h * 0.61, w + 20, h * 0.4);
   if (wi) drawSnow(c, w, h, t, k, 0.5);
   // the woodpile against the wall, growing as you split
@@ -4586,8 +4619,8 @@ function chopFrame(me) {
   // the word, flashed on each split
   if (chop.fl) { const q = (t - chop.fl) / 1.6; if (q >= 0 && q <= 1) { const a = flashA(q), sc = flashS(q); c.save(); c.globalAlpha = Math.max(0, a); c.translate(w * 0.5, h * 0.17); c.scale(sc, sc); c.font = `900 ${Math.round(30 * k)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 6 * k; c.strokeStyle = '#4a2c1a'; c.strokeText('Рубай!', 0, 0); c.fillStyle = '#ffd27a'; c.fillText('Рубай!', 0, 0); c.restore(); } }
   c.setTransform(1, 0, 0, 1, 0, 0);
-  c.font = `800 ${Math.round(15 * k)}px system-ui`; c.fillStyle = '#4a2c1a'; c.textAlign = 'right'; c.fillText(`🪵 ${chop.n}/${chop.logs}`, w - 12 * k, 24 * k);
-  padFinish(c, w, h, k);
+  padBadge(c, w, k, `🪵 ${chop.n}/${chop.logs}`);
+  padFinish(c, w, h, k); padCheer(c, w, h, k, chop.cheer, t);
   requestAnimationFrame(() => chopFrame(me));
 }
 // The snowball fight: Andriiko pops up behind one of three snow forts; tap where to throw (кидай!) and the snowball
