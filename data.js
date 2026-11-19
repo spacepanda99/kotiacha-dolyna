@@ -376,7 +376,7 @@ window.DATA = {
       style: "A cheerful, playful young Ukrainian boy. Speaks Ukrainian brightly and clearly.",
       look: { skin: "#f6d2b3", shirt: "#ffffff", trim: "#2e9e5b", skirt: "#3a7d44", hair: "#e0b34c", hat: "none", hatCol: "#000", small: true },
       lines: {
-        greet: { uk: "Привіт! Пограймося?", en: "Hi! Shall we play?" },
+        greet: { uk: "Привіт! Пограємося?", en: "Hi! Shall we play?" },
         mgw_invite: { uk: "Зліпимо сніговика?", en: "Shall we build a snowman?" },
         mgws_invite: { uk: "Пограємо в сніжки?", en: "Shall we have a snowball fight?" },
         mgws_kydai: { uk: "Кидай сніжку!", en: "Throw a snowball!" },
@@ -384,7 +384,7 @@ window.DATA = {
         mgw_kachai: { uk: "Качай снігову кулю!", en: "Roll a big snowball!" },
         mgw_postav: { uk: "Постав її на сніговика!", en: "Put it on the snowman!" },
         mgw_done: { uk: "Який гарний сніговик!", en: "What a lovely snowman!" },
-        mg_invite: { uk: "Пограймося з Бровком?", en: "Shall we play with Brovko?" },
+        mg_invite: { uk: "Пограємося з Бровком?", en: "Shall we play with Brovko?" },
         mg_kydai: { uk: "Кидай м'ячик!", en: "Throw the ball!" },
         mg_nesy: { uk: "Скажи йому: «Неси!»", en: "Tell him: «Fetch!»" },
         mg_done: { uk: "Бровко тебе любить!", en: "Brovko loves you!" },

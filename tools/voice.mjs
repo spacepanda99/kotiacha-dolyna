@@ -8,11 +8,8 @@
 // the rest. If the full model's daily limit is used up, wait for tomorrow. This script refuses a lite model.
 // The one exception kept on purpose: w_zmety (the lite take is the only one heard clearly as «змети»).
 //
-// STILL TO RECORD (new, not made yet): p_dobranich_kotyky «Добраніч, котики, спіть солодко!» (bedtime with cats; the
-// voice limit was used up on 2026-11-19). "node tools/voice.mjs make" makes it, then audit it.
-//
 // STILL TO RE-RECORD (made with the lite model back when the full one ran out): the ids in
-// tools/rerecord-todo.json (40 neighbour lines v_*, 9 of Oksana's prices n_*). To redo them: back up and delete
+// tools/rerecord-todo.json (11 left on 2026-11-19: 4 neighbour lines v_*, 7 of Oksana's prices n_*). To redo them: back up and delete
 // those files from audio/, run "make", then "LIST=tools/rerecord-todo.json node tools/voice.mjs audit" (audit a
 // clip on its own again if a batch looks shifted by one), and empty the list when done.
 import fs from 'node:fs';

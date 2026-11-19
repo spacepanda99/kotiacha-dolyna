@@ -5033,7 +5033,9 @@ function enterHome() { closeSheet(); fadeThen(enterHomeNow); }
 function exitHome() { fadeThen(exitHomeNow); }
 function enterHomeNow() {
   mode = 'home';
-  for (const ct of D.cats) if (S.cats[ct.id] === 'f') { S.cats[ct.id] = 1; const i = ents.findIndex(q => q.cat === ct.id); if (i >= 0) ents.splice(i, 1); save(); }
+  let cameHome = false;
+  for (const ct of D.cats) if (S.cats[ct.id] === 'f') { S.cats[ct.id] = 1; cameHome = true; const i = ents.findIndex(q => q.cat === ct.id); if (i >= 0) ents.splice(i, 1); save(); }
+  if (cameHome && !S.catHomeTip) { S.catHomeTip = 1; save(); setTimeout(() => { if (mode === 'home') toast('🐈 Котики живуть у твоїй хаті!' + (stage() < 3 ? ' · Cats you befriend live in your cottage. Come home to see them!' : ''), 6500); }, 900); }   // the first cat brought home: a tip, not voiced
   pickHomeCats();
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').innerHTML = '🪑 ' + lab('decor'); $('#decorBtn').style.display = ''; $('#wardBtn').innerHTML = '👗 ' + lab('wardrobe'); $('#wardBtn').style.display = ''; $('#homebar').style.display = 'flex';
   const mid = DECOR.stil.x * roomW() - cv.width / 2;
