@@ -1905,7 +1905,13 @@ function fxBurst(x, y, ic) {
   if (ic) fxAdd({ k: 'icon', ic, x, y, vy: -1.2, life: 1.1, s: 36 });
 }
 function fxHearts(x, y) { for (let i = 0; i < 6; i++) fxAdd({ k: 'icon', ic: '❤️', x: x + rnd(-0.4, 0.4), y: y - rnd(0, 0.4), vx: rnd(-0.3, 0.3), vy: rnd(-1.4, -0.8), life: rnd(0.8, 1.3), s: rnd(15, 23), d: i * 0.07 }); }
-function fxTap(x, y, hit) {
+function fxTap(x, y, hit, e) {
+  if (hit && e) {
+    const s0 = Math.max(0.7, Math.min(3, e.s || 1)), cy = e.flat ? e.y : e.y - s0 * 0.45, R = s0 * 0.62;
+    fxAdd({ k: 'halo', x, y: cy, life: 0.5, s: R * T });
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + Math.random() * 0.6, r = R * (0.75 + Math.random() * 0.35); fxAdd({ k: 'spark', x: x + Math.cos(a) * r, y: cy + Math.sin(a) * r * 0.85, life: 0.42, s: 4 + Math.random() * 3, d: i * 0.03 }); }
+    return;
+  }
   fxAdd({ k: 'ring', x, y, life: 0.45, s: hit ? 34 : 24 });
   for (let i = 0; i < (hit ? 6 : 3); i++) { const a = i / (hit ? 6 : 3) * Math.PI * 2 + Math.random() * 0.5; fxAdd({ k: 'dust', x, y, vx: Math.cos(a) * 1.6, vy: Math.sin(a) * 0.8 - 0.3, life: 0.45, s: 4 }); }   // a little puff
   if (hit) for (let i = 0; i < 3; i++) fxAdd({ k: 'star', x: x + (Math.random() - 0.5) * 0.8, y: y - 0.4 - Math.random() * 0.6, vy: -0.8, life: 0.55, s: 5, col: ['#ffd23f', '#ffffff', '#ffb6c8'][i] });
@@ -1920,6 +1926,10 @@ function fxDraw(c) {
     const f = p.a / p.life, x = p.x * T, y = p.y * T;
     if (p.k === 'dust') { c.fillStyle = `rgba(206,188,142,${0.55 * (1 - f)})`; circ(c, x, y, p.s * (0.6 + f)); }
     else if (p.k === 'star') { c.globalAlpha = 1 - f * f; c.fillStyle = p.col; star4(c, x, y, p.s * (1 - f * 0.5)); c.globalAlpha = 1; }
+    else if (p.k === 'halo') { const a = Math.sin(Math.min(1, f * 1.6) * Math.PI) * 0.55, g = c.createRadialGradient(x, y, 0, x, y, p.s * (0.85 + f * 0.3));
+      g.addColorStop(0, `rgba(255,250,225,${a})`); g.addColorStop(0.55, `rgba(255,232,150,${a * 0.45})`); g.addColorStop(1, 'rgba(255,232,150,0)');
+      c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.fillRect(x - p.s * 1.2, y - p.s * 1.2, p.s * 2.4, p.s * 2.4); c.restore(); }
+    else if (p.k === 'spark') { const k = Math.sin(f * Math.PI); c.globalAlpha = k; c.fillStyle = '#fff6c8'; star4(c, x, y, p.s * (0.4 + k)); c.fillStyle = '#ffffff'; circ(c, x, y, p.s * 0.22 * k); c.globalAlpha = 1; }
     else if (p.k === 'ring') { c.strokeStyle = `rgba(255,255,255,${0.9 * (1 - f)})`; c.lineWidth = 3.5 * (1 - f) + 0.5; c.beginPath(); c.ellipse(x, y, p.s * (0.3 + f), p.s * (0.3 + f) * 0.55, 0, 0, 7); c.stroke(); }
     else if (p.k === 'icon') { const pop = Math.min(1, p.a / 0.15); c.globalAlpha = f > 0.6 ? 1 - (f - 0.6) / 0.4 : 1; drawIcon(c, p.ic, x, y, p.s * (0.5 + 0.5 * pop)); c.globalAlpha = 1; }
   }
@@ -6594,7 +6604,6 @@ function drawWorld(t) {
     // a soft shadow on the grass, thrown away from the sun: long in the morning and evening, short at noon
     if (!e.flat && !e.lift && e.kind !== 'pond' && e.kind !== 'fly' && e.kind !== 'plot' && shA > 0.02) { const s0 = (e.me ? 1 : e.s || 1) * T, rx = s0 * (0.34 + Math.abs(sunDx) * 0.3); c.globalAlpha = shA; c.drawImage(SOFT_SHADOW, x - rx + sunDx * s0 * 0.3, y - s0 * 0.1, rx * 2, s0 * 0.2); c.globalAlpha = 1; }
     // tapped things give a little squash-and-bounce
-    if (e.tapT && nowT - e.tapT < 0.4) { const q = (nowT - e.tapT) / 0.4, b = Math.sin(q * Math.PI) * (1 - q * 0.4); c.save(); c.translate(x, y); c.scale(1 + b * 0.08, 1 - b * 0.1 + Math.sin(q * Math.PI * 2) * 0.04); c.translate(-x, -y); bounced = true; }
     if (e.me) {
       // Draw whichever of the four views she is closest to; between views she narrows and lifts a little,
       // so each change of view reads as a turn rather than a swap.
@@ -7499,7 +7508,7 @@ cv.addEventListener('pointerup', ev => {
   if (mode === 'fest') return;   // the festival takes its taps on pointerdown, for the beat
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
-  blip(e ? 700 : 560, 0.05); fxTap(e && e.kind !== 'pond' ? e.x : wx, e && e.kind !== 'pond' ? e.y : wy, !!e); if (e) e.tapT = nowT;
+  blip(e ? 700 : 560, 0.05); fxTap(e && e.kind !== 'pond' ? e.x : wx, e && e.kind !== 'pond' ? e.y : wy, !!e, e && e.kind !== 'pond' ? e : null); if (e) e.tapT = nowT;
   if (e) walkTo(e.x, e.kind === 'pond' ? wy : e.y, e); else walkTo(wx, wy, null);
 });
 
