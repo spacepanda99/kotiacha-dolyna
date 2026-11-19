@@ -1141,7 +1141,7 @@ const DRAW = {
   // The blue and yellow flag on a pole, rippling.
   prapor(c, o) {
     const t = (o && o.t) || 0;
-    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -1, 9, 3);
+    if (!(o && o.noShadow)) { c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, -1, 9, 3); }
     c.fillStyle = '#8a8f96'; rr(c, -1.8, -97, 3.6, 97, 1.8); c.fillStyle = '#ffd23f'; circ(c, 0, -97, 3.2);
     const wv = i => Math.sin(t * 3 - i * 0.75) * 2.4 * (i / 8);
     for (const [col, y0] of [['#2f6fb5', -93], ['#ffd23f', -79.5]]) {
@@ -1151,6 +1151,9 @@ const DRAW = {
       c.closePath(); c.fill();
     }
   },
+  // The same flag on a short pole standing on top of the fountain's column (drawn at the fountain's spot; the
+  // column's top is 97 units up at this scale).
+  praportop(c, o) { c.save(); c.translate(0, -97); c.scale(0.8, 0.8); c.translate(0, 20); DRAW.prapor(c, Object.assign({}, o, { noShadow: true })); c.restore(); },
   // A swallow on the wing: blue-black back, white belly, rusty throat, long forked tail.
   lastivka(c, o) {
     const f = Math.sin(((o && o.t) || 0) * 13);
@@ -1689,7 +1692,7 @@ function add(e) {
   for (const [x, y] of [[34.3, 21.5], [34.3, 22.2], [34.3, 22.9], [34.3, 23.6], [34.3, 24.3], [33.2, 25.2]]) add({ w: 'pshenytsia', x, y, s: 1.0, give: 'pshenytsia', cd: 150, hide: true });   // a strip of wheat
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28 });   // Grandma's wattle fence
-  add({ w: 'prapor', x: 21.95, y: 15.95, s: 2.3, solid: true });
+  add({ w: 'prapor', ic: '@praportop', x: 19.0, y: 18.17, s: 2.3, lift: 0.01 });   // the flag flies from the top of the fountain
   add({ w: 'koloda', k: 'koloda', x: 4.75, y: 12.75, s: 1.0, solid: true });   // the chopping block: split firewood
   add({ w: 'doshka', k: 'board', x: 23.6, y: 17.5, s: 1.35, solid: true });   // the notice board: what the next festival needs
   add({ w: 'lastivka', x: 12.6, y: 6.9, s: 0.7, kind: 'fly', cx: 12.6, cy: 6.9, ph: 1.3, swoop: true });
