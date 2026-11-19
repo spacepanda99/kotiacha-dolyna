@@ -1571,7 +1571,7 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
     c.restore();
   };
   leg(-st, lb, true);
-  if (!L.noArms) limb(-arm, true);
+  if (!L.noArms) limb(L.armAng ? L.armAng[0] : -arm, true);
   if (L.long) { c.fillStyle = L.hair; rr(c, -16, -74 + bob, 19, 44, 10); }
   leg(st, la, false);
   c.fillStyle = L.skirt;
@@ -1618,7 +1618,7 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
     const cols = [L.hatCol, '#f2c230', '#ffffff', '#e2574c', '#5aa9e6'];
     for (let i = 0; i < 6; i++) { const ang = Math.PI * (1.02 + i * 0.15); c.fillStyle = cols[i % 5]; circ(c, Math.cos(ang) * 14.5, hy - 2 + Math.sin(ang) * 14.5, 3.6); }
   }
-  if (!L.noArms) limb(arm, false);
+  if (!L.noArms) limb(L.armAng ? L.armAng[1] : arm, false);
   c.restore();
 }
 function faceURL(L) {
@@ -3827,7 +3827,7 @@ function fishBegin(step) {
 }
 // The rod as a bent line: angle a at the butt, curving by `bend` towards the tip. Returns its points.
 function rodPts(w, h, R) {
-  const n = 14, L = FI.len * w, pts = []; let x = FI.bx * w, y = FI.by * h, a = R.a;
+  const n = 14, L = FI.len * w, pts = []; let x = mg.rodB ? mg.rodB[0] : FI.bx * w, y = mg.rodB ? mg.rodB[1] : FI.by * h, a = R.a;
   pts.push([x, y]);
   for (let i = 1; i <= n; i++) { const q = i / n; a = R.a + R.bend * q * q; x += Math.cos(a) * L / n; y += Math.sin(a) * L / n; pts.push([x, y]); }
   return pts;
@@ -3881,7 +3881,7 @@ function fishFrame(c, w, h, t, k, dt) {
   c.fillStyle = '#6fb04a'; poly(c, [[0, h * 0.72], [w * 0.2, h * 0.78], [w * 0.3, h], [0, h]]);
   c.strokeStyle = '#4f8f3a'; c.lineWidth = 2 * k; for (let i = 0; i < 6; i++) { const x = w * (0.2 + i * 0.018), sw = Math.sin(t * 1.3 + i) * 3 * k; c.beginPath(); c.moveTo(x, h * 0.86); c.quadraticCurveTo(x + sw, h * 0.7, x + sw * 1.5, h * (0.6 + (i % 3) * 0.03)); c.stroke(); c.fillStyle = '#7a4e26'; ell(c, x + sw * 1.5, h * (0.6 + (i % 3) * 0.03), 1.8 * k, 5 * k); }   // reeds
   // the bucket on the bank
-  const bkx = w * 0.06, bky = h * 0.83;
+  const bkx = w * 0.045, bky = h * 0.97;
   c.fillStyle = '#8a9099'; poly(c, [[bkx - 14 * k, bky - 18 * k], [bkx + 14 * k, bky - 18 * k], [bkx + 11 * k, bky], [bkx - 11 * k, bky]]); c.fillStyle = '#5b6470'; ell(c, bkx, bky - 18 * k, 14 * k, 4 * k);
   c.fillStyle = '#c9d8b8'; for (let i = 0; i < Math.min(5, mg.score); i++) ell(c, bkx - 6 * k + i * 3 * k, bky - 19 * k - (i % 2) * 2 * k, 5 * k, 2.2 * k);
   // the rod: a spring towards its goal angle, the tip lagging behind as it moves, and bending under load
@@ -3892,6 +3892,16 @@ function fishFrame(c, w, h, t, k, dt) {
   const nib = mg.fishy && mg.fishy.st === 'bite' ? 0.35 : mg.fishy && mg.fishy.st === 'nibble' ? 0.08 * Math.max(0, Math.sin(t * 22)) : 0;
   R.bend += ((-R.v * 0.05 + R.load * 0.7 + nib + (mg.pulling ? -mg.pull * 0.25 : 0)) - R.bend) * Math.min(1, dt * 18);
   R.bend = Math.max(-0.9, Math.min(1.2, R.bend));
+  // Her, standing on the bank side-on to the water. Her near arm reaches forward and a little down to the rod's
+  // butt, tilting as the rod is drawn back and whipped forward; the rod is anchored in that hand and pivots
+  // there. Her far hand holds the cork grip a little further up, following the rod round.
+  const hs = h * 0.0052, hxp = w * 0.13, hyp = h * 0.985, sh = [hxp, hyp - 47 * hs];   // her scale, her feet, her shoulder
+  const nearA = -1.05 - (R.a - FI.rest) * 0.45;   // the near arm: forward and down, lifting as the rod comes back
+  const handN = [sh[0] - Math.sin(nearA) * 19 * hs, sh[1] + Math.cos(nearA) * 19 * hs];
+  mg.rodB = handN;
+  const grip = [handN[0] + Math.cos(R.a) * 13 * hs, handN[1] + Math.sin(R.a) * 13 * hs];   // where the far hand holds
+  const farA = Math.atan2(-(grip[0] - sh[0]), grip[1] - sh[1]);
+  personSide(c, hxp, hyp, Object.assign({}, ME, { armAng: [farA, nearA] }), t, 0, hs);
   const pts = rodPts(w, h, R), tip = pts[pts.length - 1];
   // the line, the float, the hook and the worm
   const C = mg.cast;
@@ -3944,6 +3954,7 @@ function fishFrame(c, w, h, t, k, dt) {
   for (let i = 1; i < pts.length; i++) { c.strokeStyle = i < 4 ? '#c8a46a' : '#6b4422'; c.lineWidth = (i < 4 ? 7 : 5.5 - i * 0.32) * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(pts[i - 1][0], pts[i - 1][1]); c.lineTo(pts[i][0], pts[i][1]); c.stroke(); }
   const rp = pts[3]; c.fillStyle = '#5b6470'; circ(c, rp[0] + 4 * k, rp[1] + 3 * k, 5 * k); c.fillStyle = '#9aa3ad'; circ(c, rp[0] + 4 * k, rp[1] + 3 * k, 2 * k);
   c.fillStyle = 'rgba(255,255,255,.8)'; for (let i = 5; i < pts.length; i += 3) circ(c, pts[i][0], pts[i][1], 1.6 * k);   // line guides
+  { const gp = [handN[0] + Math.cos(R.a) * 13 * hs, handN[1] + Math.sin(R.a) * 13 * hs]; c.fillStyle = ME.skin; circ(c, gp[0], gp[1], 3.6 * hs); circ(c, handN[0], handN[1], 3.8 * hs); c.fillStyle = 'rgba(0,0,0,.12)'; circ(c, handN[0] + 0.8 * hs, handN[1] + 1 * hs, 2.4 * hs); }   // her hands closed round the grip
   // the pull meter while you draw the rod back
   if (mg.pulling) { c.fillStyle = 'rgba(255,255,255,.7)'; rr(c, w * 0.62, h * 0.06, w * 0.32, 8 * k, 4 * k); c.fillStyle = '#ffd23f'; rr(c, w * 0.62, h * 0.06, w * 0.32 * mg.pull, 8 * k, 4 * k); }
   c.font = `800 ${Math.round(13 * k)}px system-ui`; c.fillStyle = '#ffffff'; c.textAlign = 'right'; c.fillText(`🐟 ${mg.score}`, w - 10 * k, h - 10 * k);
