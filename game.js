@@ -2128,6 +2128,15 @@ function ballArt(c, x, y, r) {
   c.fillStyle = '#f2c230'; circ(c, x, y, r);
   c.fillStyle = '#2c6ed5'; c.beginPath(); c.arc(x, y, r, Math.PI, 0); c.fill();
   c.fillStyle = 'rgba(255,255,255,.6)'; circ(c, x - r * 0.35, y - r * 0.4, r * 0.28);
+  c.strokeStyle = 'rgba(40,30,20,.65)'; c.lineWidth = Math.max(1, r * 0.16); c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();   // a dark edge, so it stands out on the grass
+}
+// So the ball is easy to spot: a soft glow that pulses, a white ring, and two little sparkles twinkling round it.
+function ballGlow(c, x, y, r, t) {
+  const p = 0.5 + 0.5 * Math.sin(t * 5), g = c.createRadialGradient(x, y, r * 0.8, x, y, r * (2.6 + p * 0.6));
+  g.addColorStop(0, 'rgba(255,240,150,' + (0.55 + 0.25 * p) + ')'); g.addColorStop(1, 'rgba(255,240,150,0)'); c.fillStyle = g; c.beginPath(); c.arc(x, y, r * (2.6 + p * 0.6), 0, 7); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,' + (0.55 + 0.4 * p) + ')'; c.lineWidth = Math.max(1.5, r * 0.22); c.beginPath(); c.arc(x, y, r * (1.35 + p * 0.15), 0, 7); c.stroke();
+  for (let i = 0; i < 2; i++) { const a = t * 1.6 + i * Math.PI, q = Math.max(0, Math.sin(t * 4 + i * 2)), sx = x + Math.cos(a) * r * 2, sy = y + Math.sin(a) * r * 1.6, L = r * (0.4 + 0.5 * q);
+    c.strokeStyle = 'rgba(255,255,255,' + (0.4 + 0.6 * q) + ')'; c.lineWidth = Math.max(1, r * 0.14); c.beginPath(); c.moveTo(sx - L, sy); c.lineTo(sx + L, sy); c.moveTo(sx, sy - L); c.lineTo(sx, sy + L); c.stroke(); }
 }
 function boyHand() {   // where Andriiko's right hand is, in pixels from his feet
   const k = 0.78, a = FETCH.arm;
@@ -2228,7 +2237,7 @@ function fetchDraw(c) {   // the ball whenever it's on its own (flying, rolling,
   if (F.on === 'hand' || F.on === 'mouth' || !F.boy) return;
   const x = F.bx * T, y = F.by * T, r = 4.8;
   c.fillStyle = `rgba(0,0,0,${0.16 * Math.max(0.35, 1 - F.bz / 120)})`; ell(c, x, y, r * (1 - Math.min(0.4, F.bz / 200)), r * 0.38);
-  ballArt(c, x, y - r - F.bz, r);
+  ballGlow(c, x, y - r - F.bz, r, nowT); ballArt(c, x, y - r - F.bz, r);
 }
 function quad(c, x, y, Q, t, e) {
   // wk: 0 standing .. 1 walking. rest: lying down. dip: head down to graze. All three glide, so nothing snaps.
@@ -4090,7 +4099,7 @@ function fetchFrame(c, w, h, t, k, dt) {
   const drawBall = () => { if (b.st === 'carried' || b.st === 'caught') return; const [bx, by] = ballXY(), s = feScale(P ? FE.ay : b.y), r = 8 * k * s;
     c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, P ? bx : b.x * w, P ? by + r : b.y * h + r * 0.4, r * (1 - Math.min(0.5, (b.z || 0) / h)), r * 0.35);
     if (P) { c.strokeStyle = `rgba(120,70,30,${0.35 + P.f * 0.4})`; c.lineWidth = (3 - P.f * 1.6) * k; for (const s2 of [-1, 1]) { c.beginPath(); c.moveTo(FE.ax * w + s2 * 15 * k, FE.ay * h - 10 * k); c.lineTo(bx, by); c.stroke(); } }
-    c.save(); c.translate(bx, by); c.rotate(b.st === 'fly' || b.st === 'bounce' ? t * 9 : 0); ballArt(c, 0, 0, r); c.restore(); };
+    ballGlow(c, bx, by, r, t); c.save(); c.translate(bx, by); c.rotate(b.st === 'fly' || b.st === 'bounce' ? t * 9 : 0); ballArt(c, 0, 0, r); c.restore(); };
   // draw back to front
   const items = [{ y: d.y, f: () => dogDraw(c, d.x * w, d.y * h - d.z, 1.15 * k * feScale(d.y), d, t, b.st === 'carried' || b.st === 'caught') }, { y: P ? FE.ay : b.y, f: drawBall }];
   items.sort((a, z) => a.y - z.y).forEach(o => o.f());
