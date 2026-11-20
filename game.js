@@ -3073,7 +3073,7 @@ const COOK_HOW = {
   wash: ['Три у воді по колу', 'Scrub it round in the water'], pour: ['Візьми й нахили над каструлею', 'Take it and tip it over the pot'],
   heat: ['Поверни ручку плити', 'Turn the stove knob up'], stir: ['Тримай ложку за кінець і веди по колу', 'Hold the spoon by its end and stir round the bowl'],
   add: ['Неси в каструлю й відпусти', 'Carry each one to the pot and let go'], shake: ['Потруси над каструлею', 'Shake it over the pot'],
-  taste: ['Візьми ложку за кінець і підніми', 'Hold the spoon by its end and lift it out'],
+  taste: ['Візьми ложку за кінець і піднеси бабусі до рота', 'Hold the spoon by its end and lift it up to Grandma’s mouth'],
   crack: ['Розбий яйце об край миски', 'Knock the egg on the edge of the bowl'],
 };
 let ck = null;
@@ -3153,7 +3153,9 @@ function cookWire(kind, st) {
 // The implement moves with your finger; the moves that do the work are counted here.
 // Where you hold an implement. A spoon is gripped at the top of its handle, its bowl down in the food: the
 // handle runs up and to the right from the bowl (T) to the grip.
-const SPOON_GRIP = { stir: [0.12, -0.42], taste: [0.14, -0.38] };
+const SPOON_GRIP = { stir: [0.12, -0.42], taste: [0.16, -0.24] };   // the tasting spoon is held shorter, so its bowl can reach Grandma’s mouth without the finger leaving the picture
+// Where the spoon's bowl meets Grandma's lips in the tasting step (pad fractions).
+const TASTE_MOUTH = { x: 0.3, y: 0.3 };
 const ckGrip = s => { const T = s.tool, o = SPOON_GRIP[s.kind]; return o ? { x: T.x + o[0], y: T.y + o[1] } : T; };
 function cookMove(x, y) {
   const s = ck.s, T = s.tool, k = s.kind;
@@ -3193,9 +3195,16 @@ function cookMove(x, y) {
     if (T.y < 0.82 && T.y > 0.4) { const d = Math.abs(T.y - py); s.flat = Math.min(1, s.flat + d * 0.8); s.acc += d; if (d > 0.002) cookAct(false); if (s.acc > 0.3) { s.acc = 0; cookEv(); } }
   } else if (k === 'pour') {
     T.x = Math.max(0.08, Math.min(0.92, x)); T.y = Math.max(0.1, Math.min(0.85, y));
-  } else if (k === 'taste') {   // you move the grip; the spoon's bowl comes up out of the pot with it
-    const o = SPOON_GRIP.taste; T.x = Math.max(0.1, Math.min(0.8, x - o[0])); T.y = Math.max(0.4, Math.min(0.7, y - o[1]));
-    if (T.y < 0.48 && !s.tasted) { s.tasted = nowT; cookAct(true); cookEv(); blip(990, 0.08); }
+  } else if (k === 'taste') {   // you move the grip; the spoon's bowl comes up out of the pot with it, all the way to her mouth
+    if (s.sipT) return;   // at her lips: the spoon stays put while she sips
+    const o = SPOON_GRIP.taste; T.x = Math.max(0.12, Math.min(0.82, x - o[0])); T.y = Math.max(TASTE_MOUTH.y, Math.min(0.7, y - o[1]));
+    if (Math.hypot(T.x - TASTE_MOUTH.x, (T.y - TASTE_MOUTH.y) * 0.7) < 0.075) {
+      // at the lips: she sips (slurp), swallows, then grins and the step is done
+      s.sipT = nowT; T.x = TASTE_MOUTH.x; T.y = TASTE_MOUTH.y + 0.005; T.held = false; cookAct(true);
+      sfxHit(1800, 0.18, 0.18, 'bandpass', 2); setTimeout(() => sfxHit(1200, 0.22, 0.14, 'bandpass', 2), 140); setTimeout(() => sfxTone(520, 260, 0.18, 0.12), 380);   // slurp... gulp
+      setTimeout(() => { if (ck && ck.s === s) { s.tasted = nowT; blip(880, 0.07); setTimeout(() => blip(1320, 0.1), 110); try { navigator.vibrate && navigator.vibrate(30); } catch (e) {} } }, 650);
+      setTimeout(() => { if (ck && ck.s === s) cookEv(); }, 1900);
+    }
   } else if (k === 'crack') {
     T.x = Math.max(0.08, Math.min(0.92, x)); T.y = Math.max(0.12, Math.min(0.85, y));
     const overRim = Math.abs(T.x - 0.5) < 0.24;
@@ -3458,15 +3467,19 @@ function cookFrame(me) {
   } else if (kind === 'taste') {
     const potX = w * 0.55, potY = h * 0.95, pS = w * 0.46;
     ckPot(c, potX, potY, pS, k, t, '#a33c2c'); food(potX, potY - pS * 0.62, h * 0.12);
-    c.font = `${Math.round(30 * k)}px ${EMOJI}`; c.textAlign = 'center'; c.fillText(s.tasted ? '😋' : '😮', w * 0.5, h * 0.17);
+    ckTaster(c, w, h, k, t, s, T);
+    // after the sip the spoon goes back down into the pot, so her grin shows
+    if (s.tasted) { const q = Math.min(1, (t - s.tasted) / 0.45), e = q * q * (3 - 2 * q); T.x = TASTE_MOUTH.x + (T.hx - TASTE_MOUTH.x) * e; T.y = TASTE_MOUTH.y + (T.hy - TASTE_MOUTH.y) * e; }
     // the wooden spoon: its bowl in the borscht, the handle rising to the grip at its end
     const tx = T.x * w, ty = T.y * h, gx = tx + SPOON_GRIP.taste[0] * w, gy = ty + SPOON_GRIP.taste[1] * h;
     c.strokeStyle = '#8a5a2b'; c.lineWidth = 8 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(tx, ty); c.lineTo(gx, gy); c.stroke();
     c.strokeStyle = '#c99463'; c.lineWidth = 3 * k; c.beginPath(); c.moveTo(tx + 1.5 * k, ty - 2 * k); c.lineTo(gx + 1.5 * k, gy); c.stroke();
-    c.fillStyle = '#9b6b3c'; ell(c, tx, ty, w * 0.04, h * 0.032); c.fillStyle = '#a33c2c'; ell(c, tx, ty - h * 0.004, w * 0.03, h * 0.02);
-    if (s.tasted) { c.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 3; i++) { const q = ((t - s.tasted) * 0.8 + i / 3) % 1; circ(c, tx + Math.sin(i * 2 + t * 3) * 4 * k, ty - h * 0.05 - q * h * 0.12, (3 + q * 4) * k); } }   // steam off the spoonful
+    c.fillStyle = '#9b6b3c'; ell(c, tx, ty, w * 0.04, h * 0.032); { const left = s.sipT ? Math.max(0, 1 - (t - s.sipT) / 0.55) : 1; if (left > 0) { c.fillStyle = '#a33c2c'; ell(c, tx, ty - h * 0.004, w * 0.03 * left, h * 0.02 * left); } }
+    if (!s.sipT && T.y < 0.62) { c.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 3; i++) { const q = (t * 0.8 + i / 3) % 1; circ(c, tx + Math.sin(i * 2 + t * 3) * 4 * k, ty - h * 0.05 - q * h * 0.12, (3 + q * 4) * k); } }   // steam off the spoonful
     c.fillStyle = '#7a4b22'; ell(c, gx, gy, 5 * k, 5 * k);
-    ring(gx, gy, 30 * k);
+    if (!s.sipT) ring(gx, gy, 30 * k);
+    // while you lift it, a dotted path shows where it goes: up to her mouth
+    if (!s.sipT && T.held) { c.save(); c.setLineDash([4 * k, 7 * k]); c.strokeStyle = 'rgba(255,210,63,.7)'; c.lineWidth = 2.5 * k; c.beginPath(); c.moveTo(tx, ty - h * 0.03); c.quadraticCurveTo((tx + TASTE_MOUTH.x * w) / 2 + w * 0.08, (ty + TASTE_MOUTH.y * h) / 2, TASTE_MOUTH.x * w, TASTE_MOUTH.y * h + h * 0.03); c.stroke(); c.restore(); }
   } else if (kind === 'crack') {
     // a mixing bowl (blue-striped, with the grated potato in it), and the egg you knock on its rim
     const bx = w * 0.5, by = h * 0.64, brx = w * 0.27, bry = h * 0.07;
@@ -3506,6 +3519,47 @@ function cookFrame(me) {
   padFinish(c, w, h, k);
   ckFlash(c, w, h, k, t);
   requestAnimationFrame(() => cookFrame(me));
+}
+// Grandma's face for the tasting: a round, rosy face in a red headscarf. Her eyes follow the spoon, her
+// mouth opens wider as it comes close, she sips with her lips round the spoon, then grins with happy
+// squinting eyes and pink cheeks, a few hearts floating up.
+function ckTaster(c, w, h, k, t, s, T) {
+  const mx = TASTE_MOUTH.x * w, my = TASTE_MOUTH.y * h, r = Math.min(w * 0.16, h * 0.17), cx = mx, cy = my - r * 0.42;
+  const d = Math.hypot(T.x - TASTE_MOUTH.x, (T.y - TASTE_MOUTH.y) * 0.7), near = Math.max(0, Math.min(1, 1 - d / 0.4));
+  const grin = s.tasted ? Math.min(1, (t - s.tasted) / 0.25) : 0, sip = s.sipT && !s.tasted;
+  const bob = grin ? Math.sin((t - s.tasted) * 9) * Math.max(0, 1 - (t - s.tasted) / 1.2) * 3 * k : Math.sin(t * 2) * 1 * k;
+  c.save(); c.translate(0, bob);
+  // headscarf (хустка) behind and over the head, knotted under the chin
+  c.fillStyle = '#c0392b'; c.beginPath(); c.ellipse(cx, cy - r * 0.08, r * 1.12, r * 1.08, 0, Math.PI * 1.02, Math.PI * 1.98); c.lineTo(cx + r * 1.05, cy + r * 0.45); c.lineTo(cx - r * 1.05, cy + r * 0.45); c.closePath(); c.fill();
+  c.fillStyle = '#f5d2b0'; circ(c, cx, cy + r * 0.05, r * 0.9);   // the face
+  c.fillStyle = '#c0392b'; c.beginPath(); c.ellipse(cx, cy - r * 0.32, r * 0.98, r * 0.6, 0, Math.PI, 0); c.fill();   // scarf across the forehead
+  c.fillStyle = '#f1c40f'; for (let i = -2; i <= 2; i++) circ(c, cx + i * r * 0.36, cy - r * 0.62 + Math.abs(i) * r * 0.1, r * 0.07);   // little flowers on it
+  c.fillStyle = '#c0392b'; poly(c, [[cx - r * 0.25, cy + r * 0.88], [cx + r * 0.25, cy + r * 0.88], [cx, cy + r * 1.1]]);   // the knot
+  // eyes: looking at the spoon, then happy arcs when she grins
+  const lx = Math.max(-1, Math.min(1, (T.x - TASTE_MOUTH.x) * 6)), ly = Math.max(-1, Math.min(1, (T.y - TASTE_MOUTH.y) * 5));
+  for (const sx of [-1, 1]) {
+    const ex = cx + sx * r * 0.34, ey = cy - r * 0.02;
+    if (grin) { c.strokeStyle = '#4a2c1a'; c.lineWidth = 3 * k; c.lineCap = 'round'; c.beginPath(); c.arc(ex, ey + r * 0.05, r * 0.13, Math.PI * 1.15, Math.PI * 1.85); c.stroke(); }
+    else if (sip) { c.strokeStyle = '#4a2c1a'; c.lineWidth = 3 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(ex - r * 0.12, ey); c.lineTo(ex + r * 0.12, ey); c.stroke(); }   // eyes closed, savouring it
+    else { c.fillStyle = '#fff'; ell(c, ex, ey, r * 0.15, r * 0.13); c.fillStyle = '#4a2c1a'; circ(c, ex + lx * r * 0.06, ey + ly * r * 0.05, r * 0.075); }
+  }
+  // rosy cheeks, brighter when she grins
+  c.fillStyle = `rgba(232,110,110,${0.25 + grin * 0.35})`; ell(c, cx - r * 0.55, cy + r * 0.32, r * 0.17, r * 0.11); ell(c, cx + r * 0.55, cy + r * 0.32, r * 0.17, r * 0.11);
+  // mouth: a soft smile, opening as the spoon comes, round on the spoon while sipping, a wide grin after
+  const mY = my - r * 0.02;
+  if (grin) {
+    c.fillStyle = '#7a2e2e'; c.beginPath(); c.moveTo(mx - r * 0.4, mY - r * 0.05); c.quadraticCurveTo(mx, mY + r * 0.5 * grin, mx + r * 0.4, mY - r * 0.05); c.quadraticCurveTo(mx, mY + r * 0.12, mx - r * 0.4, mY - r * 0.05); c.fill();
+    c.fillStyle = '#fff'; c.beginPath(); c.moveTo(mx - r * 0.3, mY); c.quadraticCurveTo(mx, mY + r * 0.12, mx + r * 0.3, mY); c.lineTo(mx + r * 0.26, mY + r * 0.07); c.quadraticCurveTo(mx, mY + r * 0.16, mx - r * 0.26, mY + r * 0.07); c.fill();   // teeth
+  } else if (sip) {
+    c.fillStyle = '#a14545'; ell(c, mx, mY, r * 0.16, r * 0.12);   // lips round the spoon
+  } else if (near > 0.15) {
+    c.fillStyle = '#7a2e2e'; ell(c, mx, mY, r * (0.12 + near * 0.12), r * (0.05 + near * 0.15));   // "aah", wider as it comes
+  } else {
+    c.strokeStyle = '#7a2e2e'; c.lineWidth = 3 * k; c.lineCap = 'round'; c.beginPath(); c.arc(mx, mY - r * 0.12, r * 0.22, Math.PI * 0.2, Math.PI * 0.8); c.stroke();
+  }
+  c.restore();
+  // hearts floating up after the grin
+  if (s.tasted) for (let i = 0; i < 4; i++) { const q = ((t - s.tasted) * 0.7 + i * 0.25) % 1, hx = cx + r * (1.1 + i * 0.22) * (i % 2 ? 1 : -1) * 0.8, hy = cy - r * 0.4 - q * h * 0.2; c.globalAlpha = 1 - q; drawIcon(c, '❤️', hx, hy, (12 + 6 * (1 - q)) * k); c.globalAlpha = 1; }
 }
 function cookDone() {
   const st = ck.R.steps[ck.i], me = ck; ck.done = true;
@@ -8064,7 +8118,8 @@ const A = {
   close() { if (sp) return; closeSheet(); },   // a stray tap outside must not throw away a speaking round
   words: wordsSheet, bag: bagSheet,
   guide() { say(guideClip); },
-  guideEye() { guideEnOn = !guideEnOn; setGuide(); },
+  // Says what the eye just did: it shows (or hides) the English for this one task; the next task starts hidden.
+  guideEye() { guideEnOn = !guideEnOn; setGuide(); toast(guideEnOn ? '👁 Англійською показано · English shown for this task' : '👁 Англійську сховано · English hidden', 2200); },
   exitHome,
   enterHome,
   hear(v) { say(v); },
