@@ -1742,6 +1742,7 @@ function add(e) {
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
   for (const [x, y] of streamPts(0.1)) { const tx = Math.floor(x), ty = Math.floor(y); if (Math.hypot(x - BRIDGE.x, y - BRIDGE.y) > 0.75) block(tx, ty); }   // the stream: wade-proof, but the bridge is open
+  solid[Math.floor(BRIDGE.y)][Math.floor(BRIDGE.x)] = 0;   // the tile the bridge stands on is the crossing (bits of the stream elsewhere in it had shut it)
   block(Math.floor(FALL.x), Math.floor(FALL.y)); block(33, 18);   // the rocks of the ledge
   add({ w: 'choven', x: 32.2, y: 22.75, s: 1.4, flat: true });
   add({ w: 'ryba', x: 28.3, y: 21.6, s: 0.8, kind: 'animal', r: 0.8, water: true, give: 'ryba', cd: 60, hide: true });
@@ -1773,7 +1774,7 @@ function add(e) {
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
-  for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [35.7, 19.8], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
+  for (const [x, y] of [[2.5, 6.9], [14.5, 8.0], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [16.8, 8.7], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
@@ -2553,7 +2554,7 @@ function catRoute(sx, sy, tx, ty) {
   if (prev[goal] === -2) return null;
   const path = []; for (let i = goal; i !== s0 && i >= 0; i = prev[i]) path.unshift(i);
   // keep only the corners, so the walk is a few straight legs rather than a staircase of tiles
-  const pts = path.map(i => ({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 }));
+  const BT = Math.floor(BRIDGE.y) * MW + Math.floor(BRIDGE.x), pts = path.map(i => i === BT ? { x: BRIDGE.x, y: BRIDGE.y } : ({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 }));   // over the stream: along the middle of the bridge
   return pts.filter((p, k) => k === pts.length - 1 || k === 0 || (pts[k + 1].x - p.x !== p.x - pts[k - 1].x || pts[k + 1].y - p.y !== p.y - pts[k - 1].y));
 }
 // A cat you've just befriended trots after you until you take it home (S.cats[id] = 'f'); once inside
@@ -2628,7 +2629,8 @@ function findPath(tx, ty, ent, from) {
   }
   if (best < 0) return [];
   const path = [];
-  for (let i = best; i >= 0 && i !== q[0]; i = prev[i]) path.unshift({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 });
+  const BT = Math.floor(BRIDGE.y) * MW + Math.floor(BRIDGE.x);
+  for (let i = best; i >= 0 && i !== q[0]; i = prev[i]) path.unshift(i === BT ? { x: BRIDGE.x, y: BRIDGE.y } : { x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 });   // over the stream: along the middle of the bridge
   return path;
 }
 // When you go to talk to someone, stand beside them (not on top of them), facing them.
