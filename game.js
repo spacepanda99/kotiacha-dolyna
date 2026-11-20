@@ -5613,6 +5613,36 @@ function bedText(c, uk, en, y, a) {
   if (en && stage() < 3) { c.font = `700 ${Math.round(size * 0.42)}px system-ui, sans-serif`; c.lineWidth = size * 0.1; c.strokeText(en, cv.width / 2, y + size * 0.75); c.fillText(en, cv.width / 2, y + size * 0.75); }
   c.restore();
 }
+// The morning weather report: a board headed «Прогноз погоди», today's weather big on the left ("Today it
+// will be sunny"), tomorrow's smaller on the right.
+const WX_EN = { sun: 'sunny', cloud: 'cloudy', rain: 'rainy', storm: 'stormy', fog: 'foggy', snow: 'snowy' };
+function bedForecast(c, x, y, a, u, today, tomorrow) {
+  if (!(a > 0)) return; a = Math.min(1, a);
+  const en = stage() < 3, W0 = Math.min(cv.width * 0.92, u * 0.86), H0 = u * (en ? 0.44 : 0.38), s = 0.9 + 0.1 * Math.min(1, a * 1.2);
+  c.save(); c.globalAlpha = a; c.translate(x, y); c.scale(s, s);
+  c.fillStyle = 'rgba(0,0,0,.18)'; rr(c, -W0 / 2 + 4, -H0 / 2 + 6, W0, H0, u * 0.05);
+  c.fillStyle = 'rgba(255,250,238,.94)'; rr(c, -W0 / 2, -H0 / 2, W0, H0, u * 0.05);
+  c.strokeStyle = 'rgba(212,58,58,.5)'; c.lineWidth = 2; c.setLineDash([6, 5]); c.beginPath(); c.roundRect(-W0 / 2 + 7, -H0 / 2 + 7, W0 - 14, H0 - 14, u * 0.035); c.stroke(); c.setLineDash([]);
+  // the heading, on a red ribbon
+  const hy = -H0 / 2 + u * 0.06; c.fillStyle = '#c0392b'; rr(c, -W0 * 0.36, hy - u * 0.034, W0 * 0.72, u * 0.068, u * 0.034);
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff8ea'; c.font = cozyFont(Math.round(u * 0.042)); c.fillText('📻 Прогноз погоди', 0, hy + 1);
+  if (en) { c.fillStyle = '#8a7566'; c.font = '700 ' + Math.round(u * 0.026) + 'px system-ui, sans-serif'; c.fillText('Weather report', 0, hy + u * 0.058); }
+  const top = hy + u * (en ? 0.09 : 0.06), divX = W0 * 0.14;
+  c.strokeStyle = 'rgba(138,117,102,.35)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(divX, top); c.lineTo(divX, H0 / 2 - u * 0.04); c.stroke();
+  // today
+  const tx = -W0 * 0.17, cy = top + (H0 / 2 - top) * 0.5, wT = WX[today];
+  c.fillStyle = '#8a7566'; c.font = '800 ' + Math.round(u * 0.028) + 'px system-ui, sans-serif'; c.fillText(en ? 'Сьогодні · Today' : 'Сьогодні', tx, top + u * 0.02);
+  drawIcon(c, wT.ic, tx - W0 * 0.17, cy + u * 0.075, u * 0.13);
+  c.textAlign = 'left'; c.fillStyle = INK; c.font = cozyFont(Math.round(u * 0.05)); c.fillText(W[wT.w].uk, tx - W0 * 0.07, cy + (en ? 0 : u * 0.02));
+  if (en) { c.fillStyle = '#6b5a4c'; c.font = '700 ' + Math.round(u * 0.026) + 'px system-ui, sans-serif'; c.fillText('Today it will be ' + WX_EN[today], tx - W0 * 0.07, cy + u * 0.045); }
+  // tomorrow
+  if (tomorrow && WX[tomorrow]) { const mx = W0 * 0.31, wN = WX[tomorrow];
+    c.textAlign = 'center'; c.fillStyle = '#8a7566'; c.font = '800 ' + Math.round(u * 0.028) + 'px system-ui, sans-serif'; c.fillText(en ? 'Завтра · Tomorrow' : 'Завтра', mx, top + u * 0.02);
+    drawIcon(c, wN.ic, mx, cy + u * 0.04, u * 0.09);
+    c.fillStyle = INK; c.font = cozyFont(Math.round(u * 0.034)); c.fillText(W[wN.w].uk, mx, cy + u * 0.075);
+    if (en) { c.fillStyle = '#6b5a4c'; c.font = '700 ' + Math.round(u * 0.022) + 'px system-ui, sans-serif'; c.fillText(WX_EN[tomorrow], mx, cy + u * 0.108); } }
+  c.restore();
+}
 // A soft card for the morning's weather: rounded, glassy, an icon, the word and its English.
 function bedCard(c, x, y, ic, uk, en, a, u) {
   if (!(a > 0)) return; a = Math.min(1, a);
@@ -5711,7 +5741,7 @@ function drawBed(t) {
     // --- 2.–4. the valley, faded in over the room and out again at the end
     const inA = fade(N, N + 1.1), outA = 1 - fade(T3 - 0.8, T3);
     const p = a < T1 ? 0 : a < T2 ? (a - T1) / (T2 - T1) : 1;
-    if (a > T1 + 0.6) once('morning', () => { if (bed.dev) { const r = Math.random(); S.wx = dayWeather(season(), r); S.clock.t = 0.27; S.clock.ev = {}; S.clock.nightT = 0; } else newDay(); });   // the new day (and its weather) begins as the sky turns
+    if (a > T1 + 0.6) once('morning', () => { if (bed.dev) { const r = Math.random(); S.wx = dayWeather(season(), r); rollForecast(); S.clock.t = 0.27; S.clock.ev = {}; S.clock.nightT = 0; } else newDay(); });   // the new day (and its weather) begins as the sky turns
     const wx = d.morning ? S.wx : null;
     c.save(); c.globalAlpha = inA * outA; bedValley(c, w, h, p, t, a - N, wx); c.restore();
     // the window frame of the cottage around the view, as if you're looking out
@@ -5733,10 +5763,10 @@ function drawBed(t) {
       const ma = Math.min(fade(T2 - 0.4, T2 + 0.4), outA), wxd = WX[S.wx];
       bedText(c, '☀️ ' + PH.dobroho_ranku.uk, PH.dobroho_ranku.en, h * 0.26, ma);
       if (firstSnow) bedCard(c, w / 2, h * 0.43, '❄️', PH.pershyi_snih.uk, PH.pershyi_snih.en, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u);
-      else bedCard(c, w / 2, h * 0.43, wxd.ic, W[wxd.w].uk, W[wxd.w].en, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u);
-      if (storks) bedCard(c, w / 2, h * 0.73, '@stork', PH.leleky_povernulysia.uk, PH.leleky_povernulysia.en, Math.min(fade(T2 + 1.5, T2 + 2.1), outA), u);
-      if (bed.season) bedCard(c, w / 2, h * 0.58, SEASON_IC[bed.season], W[bed.season].uk, `${W[bed.season].en} is here!`, Math.min(fade(T2 + 0.9, T2 + 1.5), outA), u);
-      if (a > T2 + 1.6 && a < T3 - 0.9 && stage() < 3) { c.save(); c.globalAlpha = 0.6 + 0.3 * Math.sin(t * 3); c.fillStyle = '#fff8ea'; c.font = `700 ${Math.round(u * 0.035)}px system-ui`; c.textAlign = 'center'; c.fillText('Tap to start the day', w / 2, h * 0.8); c.restore(); }
+      else bedForecast(c, w / 2, h * 0.45, Math.min(fade(T2 + 0.3, T2 + 0.9), outA), u, S.wx, S.wxNext);
+      if (storks) bedCard(c, w / 2, h * 0.75, '@stork', PH.leleky_povernulysia.uk, PH.leleky_povernulysia.en, Math.min(fade(T2 + 1.5, T2 + 2.1), outA), u);
+      if (bed.season) bedCard(c, w / 2, h * 0.64, SEASON_IC[bed.season], W[bed.season].uk, `${W[bed.season].en} is here!`, Math.min(fade(T2 + 0.9, T2 + 1.5), outA), u);
+      if (a > T2 + 1.6 && a < T3 - 0.9 && stage() < 3) { c.save(); c.globalAlpha = 0.6 + 0.3 * Math.sin(t * 3); c.fillStyle = '#fff8ea'; c.font = `700 ${Math.round(u * 0.035)}px system-ui`; c.textAlign = 'center'; c.fillText('Tap to start the day', w / 2, h * 0.86); c.restore(); }
     }
   }
   if (a > T3) { bed = null; document.body.classList.remove('bedtime'); $('#homebar').style.display = 'flex'; }
@@ -7103,12 +7133,18 @@ function drawSnow(c, w, h, t, k, amount) {
     else { circ(c, x, y, s); if (f.L === 2) { c.fillStyle = `rgba(255,255,255,${0.25 * tw})`; circ(c, x, y, s * 1.8); } }
   }
 }
+// Tomorrow's weather, decided now so the morning forecast can tell you (and then it really happens).
+function rollForecast() {
+  const d = (S.clock.day || 1) + 1, sea = seasonForce || SEASONS[seasonIx(d)];
+  S.wxNext = seasonIx(d) !== seasonIx() && sea === 'zyma' ? 'snow' : dayWeather(sea, Math.random()); S.wxNextDay = d;
+}
 // Morning: a new day with new weather.
 function newDay() {
   const r = Math.random();
   const was = seasonIx();
   S.clock = { day: (S.clock.day || 1) + 1, t: 0.27, ev: {} };
-  S.wx = dayWeather(season(), r);
+  S.wx = S.wxNext && S.wxNextDay === S.clock.day ? S.wxNext : dayWeather(season(), r);   // what yesterday's forecast said
+  rollForecast();
   if (S.wx === 'snow' || seasonIx() !== was) { prints.length = 0; printLast = null; for (const e of ents) e.pl = null; }   // fresh snow covers the tracks
   if (seasonIx() !== was && bed) bed.season = season();   // a new season starts this morning
   if (seasonIx() !== was && winter()) { S.wx = 'snow'; S.firstSnow = S.clock.day; }   // the first morning of winter: the first snow
