@@ -447,6 +447,30 @@ const DRAW = {
   // The cottages. They share a shape (whitewashed walls, a thatched or shingled roof, two windows and a door)
   // but each one is its owner's: hers with blue trim and sunflowers, Grandma Olia's with painted flowers and green
   // shutters, Mr. Bohdan's with a shingle roof and a bee skep by the door, Taras's pale blue with a net drying on it.
+  // A village street lamp: a weathered wooden post on a fieldstone footing, iron bands, a curled iron
+  // bracket, and a little glass lantern with a peaked tin roof hanging from it. It's lit at night
+  // (the flame and glow are painted over the dark in the night pass).
+  lihtar(c) {
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 2, 0, 12, 3.2);
+    c.fillStyle = '#8d8a84'; poly(c, [[-9, 0], [-7, -7], [7, -7], [9, 0]]); c.fillStyle = '#a8a59e'; ell(c, -3, -4, 3.5, 2); ell(c, 4, -3, 3, 1.8); c.fillStyle = '#76736d'; ell(c, 1, -6, 2.5, 1.2);   // stone footing
+    const pg = c.createLinearGradient(-4, 0, 4, 0); pg.addColorStop(0, '#5d3b1f'); pg.addColorStop(0.45, '#8a5c33'); pg.addColorStop(1, '#4e3118'); c.fillStyle = pg; c.fillRect(-3.6, -92, 7.2, 86);   // the post
+    c.strokeStyle = 'rgba(40,22,8,.35)'; c.lineWidth = 0.7; for (const x of [-1.6, 0.4, 2]) { c.beginPath(); c.moveTo(x, -90); c.bezierCurveTo(x + 0.6, -60, x - 0.6, -35, x, -8); c.stroke(); }   // grain
+    c.fillStyle = '#3a3836'; for (const y of [-20, -78]) { c.fillRect(-4.4, y, 8.8, 2.6); c.fillStyle = '#5a5754'; c.fillRect(-4.4, y, 8.8, 0.8); c.fillStyle = '#3a3836'; }   // iron bands
+    c.fillStyle = '#4e3118'; poly(c, [[-4.5, -92], [4.5, -92], [3, -96], [-3, -96]]); c.fillStyle = '#3a3836'; circ(c, 0, -97.5, 1.8);   // capped top, a knob
+    // the curled iron bracket reaching out to the right
+    c.strokeStyle = '#2e2c2a'; c.lineWidth = 1.8; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(3.6, -88); c.lineTo(17, -88); c.stroke();
+    c.beginPath(); c.moveTo(3.6, -79); c.quadraticCurveTo(12, -80, 13.5, -87.5); c.stroke();
+    c.lineWidth = 1.2; c.beginPath(); c.arc(8.6, -84, 2.4, 0.3, Math.PI * 1.7); c.stroke();   // a little scroll in the brace
+    c.beginPath(); c.moveTo(16.5, -88); c.lineTo(16.5, -84.5); c.stroke();   // hook
+    // the lantern
+    c.fillStyle = '#2e2c2a'; poly(c, [[10.5, -78], [22.5, -78], [16.5, -84.5]]); c.fillStyle = '#4a4744'; poly(c, [[10.5, -78], [16.5, -84.5], [14, -78]]);   // tin roof
+    c.fillStyle = '#2e2c2a'; c.fillRect(11, -78, 11, 1.6); c.fillRect(11.5, -64.5, 10, 2); c.fillRect(13.5, -62.5, 6, 1.4);
+    c.fillStyle = 'rgba(255,236,190,.55)'; c.fillRect(12, -76.4, 9, 11.9);   // glass
+    c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(12.8, -75.6, 1.4, 9);
+    c.fillStyle = '#2e2c2a'; c.fillRect(16, -76.4, 1, 11.9); c.fillRect(11.5, -76.4, 0.9, 11.9); c.fillRect(20.6, -76.4, 0.9, 11.9);   // frame
+    c.fillStyle = '#efe6d2'; c.fillRect(15.3, -69, 2.4, 4.5); c.fillStyle = '#c9a868'; c.fillRect(16.3, -70.5, 0.5, 1.6);   // the candle inside
+  },
   khata(c) { khataArt(c, KHATA_LOOK.mine); },
   khata_olia(c) { khataArt(c, KHATA_LOOK.olia); },
   khata_bohdan(c) { khataArt(c, KHATA_LOOK.bohdan); },
@@ -1709,6 +1733,8 @@ function add(e) {
   // Market square.
   rect(20, 12, 23, 12); add({ w: 'rynok', x: STALL.x, y: STALL.y, s: 4.3, kind: 'shop' });   // the market stall, just above the main road
   rect(18, 17, 19, 18); add({ w: 'fontan', x: 19.0, y: 18.15, s: 3.1 });   // the fountain, right in the middle of the square
+  // Street lamps: one on each corner of the square, two more down the village road. (Tapping one says «лампа».)
+  for (const [lx, ly, fl] of [[16.45, 15.6], [21.55, 15.6, 1], [16.45, 19.55], [21.55, 19.55, 1], [17.35, 23.6], [17.35, 27.6]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   // Pond.
@@ -6858,6 +6884,50 @@ function skyLight(tt) {
   const dawn = 1 - k(0.25, 0.33, tt), warm = k(0.7, 0.79, tt) * (1 - k(0.82, 0.88, tt)), dark = k(0.79, 0.88, tt);
   return { dark, warm, dawn };
 }
+// After dark: each street lamp's lantern glows with a flickering flame and throws a pool of light on the
+// ground, and every cottage's windows shine warm yellow, spilling light onto the grass below them.
+// Painted over the darkened scene, in screen pixels.
+function nightLamps(c, list, sx, sy, t) {
+  const L = skyLight(S.clock.t), on = Math.min(1, Math.max(0, (Math.max(L.dark, L.warm * 0.45) - 0.08) * 2.2));
+  if (on <= 0.01) return;
+  const W0 = c.canvas.width, H0 = c.canvas.height;
+  c.save();
+  for (const e of list) {
+    const isHouse = e.kind === 'home' || e.k === 'oliaHome' || (e.w === 'khata' && e.kind !== 'npc');
+    if (!e.street && !isHouse) continue;
+    const sc = e.s * T * zoom / 100, bx = sx(e.x), by = sy(e.y);
+    if (bx < -200 * sc || bx > W0 + 200 * sc || by < -150 * sc || by > H0 + 120 * sc) continue;
+    const fl = 0.88 + 0.08 * Math.sin(t * 9 + e.x * 3) + 0.04 * Math.sin(t * 23 + e.y);
+    if (e.street) {
+      const dir = e.flipX ? -1 : 1, lx = bx + 16.5 * sc * dir, ly = by - 70.5 * sc;
+      c.globalCompositeOperation = 'lighter';
+      let g = c.createRadialGradient(bx + 8 * sc * dir, by + 2 * sc, 0, bx + 8 * sc * dir, by + 2 * sc, 46 * sc); g.addColorStop(0, 'rgba(255,190,100,' + (0.32 * on * fl) + ')'); g.addColorStop(1, 'rgba(255,190,100,0)');
+      c.fillStyle = g; c.save(); c.translate(bx + 8 * sc * dir, by + 2 * sc); c.scale(1, 0.42); c.beginPath(); c.arc(0, 0, 46 * sc, 0, 7); c.restore(); c.fill();   // pool of light on the ground
+      g = c.createRadialGradient(lx, ly, 0, lx, ly, 26 * sc); g.addColorStop(0, 'rgba(255,214,140,' + (0.7 * on * fl) + ')'); g.addColorStop(0.35, 'rgba(255,170,80,' + (0.25 * on * fl) + ')'); g.addColorStop(1, 'rgba(255,170,80,0)');
+      c.fillStyle = g; c.fillRect(lx - 26 * sc, ly - 26 * sc, 52 * sc, 52 * sc);   // halo
+      c.globalCompositeOperation = 'source-over'; c.globalAlpha = on;
+      g = c.createLinearGradient(0, ly - 6 * sc, 0, ly + 6 * sc); g.addColorStop(0, '#ffe7a6'); g.addColorStop(1, '#ffb347'); c.fillStyle = g; c.fillRect(lx - 4.5 * sc, ly - 6 * sc, 9 * sc, 11.9 * sc);   // lit glass
+      c.fillStyle = '#2e2c2a'; c.fillRect(lx - 0.5 * sc, ly - 6 * sc, 1 * sc, 11.9 * sc); c.fillRect(lx - 5 * sc, ly - 6 * sc, 0.9 * sc, 11.9 * sc); c.fillRect(lx + 4.1 * sc, ly - 6 * sc, 0.9 * sc, 11.9 * sc);   // frame
+      c.fillStyle = '#fff6dc'; c.beginPath(); c.ellipse(lx + 0.3 * sc, ly + 0.3 * sc, 1.3 * sc, 2.4 * sc * fl, 0, 0, 7); c.fill();   // the flame
+      c.globalAlpha = 1;
+    } else {
+      for (const wx of [-33, 17]) {
+        const x0 = bx + wx * sc, y0 = by - 40 * sc, ws = 16 * sc;
+        c.globalCompositeOperation = 'lighter';
+        let g = c.createRadialGradient(x0 + ws / 2, y0 + ws / 2, 0, x0 + ws / 2, y0 + ws / 2, ws * 1.6); g.addColorStop(0, 'rgba(255,190,100,' + (0.35 * on * fl) + ')'); g.addColorStop(1, 'rgba(255,190,100,0)');
+        c.fillStyle = g; c.fillRect(x0 - ws, y0 - ws, ws * 3, ws * 3);   // glow round the window
+        g = c.createLinearGradient(0, by, 0, by + 22 * sc); g.addColorStop(0, 'rgba(255,190,100,' + (0.22 * on) + ')'); g.addColorStop(1, 'rgba(255,190,100,0)');
+        c.fillStyle = g; c.beginPath(); c.moveTo(x0 + 1 * sc, by); c.lineTo(x0 + ws - 1 * sc, by); c.lineTo(x0 + ws + 7 * sc, by + 22 * sc); c.lineTo(x0 - 7 * sc, by + 22 * sc); c.closePath(); c.fill();   // light spilling onto the ground
+        c.globalCompositeOperation = 'source-over'; c.globalAlpha = on;
+        g = c.createLinearGradient(0, y0, 0, y0 + ws); g.addColorStop(0, '#ffe39a'); g.addColorStop(1, '#ffb04a'); c.fillStyle = g; c.fillRect(x0, y0, ws, ws);   // lit panes
+        c.fillStyle = 'rgba(120,60,20,.55)'; c.fillRect(x0 + 7 * sc, y0, 2 * sc, ws); c.fillRect(x0, y0 + 7 * sc, ws, 2 * sc);   // glazing bars
+        c.fillStyle = 'rgba(160,70,30,.25)'; c.fillRect(x0, y0, ws * 0.28, ws); c.fillRect(x0 + ws * 0.72, y0, ws * 0.28, ws);   // curtains drawn to the sides
+        c.globalAlpha = 1;
+      }
+    }
+  }
+  c.restore();
+}
 // Night, dusk and weather painted over a finished scene, in screen pixels. lights: [[x, y, r], …] warm glows.
 let vignetteSpr = null, vignetteKey = '';
 function paintSky(c, w, h, t, lights, outdoors) {
@@ -7314,8 +7384,10 @@ function drawWorld(t) {
   {   // evening, night and weather; windows glow once the light goes
     const lights = [], sx = x => (x * T - camX) * zoom, sy = y => (y * T - camY) * zoom;
     for (const e of list) if (e.kind === 'home' || e.k === 'oliaHome' || (e.w === 'khata' && e.kind !== 'npc')) lights.push([sx(e.x), sy(e.y - (e.s || 1) * 0.35), (e.s || 1) * T * zoom * 0.75]);
-    lights.push([sx(P.rx), sy(P.ry - 0.4), T * zoom * 1.2]);   // her little lantern
+    // (no glow round her any more: the street lamps and the cottage windows light the village at night)
+    for (const e of list) if (e.street) { const sc = e.s * T * zoom / 100; lights.push([sx(e.x) + (e.flipX ? -16.5 : 16.5) * sc, sy(e.y) - 70 * sc, T * zoom * 1.9]); }
     paintSky(c, cv.width, cv.height, t, lights, true);
+    nightLamps(c, list, sx, sy, t);
     const nt = nightNow() ? (S.clock.nightT || 0) : 0;   // out far too late: it grows very dark, all but her lantern
     if (nt > 25) { const a = Math.min(0.5, (nt - 25) / 30 * 0.5), lx = sx(P.rx), ly = sy(P.ry - 0.4), R = T * zoom * 2.2, g = c.createRadialGradient(lx, ly, R * 0.15, lx, ly, R);
       g.addColorStop(0, 'rgba(4,6,18,0)'); g.addColorStop(1, `rgba(4,6,18,${a})`); c.fillStyle = g; c.fillRect(0, 0, cv.width, cv.height); }
