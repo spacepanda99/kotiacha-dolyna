@@ -3307,13 +3307,82 @@ function ckCarrot(c, w, h, k, t, s) {
   });
 }
 // Drawing helpers for the kitchen.
-function ckBoard(c, w, h, k) { c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, w * 0.5, h * 0.86, w * 0.4, h * 0.05); c.fillStyle = '#c99463'; rr(c, w * 0.12, h * 0.52, w * 0.76, h * 0.32, 14 * k); c.fillStyle = '#ddb07a'; rr(c, w * 0.12, h * 0.52, w * 0.76, h * 0.27, 14 * k); c.strokeStyle = 'rgba(140,90,40,.25)'; c.lineWidth = 1.5 * k; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(w * 0.16, h * (0.57 + i * 0.045)); c.lineTo(w * 0.84, h * (0.57 + i * 0.045) + 2 * k); c.stroke(); } c.fillStyle = '#b07a44'; circ(c, w * 0.84, h * 0.58, 4 * k); }
+function ckBoard(c, w, h, k) {   // a thick wooden chopping board: end grain on the front edge, curving grain on top, a hanging hole, old knife marks
+  const x = w * 0.12, y = h * 0.52, bw = w * 0.76, bh = h * 0.32, r = 14 * k;
+  c.fillStyle = 'rgba(40,20,5,.22)'; ell(c, w * 0.5, h * 0.87, w * 0.41, h * 0.05);
+  c.fillStyle = '#b8824f'; rr(c, x, y, bw, bh, r);   // the front edge
+  c.fillStyle = 'rgba(90,55,25,.25)'; for (let i = 0; i < 18; i++) c.fillRect(x + r + i * (bw - 2 * r) / 18, y + bh - h * 0.05 + 1 * k, 1 * k, h * 0.04 - 2 * k);   // end grain
+  const g = c.createLinearGradient(0, y, 0, y + bh * 0.85); g.addColorStop(0, '#e6bc86'); g.addColorStop(1, '#d6a66e'); c.fillStyle = g; rr(c, x, y, bw, bh * 0.85, r);
+  c.save(); rr(c, x, y, bw, bh * 0.85, r); c.clip();
+  c.strokeStyle = 'rgba(140,90,40,.22)'; c.lineWidth = 1.3 * k; for (let i = 0; i < 7; i++) { const yy = y + bh * 0.1 + i * bh * 0.1; c.beginPath(); c.moveTo(x, yy); c.bezierCurveTo(x + bw * 0.3, yy - 4 * k * (i % 2 ? 1 : -1), x + bw * 0.6, yy + 5 * k * (i % 3 ? 1 : -1), x + bw, yy + 1 * k); c.stroke(); }
+  c.strokeStyle = 'rgba(120,75,35,.18)'; c.lineWidth = 1 * k; for (let i = 0; i < 9; i++) { const mx = x + bw * (0.2 + ((i * 0.37) % 0.6)), my = y + bh * (0.15 + ((i * 0.53) % 0.55)); c.beginPath(); c.moveTo(mx - 8 * k, my - 2 * k); c.lineTo(mx + 8 * k, my + 2 * k); c.stroke(); }   // knife marks
+  c.fillStyle = 'rgba(255,240,210,.35)'; c.fillRect(x, y, bw, 2 * k);   // light catching the top edge
+  c.restore();
+  c.fillStyle = '#8a5a2b'; circ(c, x + bw - 18 * k, y + 14 * k, 5 * k); c.fillStyle = 'rgba(40,20,5,.5)'; circ(c, x + bw - 18 * k, y + 15 * k, 3.5 * k);   // the hole to hang it by
+}
+// The kitchen behind every cooking step, painted once per pad size: a whitewashed wall with soft plaster
+// blotches, a red-and-black cross-stitch band (like a рушник) along the top, light falling in from a
+// window on the left, a dark wooden rail where wall meets table, and a plank table with grain and knots.
+let CK_BD = null;
+function ckBackdrop(w, h, k) {
+  if (CK_BD && CK_BD.w === w && CK_BD.h === h) return CK_BD.cv;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const c = cv.getContext('2d');
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const wallB = h * 0.45;
+  // the wall
+  let g = c.createLinearGradient(0, 0, 0, wallB); g.addColorStop(0, '#fcf1de'); g.addColorStop(1, '#f1dcb9'); c.fillStyle = g; c.fillRect(0, 0, w, wallB);
+  for (let i = 0; i < 40; i++) { const x = rnd() * w, y = rnd() * wallB, r = (8 + rnd() * 26) * k; const gg = c.createRadialGradient(x, y, 0, x, y, r); const a = 0.03 + rnd() * 0.04; gg.addColorStop(0, rnd() < 0.5 ? 'rgba(255,255,255,' + a * 2 + ')' : 'rgba(205,170,120,' + a * 0.5 + ')'); gg.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = gg; c.fillRect(x - r, y - r, r * 2, r * 2); }   // plaster
+  // window light: a soft slanting beam from the top left
+  c.save(); const lg = c.createLinearGradient(0, 0, w * 0.6, wallB); lg.addColorStop(0, 'rgba(255,248,215,.55)'); lg.addColorStop(1, 'rgba(255,248,215,0)'); c.fillStyle = lg;
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(w * 0.22, 0); c.lineTo(w * 0.62, wallB); c.lineTo(w * 0.2, wallB); c.closePath(); c.fill(); c.restore();
+  // the cross-stitch band: a row of little red stitched diamonds with black between, on a linen strip
+  const by = h * 0.05, bh = h * 0.1; c.fillStyle = 'rgba(250,244,230,.9)'; c.fillRect(0, by, w, bh);
+  c.fillStyle = 'rgba(160,130,90,.25)'; c.fillRect(0, by, w, 1 * k); c.fillRect(0, by + bh - 1 * k, w, 1 * k);
+  const st = Math.max(2, 2.4 * k), cy = by + bh / 2, step = st * 9;
+  for (let x0 = -step / 2; x0 < w + step; x0 += step) {
+    for (let dy = -3; dy <= 3; dy++) for (let dx = -(3 - Math.abs(dy)); dx <= 3 - Math.abs(dy); dx++) { const edge = Math.abs(dx) + Math.abs(dy) === 3 - 0 ? 0 : 1; c.fillStyle = (Math.abs(dx) + Math.abs(dy) >= 3) ? '#b8262d' : (Math.abs(dx) + Math.abs(dy) === 0 ? '#2a1d1a' : (edge && (Math.abs(dx) + Math.abs(dy)) % 2 ? '#d8424a' : '#b8262d')); c.fillRect(x0 + dx * st - st * 0.45, cy + dy * st - st * 0.45, st * 0.9, st * 0.9); }
+    c.fillStyle = '#2a1d1a'; for (const d of [-1, 1]) c.fillRect(x0 + step / 2 - st * 0.45, cy + d * st - st * 0.45, st * 0.9, st * 0.9);   // little black stitches between
+  }
+  // the rail where the wall meets the table
+  c.fillStyle = '#7a4b26'; c.fillRect(0, wallB - 3 * k, w, 4 * k); c.fillStyle = 'rgba(255,220,170,.35)'; c.fillRect(0, wallB - 3 * k, w, 1 * k);
+  // the table: planks running across, each a slightly different brown, with grain lines and a knot or two
+  const planks = 4, ph = (h - wallB) / planks;
+  for (let i = 0; i < planks; i++) {
+    const y = wallB + i * ph, tone = [['#ad7443', '#97612f'], ['#a56d3b', '#8f5a2a'], ['#b07846', '#9a6332'], ['#a26a39', '#8b5728']][i];
+    g = c.createLinearGradient(0, y, 0, y + ph); g.addColorStop(0, tone[0]); g.addColorStop(1, tone[1]); c.fillStyle = g; c.fillRect(0, y, w, ph);
+    c.strokeStyle = 'rgba(70,40,15,.18)'; c.lineWidth = 1 * k;
+    for (let j = 0; j < 4; j++) { const yy = y + ph * (0.2 + j * 0.2) + (rnd() - 0.5) * 3 * k; c.beginPath(); c.moveTo(0, yy); for (let x = 0; x <= w; x += w / 8) c.lineTo(x, yy + Math.sin(x * 0.02 + i * 3 + j) * 1.5 * k); c.stroke(); }
+    if (rnd() < 0.8) { const kx = rnd() * w, ky = y + ph * (0.3 + rnd() * 0.4); c.fillStyle = 'rgba(70,40,15,.3)'; ell(c, kx, ky, 5 * k, 2.2 * k); c.strokeStyle = 'rgba(70,40,15,.18)'; c.beginPath(); c.ellipse(kx, ky, 9 * k, 3.5 * k, 0, 0, 7); c.stroke(); }
+    c.fillStyle = 'rgba(40,20,5,.35)'; c.fillRect(0, y, w, 1.2 * k); c.fillStyle = 'rgba(255,220,170,.12)'; c.fillRect(0, y + 1.2 * k, w, 1 * k);   // the seam between planks
+  }
+  // the light from the window falls across the table too
+  c.save(); const tg = c.createRadialGradient(w * 0.42, h * 0.62, 0, w * 0.42, h * 0.62, w * 0.6); tg.addColorStop(0, 'rgba(255,230,180,.22)'); tg.addColorStop(1, 'rgba(255,230,180,0)'); c.fillStyle = tg; c.fillRect(0, wallB, w, h - wallB); c.restore();
+  CK_BD = { w, h, cv }; return cv;
+}
+// Warm light over the finished frame: the corners fall off a little, so the middle (where you work) glows.
+function ckLight(c, w, h) {
+  const g = c.createRadialGradient(w * 0.5, h * 0.55, Math.min(w, h) * 0.3, w * 0.5, h * 0.55, Math.max(w, h) * 0.75);
+  g.addColorStop(0, 'rgba(60,30,10,0)'); g.addColorStop(1, 'rgba(60,30,10,.28)'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+}
 function ckPot(c, x, y, s, k, t, fill) {   // an enamel pot with red flowers, seen a little from above
-  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y + s * 0.02, s * 0.62, s * 0.1);
-  c.fillStyle = '#f4f1ea'; c.beginPath(); c.moveTo(x - s * 0.5, y - s * 0.5); c.lineTo(x - s * 0.45, y - s * 0.03); c.quadraticCurveTo(x, y + s * 0.08, x + s * 0.45, y - s * 0.03); c.lineTo(x + s * 0.5, y - s * 0.5); c.closePath(); c.fill();
-  c.fillStyle = '#d43a3a'; for (const dx of [-0.25, 0, 0.25]) { circ(c, x + dx * s, y - s * 0.26, s * 0.05); c.fillStyle = '#3f8a3a'; ell(c, x + dx * s + s * 0.06, y - s * 0.24, s * 0.04, s * 0.02); c.fillStyle = '#d43a3a'; }
-  c.fillStyle = '#2f5f9e'; ell(c, x, y - s * 0.5, s * 0.52, s * 0.12); c.fillStyle = fill || '#5a3020'; ell(c, x, y - s * 0.5, s * 0.46, s * 0.09);
-  c.strokeStyle = '#2f5f9e'; c.lineWidth = 3 * k; for (const sg of [-1, 1]) { c.beginPath(); c.arc(x + sg * s * 0.55, y - s * 0.4, s * 0.06, -Math.PI / 2, Math.PI / 2, sg < 0); c.stroke(); }
+  c.fillStyle = 'rgba(40,20,5,.22)'; ell(c, x, y + s * 0.02, s * 0.62, s * 0.1);
+  const body = () => { c.beginPath(); c.moveTo(x - s * 0.5, y - s * 0.5); c.lineTo(x - s * 0.45, y - s * 0.03); c.quadraticCurveTo(x, y + s * 0.08, x + s * 0.45, y - s * 0.03); c.lineTo(x + s * 0.5, y - s * 0.5); c.closePath(); };
+  let g = c.createLinearGradient(x - s * 0.5, 0, x + s * 0.5, 0); g.addColorStop(0, '#d9d3c6'); g.addColorStop(0.3, '#fbf8f1'); g.addColorStop(0.42, '#ffffff'); g.addColorStop(0.75, '#ece6da'); g.addColorStop(1, '#c9c1b2'); c.fillStyle = g; body(); c.fill();
+  c.fillStyle = '#2f5f9e'; c.save(); body(); c.clip(); c.fillRect(x - s * 0.6, y - s * 0.06, s * 1.2, s * 0.2); c.restore();   // the blue band round the foot
+  // flowers: five red petals round a yellow middle, with two leaves
+  for (const dx of [-0.25, 0, 0.25]) { const fx = x + dx * s, fy = y - s * 0.26, pr = s * 0.032;
+    c.fillStyle = '#3f8a3a'; c.save(); c.translate(fx, fy); for (const a of [0.5, 2.6]) { c.save(); c.rotate(a); ell(c, pr * 2, 0, pr * 1.3, pr * 0.55); c.restore(); } c.restore();
+    c.fillStyle = '#d43a3a'; for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2 - Math.PI / 2; circ(c, fx + Math.cos(a) * pr, fy + Math.sin(a) * pr * 0.9, pr * 0.75); }
+    c.fillStyle = '#f5c542'; circ(c, fx, fy, pr * 0.5); }
+  c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.moveTo(x - s * 0.3, y - s * 0.44); c.lineTo(x - s * 0.24, y - s * 0.44); c.lineTo(x - s * 0.21, y - s * 0.1); c.lineTo(x - s * 0.26, y - s * 0.1); c.closePath(); c.fill();   // a shine down the side
+  c.fillStyle = '#3a3634'; ell(c, x + s * 0.38, y - s * 0.12, s * 0.018, s * 0.012);   // an old chip in the enamel
+  // the rim and what's inside
+  c.fillStyle = '#244c80'; ell(c, x, y - s * 0.5, s * 0.52, s * 0.12); c.fillStyle = '#3a72b8'; ell(c, x, y - s * 0.505, s * 0.5, s * 0.105);
+  c.fillStyle = fill || '#5a3020'; ell(c, x, y - s * 0.5, s * 0.46, s * 0.09);
+  c.save(); c.beginPath(); c.ellipse(x, y - s * 0.5, s * 0.46, s * 0.09, 0, 0, 7); c.clip(); c.fillStyle = 'rgba(0,0,0,.22)'; ell(c, x, y - s * 0.56, s * 0.5, s * 0.07); c.fillStyle = 'rgba(255,255,255,.18)'; ell(c, x + s * 0.12, y - s * 0.47, s * 0.16, s * 0.025); c.restore();   // the rim's shadow on the food, a gleam on it
+  c.strokeStyle = 'rgba(255,255,255,.5)'; c.lineWidth = 1.2 * k; c.beginPath(); c.ellipse(x, y - s * 0.5, s * 0.51, s * 0.115, 0, Math.PI * 1.05, Math.PI * 1.6); c.stroke();
+  // handles
+  c.strokeStyle = '#244c80'; c.lineWidth = 3.5 * k; c.lineCap = 'round'; for (const sg of [-1, 1]) { c.beginPath(); c.arc(x + sg * s * 0.55, y - s * 0.4, s * 0.06, -Math.PI / 2, Math.PI / 2, sg < 0); c.stroke(); }
 }
 function ckKnife(c, x, y, s, k, rot) {   // handle at (x, y), the blade reaching left, edge down
   c.save(); c.translate(x, y); c.rotate(rot || 0);
@@ -3335,8 +3404,7 @@ function cookFrame(me) {
   const dt = Math.min(0.05, Math.max(0, t - (s.lastT || t))); s.lastT = t;
   c.setTransform(1, 0, 0, 1, 0, 0);
   // the kitchen wall and table
-  let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#fbecd3'); g.addColorStop(0.45, '#f3dcb7'); g.addColorStop(0.46, '#a86f3e'); g.addColorStop(1, '#8a5a2b'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-  c.fillStyle = 'rgba(212,58,58,.16)'; for (let i = 0; i < 9; i++) { c.save(); c.translate(w * (0.06 + i * 0.11), h * 0.1); c.rotate(Math.PI / 4); c.fillRect(-4 * k, -4 * k, 8 * k, 8 * k); c.restore(); }   // an embroidered border along the wall
+  c.drawImage(ckBackdrop(w, h, k), 0, 0);
   const food = (x, y, sz, sq) => { c.save(); c.translate(x, y); if (sq) c.scale(1 + sq * 0.25, 1 - sq * 0.3); drawIcon(c, W[st.w].ic, 0, sz * 0.5, sz); c.restore(); };
   const hint = s.miss && t - s.miss < 0.8 ? Math.sin((t - s.miss) * 20) * 0.5 + 0.5 : 0;   // you pressed beside it: the implement winks
   const ring = (x, y, r) => { if (!hint && !(T && !T.held && t - (s.t0 || (s.t0 = t)) < 2.5)) return; c.strokeStyle = `rgba(255,210,63,${hint ? 0.9 : 0.35 + 0.3 * Math.sin(t * 6)})`; c.lineWidth = 3 * k; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); };
@@ -3447,7 +3515,8 @@ function cookFrame(me) {
   } else if (kind === 'heat') {
     // the stove top: the pot (or a pan) on the ring, flames as high as the knob is turned
     const fl = s.knob, cx = w * 0.45, cy = h * 0.82;
-    c.fillStyle = '#3a3634'; rr(c, w * 0.05, h * 0.68, w * 0.9, h * 0.3, 12 * k); c.fillStyle = '#2a2624'; ell(c, cx, cy, w * 0.22, h * 0.06);
+    { const sg = c.createLinearGradient(0, h * 0.68, 0, h * 0.98); sg.addColorStop(0, '#4a4542'); sg.addColorStop(1, '#2c2826'); c.fillStyle = sg; rr(c, w * 0.05, h * 0.68, w * 0.9, h * 0.3, 12 * k); c.fillStyle = 'rgba(255,255,255,.14)'; rr(c, w * 0.06, h * 0.68, w * 0.88, 2 * k, 1 * k); }
+    c.fillStyle = '#1f1c1b'; ell(c, cx, cy, w * 0.22, h * 0.06); c.strokeStyle = '#5a5552'; c.lineWidth = 2.5 * k; c.beginPath(); c.ellipse(cx, cy, w * 0.2, h * 0.052, 0, 0, 7); c.stroke(); for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + 0.4; c.beginPath(); c.moveTo(cx + Math.cos(a) * w * 0.08, cy + Math.sin(a) * h * 0.02); c.lineTo(cx + Math.cos(a) * w * 0.21, cy + Math.sin(a) * h * 0.055); c.stroke(); }   // the burner's iron grate
     if (fl > 0.05) for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, fx = cx + Math.cos(a) * w * 0.18, fy = cy + Math.sin(a) * h * 0.045, fh = h * 0.06 * fl * (0.8 + 0.4 * Math.sin(t * 20 + i)); c.fillStyle = `rgba(80,140,255,${0.8})`; ell(c, fx, fy - fh * 0.4, 3 * k, fh * 0.5); c.fillStyle = 'rgba(255,190,90,.8)'; ell(c, fx, fy - fh * 0.75, 1.8 * k, fh * 0.3); }
     if (fl > 0.05) { const gl = c.createRadialGradient(cx, cy, 0, cx, cy, w * 0.3); gl.addColorStop(0, 'rgba(255,150,60,' + (0.35 * fl) + ')'); gl.addColorStop(1, 'rgba(255,150,60,0)'); c.fillStyle = gl; ell(c, cx, cy, w * 0.3, h * 0.1); }   // the glow off the flames
     if (st.v === 'posmazh') {
@@ -3581,6 +3650,7 @@ function cookFrame(me) {
       if (!it.done && (hint || t - (s.t0 || (s.t0 = t)) < 2.5)) { c.strokeStyle = `rgba(255,210,63,${0.4 + 0.3 * Math.sin(t * 6 + it.x * 9)})`; c.lineWidth = 2 * k; c.beginPath(); c.arc(x, y, 22 * k, 0, 7); c.stroke(); }
     }
   }
+  ckLight(c, w, h);
   if (ck.done) { c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(0, 0, w, h); }
   padFinish(c, w, h, k);
   ckFlash(c, w, h, k, t);
