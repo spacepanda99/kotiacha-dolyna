@@ -2717,6 +2717,7 @@ function openSheet(html, closer) {
 }
 let closeT = 0;
 function closeSheet() {
+  if (cardPr) { cardPr.stop = true; cardPr = null; }   // a practice still listening stops with the card
   if (sheet.classList.contains('show')) { sheet.classList.add('closing'); veil.classList.add('closing'); clearTimeout(closeT); closeT = setTimeout(() => { sheet.classList.remove('closing'); veil.classList.remove('closing'); }, 190); }
   sheet.classList.remove('show'); veil.classList.remove('show');
   if (onClose) { const f = onClose; onClose = null; f(); }
@@ -2780,10 +2781,12 @@ function wordCard(id, o = {}) {
     ${o.owner ? `<div class="owner" style="font-weight:800;font-size:1.2em;color:#4a2c1a;margin:-2px 0 4px">${o.owner}</div>` : ''}
     ${st.l < 4 ? `<div class="tr">${w.tr}</div>` : ''}
     <div id="en">${en}</div>
-    ${o.note ? `<div class="hint">${o.note}</div>` : ''}
-    ${w.fact ? `<div class="fact"><b>🌾 ${stage() < 3 ? 'Ukrainian culture' : 'Культура' + xl(' · Ukrainian culture')}</b><div class="fu">${w.fact.uk}</div><div class="fe${stage() < 3 ? '' : ' xl'}">${w.fact.en}</div></div>` : ''}
+    <div id="cdExtra">${o.note ? `<div class="hint">${o.note}</div>` : ''}
+    ${w.fact ? `<div class="fact"><b>🌾 ${stage() < 3 ? 'Ukrainian culture' : 'Культура' + xl(' · Ukrainian culture')}</b><div class="fu">${w.fact.uk}</div><div class="fe${stage() < 3 ? '' : ' xl'}">${w.fact.en}</div></div>` : ''}</div>
+    <div id="cdPrac" class="prac" hidden></div>
     <div class="row">
       ${btn('hear', 'w_' + id, '🔊', 'round blue')}
+      ${MIC.supported ? btn('prac', id, pracLabel(id), 'green prb') : ''}
       ${acts.map((a, i) => btn('act', i, lab(a.k))).join('')}
       ${btn('close', '', lab('close'), 'ghost')}
     </div></div>`,
@@ -5129,8 +5132,9 @@ async function scoreWord(id, wav) {
 
 // The round after a dish: each ingredient in turn. Say it, get a score, try again or move on. Always skippable.
 let sp = null;
-const starsFor = n => n >= 85 ? 3 : n >= 60 ? 2 : n >= 30 ? 1 : 0;
-const starStr = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+// Ten stars: one for every 10 points (any real try earns at least one).
+const starsFor = n => n <= 0 ? 0 : Math.max(1, Math.min(10, Math.round(n / 10)));
+const starStr = n => '★'.repeat(n) + '☆'.repeat(10 - n);
 function speakRound(R) { sp = { R, i: 0, view: 'ready', last: null, tries: 0, stop: false, run: 0, rendering: false, err: '' }; spRender(); }
 function spRender() {
   const R = sp.R, id = R.needs[sp.i], w = W[id], st = stage();
@@ -5155,7 +5159,7 @@ function spRender() {
     } else if (sp.view === 'checking') {
       mid = `<div class="sp-spin"></div><div class="muted" style="padding:0">Перевіряю…${st < 3 ? ' · Checking…' : ''}</div>`;
     } else if (sp.view === 'result' && sp.last) {
-      const sc = sp.last.score, ns = starsFor(sc), col = ns === 3 ? '#3f8a3a' : ns === 2 ? '#c98a1a' : '#e2574c';
+      const sc = sp.last.score, ns = starsFor(sc), col = ns >= 9 ? '#3f8a3a' : ns >= 6 ? '#c98a1a' : '#e2574c';
       mid = `<div class="sp-score" style="color:${col}">${sc}</div><div class="sp-stars" style="color:${col}">${starStr(ns)}</div>
         ${sp.last.heard ? `<div class="muted" style="padding:6px 0 0">${st < 3 ? 'I heard' : 'Чую'}: <b>${sp.last.heard}</b></div>` : ''}<div class="hint">${sp.last.tip || ''}</div>`;
       row = `${hear}${sp.tries < 6 ? btn('spSay', '', `🎤 ${lab('retry')}`, 'blue') : ''}${btn('spNext', '', lab(sp.i === R.needs.length - 1 ? 'finish' : 'next'))}`;
@@ -5173,6 +5177,45 @@ function spRender() {
   sp.rendering = true;
   openSheet(html, () => { if (sp && !sp.rendering) { sp.stop = true; sp.run++; sp = null; } });
   sp.rendering = false;
+}
+// ---- practice on a word card: one word, say it, get stars
+let cardPr = null;
+function pracLabel(id, mode) {
+  const best = S.say && S.say[id], stars = best ? '⭐' + starsFor(best) + '/10' : '⭐';
+  const en = mode === 'stop' ? 'Stop' : mode === 'again' ? 'Again' : 'Practice', top = mode === 'stop' ? '⏹ ' + stars : '🎤 ' + stars;
+  return top + '<small' + (stage() < 3 ? '' : ' class="xl"') + '>' + en + '</small>';
+}
+function pracShow(pr, html, mode) {
+  const box = $('#cdPrac'), ex = $('#cdExtra'), b = document.querySelector('#sheet [data-a="prac"]');
+  if (!box || cardPr !== pr) return;
+  box.hidden = false; box.innerHTML = html; if (ex) ex.style.display = 'none';
+  if (b) b.innerHTML = pracLabel(pr.id, mode);
+}
+async function pracAttempt(id) {
+  if (cardPr && cardPr.id === id && cardPr.busy) { cardPr.stop = true; return; }   // tapped again while listening: stop now
+  if (!micOk()) return micHelp(MIC.lastReason && MIC.lastReason !== 'site' ? MIC.lastReason : 'chrome');
+  const pr = cardPr = { id, stop: false, busy: true }, w = W[id], en = stage() < 3;
+  const alive = () => cardPr === pr && !!$('#cdPrac');
+  stopSay();
+  pracShow(pr, '<span class="dot" id="prlevel"></span><span><b>' + w.uk + '</b>' + (en ? ' · Say it now…' : '…') + '</span>', 'stop');
+  let rec;
+  try { rec = await recordOnce(pr, rms => { const el = $('#prlevel'); if (el && alive()) el.style.transform = 'scale(' + (1 + Math.min(1.2, rms * 12)) + ')'; }); }
+  catch (e) {
+    pr.busy = false; if (!alive()) return;
+    if (e && e.name === 'NotAllowedError') MIC.state = 'denied';
+    micRefresh(); MIC.lastReason = micReason(e, 0);
+    return pracShow(pr, '<span>🎤 ' + (e && e.name === 'NotReadableError' ? 'Another app is using the microphone.' : 'The microphone didn’t start.') + ' <button class="subt" data-a="micHow">How to fix it</button></span>', 'again');
+  }
+  pr.busy = false; if (!alive()) return;
+  if (rec.quiet) return pracShow(pr, '<span>🤫 ' + (en ? 'I didn’t hear anything. Tap 🎤 and say it out loud.' : 'Ще раз!') + '</span>', 'again');
+  pracShow(pr, '<span class="spin">⏳</span><span>' + (en ? 'Listening to how you said it…' : '…') + '</span>', 'again');
+  let out;
+  try { out = await scoreWord(id, rec.wav); } catch (e) { if (!alive()) return; return pracShow(pr, '<span>' + (en ? 'I couldn’t check that right now. Try again in a moment.' : '…') + '</span>', 'again'); }
+  if (!alive()) return;
+  if (out.limit) return pracShow(pr, '<span>🌙 ' + (out.message || 'Enough practice for today.') + '</span>', 'again');
+  const n = starsFor(out.score); S.say = S.say || {}; S.say[id] = Math.max(S.say[id] || 0, out.score); save();
+  if (n >= 9) { blip(990, 0.12); setTimeout(() => blip(1320, 0.12), 120); } else if (n >= 6) blip(880, 0.1); else blip(440, 0.1);
+  pracShow(pr, '<div class="prres"><div class="st" style="color:' + (n >= 9 ? '#3f8a3a' : n >= 6 ? '#e0a01c' : '#e2574c') + '">' + starStr(n) + ' <b>' + n + '/10</b></div><div class="tip">' + (out.tip || '') + '</div></div>', 'again');
 }
 async function spAttempt() {
   if (!sp || !micOk()) return;
@@ -8477,6 +8520,7 @@ const A = {
   exitHome,
   enterHome,
   hear(v) { say(v); },
+  prac(v) { pracAttempt(v); },
   subs() {
     const on = !subsOnNow(); try { localStorage.setItem('kd-subs', (on ? 'on' : 'off') + '@' + subsBand()); } catch (e) {}
     const box = sheet.querySelector('.subs'); if (box) box.outerHTML = subsHTML();

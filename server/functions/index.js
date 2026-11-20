@@ -9,8 +9,14 @@ const crypto = require('crypto');
 admin.initializeApp();
 const KEY = defineSecret('KD_GEMINI_KEY');
 const MODEL = 'gemini-3.5-flash-lite';
-const DAILY_TOTAL = 400;   // all players together, per day
-const DAILY_PER_IP = 80;   // one player, per day (a cooking round is about 6 attempts)
+// Spending caps, in US dollars per day (UTC). One try is two short Gemini calls, roughly $0.0005-0.001.
+const DAILY_USD_PER_IP = 0.50;   // one player
+const DAILY_USD_TOTAL = 3.00;    // all players together
+const DAILY_PER_IP = 600;        // and a plain count per player as a second guard
+const TRY_RESERVE_USD = 0.002;   // held when a try starts, then corrected to what it really cost
+// Priced on the high side so the caps can't be overrun: audio/text in, and out (thinking counts as out).
+const USD_PER_M_IN = 0.60, USD_PER_M_OUT = 2.50;
+const usageCost = u => u ? ((u.promptTokenCount || 0) * USD_PER_M_IN + ((u.candidatesTokenCount || 0) + (u.thoughtsTokenCount || 0)) * USD_PER_M_OUT) / 1e6 : TRY_RESERVE_USD / 2;
 const MAX_WAV_BYTES = 200 * 1024;   // the game sends at most 6 seconds of 16 kHz mono (192 KB)
 const ORIGINS = ['https://spacepanda99.github.io'];
 const LOCAL = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
@@ -33,19 +39,26 @@ function wlev(a, b) {
   return d[a.length][b.length];
 }
 
-async function underCap(ip) {
-  const day = new Date().toISOString().slice(0, 10);
-  const db = admin.firestore();
-  const totalRef = db.doc(`kdSpeechUsage/${day}`);
-  const ipRef = db.doc(`kdSpeechUsage/${day}_${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`);
+function usageRefs(ip) {
+  const day = new Date().toISOString().slice(0, 10), db = admin.firestore();
+  return { day, totalRef: db.doc(`kdSpeechUsage/${day}`), ipRef: db.doc(`kdSpeechUsage/${day}_${crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16)}`) };
+}
+// Before a try: refuse if this player (or everyone together) has reached today's cap; otherwise hold a little
+// money for it, which is corrected to the real cost when the answer comes back.
+async function underCap(refs) {
+  const db = admin.firestore(), { day, totalRef, ipRef } = refs;
   return db.runTransaction(async t => {
     const [a, b] = await Promise.all([t.get(totalRef), t.get(ipRef)]);
-    const total = (a.exists && a.data().n) || 0, mine = (b.exists && b.data().n) || 0;
-    if (total >= DAILY_TOTAL || mine >= DAILY_PER_IP) return false;
-    t.set(totalRef, { n: total + 1, day }, { merge: true });
-    t.set(ipRef, { n: mine + 1, day, kind: 'ip' }, { merge: true });
+    const A = (a.exists && a.data()) || {}, B = (b.exists && b.data()) || {};
+    if ((A.usd || 0) + TRY_RESERVE_USD > DAILY_USD_TOTAL || (B.usd || 0) + TRY_RESERVE_USD > DAILY_USD_PER_IP || (B.n || 0) >= DAILY_PER_IP) return false;
+    t.set(totalRef, { n: (A.n || 0) + 1, usd: (A.usd || 0) + TRY_RESERVE_USD, day }, { merge: true });
+    t.set(ipRef, { n: (B.n || 0) + 1, usd: (B.usd || 0) + TRY_RESERVE_USD, day, kind: 'ip' }, { merge: true });
     return true;
   });
+}
+async function settle(refs, usd) {
+  const d = usd - TRY_RESERVE_USD, inc = admin.firestore.FieldValue.increment(d);
+  await Promise.all([refs.totalRef.set({ usd: inc }, { merge: true }), refs.ipRef.set({ usd: inc }, { merge: true })]);
 }
 
 exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invoker: 'public', memory: '256MiB', timeoutSeconds: 40, maxInstances: 3 }, async (req, res) => {
@@ -70,7 +83,8 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   // The caller's address is the LAST entry Google's front end adds to X-Forwarded-For. Anything before it was
   // sent by the caller and can be faked, so it must not be used for the per-person limit.
   const ip = String(req.get('x-forwarded-for') || req.ip || 'x').split(',').pop().trim() || 'x';
-  try { if (!(await underCap(ip))) return res.status(429).json({ error: 'limit', message: 'Enough practice for today. Come back tomorrow!' }); }
+  const refs = usageRefs(ip);
+  try { if (!(await underCap(refs))) return res.status(429).json({ error: 'limit', message: 'Enough practice for today. Come back tomorrow!' }); }
   catch (err) { console.error('cap check failed'); return res.status(500).json({ error: 'server' }); }
 
   // Two listeners, then a judge.
@@ -78,6 +92,7 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
   //     evidence: mumbling cannot pass, because a mumble does not sound like the word to someone who doesn't know it.
   //  B: is told the word and asked, as a friendly teacher, whether a Ukrainian speaker would recognise it.
   //  The final score mostly trusts both, but B can never rescue a recording that A could not make anything of.
+  let spent = 0;   // what this try really cost, from Gemini's own token counts
   const callGemini = async (prompt, schema, again) => {
     const body = {
       contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: 'audio/wav', data: wav } }] }],
@@ -91,6 +106,7 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
       throw new Error('gemini ' + r.status);
     }
     const j = await r.json();
+    spent += usageCost(j.usageMetadata);
     const parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
     return JSON.parse((parts.find(x => typeof x.text === 'string') || {}).text);
   };
@@ -124,9 +140,11 @@ Do NOT mark down: a rolled versus unrolled R, a different accent, speaking a lit
     if (!heard || a < 30) tip = !heard ? 'I could not make out a word. Speak up and say it slowly.' : `I heard "${heard}". Tap the speaker, then copy the sounds slowly.`;
     else if (score >= 90) tip = 'Wonderful, that was clear!';
     else if (!tip) tip = `I heard "${heard}". Say it once more, slowly.`;
+    settle(refs, spent).catch(() => console.error('settle failed'));
     return res.json({ heard, score, tip });
   } catch (err) {
     console.error('score failed', String(err && err.message).slice(0, 120));
+    settle(refs, Math.max(spent, TRY_RESERVE_USD)).catch(() => {});   // a failed try keeps its hold (it may still have cost something)
     return res.status(500).json({ error: 'server' });
   }
 });
