@@ -210,7 +210,7 @@ const tuneBad = {};
 let curTune = 'theme', themePos = 0, seekTo = 0;
 // The market has its own tune while its card is open (it's a card over the village, not a room).
 const shopOpen = () => mode === 'world' && sheetOpen() && !!sheet.querySelector('[data-shop]');
-const wantTune = () => { const n = shopOpen() ? 'room-market' : ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
+const wantTune = () => { const n = shopOpen() ? 'room-market-v2' : ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
 music.addEventListener('error', () => { if (curTune !== 'theme') tuneBad[curTune] = true; });
 music.addEventListener('loadedmetadata', () => { if (seekTo) { try { music.currentTime = seekTo; } catch (e) {} seekTo = 0; } });
 function musicTick(dt) {
