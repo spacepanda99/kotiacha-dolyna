@@ -421,6 +421,12 @@ window.DATA = {
       style: "A gentle, thoughtful older Ukrainian beekeeper. Speaks Ukrainian calmly and clearly.",
       look: { skin: "#eabf98", shirt: "#fff8e6", trim: "#c98a1a", skirt: "#6b4f2a", hair: "#8a8a8a", hat: "straw", hatCol: "#f1dfa0" },
       lines: {
+        // His own voice for the words his games repeat (otherwise they'd use the teacher's voice).
+        act_dmukhai: { uk: "Дмухай!", en: "Puff!" },
+        act_zbyrai: { uk: "Збирай!", en: "Collect!" },
+        act_nakryi: { uk: "Накрий!", en: "Cover it!" },
+        act_zmety: { uk: "Змети!", en: "Sweep it off!" },
+        act_molodets: { uk: "Молодець!", en: "Well done!" },
         chat_1: { uk: "Я тримаю бджіл уже сорок років.", en: "I've kept bees for forty years." },
         chat_2: { uk: "Мої бджоли люблять соняшники й липу.", en: "My bees love sunflowers and linden." },
         chat_3: { uk: "Андрійко часто приходить до мене по мед.", en: "Andriiko often comes to me for honey." },

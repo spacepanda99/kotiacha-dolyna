@@ -3638,6 +3638,8 @@ function mgCatch() {
   mg.fish = { t0: nowT, x: mg.float.x, y: mg.float.y }; mg.float = null; mg.phase = 'catch';
   setTimeout(() => { if (mg && mg.phase === 'catch') mgRoundDone(); }, 1300);
 }
+// "Well done!" in the neighbour's own voice when they have it.
+const mgPraise = () => (mg && mg.npc && mg.npc.lines && mg.npc.lines.act_molodets ? `v_${mg.npc.id}_act_molodets` : 'p_molodets');
 function mgRoundDone() {
   mg.score++; mg.cheer = nowT; blip(990, 0.08); setTimeout(() => blip(1320, 0.08), 90);
   if (mg.round >= mg.G.rounds) return mgFinish();
@@ -4086,7 +4088,9 @@ function mgAct(v, beat) {
   if ((beat && (!mg.fl || t - mg.fl.t > 0.35)) || !mg.fl || mg.fl.v !== v || t - mg.fl.t > 1.6) { mg.fl = { v, t }; actSub(v, mg.vo && mg.vo.v === v ? mg.vo : null); }
   mg.lastAct = performance.now();
   if (!mg.vo || mg.vo.v !== v) {
-    mgStopVoice(); const vo = new Audio('audio/w_' + v + '.mp3'), me = mg; vo.v = v; mg.vo = vo;
+    // The neighbour says it in their own voice when they've recorded it (act_<verb>), else the teacher's word clip.
+    const own = mg.npc && mg.npc.lines && mg.npc.lines['act_' + v] ? `v_${mg.npc.id}_act_${v}` : 'w_' + v;
+    mgStopVoice(); const vo = new Audio('audio/' + own + '.mp3'), me = mg; vo.v = v; mg.vo = vo;
     vo.onended = () => { duck = 1; setTimeout(() => { if (mg === me && mg.vo === vo && performance.now() - mg.lastAct < 650) { duck = 0.3; vo.play().catch(() => {}); actSub(v, vo); if (mg.fl) mg.fl = { v, t: nowT }; } }, 90); };
   }
   if (mg.vo.paused) { stopSay(); duck = 0.3; try { mg.vo.currentTime = 0; } catch (e) {} mg.vo.play().catch(() => {}); actSub(v, mg.vo); mg.fl = { v, t }; }
@@ -4213,7 +4217,7 @@ const BEE = {
       c.fillStyle = '#7a4b22'; circ(c, tx + T.gx * w, ty + T.gy * h, 4 * k);   // the end of the handle, where you hold it
       c.restore();
       mgRing(c, tx + T.gx * w, ty + T.gy * h, 26 * k, k, t);
-      if (mg.phase === 'b' && have >= n) { useWord('zbyrai', true); mg.phase = 'pause'; blip(990, 0.1); say('p_molodets'); setTimeout(() => { if (mg && mg.id === 'bohdan') mgRoundDone(); }, 900); }
+      if (mg.phase === 'b' && have >= n) { useWord('zbyrai', true); mg.phase = 'pause'; blip(990, 0.1); say(mgPraise()); setTimeout(() => { if (mg && mg.id === 'bohdan') mgRoundDone(); }, 900); }
     }
   },
 };
@@ -4324,8 +4328,11 @@ const SNOWMAN = {
   move(x, y) {
     const T = mg.tool; if (!T || !T.held) return;
     if (mg.phase === 'a') {   // rolling: along the ground only; it grows with the distance rolled
-      const nx = Math.max(0.08, Math.min(0.36, x + T.ox)), d = Math.abs(nx - T.x); T.x = nx; T.rot += d * 30;
-      const goal = SNOWMAN.sizes[mg.balls.length]; T.r = Math.min(goal, T.r + d * 0.55);
+      // The bottom ball can be pushed all the way to its circle in the middle (the others are lifted up
+      // later, so they stay on the left); rolling it grows it, a bit faster than before.
+      const first = !mg.balls.length, nx = Math.max(0.08, Math.min(first ? 0.5 : 0.36, x + T.ox)), d = Math.abs(nx - T.x); T.x = nx; T.rot += d * 30;
+      const goal = SNOWMAN.sizes[mg.balls.length]; T.r = Math.min(goal, T.r + d * 0.9);
+      if (first && Math.abs(T.x - 0.5) < 0.06 && T.r >= goal * 0.45) { T.r = goal; T.held = false; useWord('kachai', true); blip(880, 0.06); SNOWMAN.place(T, 'kachai'); return; }   // rolled into the circle: it settles there at full size
       if (d > 0.002) { mgAct('kachai'); mg.track.push(T.x); (mg.spray = mg.spray || []).push({ x: T.x - Math.sign(nx - T.x || 1) * T.r * 0.12, y: 0.9, vx: -(nx - T.x) * 30 + (Math.random() - 0.5) * 0.2, vy: -0.25 - Math.random() * 0.3, t0: nowT }); if (mg.track.length > 80) mg.track.shift(); }
       if (T.r >= goal) { T.held = false; useWord('kachai', true); blip(880, 0.06); if (!mg.balls.length) mg.phase = 'roll'; else mgBegin('b'); }   // the bottom ball rolls on into place; the others are lifted up
     } else if (mg.phase === 'b') { T.x = Math.max(0.08, Math.min(0.92, x + T.ox)); T.y = Math.max(0.15, Math.min(0.9, y + T.oy)); }
