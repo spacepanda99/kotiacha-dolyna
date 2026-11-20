@@ -5354,7 +5354,7 @@ function drawBed(t) {
     if (winter()) bedText(c, bed.warm ? '🔥 ' + PH.zatopy_pich.uk : '🥶 ' + PH.kholodno.uk, bed.warm ? PH.zatopy_pich.en + ' (−2 ' + W.drova.en + ')' : PH.kholodno.en + ' Chop wood at the block by your cottage.', h * 0.31, Math.min(1, (a - 0.4) * 3, (CT - a) * 3));
     cats.forEach((_, i) => { const p = catSpot(i);   // a sleepy "z z" drifting up over each cat
       c.save(); c.font = cozyFont(Math.round(p.s * 0.22)); c.fillStyle = '#fff8ea'; c.strokeStyle = 'rgba(74,44,26,.55)'; c.lineWidth = 3; c.textAlign = 'center';
-      for (let j = 0; j < 2; j++) { const q = ((a - 0.4) * 0.45 + j * 0.5 + i * 0.17) % 1; c.globalAlpha = Math.sin(q * Math.PI); const zx = p.x - roomX + p.s * (0.15 + q * 0.2), zy = p.y - p.s * (0.75 + q * 0.45); c.strokeText('z', zx, zy); c.fillText('z', zx, zy); }
+      for (let j = 0; j < 2; j++) { const q = ((a - 0.4) * 0.45 + j * 0.5 + i * 0.17) % 1; c.globalAlpha = Math.sin(q * Math.PI); const zx = p.x - roomX + p.s * (0.15 + q * 0.2), zy = p.y - p.s * (0.42 + q * 0.4); c.strokeText('z', zx, zy); c.fillText('z', zx, zy); }
       c.restore(); });
     if (cats.length) bedText(c, '🌙 ' + PH.dobranich_kotyky.uk, PH.dobranich_kotyky.en, h * 0.2, Math.min(1, (a - 0.4) * 3, (CT - a) * 3));
   }
@@ -5446,7 +5446,8 @@ function drawHome(t) {
     if (!DECOR[id].wall && id !== 'kylym' && !DECOR[id].on && DECOR[id].shelf === undefined) { c.fillStyle = 'rgba(60,40,20,.16)'; ell(c, r.cx, r.by, r.sz * 0.36, r.sz * 0.06); }
     drawIt(id, k, r);
   }
-  const catList = cats.map((h, i) => [h, spots[i], i]).sort((a, b) => a[1].y - b[1].y), drawCat = ([{ ct }, p, i]) => { if (p.sleep) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t); else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, p.groom ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); };
+  const catList = cats.map((h, i) => [h, spots[i], i]).sort((a, b) => a[1].y - b[1].y), drawCat = ([{ ct }, p, i]) => { if (p.sleep || bed) sleepingCat(c, p.x, p.y, p.s, sitPal(ct.v), t);   // at bedtime every cat is curled up asleep
+    else cat(c, p.x, p.y, p.s, sitPal(ct.v), t, i * 1.3, p.play || p.towel ? 1 : i % 2 ? -1 : 1, p.groom ? 'groom' : p.play ? 'play' : p.towel ? 'swat' : null); };
   catList.forEach(drawCat);
   // her, walking about the room; then whatever stands nearer than her is drawn again, in front of her
   if (!bed) { inDraw(c, t);
