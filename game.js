@@ -2393,28 +2393,28 @@ function drawAnimal0(c, x, y, e, t) {
   quad(c, x, y, QUAD[e.an], t, e);
 }
 // Befriending a cat: bring it the treat it wants.
-// A purr you can feel: two breaths of quick little buzzes (about 2.5 seconds, then it stops, to spare the
+// A purr you can feel: one purr of quick little buzzes (about 2.9 seconds, then it stops, to spare the
 // battery), with a soft low rumble to match. Phones without vibration just hear it.
-function purr() {
+function purr(name) {
   // on screen: a big «Мур-р-р!» pops up with each purr, so it's clear what the buzzing is
   for (let b = 0; b < 2; b++) setTimeout(() => {
     const el = document.createElement('div');
-    el.innerHTML = '😻 Мур-р-р!' + (stage() < 3 ? '<small style="display:block;font-size:17px;font-weight:700">purr…</small>' : '');
-    el.style.cssText = 'position:fixed;left:50%;top:38%;z-index:70;pointer-events:none;text-align:center;white-space:nowrap;font:900 38px system-ui;color:#ffd27a;-webkit-text-stroke:1.5px #4a2c1a;text-shadow:0 3px 0 #4a2c1a,0 0 18px rgba(255,210,122,.6);transform:translate(-50%,-50%) scale(.6);opacity:0;transition:transform .25s cubic-bezier(.3,1.6,.5,1),opacity .25s';
+    el.innerHTML = '😻 ' + (name || 'Кіт') + ' мурчить!' + (stage() < 3 ? '<small style="display:block;font-size:17px;font-weight:700">' + (name || 'The cat') + ' is purring</small>' : '');
+    el.style.cssText = 'position:fixed;left:50%;top:38%;z-index:70;pointer-events:none;text-align:center;white-space:nowrap;font:900 min(34px,7.2vw) system-ui;color:#ffd27a;-webkit-text-stroke:1.5px #4a2c1a;text-shadow:0 3px 0 #4a2c1a,0 0 18px rgba(255,210,122,.6);transform:translate(-50%,-50%) scale(.6);opacity:0;transition:transform .25s cubic-bezier(.3,1.6,.5,1),opacity .25s';
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translate(-50%,-50%) scale(1)'; });
     setTimeout(() => { el.style.transition = 'transform .4s,opacity .4s'; el.style.opacity = '0'; el.style.transform = 'translate(-50%,-80%) scale(1.1)'; }, 750);
     setTimeout(() => el.remove(), 1200);
-  }, b * 1240);
-  try { if (navigator.vibrate) { const p = []; for (let b = 0; b < 2; b++) { for (let i = 0; i < 30; i++) p.push(14, 22); p.push(0, 160); } navigator.vibrate(p); } } catch (e) {}
+  }, b * 1400);
+  try { if (navigator.vibrate) { const p = []; for (let i = 0; i < 80; i++) p.push(14, 22); navigator.vibrate(p); } } catch (e) {}
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
     const t0 = actx.currentTime, o = actx.createOscillator(), f = actx.createBiquadFilter(), g = actx.createGain(), lfo = actx.createOscillator(), lg = actx.createGain();
     o.type = 'sawtooth'; o.frequency.value = 52; f.type = 'lowpass'; f.frequency.value = 260;
     lfo.frequency.value = 24; lg.gain.value = 0.035; lfo.connect(lg); lg.connect(g.gain);   // the flutter of a purr
     g.gain.setValueAtTime(0, t0);
-    for (let b = 0; b < 2; b++) { const a = t0 + b * 1.24; g.gain.linearRampToValueAtTime(0.05, a + 0.25); g.gain.linearRampToValueAtTime(0.03, a + 0.85); g.gain.linearRampToValueAtTime(0, a + 1.08); }
-    o.connect(f); f.connect(g); g.connect(actx.destination); o.start(t0); lfo.start(t0); o.stop(t0 + 2.6); lfo.stop(t0 + 2.6);
+    g.gain.linearRampToValueAtTime(0.05, t0 + 0.3); g.gain.setValueAtTime(0.05, t0 + 2.3); g.gain.linearRampToValueAtTime(0, t0 + 2.85);
+    o.connect(f); f.connect(g); g.connect(actx.destination); o.start(t0); lfo.start(t0); o.stop(t0 + 2.9); lfo.stop(t0 + 2.9);
   } catch (e) {}
 }
 function catSheet(e) {
@@ -2426,7 +2426,7 @@ function catSheet(e) {
     clips: ['c_' + ct.id],
     acts: has ? [{ k: 'give', fn: () => {
       S.bag[ct.wants]--; S.cats[ct.id] = 'f'; S.hearts += 2; { const ce = ents.find(q => q.cat === ct.id); if (ce) fxHearts(ce.x, ce.y - 0.6); } learn(ct.wants); useWord(ct.wants, true);
-      hud(); save(); closeSheet(); toast(`😻 ${ct.name} мурчить!  +2 ❤️${stage() < 3 ? ' · ' + ct.name + ' is purring! Take it home 🏠' : ''}`, 3200); say('p_mur'); purr();
+      hud(); save(); closeSheet(); toast(`❤️ ${ct.name}!  +2 ❤️${stage() < 3 ? ' · Take it home 🏠' : ''}`, 3200); say('p_mur'); purr(ct.name);
     } }] : [],
   });
 }
