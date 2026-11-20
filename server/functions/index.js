@@ -29,7 +29,7 @@ const clean = (s, n) => String(s || '').replace(/[^\p{L}\p{N} '’ʼ().,-]/gu, '
 const norm = x => String(x || '').toLowerCase().replace(/[^\p{L}]/gu, '').replace(/[ьъ]/g, '').replace(/ґ/g, 'г').replace(/ї/g, 'і').replace(/ы/g, 'и').replace(/э/g, 'е').replace(/ё/g, 'о');
 // Edit distance where sounds a beginner mixes up cost less than a completely wrong sound.
 const VOW = 'аеєиіїоуюя', PAIRS = ['шщ', 'сш', 'зж', 'цч', 'цс', 'чш', 'хг', 'ву', 'вф', 'бп', 'дт', 'гк', 'нм', 'иі', 'ие', 'ео', 'ую', 'яа', 'єе'];
-const subCost = (x, y) => x === y ? 0 : PAIRS.some(p => (p[0] === x && p[1] === y) || (p[1] === x && p[0] === y)) ? 0.4 : (VOW.includes(x) && VOW.includes(y)) ? 0.6 : 1;
+const subCost = (x, y) => x === y ? 0 : PAIRS.some(p => (p[0] === x && p[1] === y) || (p[1] === x && p[0] === y)) ? 0.55 : (VOW.includes(x) && VOW.includes(y)) ? 0.75 : 1;
 const indel = x => 'йв'.includes(x) ? 0.5 : VOW.includes(x) ? 0.8 : 1;
 function wlev(a, b) {
   const d = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
@@ -114,11 +114,11 @@ exports.kdScoreSpeech = onRequest({ region: 'us-central1', secrets: [KEY], invok
 Reply as JSON with:
 heard: up to 3 different Ukrainian words (or the nearest sounds) it could be, most likely first, in Cyrillic. Use an empty list if you cannot make out anything word-like.
 clarity: integer 0-100, how clearly it was spoken. Whispering, mumbling, trailing off, heavy noise or cut-off sounds are under 50. A clear attempt with a foreign accent is 80 or more.`;
-  const promptB = `You are a warm, encouraging Ukrainian teacher listening to an adult beginner. They are trying to say the word "${w}"${t ? ` (said like "${t}")` : ''}.
+  const promptB = `You are a kind but honest Ukrainian teacher listening to an adult beginner. Be fair: praise only what is really right. They are trying to say the word "${w}"${t ? ` (said like "${t}")` : ''}.
 Would a Ukrainian speaker recognise this word from the recording? Reply as JSON with:
-score: integer 0-100. 90-100: clearly the right word, even with a foreign accent. 70-89: recognisable but one sound is clearly off. 40-69: only partly right. 0-39: a different word, silence, noise, or too unclear to tell what word it is.
+score: integer 0-100. 90-100: clearly the right word with every sound right; only a light foreign accent. 75-89: clearly the right word, but one sound is noticeably off. 55-74: recognisable, but two or more sounds are off, or a sound is missing or added. 30-54: only partly right; a Ukrainian would have to guess. 0-29: a different word, silence, noise, or too unclear to tell what word it is.
 tip: one short friendly English sentence (at most 14 words). If the score is under 90, name the one sound to fix.
-Do NOT mark down: a rolled versus unrolled R, a different accent, speaking a little slowly or quickly, the stress being on a different syllable, or soft versus hard consonants. Beginners cannot hear those yet.`;
+Do NOT mark down: a rolled versus unrolled R, a general foreign accent, or speaking a little slowly. DO mark down a little (a few points): stress on the wrong syllable. DO mark down: wrong vowels, wrong or missing consonants, and swallowed endings.`;
   try {
     const [A, B] = await Promise.all([
       callGemini(promptA, { type: 'OBJECT', properties: { heard: { type: 'ARRAY', items: { type: 'STRING' } }, clarity: { type: 'INTEGER' } }, required: ['heard', 'clarity'] }),
@@ -130,15 +130,16 @@ Do NOT mark down: a rolled versus unrolled R, a different accent, speaking a lit
     let simA = 0;
     alts.forEach((h, k) => { const hn = norm(h); if (hn) simA = Math.max(simA, (1 - wlev(target, hn) / Math.max(target.length, hn.length, 1)) * [1, 0.92, 0.85][k]); });
     let a = simA * 100;
-    if (clarity < 50) a *= 0.5 + clarity / 100;           // only truly unclear speech is marked down
+    if (clarity < 65) a *= 0.35 + clarity / 100;          // unclear speech is marked down
     const b = Math.max(0, Math.min(100, Math.round(Number(B.score) || 0)));
-    let score = 0.42 * a + 0.58 * b;                       // the friendly teacher counts a little more
-    if (a < 30) score = Math.min(score, 45);               // B cannot rescue what A could not hear
+    let score = 0.5 * a + 0.5 * b;                         // the blind listener and the teacher count the same
+    if (a < 30) score = Math.min(score, 40);               // B cannot rescue what A could not hear
+    else if (a < 70) score = Math.min(score, a + 20);      // nor lift a so-so recording far above what A heard
     score = Math.round(Math.max(0, Math.min(100, score)));
     const heard = alts[0] || '';
     let tip = clean(B.tip, 120);
     if (!heard || a < 30) tip = !heard ? 'I could not make out a word. Speak up and say it slowly.' : `I heard "${heard}". Tap the speaker, then copy the sounds slowly.`;
-    else if (score >= 90) tip = 'Wonderful, that was clear!';
+    else if (score >= 92) tip = 'Wonderful, that was clear!';
     else if (!tip) tip = `I heard "${heard}". Say it once more, slowly.`;
     settle(refs, spent).catch(() => console.error('settle failed'));
     return res.json({ heard, score, tip });
