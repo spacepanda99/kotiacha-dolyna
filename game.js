@@ -1733,8 +1733,10 @@ function add(e) {
   // Market square.
   rect(20, 12, 23, 12); add({ w: 'rynok', x: STALL.x, y: STALL.y, s: 4.3, kind: 'shop' });   // the market stall, just above the main road
   rect(18, 17, 19, 18); add({ w: 'fontan', x: 19.0, y: 18.15, s: 3.1 });   // the fountain, right in the middle of the square
-  // Street lamps: one on each corner of the square, two more down the village road. (Tapping one says «лампа».)
-  for (const [lx, ly, fl] of [[16.45, 15.6], [21.55, 15.6, 1], [16.45, 19.55], [21.55, 19.55, 1], [17.35, 23.6], [17.35, 27.6]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
+  // Street lamps: one behind each bench in the square, one by the road between her cottage and the market,
+  // one between the market and Grandma Olia's, one each side of the crossroads on the back road (towards the
+  // windmill and towards the church), one on each half of the bottom road, and one halfway down the road from the square to it. (Tapping one says «лампа».)
+  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   // Pond.
@@ -2403,6 +2405,67 @@ function drawAnimal(c, x, y, e, t) {
   if (nightNow() && e.an !== 'cat' && e.an !== 'frog' && !e.route2) { const k = e.an === 'cow' || e.an === 'horse' ? 1.3 : 0.9; if (BIRD[e.an]) { c.save(); c.beginPath(); c.rect(x - 60, y - 100, 120, 101); c.clip(); drawAnimal0(c, x, y + 7, e, t); c.restore(); } else drawAnimal0(c, x, y, e, t); return sleepZ(c, x, y - (e.an === 'hen' || e.an === 'rooster' ? -14 : 0), t, k); }
   return drawAnimal0(c, x, y, e, t);
 }
+// A cat seen from the front (walking towards you) or from behind (walking away): the same coat, stripes,
+// patches and eyes as its side-on look. Its paws step in turn and its head bobs with each step.
+function catEnd(c, x, y, Q, t, e, back) {
+  const k = Q.k || 1, wk = e.wk || 0, ph = (e.step || 0) * 5.2 * Math.PI * 2, bob = Math.abs(Math.sin(ph)) * 1.2 * wk;
+  const col = Q.col, far = Q.far, dark = Q.dark, patch = (Q.patches || [])[0];
+  c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, y, 10 * k, 4 * k);
+  c.save(); c.translate(x, y); c.scale(k, k); c.lineCap = 'round'; c.lineJoin = 'round';
+  const leg = (lx, top, len, w, cl, lift) => { c.strokeStyle = cl; c.lineWidth = w; c.beginPath(); c.moveTo(lx, top); c.lineTo(lx, -lift - 1); c.stroke(); c.fillStyle = cl; ell(c, lx, -lift - 0.8, w * 0.62, w * 0.42); };
+  const lift = i => Math.max(0, Math.sin(ph + i * Math.PI)) * 3 * wk;
+  const tailSw = Math.sin(t * 2.2 + e.hx * 2) * 3;
+  const body = () => { c.beginPath(); c.ellipse(0, -12 - bob * 0.4, 8.2, 7.4, 0, 0, 7); };
+  if (!back) {
+    // the tail, up behind it
+    c.strokeStyle = col; c.lineWidth = 3.4; c.beginPath(); c.moveTo(3, -15); c.bezierCurveTo(9, -18, 10 + tailSw * 0.4, -26, 7 + tailSw, -32); c.stroke();
+    if (Q.stripes) { c.strokeStyle = dark; c.lineWidth = 3.6; c.beginPath(); c.moveTo(7.5 + tailSw * 0.9, -30.5); c.lineTo(7 + tailSw, -32); c.stroke(); }
+    leg(-6, -9, 0, 3.4, far, lift(1)); leg(6, -9, 0, 3.4, far, lift(0));   // hind paws, peeping out either side
+    c.fillStyle = col; body(); c.fill();
+    c.save(); body(); c.clip();
+    if (Q.shade) { c.fillStyle = Q.shade; ell(c, 0, -6, 8, 2.5); }
+    if (Q.muzzle) { c.fillStyle = Q.muzzle; ell(c, 0, -10, 4, 5.5); }   // a white bib
+    if (patch) { c.fillStyle = patch[3] || dark; circ(c, patch[0] * 0.5, -12 + patch[1] * 0.4, patch[2] * 0.8); }
+    if (Q.stripes) { c.strokeStyle = dark; c.lineWidth = 1.6; for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(sx * 8.2, -16 + i * 3.4); c.lineTo(sx * 5.3, -15 + i * 3.4); c.stroke(); } }
+    c.restore();
+    leg(-3.6, -8, 0, 3.6, col, lift(0)); leg(3.6, -8, 0, 3.6, col, lift(1));   // front paws, stepping in turn
+    c.fillStyle = 'rgba(0,0,0,.25)'; for (const sx of [-3.6, 3.6]) for (const tx of [-0.9, 0.9]) c.fillRect(sx + tx - 0.15, -lift(sx < 0 ? 0 : 1) - 1.6, 0.3, 1);   // toes
+  } else {
+    leg(-3.4, -8, 0, 3.2, far, lift(1)); leg(3.4, -8, 0, 3.2, far, lift(0));   // front paws, just showing
+    c.fillStyle = col; body(); c.fill();
+    c.save(); body(); c.clip();
+    if (patch) { c.fillStyle = patch[3] || dark; circ(c, -patch[0] * 0.5, -13 + patch[1] * 0.4, patch[2] * 0.9); }
+    if (Q.stripes) { c.strokeStyle = dark; c.lineWidth = 1.8; for (let i = 0; i < 4; i++) { c.beginPath(); c.ellipse(0, -17 + i * 3, 7.5, 2, 0, Math.PI * 0.15, Math.PI * 0.85); c.stroke(); } }
+    c.restore();
+    leg(-4.8, -9, 0, 3.8, col, lift(0)); leg(4.8, -9, 0, 3.8, col, lift(1));   // hind paws, stepping in turn
+    c.fillStyle = 'rgba(0,0,0,.18)'; for (const sx of [-4.8, 4.8]) ell(c, sx, -lift(sx < 0 ? 0 : 1) - 1.2, 1.4, 0.8);   // pink-ish pads, seen from behind
+    // the tail, held up and swaying
+    const tex = 9 + tailSw * 0.8, tey = -29; c.strokeStyle = col; c.lineWidth = 3.6; c.beginPath(); c.moveTo(0, -8); c.bezierCurveTo(1, -14, 8, -14, 10 + tailSw * 0.3, -21); c.quadraticCurveTo(11 + tailSw * 0.5, -26, tex, tey); c.stroke();
+    if (Q.stripes) { c.strokeStyle = dark; c.lineWidth = 3.8; c.beginPath(); c.moveTo(tex + 0.6, tey + 1.4); c.lineTo(tex, tey); c.stroke(); c.lineWidth = 1.6; for (const yy of [-17, -22]) { c.beginPath(); c.moveTo(7.5, yy); c.lineTo(11.5, yy - 0.5); c.stroke(); } }
+  }
+  // the head
+  const hy = -24 - bob, flick = Math.max(0, Math.sin(t * 1.1 + e.hx * 7) - 0.9) * 8 * Math.sin(t * 16);
+  for (const sx of [-1, 1]) {   // ears
+    c.fillStyle = col; poly(c, [[sx * 2.2, hy - 5.5], [sx * (7.2 + (sx > 0 ? flick * 0.2 : 0)), hy - 12.5], [sx * 8.2, hy - 2.5]]);
+    c.fillStyle = back ? far : '#f2a3b3'; poly(c, [[sx * 3.6, hy - 5.2], [sx * 6.8, hy - 10.6], [sx * 7.2, hy - 4]]);
+  }
+  c.fillStyle = col; ell(c, 0, hy, 8.6, 7.4);
+  c.save(); c.beginPath(); c.ellipse(0, hy, 8.6, 7.4, 0, 0, 7); c.clip();
+  if (Q.headPatch) { c.fillStyle = Q.headPatch; circ(c, back ? 4.5 : -4.5, hy - 3.5, 5.5); }
+  if (Q.stripes) { c.strokeStyle = dark; c.lineWidth = 1.4; if (back) { for (let i = -1; i <= 1; i++) { c.beginPath(); c.moveTo(i * 2.6, hy - 7.4); c.lineTo(i * 2.2, hy - 2); c.stroke(); } } else { c.beginPath(); c.moveTo(-3, hy - 3.5); c.lineTo(-2, hy - 6.8); c.lineTo(0, hy - 4.2); c.lineTo(2, hy - 6.8); c.lineTo(3, hy - 3.5); c.stroke(); for (const sx of [-1, 1]) { c.beginPath(); c.moveTo(sx * 8.6, hy - 0.5); c.lineTo(sx * 6, hy); c.stroke(); } } }   // the tabby "M" on its brow
+  if (!back && Q.muzzle) { c.fillStyle = Q.muzzle; ell(c, 0, hy + 3.2, 4.6, 3.4); }
+  c.restore();
+  if (!back) {
+    const shut = ((t * 0.27 + e.hx * 1.7) % 1) < 0.035;
+    for (const sx of [-1, 1]) { const ex = sx * 3.3, ey = hy - 0.6;
+      if (shut) { c.strokeStyle = '#1d191c'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(ex - 1.8, ey); c.lineTo(ex + 1.8, ey); c.stroke(); }
+      else { c.fillStyle = Q.eye || '#7bc47f'; ell(c, ex, ey, 2.1, 2.2); c.fillStyle = '#1d191c'; ell(c, ex, ey, 0.75, 1.9); c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, ex + 0.7, ey - 0.8, 0.55); } }
+    c.fillStyle = '#e8708a'; poly(c, [[-1.3, hy + 2], [1.3, hy + 2], [0, hy + 3.3]]);   // nose
+    c.strokeStyle = 'rgba(60,30,20,.6)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(0, hy + 3.3); c.lineTo(0, hy + 4.2); c.moveTo(0, hy + 4.2); c.quadraticCurveTo(-1.2, hy + 5.2, -2.2, hy + 4.4); c.moveTo(0, hy + 4.2); c.quadraticCurveTo(1.2, hy + 5.2, 2.2, hy + 4.4); c.stroke();   // mouth
+    c.strokeStyle = 'rgba(255,255,255,.75)'; c.lineWidth = 0.6; for (const sx of [-1, 1]) for (const dy of [-0.6, 0.9]) { c.beginPath(); c.moveTo(sx * 3.4, hy + 3.2 + dy * 0.4); c.lineTo(sx * 10.5, hy + 2.2 + dy * 1.6); c.stroke(); }   // whiskers
+  } else { c.strokeStyle = 'rgba(255,255,255,.55)'; c.lineWidth = 0.6; for (const sx of [-1, 1]) { c.beginPath(); c.moveTo(sx * 7.5, hy + 2.5); c.lineTo(sx * 11, hy + 2); c.stroke(); } }   // whisker tips, seen from behind
+  c.restore();
+}
 function drawAnimal0(c, x, y, e, t) {
   if (e.an === 'frog') {
     // hops in little arcs while moving; sits with a slow throat-puff otherwise
@@ -2415,7 +2478,19 @@ function drawAnimal0(c, x, y, e, t) {
   }
   if (e.an === 'duck') return drawDuck(c, x, y, t, e);
   if (BIRD[e.an]) return bird(c, x, y, BIRD[e.an], t, e);
-  if (e.an === 'cat') return quad(c, x, y, e.q || (e.q = catQuad(e.v)), t, e);
+  if (e.an === 'cat') {
+    const Q = e.q || (e.q = catQuad(e.v));
+    // which way it's going, from how it moved since the last frame (smoothed), with a little hysteresis
+    if (e._lx !== undefined) { const dx = e.x - e._lx, dy = e.y - e._ly; e.mvx = (e.mvx || 0) * 0.8 + dx * 0.2; e.mvy = (e.mvy || 0) * 0.8 + dy * 0.2; }
+    e._lx = e.x; e._ly = e.y;
+    const ax = Math.abs(e.mvx || 0), ay = Math.abs(e.mvy || 0), moving = (e.wk || 0) > 0.15 && ay + ax > 0.0004;
+    if (!moving) e.view = 'side';
+    else if (e.view === 'side' || !e.view) { if (ay > ax * 1.4) e.view = e.mvy > 0 ? 'front' : 'back'; }
+    else if (ax > ay * 1.1) e.view = 'side';
+    else e.view = e.mvy > 0 ? 'front' : 'back';
+    if (e.view === 'front' || e.view === 'back') return catEnd(c, x, y, Q, t, e, e.view === 'back');
+    return quad(c, x, y, Q, t, e);
+  }
   quad(c, x, y, QUAD[e.an], t, e);
 }
 // Befriending a cat: bring it the treat it wants.
