@@ -1690,7 +1690,7 @@ function add(e) {
   rect(26, 8, 29, 10);   // (moved 3 tiles right, off the market stall)
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
   rect(28, 26, 33, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 30.8, y: 30, s: 4.5 });  // the family cottage, bottom right, below the pond: Taras, Oksana and Andriiko live here, so it's bigger
-  add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28, y: 11, s: 3.7 });
+  add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28.5, y: 11, s: 3.7 });
   add({ w: 'kurka', x: 25.4, y: 11.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens
   add({ w: 'kurka', x: 26.2, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
   add({ w: 'piven', x: 25.1, y: 12.95, kind: 'animal', r: 1.2 });
@@ -5824,7 +5824,9 @@ function drawMill(t) {
   const grinding = M.spd > 0.45;
   let out = null;   // what's coming down the spout: 'flour', 'whole' or nothing
   if (grinding && M.grain > 0) {
-    const used = Math.min(M.grain, dt * 0.22 * M.spd); M.grain -= used;
+    const used = Math.min(M.grain, dt * 0.5 * M.spd); M.grain -= used;   // twice as quick as it was (0.22)
+    // while the stones are grinding, the action word «мели!» flashes and is said, over and over, like the other games
+    if (M.on && M.gap >= GAP_LO && nowT - (M.melyT || -9) > 2.4) { M.melyT = nowT; millFlash('mely'); }
     if (M.gap < GAP_LO) { millWarn('tight', '🔥 ' + W.zhorna.uk + '!', 'The stones are too tight: they rub and smoke. Hold the hand wheel to open them.'); M.grain += used * 0.85; if (Math.random() < 0.3) M.parts.push({ k: 'smoke', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 0.2 }); }
     else if (M.gap > GAP_HI) { out = 'whole'; millWarn('wide', '🌾 ' + W.zhorna.uk + '!', 'The gap is too wide: the grain comes out whole. Hold the hand wheel to close it.'); }
     else { out = 'flour'; if (M.sack) M.flour += used; else { M.spill += used; M.mist++; millWarn('spill', '🛍️ ' + W.mishok.uk + '!', 'No sack under the spout: the flour is going on the floor!'); } }
@@ -5952,12 +5954,36 @@ function drawMill(t) {
   MILLG.hopX = hx2; MILLG.hopY = hTop;
   // ---- the spout from the stones, and the sack stood under it
   const spX = cx - sR - u * 0.01, spY = platY - u * 0.02, spEx = cx - u * 0.36, spEy = platY + u * 0.13;
-  c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.04; c.lineCap = 'butt'; c.beginPath(); c.moveTo(spX + u * 0.02, spY); c.lineTo(spEx, spEy); c.stroke(); c.strokeStyle = '#5a381b'; c.lineWidth = u * 0.008; c.beginPath(); c.moveTo(spX + u * 0.02, spY - u * 0.02); c.lineTo(spEx, spEy - u * 0.02); c.stroke();
+  // the chute: an open wooden trough sloping down from the stones, a casing box where it leaves them,
+  // and a flared mouth pointing straight down where the flour drops out
+  { const ang = Math.atan2(spEy - spY, spEx - spX), len = Math.hypot(spEx - spX, spEy - spY), tw = u * 0.055;
+    c.save(); c.translate(spX + u * 0.02, spY); c.rotate(ang);
+    c.fillStyle = '#6b4422'; c.fillRect(0, -tw * 0.55, len - u * 0.02, tw * 1.1);   // back wall
+    c.fillStyle = '#9a6634'; c.fillRect(0, -tw * 0.15, len - u * 0.02, tw * 0.65);  // floor of the trough
+    if (out) { c.fillStyle = out === 'flour' ? 'rgba(255,252,240,.95)' : '#e0b84a'; c.fillRect(0, -tw * 0.08, len - u * 0.02, tw * 0.22); for (let i = 0; i < 6; i++) { const q = (t * 1.8 + i / 6) % 1; circ(c, q * (len - u * 0.03), -tw * 0.02, u * 0.006); } }   // flour sliding down it
+    c.fillStyle = '#b57a3e'; c.fillRect(0, tw * 0.35, len - u * 0.02, tw * 0.2);    // front lip
+    c.strokeStyle = '#4a2c14'; c.lineWidth = u * 0.004; c.strokeRect(0, -tw * 0.55, len - u * 0.02, tw * 1.1);
+    for (let i = 1; i < 4; i++) { const x = (len - u * 0.02) * i / 4; c.beginPath(); c.moveTo(x, -tw * 0.55); c.lineTo(x, tw * 0.55); c.stroke(); }   // plank joins
+    c.restore(); }
+  c.fillStyle = '#7a4e26'; c.fillRect(spX - u * 0.01, spY - u * 0.035, u * 0.06, u * 0.06); c.strokeStyle = '#4a2c14'; c.lineWidth = u * 0.004; c.strokeRect(spX - u * 0.01, spY - u * 0.035, u * 0.06, u * 0.06);
+  const mouthW = u * 0.07, mouthTop = spEy - u * 0.035, mouthBot = spEy + u * 0.025;
+  c.fillStyle = '#8a5a2b'; poly(c, [[spEx - mouthW * 0.45, mouthTop], [spEx + mouthW * 0.45, mouthTop], [spEx + mouthW * 0.3, mouthBot], [spEx - mouthW * 0.3, mouthBot]]);
+  c.fillStyle = '#3a2210'; ell(c, spEx, mouthBot, mouthW * 0.3, u * 0.008);   // the dark opening
+  if (out) { c.fillStyle = 'rgba(255,252,240,.35)'; for (let i = 0; i < 3; i++) { const q = (t * 1.3 + i / 3) % 1; circ(c, spEx + (i - 1) * u * 0.02 * q, mouthBot + q * u * 0.02, u * (0.01 + q * 0.02)); } }   // a puff of flour dust
+  // its name on a little board: «борошно» comes out here
+  { const lx = (spX + spEx) / 2 + u * 0.1, ly = (spY + spEy) / 2 + u * 0.05; c.fillStyle = '#e9d3a8'; c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.004; c.beginPath(); c.roundRect(lx - u * 0.07, ly - u * 0.022, u * 0.14, u * 0.044, u * 0.01); c.fill(); c.stroke();
+    c.font = `700 ${Math.round(u * 0.024)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#4a2c1a'; c.fillText('🌾→' + W.boroshno.uk, lx, ly); }
   const sackW = u * 0.17, full = Math.min(1, M.flour / 6);
-  if (M.sack) sackArt(c, spEx, fy, sackW, fy - spEy, full);
-  else { c.strokeStyle = 'rgba(255,255,255,.5)'; c.setLineDash([u * 0.012, u * 0.012]); c.lineWidth = 1.5; c.strokeRect(spEx - sackW / 2, spEy, sackW, fy - spEy); c.setLineDash([]); }   // where a sack goes
+  if (M.sack) sackArt(c, spEx, fy, sackW, fy - mouthBot - u * 0.01, full);
+  else {   // where a sack goes: a pale ghost sack in a dashed box, and an arrow bouncing from the mouth down into it
+    const pulse = 0.5 + 0.5 * Math.sin(t * 4);
+    c.globalAlpha = 0.25 + 0.15 * pulse; sackArt(c, spEx, fy, sackW, fy - mouthBot - u * 0.01, 0, '#f4ecd8'); c.globalAlpha = 1;
+    c.strokeStyle = `rgba(255,210,63,${0.6 + 0.4 * pulse})`; c.setLineDash([u * 0.012, u * 0.012]); c.lineWidth = 2.5; c.strokeRect(spEx - sackW / 2, mouthBot + u * 0.01, sackW, fy - mouthBot - u * 0.01); c.setLineDash([]);
+    const ay = mouthBot + u * 0.03 + pulse * u * 0.03; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = u * 0.004; c.beginPath(); c.moveTo(spEx - u * 0.025, ay); c.lineTo(spEx + u * 0.025, ay); c.lineTo(spEx, ay + u * 0.035); c.closePath(); c.fill(); c.stroke();
+    drawIcon(c, '🛍️', spEx, fy - (fy - mouthBot) * 0.3, u * 0.05);
+  }
   if (M.spill > 0) { c.fillStyle = 'rgba(255,252,240,.95)'; ell(c, spEx, fy + u * 0.01, u * (0.04 + Math.min(0.12, M.spill * 0.05)), u * (0.012 + Math.min(0.03, M.spill * 0.012))); }   // flour spilt on the floor
-  if (out) { c.fillStyle = out === 'flour' ? 'rgba(255,252,240,.9)' : '#e0b84a'; for (let i = 0; i < 10; i++) { const q = ((t * 2.5 + i / 10) % 1); circ(c, spEx + Math.sin(i * 3 + t) * u * 0.008, spEy + q * (M.sack ? u * 0.05 : fy - spEy), u * (out === 'flour' ? 0.007 : 0.005)); } }
+  if (out) { c.fillStyle = out === 'flour' ? 'rgba(255,252,240,.9)' : '#e0b84a'; for (let i = 0; i < 10; i++) { const q = ((t * 2.5 + i / 10) % 1); circ(c, spEx + Math.sin(i * 3 + t) * u * 0.008, mouthBot + q * (M.sack ? u * 0.04 : fy - mouthBot), u * (out === 'flour' ? 0.007 : 0.005)); } }
   if (M.sack && M.flour >= 0.99) { const n = Math.floor(M.flour + 0.01); c.font = `800 ${Math.round(u * 0.032)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#4a2c1a'; c.fillText(`${n}`, spEx, fy - (fy - spEy) * 0.4); }
   hit(spEx - sackW * 0.7, spEy - u * 0.04, sackW * 1.4, fy - spEy + u * 0.05, millSpout, spEx, fy);
   // ---- the hand wheel that sets the gap between the stones, and its gauge

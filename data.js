@@ -87,6 +87,7 @@ window.DATA = {
     { id: "zatopy", uk: "затопи", tr: "za-to-PY", en: "light! (the stove)", ic: "🔥", verb: true },
     { id: "sverdly", uk: "свердли", tr: "sverd-LY", en: "drill!", ic: "🌀", verb: true },
     { id: "kachai", uk: "качай", tr: "ka-CHAI", en: "roll!", ic: "⚪", verb: true },
+    { id: "mely", uk: "мели", tr: "me-LY", en: "grind!", ic: "⚙️", verb: true },
     { id: "kruty", uk: "крути", tr: "kru-TY", en: "turn! wind it!", ic: "🔄", verb: true },
     { id: "vizmy", uk: "візьми", tr: "VIZ-my", en: "take! pick it up!", ic: "🤲", verb: true },
     { id: "postav", uk: "постав", tr: "po-STAV", en: "put! place!", ic: "👇", verb: true },
