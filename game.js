@@ -5699,8 +5699,11 @@ function drawHome(t) {
     for (const { id, k } of items) { const D0 = DECOR[id], r = decorRect(id, k); if (D0.wall || D0.flat || D0.on || D0.shelf !== undefined || r.by <= IN.y) continue; drawIt(id, k, r); }
     catList.filter(([, p]) => p.y > IN.y).forEach(drawCat); }
   if (inRoom().length === BASICS.length && stage() < 3) {
-    c.fillStyle = 'rgba(74,44,26,.55)'; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
-    c.fillText('Make it yours: tap 🪑 Прикрасити below.', roomX + w / 2, h * 0.665);
+    // on a cream pill, drawn over everything, so the girl or the furniture never hide it
+    const txt = 'Make it yours: tap 🪑 Прикрасити below.', fy = h * 0.6; c.font = `700 ${Math.round(u * 0.036)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const tw = c.measureText(txt).width + u * 0.05, th = u * 0.062, pulse = 0.85 + 0.15 * Math.sin(t * 3);
+    c.fillStyle = 'rgba(255,248,234,' + (0.93 * pulse) + ')'; c.strokeStyle = 'rgba(240,180,60,.9)'; c.lineWidth = 2; c.beginPath(); c.roundRect(roomX + w / 2 - tw / 2, fy - th / 2, tw, th, th / 2); c.fill(); c.stroke();
+    c.fillStyle = '#4a2c1a'; c.fillText(txt, roomX + w / 2, fy + 1);
   }
   c.restore();
   {   // evening and night indoors: the lamp, candle and stove glow
