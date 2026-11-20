@@ -2399,7 +2399,7 @@ function purr(name) {
   // on screen: a big «Мур-р-р!» pops up with each purr, so it's clear what the buzzing is
   for (let b = 0; b < 2; b++) setTimeout(() => {
     const el = document.createElement('div');
-    el.innerHTML = '😻 ' + (name || 'Кіт') + ' мурчить!' + (stage() < 3 ? '<small style="display:block;font-size:17px;font-weight:700">' + (name || 'The cat') + ' is purring</small>' : '');
+    el.innerHTML = '😻 Purr… purr…';
     el.style.cssText = 'position:fixed;left:50%;top:38%;z-index:70;pointer-events:none;text-align:center;white-space:nowrap;font:900 min(34px,7.2vw) system-ui;color:#ffd27a;-webkit-text-stroke:1.5px #4a2c1a;text-shadow:0 3px 0 #4a2c1a,0 0 18px rgba(255,210,122,.6);transform:translate(-50%,-50%) scale(.6);opacity:0;transition:transform .25s cubic-bezier(.3,1.6,.5,1),opacity .25s';
     document.body.appendChild(el);
     requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translate(-50%,-50%) scale(1)'; });
