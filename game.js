@@ -5829,7 +5829,10 @@ function drawMill(t) {
     else if (M.gap > GAP_HI) { out = 'whole'; millWarn('wide', '🌾 ' + W.zhorna.uk + '!', 'The gap is too wide: the grain comes out whole. Hold the hand wheel to close it.'); }
     else { out = 'flour'; if (M.sack) M.flour += used; else { M.spill += used; M.mist++; millWarn('spill', '🛍️ ' + W.mishok.uk + '!', 'No sack under the spout: the flour is going on the floor!'); } }
   }
-  if (grinding && M.grain <= 0) M.dry = (M.dry || 0) + dt; else M.dry = Math.max(0, (M.dry || 0) - dt * 2);
+  // Only while the mill is switched on: after the lever stops it the sails coast down for a few seconds, and
+  // that mustn’t count as running dry (it used to flash “Nothing to grind… pull the lever” right after you had).
+  if (grinding && M.on && M.grain <= 0) M.dry = (M.dry || 0) + dt; else M.dry = Math.max(0, (M.dry || 0) - dt * 2);
+  if (!M.on && MILL.warn === 'dry') MILL.warn = null;
   if (M.dry > 1.2) { millWarn('dry', '⚡ ' + W.zhorna.uk + '!', 'Nothing to grind: the stones grind each other and spark! Pull the red lever to stop.'); if (Math.random() < 0.6) M.parts.push({ k: 'spark', x: 0, y: 0, t0: t, vx: (Math.random() - 0.5) * 2, vy: -Math.random() }); if (!M.dryCounted) { M.mist++; M.dryCounted = true; } }
   if (!grinding) M.dryCounted = false;
   msfxTick(t, out);
@@ -6665,7 +6668,8 @@ function dayTick(dt) {
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
     const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 1;   // the noon bell rings out through the whole village, as loud as it goes
-    duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 4000);   // three slow strokes of the big bell
+    duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer
+    for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol), 300 + i * 4000);   // three slow strokes of the big bell (this line had slipped into the comment above, so noon was silent)
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
   if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; setGuide(); learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
