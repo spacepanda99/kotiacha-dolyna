@@ -3335,7 +3335,8 @@ function cookFrame(me) {
         c.drawImage(im, 128 * a0, 0, 128 * (a1 - a0), 128, -th / 2, -S / 2, th, S); c.fillStyle = FL; ell(c, th / 2 - 1.2 * k, 0, 2.2 * k, S * 0.25);
         if (st.w === 'tsybulia' || st.w === 'yabluko') { c.strokeStyle = st.w === 'tsybulia' ? 'rgba(200,180,150,.6)' : 'rgba(150,90,40,.5)'; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(th / 2 - 1.2 * k, 0, 1.4 * k, S * (st.w === 'tsybulia' ? 0.15 : 0.06), 0, 0, 7); c.stroke(); }   // onion rings, apple pips
         c.restore(); });
-    } else food(w * 0.5, h * 0.6, h * 0.36, 0);
+    } else { food(w * 0.5, h * 0.6, h * 0.36, 0);
+      if (kind === 'peel') { const FL2 = st.w === 'buriak' ? 'rgba(240,95,145,.9)' : 'rgba(250,236,180,.85)'; c.fillStyle = FL2; const pcx = w * 0.5, pcy = h * 0.67, pr = h * 0.085; for (const b of s.bits) { const dx = w * b.x - pcx; if (Math.abs(dx) > pr * 0.85) continue; const hh = Math.sqrt(pr * pr - dx * dx) * 0.8; ell(c, pcx + dx, pcy, 2.6 * k, hh); } } }   // the peeled strips
     for (const b of (kind === 'chop' ? [] : s.bits)) { const q = Math.min(1, (t - b.t) / 0.5); if (kind === 'chop') { c.fillStyle = '#fff'; drawIcon(c, W[st.w].ic, w * (b.x - 0.05 - q * 0.08), h * (0.66 + q * 0.06), h * 0.11); } else { c.strokeStyle = st.w === 'buriak' ? '#7a1f3d' : '#b5824e'; c.lineWidth = 3 * k; c.beginPath(); const x = w * b.x, y = h * (0.6 + q * 0.2); c.moveTo(x, y); c.quadraticCurveTo(x + 10 * k, y + 8 * k, x, y + 14 * k); c.stroke(); } }
     // the knife: handle in your hand (right), blade over the food, edge down
     const bx = T.x * w, by = T.y * h;
@@ -3398,6 +3399,8 @@ function cookFrame(me) {
     s.fx = s.fx.filter(b => t - b.t < 1.2); for (const b of s.fx) { const q = (t - b.t) / 1.2; c.strokeStyle = `rgba(255,255,255,${0.9 - q * 0.8})`; c.lineWidth = 1.5 * k; c.beginPath(); c.arc(w * b.x, h * (b.y - q * 0.25), (3 + q * 4) * k, 0, 7); c.stroke(); }
     if (st.w === 'yabluko') { drawIcon(c, W.hrusha.ic, T.x * w + h * 0.13, T.y * h + h * 0.1, h * 0.2); drawIcon(c, W.yabluko.ic, T.x * w - h * 0.02, T.y * h + h * 0.12, h * 0.21); }   // an apple and a pear, washed together
     else food(T.x * w, T.y * h, h * 0.22);
+    { const dirt = Math.max(0, 1 - ck.prog * 1.15); c.fillStyle = 'rgba(110,80,45,' + (0.7 * dirt) + ')'; for (let i = 0; i < 8; i++) circ(c, T.x * w + Math.cos(i * 2.5) * h * 0.06 * ((i % 3) / 3 + 0.4), T.y * h + h * 0.1 + Math.sin(i * 2.5) * h * 0.06 * ((i % 2) / 2 + 0.5), (1.5 + (i % 2)) * k); }   // dirt, coming off
+    if (ck.prog > 0.85) { const sp = (t * 2) % 1; c.strokeStyle = 'rgba(255,255,255,' + (1 - sp) + ')'; c.lineWidth = 2 * k; const gx3 = T.x * w + h * 0.07, gy3 = T.y * h + h * 0.04, r4 = (3 + sp * 5) * k; c.beginPath(); c.moveTo(gx3 - r4, gy3); c.lineTo(gx3 + r4, gy3); c.moveTo(gx3, gy3 - r4); c.lineTo(gx3, gy3 + r4); c.stroke(); }   // clean: it shines
     ring(T.x * w, T.y * h, 30 * k);
   } else if (kind === 'pour') {
     const potX = w * 0.62, potY = h * 0.9, pS = w * 0.38, over = Math.abs(T.x - 0.5) < 0.18 && T.y < 0.62;
@@ -3406,7 +3409,11 @@ function cookFrame(me) {
     if (s.tilt > 0.6) { cookAct(false); cookProg(dt / 2.4); }
     const jx = T.x * w, jy = T.y * h;
     // the stream from the spout into the pot
-    if (s.tilt > 0.35) { const sx = jx + w * 0.1, sy = jy + h * 0.02; c.strokeStyle = st.w === 'med' ? 'rgba(232,160,28,.95)' : st.v === 'nasyp' ? 'rgba(250,246,236,.95)' : 'rgba(150,210,245,.9)'; c.lineWidth = (st.v === 'nasyp' ? 7 : 5) * k * s.tilt; c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(sx + w * 0.03, sy + h * 0.1, potX - w * 0.02, potY - pS * 0.5); c.stroke(); }
+    if (s.tilt > 0.35) { const sx = jx + w * 0.1, sy = jy + h * 0.02; c.strokeStyle = st.w === 'med' ? 'rgba(232,160,28,.95)' : st.v === 'nasyp' ? 'rgba(250,246,236,.95)' : 'rgba(150,210,245,.9)'; c.lineWidth = (st.v === 'nasyp' ? 7 : 5) * k * s.tilt; c.beginPath(); c.moveTo(sx, sy); c.quadraticCurveTo(sx + w * 0.03, sy + h * 0.1, potX - w * 0.02, potY - pS * 0.5); c.stroke();
+      const lx = potX - w * 0.02, ly = potY - pS * 0.5, dry = st.v === 'nasyp';
+      for (let i = 0; i < 3; i++) { const q = (t * 1.6 + i / 3) % 1; c.strokeStyle = dry ? 'rgba(255,255,255,' + (0.5 * (1 - q)) + ')' : 'rgba(255,255,255,' + (0.7 * (1 - q)) + ')'; c.lineWidth = 1.5 * k; c.beginPath(); c.ellipse(lx, ly, (4 + q * 22) * k, (1.5 + q * 5) * k, 0, 0, 7); c.stroke(); }   // ripples (or a little cloud of flour)
+      c.fillStyle = dry ? 'rgba(255,255,255,.7)' : st.w === 'med' ? 'rgba(232,160,28,.9)' : 'rgba(190,230,250,.95)'; for (let i = 0; i < 6; i++) { const q = (t * 3 + i / 6) % 1, dx2 = (i % 2 ? 1 : -1) * (3 + i * 2) * k * q; circ(c, lx + dx2, ly - Math.sin(q * Math.PI) * (6 + i) * k, (dry ? 2.4 : 1.6) * k); }   // droplets jumping up
+    }
     c.save(); c.translate(jx, jy); c.rotate(s.tilt * 1.1);
     if (st.w === 'med') { c.fillStyle = 'rgba(255,255,255,.55)'; rr(c, -w * 0.06, -h * 0.13, w * 0.12, h * 0.2, 8 * k); c.fillStyle = '#e8a01c'; rr(c, -w * 0.055, -h * 0.07, w * 0.11, h * 0.13, 6 * k); c.fillStyle = '#d43a3a'; c.fillRect(-w * 0.065, -h * 0.15, w * 0.13, h * 0.03); }   // a jar of honey
     else if (st.v === 'nasyp') { c.fillStyle = '#efe3c8'; rr(c, -w * 0.08, -h * 0.16, w * 0.16, h * 0.24, 10 * k); c.fillStyle = '#d43a3a'; c.fillRect(-w * 0.08, -h * 0.03, w * 0.16, h * 0.02); c.fillStyle = '#c9b48a'; poly(c, [[-w * 0.08, -h * 0.16], [w * 0.1, -h * 0.2], [w * 0.08, -h * 0.12]]); }
@@ -3418,13 +3425,17 @@ function cookFrame(me) {
     const fl = s.knob, cx = w * 0.45, cy = h * 0.82;
     c.fillStyle = '#3a3634'; rr(c, w * 0.05, h * 0.68, w * 0.9, h * 0.3, 12 * k); c.fillStyle = '#2a2624'; ell(c, cx, cy, w * 0.22, h * 0.06);
     if (fl > 0.05) for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, fx = cx + Math.cos(a) * w * 0.18, fy = cy + Math.sin(a) * h * 0.045, fh = h * 0.06 * fl * (0.8 + 0.4 * Math.sin(t * 20 + i)); c.fillStyle = `rgba(80,140,255,${0.8})`; ell(c, fx, fy - fh * 0.4, 3 * k, fh * 0.5); c.fillStyle = 'rgba(255,190,90,.8)'; ell(c, fx, fy - fh * 0.75, 1.8 * k, fh * 0.3); }
+    if (fl > 0.05) { const gl = c.createRadialGradient(cx, cy, 0, cx, cy, w * 0.3); gl.addColorStop(0, 'rgba(255,150,60,' + (0.35 * fl) + ')'); gl.addColorStop(1, 'rgba(255,150,60,0)'); c.fillStyle = gl; ell(c, cx, cy, w * 0.3, h * 0.1); }   // the glow off the flames
     if (st.v === 'posmazh') {
       c.fillStyle = '#2a2a2a'; ell(c, cx, cy - h * 0.06, w * 0.24, h * 0.08); c.fillStyle = '#444'; ell(c, cx, cy - h * 0.07, w * 0.21, h * 0.065); c.fillStyle = '#2a2a2a'; rr(c, cx + w * 0.23, cy - h * 0.08, w * 0.2, h * 0.03, 6 * k);
-      for (let i = 0; i < 3; i++) food(cx + (i - 1) * w * 0.1, cy - h * 0.1, h * 0.12);
+      c.fillStyle = 'rgba(232,190,60,' + (0.25 + 0.25 * fl) + ')'; ell(c, cx, cy - h * 0.07, w * 0.19, h * 0.055);   // the oil, shimmering hotter
+      for (let i = 0; i < 3; i++) { const fx2 = cx + (i - 1) * w * 0.1, fy2 = cy - h * 0.1 + (fl > 0.3 ? Math.sin(t * 25 + i) * 0.6 * k : 0); food(fx2, fy2, h * 0.12); const br = Math.min(1, ck.prog * 1.2); if (br > 0.05) { c.fillStyle = 'rgba(150,85,25,' + (0.45 * br) + ')'; ell(c, fx2, fy2 + h * 0.06, h * 0.05, h * 0.03); } }   // golden-brown underneath as they fry
+      if (fl > 0.5) { c.strokeStyle = 'rgba(255,240,180,.8)'; c.lineWidth = 1.2 * k; for (let i = 0; i < 4; i++) { const q = (t * 4 + i * 0.27) % 1, a = i * 1.7 + Math.floor(t * 4 + i * 0.27); const ox = cx + Math.cos(a) * w * 0.16, oy = cy - h * 0.08; c.beginPath(); c.moveTo(ox, oy - q * h * 0.08); c.lineTo(ox + Math.cos(a) * 3 * k, oy - q * h * 0.08 - 3 * k); c.stroke(); } }   // oil spitting
       if (fl > 0.3) { c.fillStyle = 'rgba(255,230,140,.9)'; for (let i = 0; i < 6; i++) { const q = (t * 3 + i / 6) % 1; circ(c, cx + Math.sin(i * 7.3) * w * 0.15, cy - h * 0.1 - q * h * 0.12, 1.6 * k); } }   // sizzle
     } else {
       ckPot(c, cx, cy - h * 0.02, w * 0.4, k, t, '#a33c2c');
-      food(cx, cy - h * 0.28, h * 0.16);
+      if (fl > 0.35) { const sy0 = cy - h * 0.02 - w * 0.2, boil = (fl - 0.35) / 0.65; for (let i = 0; i < 9; i++) { const q = (t * (1.2 + boil * 1.8) + i * 0.37) % 1, a = i * 2.3 + Math.floor(t * (1.2 + boil * 1.8) + i * 0.37) * 1.7; const bx3 = cx + Math.cos(a) * w * 0.13, by3 = sy0 + Math.sin(a) * h * 0.025; c.strokeStyle = 'rgba(255,220,210,' + (0.8 * (1 - q)) + ')'; c.lineWidth = 1.4 * k; c.beginPath(); c.arc(bx3, by3, (1.5 + q * 4 * (0.5 + boil)) * k, 0, 7); c.stroke(); } }   // bubbling, harder as the heat goes up
+      food(cx, cy - h * 0.28 + (fl > 0.6 ? Math.sin(t * 18) * 1.2 * k : 0), h * 0.16);
       if (fl > 0.3) { c.fillStyle = 'rgba(255,255,255,.75)'; for (let i = 0; i < 5; i++) { const q = (t * 0.6 * (0.6 + fl) + i / 5) % 1; circ(c, cx + Math.sin(t * 2 + i * 2) * w * 0.07, cy - h * 0.34 - q * h * 0.28, (5 + q * 10) * k); } }   // steam
     }
     if (fl > 0.3) { cookAct(false); cookProg(dt * fl / 2.6); }
@@ -3468,7 +3479,7 @@ function cookFrame(me) {
   } else if (kind === 'shake') {
     const potX = w * 0.62, potY = h * 0.92, pS = w * 0.42;
     ckPot(c, potX, potY, pS, k, t, '#a33c2c');
-    s.bits = s.bits.filter(b => t - b.t < 0.5); c.fillStyle = '#ffffff'; for (const b of s.bits) { const q = (t - b.t) / 0.5; circ(c, w * b.x, h * (b.y + q * 0.35), 1.6 * k); }
+    s.bits = s.bits.filter(b => t - b.t < 0.8); for (const b of s.bits) { const q = (t - b.t) / 0.5; if (q <= 1) { c.fillStyle = '#ffffff'; circ(c, w * b.x, h * (b.y + q * 0.35), 1.6 * k); } else { const g2 = 1 - (q - 1) / 0.6, gx2 = w * b.x, gy2 = h * (b.y + 0.35); c.strokeStyle = 'rgba(255,255,255,' + g2 + ')'; c.lineWidth = 1.2 * k; c.beginPath(); c.moveTo(gx2 - 3 * k, gy2); c.lineTo(gx2 + 3 * k, gy2); c.moveTo(gx2, gy2 - 3 * k); c.lineTo(gx2, gy2 + 3 * k); c.stroke(); } }   // falling, then a glint where it lands
     // the salt cellar, holes down, swinging a little as it shakes
     const sx = T.x * w, sy = T.y * h; c.save(); c.translate(sx, sy); c.rotate(Math.PI + Math.sin(t * 3) * 0.05);
     c.fillStyle = '#fffdf5'; rr(c, -w * 0.045, -h * 0.12, w * 0.09, h * 0.2, 8 * k); c.strokeStyle = '#c9c4ba'; c.lineWidth = 1.5 * k; c.strokeRect(-w * 0.045, -h * 0.12, w * 0.09, h * 0.2);
