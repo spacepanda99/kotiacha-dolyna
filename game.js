@@ -4722,6 +4722,52 @@ function micRefresh() {
 if (MIC.supported && navigator.permissions && navigator.permissions.query) {
   navigator.permissions.query({ name: 'microphone' }).then(p => { MIC.state = p.state; micRefresh(); p.onchange = () => { MIC.state = p.state; micRefresh(); }; }).catch(() => {});
 }
+
+// Why the microphone didn't turn on, and what to do. Chrome on Android refuses
+// WITHOUT asking (and the site's settings then show no microphone at all) when
+// Chrome itself isn't allowed the phone's microphone, or Chrome's own
+// microphone setting is off. A refusal that comes back almost instantly means
+// no question was shown, so that's the case we explain first.
+function micReason(e, ms) {
+  const n = e && e.name;
+  if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'none';
+  if (n === 'NotReadableError' || n === 'AbortError' || n === 'TrackStartError') return 'busy';
+  if (n === 'SecurityError' || /; wv\)|FBAN|FBAV|Instagram|Line\//.test(navigator.userAgent)) return 'inapp';
+  if (n === 'NotAllowedError') return ms < 700 ? 'chrome' : 'site';
+  return 'other';
+}
+function micHelp(reason) {
+  const host = location.hostname;
+  const steps = {
+    chrome: ['Chrome didn’t ask, so Chrome itself isn’t allowed to use the microphone. Fix it in two places:',
+      ['Phone <b>Settings</b> → <b>Apps</b> → <b>Chrome</b> → <b>Permissions</b> → <b>Microphone</b> → <b>Allow only while using the app</b>.',
+       'In Chrome: <b>⋮</b> (top right) → <b>Settings</b> → <b>Site settings</b> → <b>Microphone</b> → turn it <b>on</b> (“Sites can ask to use your microphone”). If <b>' + host + '</b> is under “Not allowed”, tap it and choose <b>Allow</b>.',
+       'Come back here and tap <b>🎤 Enable microphone</b> again. Chrome will ask; tap <b>Allow</b>.']],
+    site: ['The microphone was blocked for this game. To allow it:',
+      ['Tap the small icon at the left of the address bar (🔒 or ☰), then <b>Permissions</b> → <b>Microphone</b> → <b>Allow</b>.',
+       'Or: Chrome <b>⋮</b> → <b>Settings</b> → <b>Site settings</b> → <b>Microphone</b> → <b>' + host + '</b> → <b>Allow</b>.',
+       'Then tap <b>🎤 Enable microphone</b> again.']],
+    none: ['No microphone was found on this device.', ['If you use a headset, plug it in (or connect it) and try again.']],
+    busy: ['Another app is using the microphone right now (a call, a voice recorder, an assistant).', ['Close that app or end the call, then tap <b>🎤 Enable microphone</b> again.']],
+    inapp: ['This page is open inside another app, which can’t use the microphone.', ['Tap <b>⋮</b> and choose <b>Open in Chrome</b>, then tap <b>🎤 Enable microphone</b> there.']],
+    other: ['The microphone didn’t start.', ['Restart Chrome and try again. If it still doesn’t work, check the phone’s Settings → Apps → Chrome → Permissions → Microphone.']]
+  }[reason] || null;
+  if (!steps) return;
+  let box = document.getElementById('micHelp');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'micHelp';
+    box.setAttribute('role', 'dialog');
+    box.style.cssText = 'position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(40,30,20,.45)';
+    document.body.appendChild(box);
+    box.addEventListener('click', ev => { if (ev.target === box || ev.target.closest('[data-mh="close"]')) box.remove(); else if (ev.target.closest('[data-mh="retry"]')) { box.remove(); A.mic(); } });
+  }
+  box.innerHTML = '<div style="width:min(100vw,560px);max-height:82vh;overflow:auto;background:var(--cream,#fff8ea);border-radius:26px 26px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -6px 24px rgba(40,30,20,.25);font-size:16px;line-height:1.45;color:#3b2a1d">'
+    + '<div style="font-size:20px;font-weight:800;margin-bottom:6px">🎤 Мікрофон · Microphone</div>'
+    + '<div style="margin-bottom:10px">' + steps[0] + '</div>'
+    + '<ol style="margin:0 0 14px;padding-left:22px">' + steps[1].map(x => '<li style="margin-bottom:8px">' + x + '</li>').join('') + '</ol>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="b" data-mh="retry">🎤 Спробувати знову<small>Try again</small></button><button class="b ghost" data-mh="close">Закрити<small>Close</small></button></div></div>';
+}
 micRefresh();
 const micOk = () => MIC.supported && MIC.state !== 'denied';
 function stopSay() { sayToken++; for (const k in clipCache) { try { clipCache[k].pause(); } catch (e) {} } try { speechSynthesis.cancel(); } catch (e) {} }
@@ -4817,7 +4863,7 @@ function spRender() {
       mid = `<div class="hint">${sp.view === 'quiet' ? 'I didn’t hear anything. Tap the microphone and say the word.' : sp.err}</div>`;
       row = `${hear}${sp.view !== 'limit' && micOk() ? btn('spSay', '', `🎤 ${lab('retry')}`, 'blue') : ''}${skip}`;
     } else {
-      mid = off ? `<div class="hint">${MIC.supported ? 'The microphone is blocked. Allow it in Chrome’s site settings, or skip.' : 'The microphone is not available here. You can skip.'}</div>` : '';
+      mid = off ? `<div class="hint">${MIC.supported ? 'The microphone is blocked. <button class="subt" data-a="micHow">How to fix it</button> Or skip.' : 'The microphone is not available here. You can skip.'}</div>` : '';
       row = `${hear}<button class="b${off ? ' off' : ''}" data-a="spSay">🎤 ${lab('say')}</button>${skip}`;
     }
     html = `<div class="card"><div class="sp-top">🎤 Скажи слово${st < 3 ? ' · Say the word' : ''}</div>${dots}
@@ -4839,7 +4885,9 @@ async function spAttempt() {
   } catch (e) {
     if (!alive()) return;
     if (e && e.name === 'NotAllowedError') MIC.state = 'denied';
-    micRefresh(); my.view = 'error'; my.err = e && e.name === 'NotAllowedError' ? 'The microphone is blocked. Allow it in Chrome’s site settings, or skip.' : 'I couldn’t use the microphone. Try again, or skip.'; return spRender();
+    micRefresh(); my.view = 'error'; MIC.lastReason = micReason(e, 0);
+    my.err = (e && e.name === 'NotAllowedError' ? 'The microphone is blocked.' : e && e.name === 'NotReadableError' ? 'Another app is using the microphone.' : 'I couldn’t use the microphone.') + ' <button class="subt" data-a="micHow">How to fix it</button> Or skip.';
+    return spRender();
   }
   if (!alive()) return;
   if (rec.quiet) { my.view = 'quiet'; return spRender(); }
@@ -7952,11 +8000,17 @@ const A = {
   async mic() {
     if (!MIC.supported) return toast('Microphone not available here');
     if (MIC.state === 'granted') return toast('🎤 Мікрофон увімкнено · Microphone is on');
-    if (MIC.state === 'denied') return toast('Chrome: tap the lock beside the address, then Permissions, then Microphone');
+    // Always ask (even if Chrome reports "denied"): after the person fixes the
+    // setting, this is what makes Chrome show its question again.
+    const t0 = performance.now();
     try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); st.getTracks().forEach(t => t.stop()); MIC.state = 'granted'; toast('🎤 Мікрофон увімкнено · Microphone is on'); micRefresh(); return; }
-    catch (e) { MIC.state = e && e.name === 'NotAllowedError' ? 'denied' : MIC.state; toast('🎤 Мікрофон не увімкнено · Not enabled'); }
-    micRefresh();
+    catch (e) {
+      if (e && e.name === 'NotAllowedError') MIC.state = 'denied';
+      micRefresh();
+      micHelp(micReason(e, performance.now() - t0));
+    }
   },
+  micHow() { micHelp(MIC.lastReason && MIC.lastReason !== 'site' ? MIC.lastReason : 'chrome'); },
   spSay() { spAttempt(); },
   spEyeUk() { if (sp) { sp.showUk = true; spRender(); } },
   spEyeTr() { if (sp) { sp.showTr = true; spRender(); } },
