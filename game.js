@@ -3353,17 +3353,29 @@ function cookFrame(me) {
     ckBoard(c, w, h, k);
     const sq = s.squash ? Math.max(0, 1 - (t - s.squash) / 0.35) : 0, grow = 1 + ck.prog * 0.15;
     c.fillStyle = 'rgba(0,0,0,.1)'; ell(c, w * 0.5, h * 0.72, w * 0.18 * grow * (1 + sq * 0.2), h * 0.04);
-    c.fillStyle = '#f3e1b8'; ell(c, w * 0.5, h * (0.66 + sq * 0.02), w * 0.16 * grow * (1 + sq * 0.25), h * 0.09 * (1 - sq * 0.35)); c.fillStyle = 'rgba(255,255,255,.4)'; ell(c, w * 0.46, h * 0.63, w * 0.05, h * 0.025);
+    { const pr = Math.min(1, ck.prog), dx = w * 0.5, dy = h * (0.66 + sq * 0.02), rx = w * 0.16 * grow * (1 + sq * 0.25), ry = h * 0.09 * (1 - sq * 0.35);
+      // the dough: lumpy and floury at first, smooth and round as you knead it
+      c.fillStyle = '#f3e1b8'; c.beginPath();
+      for (let i = 0; i <= 28; i++) { const a = i / 28 * Math.PI * 2, wob = 1 + (1 - pr) * (0.09 * Math.sin(a * 5 + 1.3) + 0.05 * Math.sin(a * 3 + 0.4)); const xx = dx + Math.cos(a) * rx * wob, yy = dy + Math.sin(a) * ry * wob; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); }
+      c.closePath(); c.fill(); c.strokeStyle = 'rgba(190,150,90,.45)'; c.lineWidth = 1.5 * k; c.stroke();
+      c.fillStyle = 'rgba(255,255,255,.4)'; ell(c, dx - rx * 0.25, dy - ry * 0.35, rx * 0.3, ry * 0.25);
+      c.fillStyle = 'rgba(255,255,255,' + (0.85 * (1 - pr)) + ')'; for (let i = 0; i < 14; i++) circ(c, dx + Math.cos(i * 2.39) * rx * 0.75 * ((i % 5) / 5 + 0.15), dy + Math.sin(i * 2.39) * ry * 0.6 * ((i % 3) / 3 + 0.3), 1.6 * k);   // flour still on it
+      if (s.squash && t - s.squash < 1.2) { const a2 = 1 - (t - s.squash) / 1.2; c.fillStyle = 'rgba(180,140,85,' + (0.35 * a2) + ')'; for (const sg of [-1, 1]) ell(c, dx + sg * w * 0.06, dy - ry * 0.1, w * 0.04, h * 0.02); }   // where the palms pressed
+      if (sq > 0) { c.fillStyle = 'rgba(255,255,255,' + (0.75 * sq) + ')'; for (let i = 0; i < 7; i++) { const a = Math.PI + i / 6 * Math.PI, r2 = 1 - sq; circ(c, dx + Math.cos(a) * rx * (1 + r2 * 0.5), dy + Math.sin(a) * ry * (0.6 + r2 * 0.8) - r2 * h * 0.03, (2.5 + r2 * 5) * k); } }   // a puff of flour
+    }
     // two hands, palms down
-    for (const sg of [-1, 1]) { const hx = T.x * w + sg * w * 0.07, hy = T.y * h + h * 0.08; c.fillStyle = '#f3cfb0'; ell(c, hx, hy, w * 0.06, h * 0.06); for (let f = 0; f < 4; f++) ell(c, hx - w * 0.04 + f * w * 0.027, hy + h * 0.065, w * 0.012, h * 0.03); c.strokeStyle = '#e0b48f'; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(hx, hy, w * 0.06, h * 0.06, 0, 0, 7); c.stroke(); }
+    for (const sg of [-1, 1]) { const hx = T.x * w + sg * w * 0.07, hy = T.y * h + h * 0.08; c.fillStyle = '#f3cfb0'; ell(c, hx, hy, w * 0.06, h * 0.06); for (let f = 0; f < 4; f++) ell(c, hx - w * 0.04 + f * w * 0.027, hy + h * 0.065, w * 0.012, h * 0.03); ell(c, hx - sg * w * 0.062, hy + h * 0.02, w * 0.014, h * 0.03); c.fillStyle = 'rgba(255,255,255,.5)'; for (let f = 0; f < 4; f++) ell(c, hx - w * 0.04 + f * w * 0.027, hy + h * 0.085, w * 0.006, h * 0.008); c.strokeStyle = '#e0b48f'; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(hx, hy, w * 0.06, h * 0.06, 0, 0, 7); c.stroke(); }
     ring(T.x * w, T.y * h + h * 0.08, 34 * k);
   } else if (kind === 'roll') {
     ckBoard(c, w, h, k);
-    const f = s.flat; c.fillStyle = '#f3e1b8'; ell(c, w * 0.5, h * 0.66, w * (0.1 + f * 0.24), h * (0.07 + f * 0.06)); c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, w * 0.46, h * 0.64, w * (0.03 + f * 0.08), h * 0.02);
+    const f = s.flat; c.fillStyle = '#f3e1b8'; { const rx = w * (0.1 + f * 0.24), ry = h * (0.07 + f * 0.06); c.beginPath(); for (let i = 0; i <= 28; i++) { const a = i / 28 * Math.PI * 2, wob = 1 + (1 - f) * 0.08 * Math.sin(a * 4 + 0.7) + 0.025 * Math.sin(a * 7); const xx = w * 0.5 + Math.cos(a) * rx * wob, yy = h * 0.66 + Math.sin(a) * ry * wob; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.closePath(); c.fill(); c.strokeStyle = 'rgba(190,150,90,.4)'; c.lineWidth = 1.5 * k; c.stroke(); } c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, w * 0.46, h * 0.64, w * (0.03 + f * 0.08), h * 0.02);
     c.fillStyle = 'rgba(255,255,255,.6)'; for (let i = 0; i < 10; i++) circ(c, w * (0.3 + ((i * 0.37) % 0.4)), h * (0.58 + ((i * 0.53) % 0.16)), 1.2 * k);   // a dusting of flour
     const px = T.x * w, py = T.y * h;   // the rolling pin across the dough, handles at each end
     c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, px, py + h * 0.05, w * 0.28, h * 0.02);
     c.fillStyle = '#d9a35e'; rr(c, px - w * 0.24, py - h * 0.04, w * 0.48, h * 0.08, h * 0.04); c.fillStyle = 'rgba(255,255,255,.3)'; rr(c, px - w * 0.22, py - h * 0.03, w * 0.44, h * 0.02, h * 0.01);
+    c.save(); rr(c, px - w * 0.24, py - h * 0.04, w * 0.48, h * 0.08, h * 0.04); c.clip(); c.strokeStyle = 'rgba(120,75,30,.35)'; c.lineWidth = 1.2 * k; for (let i = 0; i < 4; i++) { const q = ((py / (h * 0.12)) + i / 4) % 1, yy = py - h * 0.04 + q * h * 0.08; c.beginPath(); c.moveTo(px - w * 0.23, yy); c.lineTo(px + w * 0.23, yy); c.stroke(); } c.restore();   // the grain turning as it rolls
+    if (T.held && Math.abs(py - (s.lastPinY || py)) > 0.5) s.puffT = t; s.lastPinY = py;
+    if (s.puffT && t - s.puffT < 0.4) { const a3 = 1 - (t - s.puffT) / 0.4; c.fillStyle = 'rgba(255,255,255,' + (0.6 * a3) + ')'; for (const sg of [-1, 1]) for (let i = 0; i < 3; i++) circ(c, px + sg * (w * 0.2 + i * w * 0.02 + (1 - a3) * w * 0.04), py + h * 0.03 - i * h * 0.01, (2 + i + (1 - a3) * 3) * k); }
     c.fillStyle = '#9b6b3c'; for (const sg of [-1, 1]) rr(c, px + sg * w * 0.24 - (sg < 0 ? w * 0.08 : 0), py - h * 0.022, w * 0.08, h * 0.044, h * 0.02);
     ring(px, py, 30 * k);
   } else if (kind === 'grate') {
@@ -3492,7 +3504,9 @@ function cookFrame(me) {
     if (!s.open) {
       const shake = s.knockT && t - s.knockT < 0.15 ? Math.sin((t - s.knockT) * 90) * 2 * k : 0;
       c.save(); c.translate(ex + shake, ey - ER * 0.6); c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 3 * k, ER * 1.25, ER * 0.6, ER * 0.15);
-      c.fillStyle = '#f2dcc0'; ell(c, 0, 0, ER * 0.78, ER); c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, -ER * 0.25, -ER * 0.35, ER * 0.2, ER * 0.3);
+      c.fillStyle = '#f2dcc0'; ell(c, 0, 0, ER * 0.78, ER); c.strokeStyle = '#c9a57c'; c.lineWidth = 1.5 * k; c.beginPath(); c.ellipse(0, 0, ER * 0.78, ER, 0, 0, 7); c.stroke();
+      c.fillStyle = 'rgba(190,140,90,.35)'; for (let i = 0; i < 7; i++) circ(c, Math.cos(i * 2.2) * ER * 0.5, Math.sin(i * 2.2) * ER * 0.6 + ER * 0.1, 1.2 * k);   // freckles
+      c.fillStyle = 'rgba(255,255,255,.55)'; ell(c, -ER * 0.25, -ER * 0.35, ER * 0.2, ER * 0.3);
       if (s.knocks) { c.strokeStyle = '#8a6a4a'; c.lineWidth = 1.4 * k; c.beginPath(); const n2 = 3 + s.knocks * 2; for (let i = 0; i <= n2; i++) { const xx = -ER * 0.7 + i / n2 * ER * 1.4, yy = ER * 0.45 + (i % 2 ? -1 : 1) * ER * 0.12; i ? c.lineTo(xx, yy) : c.moveTo(xx, yy); } c.stroke(); }
       c.restore();
       ring(ex, ey - ER * 0.6, 32 * k);
@@ -3503,7 +3517,8 @@ function cookFrame(me) {
       for (const sg of [-1, 1]) { c.save(); c.translate(ox + sg * (6 + q * 28) * k, oy - q * 6 * k); c.rotate(sg * (0.4 + q * 0.6)); c.fillStyle = '#f2dcc0'; c.beginPath(); c.ellipse(0, 0, ER * 0.7, ER * 0.9, 0, sg < 0 ? Math.PI * 0.5 : -Math.PI * 0.5, sg < 0 ? Math.PI * 1.5 : Math.PI * 0.5); c.fill(); c.fillStyle = '#fff8ea'; ell(c, sg * -ER * 0.05, 0, ER * 0.15, ER * 0.7); c.restore(); }
       const fy = oy + q * (by - oy);
       c.fillStyle = 'rgba(255,255,255,.85)'; ell(c, ox, fy, ER * (0.5 + q * 0.6), ER * (0.6 - q * 0.3)); c.fillStyle = '#ffb81c'; circ(c, ox, fy - ER * 0.05, ER * 0.32);
-      if (q >= 1) { c.fillStyle = 'rgba(255,255,255,.4)'; circ(c, ox - ER * 0.1, fy - ER * 0.15, ER * 0.08); }
+      if (q >= 1) { c.fillStyle = 'rgba(255,255,255,.6)'; circ(c, ox - ER * 0.1, fy - ER * 0.15, ER * 0.08); const r3 = Math.min(1, (t - s.open - 0.5) / 0.6); if (r3 < 1) { c.strokeStyle = 'rgba(255,255,255,' + (0.7 * (1 - r3)) + ')'; c.lineWidth = 2 * k; c.beginPath(); c.ellipse(ox, fy, ER * (0.8 + r3 * 1.2), ER * (0.25 + r3 * 0.35), 0, 0, 7); c.stroke(); } }
+      { const q2 = Math.min(1, (t - s.open) / 0.7); c.fillStyle = '#f2dcc0'; if (q2 < 1) for (let i = 0; i < 4; i++) { const bx2 = ox + (i - 1.5) * ER * 0.4, by2 = oy + q2 * q2 * (by - oy) * (0.7 + i * 0.1); poly(c, [[bx2, by2], [bx2 + 4 * k, by2 + 2 * k], [bx2 + 1 * k, by2 + 5 * k]]); } }   // little bits of shell
     }
   } else if (kind === 'shape') {
     ckBoard(c, w, h, k);
@@ -3511,7 +3526,23 @@ function cookFrame(me) {
     for (const it of s.items) {
       const x = it.x * w, y = it.y * h, q = it.done ? Math.min(1, (t - it.t) / 0.35) : 0;
       if (leaf) { c.fillStyle = '#9fd27a'; ell(c, x, y, w * 0.06 * (1 - q * 0.45), h * 0.07); c.strokeStyle = '#6fa84a'; c.lineWidth = 1.5 * k; c.beginPath(); c.moveTo(x, y - h * 0.06); c.lineTo(x, y + h * 0.06); c.stroke(); if (q) { c.fillStyle = '#c98a4a'; ell(c, x, y, w * 0.025, h * 0.035 * q); } }
-      else { c.fillStyle = '#f3e1b8'; c.beginPath(); c.ellipse(x, y, w * 0.055, h * 0.07 * (1 - q * 0.5), 0, Math.PI * q, Math.PI * 2); c.fill(); c.strokeStyle = '#d9c28e'; c.lineWidth = 1.5 * k; c.beginPath(); c.ellipse(x, y, w * 0.055, h * 0.07 * (1 - q * 0.5), 0, Math.PI * q, Math.PI * 2); c.stroke(); if (q >= 1) { c.strokeStyle = '#c9a86a'; for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(x - w * 0.045 + i * w * 0.022, y); c.lineTo(x - w * 0.04 + i * w * 0.022, y - 3 * k); c.stroke(); } } }   // a varenyk, crimped
+      else {   // a varenyk: a round of dough with the filling on it; a tap folds the top over into a half-moon, and the edge is crimped
+        const R = w * 0.058, Ry = Math.min(R * 0.85, h * 0.07), hop = it.done ? Math.sin(Math.min(1, (t - it.t) / 0.35) * Math.PI) * 5 * k : 0;
+        c.save(); c.translate(x, y - hop);
+        c.fillStyle = 'rgba(0,0,0,.1)'; ell(c, 0, Ry * 0.85 + hop, R * 0.95, Ry * 0.25);
+        c.fillStyle = '#f3e1b8'; c.strokeStyle = '#d9c28e'; c.lineWidth = 1.5 * k;
+        if (q === 0) { c.beginPath(); c.ellipse(0, 0, R, Ry, 0, 0, Math.PI * 2); c.fill(); c.stroke(); c.fillStyle = '#e6c879'; ell(c, 0, Ry * 0.05, R * 0.42, Ry * 0.34); c.fillStyle = '#f5e2a4'; ell(c, -R * 0.12, -Ry * 0.04, R * 0.16, Ry * 0.12); }   // a whole round with its filling
+        else { c.beginPath(); c.ellipse(0, 0, R, Ry, 0, 0, Math.PI); c.closePath(); c.fill(); c.stroke(); }   // the near half of the round
+        if (q === 0) {} else if (q < 0.5) {   // the far half lifting, with the filling showing
+          c.fillStyle = '#f3e1b8'; c.beginPath(); c.ellipse(0, 0, R, Math.max(0.01, Ry * (1 - 2 * q)), 0, Math.PI, Math.PI * 2); c.closePath(); c.fill(); c.stroke();
+          c.fillStyle = '#e6c879'; ell(c, 0, Ry * 0.05, R * 0.42, Ry * 0.34); c.fillStyle = '#f5e2a4'; ell(c, -R * 0.12, -Ry * 0.04, R * 0.16, Ry * 0.12);
+        } else {   // folded over onto the near half
+          const fq = q >= 1 ? 1 : 2 * q - 1; c.fillStyle = '#efd7a4'; c.beginPath(); c.ellipse(0, 0, R, Math.max(0.01, Ry * fq), 0, 0, Math.PI); c.closePath(); c.fill(); c.stroke();
+          if (q >= 1) { c.fillStyle = '#ddbd80'; for (let i = 1; i < 10; i++) { const a = i / 10 * Math.PI; circ(c, Math.cos(a) * R * 0.94, Math.sin(a) * Ry * 0.94, 1.8 * k); } c.fillStyle = 'rgba(255,255,255,.45)'; ell(c, -R * 0.25, Ry * 0.35, R * 0.22, Ry * 0.1); }   // crimped edge, a soft shine
+        }
+        if (it.done && t - it.t < 0.45) { const a4 = 1 - (t - it.t) / 0.45; c.fillStyle = 'rgba(255,255,255,' + (0.7 * a4) + ')'; for (let i = 0; i < 5; i++) circ(c, (i - 2) * R * 0.5 * (1.4 - a4 * 0.4), Ry * 0.9 - (1 - a4) * Ry * 0.6, (2 + (1 - a4) * 3) * k); }   // a puff of flour
+        c.restore();
+      }
       if (!it.done && (hint || t - (s.t0 || (s.t0 = t)) < 2.5)) { c.strokeStyle = `rgba(255,210,63,${0.4 + 0.3 * Math.sin(t * 6 + it.x * 9)})`; c.lineWidth = 2 * k; c.beginPath(); c.arc(x, y, 22 * k, 0, 7); c.stroke(); }
     }
   }
