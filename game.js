@@ -8,7 +8,8 @@ const NPC = Object.fromEntries(D.npcs.map(n => [n.id, n]));
 const PH = Object.fromEntries(D.phrases.map(p => [p.id, p]));
 const $ = s => document.querySelector(s);
 const cv = $('#c'), ctx = cv.getContext('2d');
-const T = 64, MW = 50, MH = 38;   // (42 wide until the forest edge was added on the east side)
+const T = 64, MW = 50, MH = 41;   // (38 rows until the forest path along the bottom needed room below it: at the very edge it sat under the corner buttons)
+//   // (42 wide until the forest edge was added on the east side)
 //   // (32 rows until the café's square was added at the bottom)
 const GROUND_TOP = 4;   // rows of meadow painted above the map, so the camera can look past the railway   // (36 wide until the school was added at the east end of the main road)   // (28 rows until the neighbours' cottages along the bottom road were added)
 // Spaced review: how long until a word at each level is "due" again.
@@ -2313,7 +2314,7 @@ function add(e) {
   // Street lamps: one behind each bench in the square, one by the road between her cottage and the market,
   // one between the market and Grandma Olia's, one each side of the crossroads on the back road (towards the
   // windmill and towards the church), one on each half of the bottom road, and one halfway down the road from the square to it. (Tapping one says «лампа».)
-  for (const [lx, ly, fl] of [[22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [22.65, 31.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
+  for (const [lx, ly, fl] of [[22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [23.45, 33.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   add({ w: 'lavka', ic: '@benchside', x: 35.15, y: 13.4, s: 1.25, solid: true });   // beside the school, facing its porch
