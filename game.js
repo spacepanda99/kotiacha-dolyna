@@ -616,11 +616,22 @@ const DRAW = {
     for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#fffaf0' : '#d43a3a'; poly(c, [[-52 + i * 4.5, -53], [-47.5 + i * 4.5, -53], [-46.5 + i * 4.8, -46], [-51 + i * 4.8, -46]]); }
     for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#fffaf0' : '#d43a3a'; c.beginPath(); c.arc(-48.6 + i * 4.8, -46, 2.4, 0, Math.PI); c.fill(); }   // scalloped edge
     c.fillStyle = '#8f2c22'; c.fillRect(-53, -54, 38, 1.6);
-    // the door: blue, with a round pane and a little lamp
-    c.fillStyle = '#6b4422'; c.fillRect(-11, -42, 22, 36);
-    c.fillStyle = '#2f6fb0'; c.fillRect(-9, -40, 18, 34); c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 0.8; c.strokeRect(-7, -22, 14, 13);
-    c.fillStyle = '#ffe9b8'; circ(c, 0, -32, 5); c.strokeStyle = '#6b4422'; c.lineWidth = 1; c.beginPath(); c.arc(0, -32, 5, 0, 7); c.moveTo(-5, -32); c.lineTo(5, -32); c.moveTo(0, -37); c.lineTo(0, -27); c.stroke();
-    c.fillStyle = '#f2c230'; circ(c, 6, -21, 1.2);
+    // the door: blue, with a round pane and a little lamp. It swings open inward on its left hinges when someone
+    // goes in or comes out (CAFE_DOOR.open), showing the warm room behind it, then swings shut again.
+    { const op = (CAFE_DOOR && CAFE_DOOR.open) || 0, ease = op * op * (3 - 2 * op), w = 18 * (1 - ease * 0.84), dk = ease * 0.35;
+      c.fillStyle = '#6b4422'; c.fillRect(-11, -42, 22, 36);
+      if (op > 0.01) {   // the room inside: warm lamplight, a glimpse of a table, light spilling over the step
+        const g = c.createLinearGradient(0, -40, 0, -6); g.addColorStop(0, '#6b4024'); g.addColorStop(0.55, '#a8683a'); g.addColorStop(1, '#d9a25e'); c.fillStyle = g; c.fillRect(-9, -40, 18, 34);
+        c.fillStyle = 'rgba(255,214,140,.55)'; ell(c, 2, -28, 7, 9); c.fillStyle = '#7a4b22'; c.fillRect(-1, -17, 9, 2); c.fillRect(1, -15, 1.4, 9); c.fillRect(6, -15, 1.4, 9);
+        c.fillStyle = 'rgba(255,220,150,' + (0.35 * ease) + ')'; poly(c, [[-9, -6], [9, -6], [13, 0], [-13, 0]]); }
+      // the door leaf, turning on its hinges: narrower and a shade darker the further it swings in
+      c.save(); c.translate(-9, 0); c.scale(w / 18, 1); c.translate(9, 0);
+      c.fillStyle = '#2f6fb0'; c.fillRect(-9, -40, 18, 34); c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 0.8; c.strokeRect(-7, -22, 14, 13);
+      c.fillStyle = '#ffe9b8'; circ(c, 0, -32, 5); c.strokeStyle = '#6b4422'; c.lineWidth = 1; c.beginPath(); c.arc(0, -32, 5, 0, 7); c.moveTo(-5, -32); c.lineTo(5, -32); c.moveTo(0, -37); c.lineTo(0, -27); c.stroke();
+      c.fillStyle = '#f2c230'; circ(c, 6, -21, 1.2);
+      if (dk > 0) { c.fillStyle = 'rgba(20,20,40,' + dk + ')'; c.fillRect(-9, -40, 18, 34); }
+      c.restore();
+      if (op > 0.01) { c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(-9 + w, -40, 1.2, 34); } }   // the leaf's edge
     c.fillStyle = '#9b6b3c'; c.fillRect(-14, -6, 28, 3); c.fillRect(-11, -3, 22, 3);   // step
     // the carved sign on its iron bracket, with a steaming cup
     c.strokeStyle = '#2e2c2a'; c.lineWidth = 1.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(11, -50); c.lineTo(23, -50); c.moveTo(11, -45); c.quadraticCurveTo(16, -46, 18, -50); c.stroke(); c.lineWidth = 0.9; c.beginPath(); c.arc(14.5, -48, 1.8, 0.4, 5.5); c.stroke();
@@ -788,12 +799,13 @@ const DRAW = {
     if (a > 0.85 && a < 2.2) { const q = (a - 0.85) / 1.35; c.strokeStyle = 'rgba(255,255,255,' + (0.8 * (1 - q)) + ')'; c.lineWidth = 1.2; for (const k of [0.5, 1]) { c.beginPath(); c.ellipse(0, -38.5, 22 * q * k, 3.8 * q * k, 0, 0, 7); c.stroke(); } }
     // the rope and the bucket, hanging from the roller (clipped: down the shaft it never shows below the well)
     c.save(); c.beginPath(); c.rect(-60, -120, 120, 118); c.clip(); c.translate(0, K.y);
-    c.strokeStyle = '#a8905a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(-tilt * 10, L - 2); c.stroke();
-    c.translate(-tilt * 12, L); c.rotate(-tilt * 1.05);
-    const sw = a >= 0 && a < 3.3 ? Math.sin(a * 5) * 0.06 : 0; c.rotate(sw);
-    c.fillStyle = '#6b7a88'; poly(c, [[-8, 0], [8, 0], [6, 14], [-6, 14]]); c.fillStyle = '#8a9aa8'; c.fillRect(-8, 2, 16, 2); c.fillRect(-7, 9, 14, 2);
-    c.strokeStyle = '#4a5560'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, 0, 8, Math.PI, 0); c.stroke();
-    if (full) { c.fillStyle = '#5aa8e8'; ell(c, 0, 0.6, 7.4, 1.8); c.fillStyle = 'rgba(255,255,255,.6)'; ell(c, -2.5, 0.3, 2, 0.6); }
+    const bucket = (full2) => { c.fillStyle = '#6b7a88'; poly(c, [[-8, 0], [8, 0], [6, 14], [-6, 14]]); c.fillStyle = '#8a9aa8'; c.fillRect(-8, 2, 16, 2); c.fillRect(-7, 9, 14, 2);
+      c.strokeStyle = '#4a5560'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, 0, 8, Math.PI, 0); c.stroke();
+      if (full2) { c.fillStyle = '#5aa8e8'; ell(c, 0, 0.6, 7.4, 1.8); c.fillStyle = 'rgba(255,255,255,.6)'; ell(c, -2.5, 0.3, 2, 0.6); } };
+    if (a < 3.3) {
+      c.strokeStyle = '#a8905a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, L - 2); c.stroke();
+      c.translate(0, L); c.rotate(a >= 0 ? Math.sin(a * 5) * 0.06 : 0); bucket(full);
+    }
     c.restore();
     // the roller across the mouth, with the rope coiled on it: the coil grows as the rope winds in, and its turns
     // run round with the crank
@@ -814,11 +826,16 @@ const DRAW = {
     c.fillStyle = '#cfcac2'; rr(c, -30, -40, 60, 4, 2);
     // the splash, thrown up out of the mouth when the bucket hits the water
     if (a > 0.88 && a < 1.5) { const q = (a - 0.88) / 0.62; for (let i = 0; i < 9; i++) { const vx = (i - 4) * 2.6, vy = 22 + (i % 3) * 7, x = vx * q * 1.6, y = -40 - vy * q + 40 * q * q; if (y < -39) { c.fillStyle = 'rgba(150,205,250,' + (0.9 - q * 0.6) + ')'; ell(c, x, y, 1.3, 1.9); } } }
-    // pouring: the bucket tips toward the left, and the stream arcs down into the watering can on the ground
+    // pouring: the bucket is lifted out over the rim on the left and tipped, and the water runs from its lip down
+    // into the watering can on the ground (all in front of the well, so it plainly comes from the bucket)
     if (a >= 3.3) {
-      const cx = -42, cy = 0;
+      const cx = -42, cy = 0, q = Math.min(1, (a - 3.3) / 0.35), e2 = q * q * (3 - 2 * q), bx = -30 * e2, by = K.y + 1 - 9 * e2 - Math.sin(e2 * Math.PI) * 4, th = -1.15 * tilt;
+      c.strokeStyle = '#a8905a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, K.y); c.quadraticCurveTo(bx * 0.5, K.y + 6, bx, by); c.stroke();   // the rope, slack now
+      c.save(); c.translate(bx, by); c.rotate(th); bucket(full); c.restore();
+      const lipX = bx + (-8 * Math.cos(th)), lipY = by + (-8 * Math.sin(th));   // the bucket's left lip, where the water leaves it
       c.fillStyle = '#3f7fb8'; rr(c, cx - 7, cy - 13, 14, 13, 3); c.fillStyle = '#5a98d0'; c.fillRect(cx - 7, cy - 11, 14, 2); c.strokeStyle = '#3f7fb8'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy - 13, 5, Math.PI, 0); c.stroke(); c.beginPath(); c.moveTo(cx + 6, cy - 9); c.lineTo(cx + 14, cy - 17); c.stroke();   // the watering can
-      if (tilt > 0.6) { c.strokeStyle = 'rgba(90,168,232,.85)'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(-17, K.y + 2); c.quadraticCurveTo(-36, K.y + 6, cx, cy - 12); c.stroke();
+      if (tilt > 0.6) { c.strokeStyle = 'rgba(90,168,232,.85)'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(lipX, lipY); c.quadraticCurveTo(lipX - 6, lipY + 6, cx + 1, cy - 12); c.stroke();
+        c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1; c.beginPath(); c.moveTo(lipX + 0.6, lipY); c.quadraticCurveTo(lipX - 5.4, lipY + 6, cx + 1.6, cy - 12); c.stroke();
         for (let i = 0; i < 4; i++) { const q = ((a * 3 + i / 4) % 1); c.fillStyle = 'rgba(160,210,255,.8)'; circ(c, cx + Math.cos(i * 1.7) * 4 * q, cy - 13 - Math.sin(q * Math.PI) * 5, 1.1); } }
     }
   },
@@ -2664,6 +2681,25 @@ const MARKET_SPOT = { myron: 0, yaroslava: 1, ostap: 2, zakhar: 3, lesia: 4, hal
 const marketSpot = id => VIS_SPOTS.market[MARKET_SPOT[id] != null ? MARKET_SPOT[id] : 0];
 const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];
 const CAFE_SPOTS = [...CAFE_SEATS, 'counter', 'st0', 'st1', 'st2'];   // the chairs, the counter, and standing room (st0-st2) on a rainy day
+// The café door: how far open it is (0-1), opened while anyone is stepping in or out (e.door on a visitor).
+var CAFE_DOOR = { open: 0, x: 18.5, y: 36.0, step: 36.05, out: 36.75 };   // (var: the café's drawing can be asked for before this line runs)
+function visExitCafe(e) { e.inside = null; e.asleep = false; e.seat = null; e.x = CAFE_DOOR.x; e.y = CAFE_DOOR.step; e.door = { dir: 'out', fade: 1 }; e.vview = 'front'; }
+// One step of a visitor going in or coming out. True while they're busy at the door (nothing else moves them).
+function visDoorStep(e, dt) {
+  const d = e.door; if (!d) return false;
+  if (d.dir === 'in') {
+    const dy = CAFE_DOOR.step - e.y, dx = CAFE_DOOR.x - e.x, dd = Math.hypot(dx, dy), sp = 1.1 * dt;
+    if (dd > 0.02 && (CAFE_DOOR.open < 0.85 || visEnts().some(o => o !== e && o.door && o.door.dir === 'in' && o.y < e.y - 0.05))) { e.vwalk = 0; return true; }   // wait on the doorstep while it swings open (and while someone ahead goes in)
+    if (dd > 0.02) { const k = Math.min(1, sp / dd); e.x += dx * k; e.y += dy * k; e.vwalk = 1; e.vstep = (e.vstep || 0) + sp; e.vview = 'back'; return true; }
+    e.vwalk = 0; d.fade = Math.min(1, (d.fade || 0) + dt * 3);   // over the threshold, into the room
+    if (d.fade >= 1) { e.door = null; e.inside = 'cafe'; e.asleep = true; e.seat = cafeFreeSeat(); e.vt = 55 + Math.random() * 55; }
+    return true;
+  }
+  if (CAFE_DOOR.open < 0.85) { e.vwalk = 0; return true; }   // coming out: the door opens first
+  d.fade = Math.max(0, d.fade - dt * 3); e.vwalk = 0;
+  if (d.fade <= 0) { e.door = null; if (e.goal) e.vp = [{ x: CAFE_DOOR.x, y: CAFE_DOOR.out }].concat(visRoute(CAFE_DOOR.x, CAFE_DOOR.out, e.goal[0], e.goal[1])); }   // then down off the step and away (routed from in front of the door, not through the building)
+  return true;
+}
 const cafeFreeSeat = () => { const used = new Set(ents.filter(v => v.inside === 'cafe').map(v => v.seat)); return CAFE_SPOTS.find(k => !used.has(k)) || 'st2'; };
 const VIS_SLOT = 0.1;     // one stop of their day, in day-clock units (about 100 seconds; it was 70, which kept them walking); the day runs from the morning train to the evening one
 const VIS_LEAD = 0.025;   // whoever is due in the café next sets off this much early, so they arrive as the others leave
@@ -2721,8 +2757,8 @@ function visRoute(fx, fy, tx, ty) {
 function visArrive(e) {
   e.vwalk = 0;
   if (e.va === 'leave') { const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1); return; }   // on the train home
-  if (e.va === 'cafe') {   // in through the door, to a free chair (or to the counter for a chat with Solomiia)
-    e.inside = 'cafe'; e.asleep = true; e.seat = cafeFreeSeat(); e.vt = 55 + Math.random() * 55; return;
+  if (e.va === 'cafe') {   // in through the door (it opens for them and shuts behind), to a free chair or the counter
+    e.door = { dir: 'in', fade: 0 }; e.vview = 'back'; return;
   }
   if (e.va === 'bench' && e.benchTo != null) { const B = VIS_BENCHES[e.benchTo]; e.bench = e.benchTo; e.benchTo = null; e.x = B.at[0]; e.y = B.at[1]; e.sit = B; e.vface = B.face; e.vt = 30 + Math.random() * 30; return; }   // sit down
   e.vt = 22 + Math.random() * 22; e.vface = Math.random() < 0.5 ? 1 : -1;
@@ -2746,6 +2782,7 @@ let visBack = false, visForce = false, visSnapT = 0;
 addEventListener('pagehide', () => { if (noSave) return; try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
 document.addEventListener('visibilitychange', () => { if (document.hidden && !noSave) try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
 function visitorsStep(dt) {
+  { const want = visEnts().some(e => e.door && !(e.door.dir === 'in' && e.door.fade > 0.7)); CAFE_DOOR.open = Math.max(0, Math.min(1, CAFE_DOOR.open + (want ? 1 : -1) * dt / 0.4)); }
   const C = S.clock; if (!C) return;
   const late = C.t >= 0.66 || nightNow();
   // back in the game after closing it: put everyone back where they were (or, from an older save, at their stops)
@@ -2763,11 +2800,12 @@ function visitorsStep(dt) {
     }
   }
   for (const e of visEnts()) {
-    if (late && e.va !== 'leave') { if (e.inside) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.75; } e.pet = null; visGo(e, 'leave'); }
+    if (late && e.va !== 'leave') { if (e.inside) visExitCafe(e); else if (e.door && e.door.dir === 'in') e.door = null; e.pet = null; visGo(e, 'leave'); }
     e.petCd -= dt;
     if (e.inside) { e.vt -= dt;
-      if (visSlot() > e.slot) { e.slot = visSlot(); if (!wet(S.wx)) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPlan(e)); } }   // on to the next stop of their day (not out into the rain)
+      if (visSlot() > e.slot) { e.slot = visSlot(); if (!wet(S.wx)) { visExitCafe(e); visGo(e, visPlan(e)); } }   // on to the next stop of their day (not out into the rain)
       continue; }
+    if (visDoorStep(e, dt)) continue;   // stepping through the café door
     if (wet(S.wx) && !late && !e.inside && e.va !== 'cafe' && e.va !== 'leave') { e.pet = null; visGo(e, 'cafe'); }   // rain: everyone into the café
     // petting a cat
     if (e.pet) {
@@ -9582,7 +9620,7 @@ function drawPrints(c, t) {
 const PEOPLE_GAP = 0.62;
 function peopleApart(dt) {
   if (dt <= 0) return;
-  const people = ents.filter(e => e.kind === 'npc' && !e.asleep && !e.inside && !e.route2 && !goneNow(e));
+  const people = ents.filter(e => e.kind === 'npc' && !e.asleep && !e.inside && !e.door && !e.route2 && !goneNow(e));
   const free = (x, y) => x > 0.5 && x < MW - 0.5 && y > 1 && y < MH - 0.5 && !solid[Math.floor(y)][Math.floor(x)];
   const nudge = (o, dx, dy) => { if (free(o.x + dx, o.y + dy)) { o.x += dx; o.y += dy; } else if (free(o.x + dx, o.y)) o.x += dx; else if (free(o.x, o.y + dy)) o.y += dy; };
   const sep = (a, b, share) => { let dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy); if (d >= PEOPLE_GAP) return; if (d < 0.001) { dx = 0.3; dy = 0.05; d = Math.hypot(dx, dy); } const m = (PEOPLE_GAP - d) * share; nudge(a, dx / d * m, dy / d * m); };
@@ -9831,6 +9869,12 @@ function drawWorld(t) {
       if (view === 1 || view === 3) personSide(c, 0, 0, L0, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
       c.restore(); continue; }
     if (e.vis && e.behind) continue;   // round the back of the market stall: drawn after the stall, above its counter
+    if (e.vis && e.door) {
+      const cf = ents.find(q => q.k === 'cafe'), k = cf.s * T / 100, cx = cf.x * T, cy = cf.y * T;
+      c.save(); c.beginPath(); c.rect(cx - 9 * k, cy - 40 * k, 18 * k, 34 * k); c.rect(cx - 2000, cy - 6 * k, 4000, 2000); c.clip();
+      c.globalAlpha = 1 - (e.door.fade || 0);
+      const Lw = Object.assign({}, NPC[e.npc].look, { armR: undefined, armL: undefined }); person(c, x, y, Lw, t, e.vwalk || 0, 1, (e.vstep || 0) * 3.7, { back: e.door.dir === 'in' ? 1 : 0 });
+      c.restore(); continue; }
     if (e.vis) { drawVisitor(c, x, y, e, t); continue; }
     if (e.kind === 'npc' && e.route2) { const L = Object.assign({}, NPC[e.npc].look, { armR: undefined, armL: undefined }); c.save(); c.translate(x, y); c.scale(e.wface || 1, 1); personSide(c, 0, 0, L, t, 1, 1, e.homeGo * 3.7); c.restore(); continue; }
     if (e.kind === 'npc') {
