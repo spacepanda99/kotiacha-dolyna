@@ -7068,7 +7068,8 @@ function drawBed(t) {
   // --- 1. good night to the cats (skipped when there are none): the view glides from one cat to the next
   const CT = cats.length ? 0.4 + Math.max(3.2, cats.length * 1.7) : 3.6;   // when the cats' part ends
   if (cats.length && a > 0.4 && a < CT) {
-    const k = Math.min(cats.length - 1, Math.floor((a - 0.4) / 1.7)), p = catSpot(k), want = Math.max(-roomPL(), Math.min(panMax(), p.x - w / 2));
+    if (!bed.catOrder) { const xs = cats.map((_, i) => i).sort((i, j) => catSpot(i).x - catSpot(j).x), mid = roomX + w / 2; bed.catOrder = Math.abs(catSpot(xs[0]).x - mid) <= Math.abs(catSpot(xs[xs.length - 1]).x - mid) ? xs : xs.reverse(); }   // one sweep across the room, starting from the nearer end (not back and forth)
+    const k = bed.catOrder[Math.min(cats.length - 1, Math.floor((a - 0.4) / 1.7))], p = catSpot(k), want = Math.max(-roomPL(), Math.min(panMax(), p.x - w / 2));
     const dtb = Math.min(0.1, Math.max(0, t - (lastT || t))); roomX += (want - roomX) * Math.min(1, dtb * 4); clampPan();
   }
   if (winter() && a > 0.4 && a < CT) once('warm', () => { bed.warm = (S.bag.drova || 0) >= 2; if (bed.warm) S.bag.drova -= 2; hud(); save(); if (!cats.length) say(bed.warm ? 'p_zatopy_pich' : 'p_kholodno'); });
