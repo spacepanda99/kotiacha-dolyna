@@ -203,6 +203,11 @@ window.DATA = {
     { id: "rakhivnytsia", uk: "рахівниця", tr: "ra-KHIV-ny-tsia", en: "abacus", ic: "🧮", acc: "рахівницю" },
     { id: "porakhui", uk: "порахуй", tr: "po-ra-KHUI", en: "count!", ic: "🔢", verb: true },
     { id: "vidnymy", uk: "відніми", tr: "vid-NY-my", en: "take away!", ic: "➖", verb: true },
+    // --- the railway
+    { id: "vokzal", uk: "вокзал", tr: "vok-ZAL", en: "railway station", ic: "@vokzal", fact: { uk: "Укрзалізниця — одна з найбільших залізниць Європи.", en: "Ukraine's railway is one of the biggest in Europe, and its trains kept running all through the war." } },
+    { id: "potiah", uk: "потяг", tr: "PO-tiah", en: "train", ic: "🚂" },
+    { id: "reiky", uk: "рейки", tr: "REI-ky", en: "rails", ic: "🛤️" },
+    { id: "rozklad", uk: "розклад", tr: "ROZ-klad", en: "timetable", ic: "🗓️" },
     // --- at the café
     { id: "kavarnia", uk: "кав'ярня", tr: "ka-VIAR-nia", en: "café", ic: "@kavarnia", acc: "кав'ярню", fact: { uk: "Львів називають кавовою столицею України.", en: "Lviv is called Ukraine's coffee capital, and its cafés are famous for coffee brewed on hot sand." } },
     { id: "kava", uk: "кава", tr: "KA-va", en: "coffee", ic: "☕", acc: "каву" },

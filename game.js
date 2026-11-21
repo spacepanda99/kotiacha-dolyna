@@ -8,7 +8,8 @@ const NPC = Object.fromEntries(D.npcs.map(n => [n.id, n]));
 const PH = Object.fromEntries(D.phrases.map(p => [p.id, p]));
 const $ = s => document.querySelector(s);
 const cv = $('#c'), ctx = cv.getContext('2d');
-const T = 64, MW = 42, MH = 38;   // (32 rows until the café's square was added at the bottom)   // (36 wide until the school was added at the east end of the main road)   // (28 rows until the neighbours' cottages along the bottom road were added)
+const T = 64, MW = 42, MH = 38;   // (32 rows until the café's square was added at the bottom)
+const GROUND_TOP = 4;   // rows of meadow painted above the map, so the camera can look past the railway   // (36 wide until the school was added at the east end of the main road)   // (28 rows until the neighbours' cottages along the bottom road were added)
 // Spaced review: how long until a word at each level is "due" again.
 const IV = [0, 60e3, 300e3, 1800e3, 4 * 3600e3, 86400e3];
 const now = () => Date.now();
@@ -592,6 +593,68 @@ const DRAW = {
     for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#f2c230' : '#2c6ed5'; poly(c, [[0, -66], [-30 + i * 7.5, -56], [-22.5 + i * 7.5, -56]]); }
     for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#f2c230' : '#2c6ed5'; c.beginPath(); c.arc(-26.25 + i * 7.5, -56, 3.75, 0, Math.PI); c.fill(); }
     c.fillStyle = '#8a5a2b'; circ(c, 0, -66.5, 1.5);
+  },
+  // The village railway station (вокзал «Долина»): an ochre-yellow building with white pilasters and cornices,
+  // two low wings with tall arched windows, and a taller middle with a clock tower and a green spire flying the
+  // flag. Over the arched double door, the station's name on a green board; beside it the station bell on a
+  // bracket and the timetable; lamps either side; flower boxes. The clock shows the time of day. Door at x = 0.
+  vokzal(c, o) {
+    const t = (o && o.t) || 0, ochre = '#e8b84e', ochreD = '#cf9d35', white = '#fbf4e3', green = '#2f6b55', greenL = '#3f8a6e';
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 0, 1, 66, 5.5);
+    c.fillStyle = '#8d8a84'; c.fillRect(-60, -6, 120, 6); c.fillStyle = '#a19e97'; for (let x = -58; x < 59; x += 9) rr(c, x, -5.4, 7.5, 4.6, 1.4);
+    // the wings
+    for (const sg of [-1, 1]) {
+      const x0 = sg < 0 ? -58 : 20, ww = 38;
+      const g = c.createLinearGradient(x0, 0, x0 + ww, 0); g.addColorStop(0, sg < 0 ? ochreD : ochre); g.addColorStop(1, sg < 0 ? ochre : ochreD); c.fillStyle = g; c.fillRect(x0, -46, ww, 40);
+      c.fillStyle = white; c.fillRect(x0, -48, ww, 3); c.fillRect(x0, -9, ww, 3); for (const px of [x0, x0 + ww - 3]) c.fillRect(px, -46, 3, 40);   // cornice, plinth band, corner pilasters
+      for (let k = 0; k < 2; k++) { const wx = x0 + 9 + k * 17; c.fillStyle = white; c.beginPath(); c.moveTo(wx - 6.5, -12); c.lineTo(wx - 6.5, -33); c.arc(wx, -33, 6.5, Math.PI, 0); c.lineTo(wx + 6.5, -12); c.closePath(); c.fill();
+        c.fillStyle = '#bfe3f7'; c.beginPath(); c.moveTo(wx - 5, -13.5); c.lineTo(wx - 5, -33); c.arc(wx, -33, 5, Math.PI, 0); c.lineTo(wx + 5, -13.5); c.closePath(); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(wx - 4, -32, 1.4, 12); c.fillStyle = white; c.fillRect(wx - 0.6, -38, 1.2, 24.5); c.fillRect(wx - 5, -26, 10, 1.2);
+        c.fillStyle = '#8a5a2b'; c.fillRect(wx - 7, -12.5, 14, 2.6); for (let f = 0; f < 4; f++) { c.fillStyle = ['#d43a3a', '#f2c230', '#e86fa0', '#d43a3a'][f]; circ(c, wx - 5 + f * 3.3, -13.4, 1.6); } }
+      // the wing roof
+      c.fillStyle = green; poly(c, [[x0 - 3, -47], [x0 + (sg < 0 ? 4 : 0), -60], [x0 + ww - (sg > 0 ? 4 : 0), -60], [x0 + ww + 3, -47]]);
+      c.fillStyle = greenL; poly(c, [[x0 - 3, -47], [x0 + (sg < 0 ? 4 : 0), -60], [x0 + (sg < 0 ? 10 : 6), -60], [x0 + 3, -47]]);
+      c.strokeStyle = 'rgba(20,50,40,.4)'; c.lineWidth = 0.8; for (let k = 1; k < 8; k++) { const xx = x0 + k * ww / 8; c.beginPath(); c.moveTo(xx, -60); c.lineTo(xx + (xx - x0 - ww / 2) * 0.08, -47); c.stroke(); }
+    }
+    // the middle: taller, with pilasters, the door and the sign
+    { const g = c.createLinearGradient(-20, 0, 20, 0); g.addColorStop(0, ochre); g.addColorStop(0.5, '#f0c560'); g.addColorStop(1, ochre); c.fillStyle = g; c.fillRect(-20, -62, 40, 56); }
+    c.fillStyle = white; c.fillRect(-21, -64, 42, 3.5); c.fillRect(-20, -9, 40, 3); for (const px of [-20, -14, 11, 17]) c.fillRect(px, -61, 3, 52);
+    // arched double door
+    c.fillStyle = white; c.beginPath(); c.moveTo(-9.5, -6); c.lineTo(-9.5, -30); c.arc(0, -30, 9.5, Math.PI, 0); c.lineTo(9.5, -6); c.closePath(); c.fill();
+    c.fillStyle = '#5a381b'; c.beginPath(); c.moveTo(-8, -6); c.lineTo(-8, -30); c.arc(0, -30, 8, Math.PI, 0); c.lineTo(8, -6); c.closePath(); c.fill();
+    c.fillStyle = '#2f6b55'; c.fillRect(-7, -27, 6.5, 21); c.fillRect(0.5, -27, 6.5, 21); c.fillStyle = '#ffe9b8'; c.beginPath(); c.arc(0, -30, 6.5, Math.PI, 0); c.closePath(); c.fill(); c.strokeStyle = '#5a381b'; c.lineWidth = 0.8; for (let k = 1; k < 4; k++) { const a = Math.PI + k * Math.PI / 4; c.beginPath(); c.moveTo(0, -30); c.lineTo(Math.cos(a) * 6.5, -30 + Math.sin(a) * 6.5); c.stroke(); }   // fanlight
+    c.strokeStyle = 'rgba(0,0,0,.25)'; for (const dx of [-7, 0.5]) { c.strokeRect(dx + 1.2, -25, 4, 7); c.strokeRect(dx + 1.2, -16, 4, 7); }
+    c.fillStyle = '#f2c230'; circ(c, -1.8, -16, 0.9); circ(c, 1.8, -16, 0.9);
+    c.fillStyle = '#9b6b3c'; c.fillRect(-13, -6, 26, 3); c.fillRect(-10, -3, 20, 3);   // steps
+    // the station's name over the door
+    c.fillStyle = '#1f4a3a'; rr(c, -17, -48, 34, 8, 1.6); c.strokeStyle = '#d9a63a'; c.lineWidth = 0.8; c.strokeRect(-16.2, -47.2, 32.4, 6.4);
+    c.fillStyle = '#f2cc66'; c.font = '800 5px "Cozy", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ДОЛИНА', 0, -43.8);
+    // lamps either side of the door
+    for (const sg of [-1, 1]) { const lx = sg * 14; c.strokeStyle = '#2e2c2a'; c.lineWidth = 1; c.beginPath(); c.moveTo(lx, -33); c.lineTo(lx, -36); c.stroke(); c.fillStyle = '#2e2c2a'; poly(c, [[lx - 2.5, -36], [lx + 2.5, -36], [lx, -39]]); c.fillStyle = 'rgba(255,236,190,.8)'; c.fillRect(lx - 1.8, -33, 3.6, 4.5); c.fillStyle = '#2e2c2a'; c.fillRect(lx - 2.2, -28.6, 4.4, 1); }
+    // the station bell on its bracket (left) and the timetable (right)
+    { const bx = -27, by = -38; c.strokeStyle = '#2e2c2a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-20, by - 3); c.lineTo(bx, by - 3); c.stroke(); c.lineWidth = 0.8; c.beginPath(); c.arc(-22.5, by - 1.5, 1.4, 0.4, 5.6); c.stroke();
+      c.fillStyle = '#c99a32'; c.beginPath(); c.moveTo(bx - 3, by + 3.5); c.quadraticCurveTo(bx - 3, by - 2.5, bx, by - 2.5); c.quadraticCurveTo(bx + 3, by - 2.5, bx + 3, by + 3.5); c.closePath(); c.fill(); c.fillStyle = '#f2cc66'; ell(c, bx - 1, by, 0.7, 1.8); c.fillStyle = '#8a6a2a'; circ(c, bx, by + 4.2, 0.8);
+      c.strokeStyle = '#8a6a2a'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(bx, by + 5); c.lineTo(bx + 1, by + 12); c.stroke(); }
+    { const tx = 29, ty = -34; c.fillStyle = '#5a381b'; c.fillRect(tx - 6.5, ty - 7, 13, 15); c.fillStyle = '#fffdf5'; c.fillRect(tx - 5.5, ty - 6, 11, 13); c.fillStyle = '#2f6b55'; c.fillRect(tx - 5.5, ty - 6, 11, 2.6); c.fillStyle = '#fffdf5'; c.font = '700 1.8px system-ui'; c.textAlign = 'center'; c.fillText('РОЗКЛАД', tx, ty - 4.6);
+      c.fillStyle = '#4a2c1a'; for (let k = 0; k < 4; k++) { c.fillRect(tx - 4.5, ty - 2 + k * 2.2, 4, 0.7); c.fillRect(tx + 1.5, ty - 2 + k * 2.2, 3, 0.7); } }
+    // the roof over the middle, then the clock tower, its spire and the flag
+    c.fillStyle = green; poly(c, [[-24, -63], [-17, -74], [17, -74], [24, -63]]); c.fillStyle = greenL; poly(c, [[-24, -63], [-17, -74], [-12, -74], [-19, -63]]);
+    c.fillStyle = ochre; c.fillRect(-10, -92, 20, 19); c.fillStyle = white; c.fillRect(-11, -93.5, 22, 2.5); c.fillRect(-11, -74, 22, 2); c.fillRect(-10, -92, 2, 19); c.fillRect(8, -92, 2, 19);
+    { const cx2 = 0, cy2 = -83, R = 6.5; c.fillStyle = '#fffdf5'; circ(c, cx2, cy2, R); c.strokeStyle = '#2e2c2a'; c.lineWidth = 1; c.beginPath(); c.arc(cx2, cy2, R, 0, 7); c.stroke();
+      c.lineWidth = 0.5; for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; c.beginPath(); c.moveTo(cx2 + Math.cos(a) * R * 0.8, cy2 + Math.sin(a) * R * 0.8); c.lineTo(cx2 + Math.cos(a) * R * 0.95, cy2 + Math.sin(a) * R * 0.95); c.stroke(); }
+      const dayT = (typeof S !== 'undefined' && S.clock) ? S.clock.t : 0.3, hrs = dayT * 24, ha = (hrs % 12) / 12 * Math.PI * 2 - Math.PI / 2, ma = (hrs % 1) * Math.PI * 2 - Math.PI / 2;   // the real time of day
+      c.lineCap = 'round'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(cx2, cy2); c.lineTo(cx2 + Math.cos(ha) * R * 0.5, cy2 + Math.sin(ha) * R * 0.5); c.stroke(); c.lineWidth = 0.7; c.beginPath(); c.moveTo(cx2, cy2); c.lineTo(cx2 + Math.cos(ma) * R * 0.78, cy2 + Math.sin(ma) * R * 0.78); c.stroke(); c.fillStyle = '#d43a3a'; circ(c, cx2, cy2, 0.8); }
+    c.fillStyle = green; poly(c, [[-12, -93], [0, -112], [12, -93]]); c.fillStyle = greenL; poly(c, [[-12, -93], [0, -112], [-4, -93]]);
+    c.fillStyle = '#d9a63a'; circ(c, 0, -112.5, 1.4);
+    c.strokeStyle = '#3a3634'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(0, -113); c.lineTo(0, -126); c.stroke();
+    { const fw = Math.sin(t * 3) * 1.2; c.fillStyle = '#2c6ed5'; c.beginPath(); c.moveTo(0, -126); c.quadraticCurveTo(5, -126.5 + fw, 10, -126); c.lineTo(10, -122.5); c.quadraticCurveTo(5, -123 + fw, 0, -122.5); c.closePath(); c.fill();
+      c.fillStyle = '#f2c230'; c.beginPath(); c.moveTo(0, -122.5); c.quadraticCurveTo(5, -123 + fw, 10, -122.5); c.lineTo(10, -119); c.quadraticCurveTo(5, -119.5 + fw, 0, -119); c.closePath(); c.fill(); }
+  },
+  // A telegraph pole beside the line, with its cross-arm and glass insulators.
+  stovp(c) {
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 2, 0, 6, 1.8);
+    c.fillStyle = '#6b4422'; c.fillRect(-1.6, -78, 3.2, 78); c.fillStyle = '#5a381b'; c.fillRect(-9, -72, 18, 2.4);
+    c.fillStyle = '#9fd4f0'; for (const x of [-7.5, -3, 3, 7.5]) { c.fillRect(x - 0.8, -75, 1.6, 3); }
   },
   khata(c) { khataArt(c, KHATA_LOOK.mine); },
   khata_olia(c) { khataArt(c, KHATA_LOOK.olia); },
@@ -1815,7 +1878,7 @@ function pondPath(c, grow, stroke) {
   c.closePath(); if (stroke) c.stroke(); else c.fill();
 }
 const isRoad = (x, y) => (y === 14 && x >= 2 && x <= 38) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
-   (x === 18 && y >= 6 && y <= 30) || (y === 30 && x >= 5 && x <= 31) ||   // the village road runs on down to the bottom road, past Mr. Bohdan's and Taras's cottages
+   (x === 18 && y >= 5 && y <= 30) || (y === 30 && x >= 5 && x <= 31) ||   // the village road runs on down to the bottom road, past Mr. Bohdan's and Taras's cottages
     (x === 7 && y >= 11 && y <= 13) || (x === 28 && y >= 11 && y <= 13) || (x === 11 && y === 5) || ((x === 15 || x === 22) && y >= 31 && y <= 36) || (y === 36 && x >= 15 && x <= 22) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
@@ -1823,7 +1886,7 @@ const STALL = { x: 21.6, y: 12.95 };   // where the market stall stands (its fro
 // Whether a spot is on the road or within m tiles of it (the road is drawn a little wider than its tiles).
 // On a road or path as it's drawn (a little wider than its tiles), or in the soft patch where a road ends.
 const ROAD_ENDS = []; for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) if (isRoad(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => isRoad(x + a, y + b)).length === 1) ROAD_ENDS.push([x + 0.5, y + 0.5]);
-const onRoadish = (x, y) => { if (Math.hypot(x - STALL.x, (y - STALL.y + 0.25) / 0.42) < 2.8) return true; for (const dx of [-0.35, 0, 0.35]) for (const dy of [-0.35, 0, 0.35]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return ROAD_ENDS.some(([ex, ey]) => Math.hypot(x - ex, (y - ey) / 0.78) < 1.45); };
+const onRoadish = (x, y) => { if (y < 2.45) return true; if (Math.hypot(x - STALL.x, (y - STALL.y + 0.25) / 0.42) < 2.8) return true; for (const dx of [-0.35, 0, 0.35]) for (const dy of [-0.35, 0, 0.35]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return ROAD_ENDS.some(([ex, ey]) => Math.hypot(x - ex, (y - ey) / 0.78) < 1.45); };
 const GROWS = new Set(['kvitka', 'hryb', 'malva', 'chornobryvtsi', 'mak', 'soniashnyk', 'pshenytsia']);
 const nearRoad = (x, y, m) => { for (const dx of [-m, 0, m]) for (const dy of [-m, 0, m]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return false; };
 const ANIMAL_OF = { zhaba: 'frog', kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
@@ -1878,6 +1941,9 @@ function add(e) {
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   add({ w: 'lavka', ic: '@benchside', x: 35.15, y: 13.4, s: 1.25, solid: true });   // beside the school, facing its porch
   rect(36, 11, 40, 13); add({ w: 'shkola', ic: '@shkola', k: 'school', x: 38.5, y: 14.0, s: 4.0 });
+  for (let x = 0; x < MW; x++) for (let y = 0; y <= 2; y++) block(x, y);   // the railway and the platform
+  rect(16, 3, 20, 4); add({ w: 'vokzal', ic: '@vokzal', k: 'station', x: 18.5, y: 5.0, s: 4.4 });   // Dolyna station, at the north end of the village road
+  for (const x of [2.5, 8.5, 27.5, 33.5, 39.5]) add({ w: 'potiah', ic: '@stovp', k: 'pole' + x, x, y: 2.3, s: 1.4, quiet: true });   // telegraph poles along the line
   rect(16, 33, 20, 35); add({ w: 'kavarnia', ic: '@kavarnia', k: 'cafe', x: 18.5, y: 36.0, s: 4.2 });   // the café, at the bottom centre, on its own little square
   for (const [tx, ty] of [[16.6, 37.55], [20.4, 37.55]]) add({ w: 'parasolka', ic: '@cafestil', k: 'ctab' + tx, x: tx, y: ty, s: 1.5, solid: true });   // tables on the terrace   // the village school, at the east end of the main road, its door over the road's end
   // Pond.
@@ -1915,7 +1981,7 @@ function add(e) {
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
-  for (const [x, y] of [[2.5, 6.9], [15.7, 10.4], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [0.9, 17.6]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
+  for (const [x, y] of [[2.5, 6.9], [15.7, 10.4], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [7.5, 3.9], [0.9, 17.6]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [16.8, 8.7], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
@@ -1941,16 +2007,133 @@ function add(e) {
   }
 })();
 
+// ------------------------------------------------------------------ the railway
+// The line runs east to west along the top of the valley. A little steam train (a green locomotive with red
+// wheels and a brass dome, then three blue-and-yellow carriages) comes in from the east, slows into Dolyna
+// station, waits while the station bell rings three times, whistles, and steams away to the west. One arrives a
+// few moments after Vicky first steps out in the morning, and more come at midday, in the evening and at night
+// (windows lit). It only runs while she's out in the village. No passengers yet.
+const RAIL_Y = 1.3;                 // the rails, in tile rows
+const TRAIN_STOP = 13.1;            // where the locomotive's front stops (the whole train is then centred on the station)
+const TRAIN_LEN = [2.9, 2.5, 2.5, 2.5];   // locomotive, then each carriage, in tiles
+const TRAIN = { on: false, x: 0, v: 0, phase: '', wait: 0, dist: 0, puffs: [], chuffT: 0, bells: 0, whistled: false };
+const TRAIN_TIMES = [['noon', 0.48], ['eve', 0.7], ['night', 0.9]];
+function trainStart() { if (TRAIN.on) return; Object.assign(TRAIN, { on: true, x: MW + 3, v: 5.5, phase: 'in', wait: 0, whistled: false, bells: 0 }); }
+function trainVol() { const mid = TRAIN.x + 5; return Math.max(0, Math.min(1, 1 - Math.hypot(P.x - Math.max(0, Math.min(MW, mid)), (P.y - RAIL_Y) * 1.2) / 24)); }
+function trainWhistle(v) { if (v < 0.03) return; sfxTone(780, 760, 0.55, 0.09 * v); sfxTone(980, 960, 0.55, 0.06 * v); setTimeout(() => { sfxTone(780, 740, 0.9, 0.09 * v); sfxTone(980, 930, 0.9, 0.06 * v); }, 620); }
+function trainStep(dt) {
+  if (mode !== 'world') return;
+  const C = S.clock; if (!C) return;
+  // the morning train: a few moments after she first steps out after waking up
+  if (C.ev.mtrain && C.ev.mtrain !== true && C.ev.mtrain > nowT + 10) C.ev.mtrain = nowT + 3.5;   // (a time saved before a reload)
+  if (C.t < 0.45 && !C.ev.mtrain) { C.ev.mtrain = nowT + 3.5; }
+  if (C.ev.mtrain && C.ev.mtrain !== true && nowT >= C.ev.mtrain) { C.ev.mtrain = true; trainStart(); }
+  for (const [k, at] of TRAIN_TIMES) if (C.t >= at && C.t < at + 0.06 && !C.ev['tr_' + k]) { C.ev['tr_' + k] = 1; trainStart(); }
+  if (!TRAIN.on) return;
+  const T0 = TRAIN, vol = trainVol();
+  if (T0.phase === 'in') {   // rolling in and braking to a stop at the platform
+    const d = T0.x - TRAIN_STOP; T0.v = Math.max(0.35, Math.min(5.5, Math.sqrt(Math.max(0, 2 * 1.5 * d))));
+    if (!T0.whistled && T0.x < MW - 2) { T0.whistled = true; trainWhistle(vol); }
+    if (d < 2.2 && !T0.braked) { T0.braked = true; if (vol > 0.03) sfxTone(2600, 2300, 1.2, 0.015 * vol); }
+    if (d <= 0.02) { T0.x = TRAIN_STOP; T0.v = 0; T0.phase = 'wait'; T0.wait = 0; T0.braked = false; }
+  } else if (T0.phase === 'wait') {   // standing at the station; the bell rings three times, then the whistle
+    T0.wait += dt;
+    const ring = n => { if (T0.bells < n && T0.wait > 3 + n * 0.7) { T0.bells = n; if (vol > 0.03) { sfxTone(1568, 1500, 0.6, 0.07 * vol); sfxTone(2350, 2290, 0.4, 0.035 * vol); } } };
+    ring(1); ring(2); ring(3);
+    if (T0.wait > 6.2 && !T0.leaveWhistle) { T0.leaveWhistle = true; trainWhistle(vol); }
+    if (T0.wait > 7.2) { T0.phase = 'out'; T0.leaveWhistle = false; }
+  } else if (T0.phase === 'out') {   // pulling away to the west
+    T0.v = Math.min(6, T0.v + dt * 1.1);
+    if (T0.x < -12) { T0.on = false; T0.phase = ''; }
+  }
+  T0.x -= T0.v * dt; T0.dist += T0.v * dt;
+  // chuffing: faster as it goes, and a soft hiss while it stands
+  T0.chuffT -= dt;
+  if (T0.chuffT <= 0) { if (T0.v > 0.1) { T0.chuffT = Math.max(0.13, 0.55 / (T0.v + 0.4)); if (vol > 0.03) sfxHit(320 + Math.random() * 60, 0.09, 0.16 * vol, 'lowpass', 1); T0.puffs.push({ x: T0.x + 0.55, y: RAIL_Y - 1.55, age: 0, big: 1 }); }
+    else { T0.chuffT = 0.9; T0.puffs.push({ x: T0.x + 0.55, y: RAIL_Y - 1.55, age: 0, big: 0.6 }); } }
+  for (const p of T0.puffs) { p.age += dt; p.y -= dt * 0.55; p.x += dt * (0.35 + T0.v * 0.15); }
+  T0.puffs = T0.puffs.filter(p => p.age < 2.6);
+}
+// Windows of the carriages, in tile coordinates, for the night pass to light.
+function trainWindows() {
+  if (!TRAIN.on) return [];
+  const out = []; let x = TRAIN.x + TRAIN_LEN[0] + 0.12;
+  for (let k = 1; k < TRAIN_LEN.length; k++) { for (let i = 0; i < 5; i++) out.push([x + 0.25 + i * 0.44, RAIL_Y - 1.0, 0.3, 0.32]); x += TRAIN_LEN[k] + 0.12; }
+  return out;
+}
+function drawTrain(c, t) {
+  const R0 = TRAIN; if (!R0.on) { drawTrainSmoke(c); return; }
+  const y = RAIL_Y * T, wheelA = R0.dist / 0.22;
+  const wheel = (wx, r, col) => { c.fillStyle = col; circ(c, wx, y - r, r); c.fillStyle = '#2e2c2a'; circ(c, wx, y - r, r * 0.25); c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.2; for (let k = 0; k < 4; k++) { const a = wheelA + k * Math.PI / 4; c.beginPath(); c.moveTo(wx - Math.cos(a) * r * 0.85, y - r - Math.sin(a) * r * 0.85); c.lineTo(wx + Math.cos(a) * r * 0.85, y - r + Math.sin(a) * r * 0.85); c.stroke(); } };
+  // ---- the locomotive (facing west: its front is on the left)
+  { const x0 = R0.x * T, L = TRAIN_LEN[0] * T;
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(x0, y - 3, L, 4);
+    c.fillStyle = '#c0392b'; poly(c, [[x0 - 10, y - 2], [x0 + 6, y - 2], [x0 + 6, y - 18], [x0 + 1, y - 18]]);   // the cowcatcher
+    c.fillStyle = '#2e2c2a'; c.fillRect(x0 + 2, y - 26, L * 0.28, 9);   // frame
+    // the boiler, banded in brass, the smokebox door and headlamp at the front
+    const bx = x0 + 6, by = y - 52, bw = L * 0.62, bh = 26;
+    let g = c.createLinearGradient(0, by, 0, by + bh); g.addColorStop(0, '#4a8a6e'); g.addColorStop(0.45, '#2f6b55'); g.addColorStop(1, '#1f4a3a'); c.fillStyle = g; rr(c, bx, by, bw, bh, 12);
+    c.fillStyle = '#d9a63a'; for (const k of [0.3, 0.55, 0.8]) c.fillRect(bx + bw * k, by, 3, bh);
+    c.fillStyle = '#2e2c2a'; ell(c, bx + 3, by + bh / 2, 7, bh / 2); c.fillStyle = '#4a4744'; ell(c, bx + 3, by + bh / 2, 4.5, bh * 0.38); c.fillStyle = '#d9a63a'; circ(c, bx + 3, by + bh / 2, 1.6);
+    c.fillStyle = '#fff3b0'; circ(c, bx - 1, by - 5, 6); c.fillStyle = '#2e2c2a'; c.fillRect(bx - 5, by + 0.5, 8, 3); c.strokeStyle = '#2e2c2a'; c.lineWidth = 2; c.beginPath(); c.arc(bx - 1, by - 5, 6, 0, 7); c.stroke();   // headlamp
+    c.fillStyle = '#2e2c2a'; c.fillRect(bx + 10, by - 18, 11, 19); c.fillRect(bx + 7, by - 22, 17, 5);   // chimney
+    c.fillStyle = '#d9a63a'; ell(c, bx + bw * 0.45, by - 2, 9, 9); c.fillStyle = '#f2cc66'; ell(c, bx + bw * 0.43, by - 5, 3, 3);   // brass dome
+    c.fillStyle = '#d9a63a'; circ(c, bx + bw * 0.65, by - 4, 3.2); c.fillRect(bx + bw * 0.65 - 0.8, by - 9, 1.6, 5);   // the bell
+    // the cab
+    const cx0 = bx + bw - 6, cw = L - (cx0 - x0); c.fillStyle = '#2f6b55'; c.fillRect(cx0, y - 74, cw, 50); c.fillStyle = '#1f4a3a'; rr(c, cx0 - 4, y - 80, cw + 8, 8, 3);
+    c.fillStyle = '#ffe9b8'; rr(c, cx0 + 7, y - 68, cw - 14, 18, 3); c.strokeStyle = '#d9a63a'; c.lineWidth = 2; c.strokeRect(cx0 + 2, y - 72, cw - 4, 44);
+    c.fillStyle = '#f2c230'; c.font = '800 10px system-ui'; c.textAlign = 'center'; c.fillText('Д-1', cx0 + cw / 2, y - 36);
+    c.fillStyle = '#2e2c2a'; c.fillRect(x0 + 4, y - 24, L - 6, 6);
+    wheel(x0 + 16, 8, '#2e2c2a');   // the small leading wheel
+    for (const k of [0.38, 0.58, 0.78]) wheel(x0 + L * k, 14, '#c0392b');   // the big red driving wheels
+    { const a = wheelA, rx = Math.cos(a) * 7, ry = Math.sin(a) * 7; c.strokeStyle = '#b8bcc2'; c.lineWidth = 3; c.beginPath(); c.moveTo(x0 + L * 0.38 + rx, y - 14 + ry); c.lineTo(x0 + L * 0.78 + rx, y - 14 + ry); c.stroke(); }   // the coupling rod
+    c.fillStyle = '#2e2c2a'; c.fillRect(x0 + L - 2, y - 20, 10, 4); }
+  // ---- the carriages
+  let x = R0.x + TRAIN_LEN[0] + 0.12;
+  for (let k = 1; k < TRAIN_LEN.length; k++) {
+    const x0 = x * T, L = TRAIN_LEN[k] * T, top = y - 70;
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(x0, y - 3, L, 4);
+    let g = c.createLinearGradient(0, top, 0, y - 16); g.addColorStop(0, '#3a74c0'); g.addColorStop(1, '#244f8c'); c.fillStyle = g; rr(c, x0, top, L, y - 16 - top, 5);
+    c.fillStyle = '#f2c230'; c.fillRect(x0, y - 30, L, 6); c.fillStyle = '#e8e2d2'; rr(c, x0 - 2, top - 8, L + 4, 10, 6); c.fillStyle = '#b8b2a2'; c.fillRect(x0 - 2, top, L + 4, 2);
+    for (let i = 0; i < 5; i++) { const wx = x0 + (0.25 + i * 0.44) * T, wy = top + 9; c.fillStyle = '#ffe9b8'; rr(c, wx, wy, 0.3 * T, 0.32 * T, 3); c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(wx + 2, wy + 2, 3, 0.32 * T - 6); c.fillStyle = '#c0392b'; c.fillRect(wx, wy, 0.3 * T, 3); }   // windows, with a red curtain rail
+    c.fillStyle = '#1d3d6c'; c.fillRect(x0 + L - 12, top + 6, 9, y - 22 - top - 6); c.fillStyle = '#f2c230'; circ(c, x0 + L - 5, top + 30, 1.4);   // a door at the end
+    c.fillStyle = '#2e2c2a'; c.fillRect(x0 + 6, y - 18, L - 12, 4); for (const fx of [0.18, 0.32, 0.68, 0.82]) wheel(x0 + L * fx, 7, '#3a3634');
+    c.fillStyle = '#2e2c2a'; c.fillRect(x0 - 8, y - 20, 10, 3);   // coupling
+    x += TRAIN_LEN[k] + 0.12;
+  }
+  drawTrainSmoke(c);
+}
+function drawTrainSmoke(c) {
+  for (const p of TRAIN.puffs) { const q = p.age / 2.6, r = (0.18 + q * 0.6) * T * p.big; c.fillStyle = 'rgba(245,245,240,' + (0.75 * (1 - q)) + ')'; c.beginPath(); c.arc(p.x * T, p.y * T, r, 0, 7); c.fill(); c.fillStyle = 'rgba(210,210,205,' + (0.35 * (1 - q)) + ')'; c.beginPath(); c.arc(p.x * T + r * 0.3, p.y * T + r * 0.25, r * 0.7, 0, 7); c.fill(); }
+}
+// The line itself, painted into the ground: a gravel bed, sleepers, two shiny rails, and the stone platform
+// behind the station with its yellow edge line. Beyond it, a meadow edge with a hedge of trees.
+function paintRailway(c) {
+  const y = RAIL_Y * T, W0 = MW * T, r = seeded(91);
+  for (let i = 0; i < 26; i++) { const x = r() * W0, yy = -3.4 * T + r() * T * 1.6, R = (0.6 + r() * 0.7) * T; c.fillStyle = r() < 0.5 ? '#5f9e4a' : '#6faa52'; c.beginPath(); c.arc(x, yy, R, 0, 7); c.fill(); c.fillStyle = 'rgba(30,70,30,.25)'; c.beginPath(); c.arc(x + R * 0.25, yy + R * 0.3, R * 0.7, 0, 7); c.fill(); }   // the hedge of trees beyond the line
+  c.fillStyle = '#9a9184'; c.fillRect(0, y - 0.48 * T, W0, 0.96 * T);   // gravel bed
+  for (let i = 0; i < 900; i++) { c.fillStyle = ['#857c70', '#b0a798', '#6f675d'][i % 3]; c.fillRect(r() * W0, y - 0.46 * T + r() * 0.92 * T, 2 + r() * 2, 1.5 + r() * 1.5); }
+  c.fillStyle = 'rgba(0,0,0,.15)'; c.fillRect(0, y + 0.44 * T, W0, 4);
+  for (let x = 0; x < W0; x += 0.42 * T) { c.fillStyle = '#6b4a2e'; c.fillRect(x, y - 0.34 * T, 0.2 * T, 0.68 * T); c.fillStyle = 'rgba(255,255,255,.08)'; c.fillRect(x, y - 0.34 * T, 0.2 * T, 3); }   // sleepers
+  for (const dy of [-0.2, 0.2]) { c.fillStyle = '#5a5e64'; c.fillRect(0, y + dy * T - 3, W0, 6); c.fillStyle = '#d6dce2'; c.fillRect(0, y + dy * T - 3, W0, 2); }   // the rails
+  // the platform
+  const px0 = (TRAIN_STOP - 0.8) * T, px1 = (TRAIN_STOP + 11.2) * T, py0 = y + 0.5 * T, py1 = y + 1.55 * T;
+  c.fillStyle = '#b8b2a6'; c.fillRect(px0, py0, px1 - px0, py1 - py0);
+  c.strokeStyle = 'rgba(90,85,75,.35)'; c.lineWidth = 1; for (let x = px0; x < px1; x += 0.5 * T) { c.beginPath(); c.moveTo(x, py0); c.lineTo(x, py1); c.stroke(); } c.beginPath(); c.moveTo(px0, (py0 + py1) / 2); c.lineTo(px1, (py0 + py1) / 2); c.stroke();
+  c.fillStyle = '#f2c230'; c.fillRect(px0, py0 + 3, px1 - px0, 4); c.fillStyle = '#8d877b'; c.fillRect(px0, py0, px1 - px0, 3); c.fillStyle = 'rgba(0,0,0,.15)'; c.fillRect(px0, py1, px1 - px0, 4);
+}
+
 // The ground is painted once into its own canvas.
 const ground = document.createElement('canvas');
 const seeded = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
 // Doorsteps where a road ends (door x, the house's front edge y): her cottage, Grandma Olia's, the windmill, and the two cottages on the bottom road.
-const ROAD_DOORS = [[7.5, 11], [28.5, 11], [11.5, 5], [5.5, 30], [31.5, 30], [38.5, 14]];
+const ROAD_DOORS = [[7.5, 11], [28.5, 11], [11.5, 5], [5.5, 30], [31.5, 30], [38.5, 14], [18.5, 5]];
 function paintGround() {
-  ground.width = MW * T; ground.height = MH * T;
+  ground.width = MW * T; ground.height = (MH + GROUND_TOP) * T;
   const c = ground.getContext('2d'), GW = ground.width, GH = ground.height, r = seeded(7);
   const onRoad = (x, y) => isRoad(Math.floor(x / T), Math.floor(y / T));
   c.fillStyle = '#8fd169'; c.fillRect(0, 0, GW, GH);
+  c.translate(0, GROUND_TOP * T);   // everything below is in map coordinates; the meadow above the map is y < 0
   // broad soft patches of lighter and deeper green, so the meadow is not one flat colour
   for (let i = 0; i < 50; i++) {
     const x = r() * GW, y = r() * GH, R = 130 + r() * 260, lt = r() < 0.5, col = lt ? '184,236,132' : '92,172,82';
@@ -2027,6 +2210,7 @@ function paintGround() {
     c.restore();
     if (fl) { c.fillStyle = '#ffb3d1'; for (let k = 0; k < 6; k++) ell(c, x * T + Math.cos(k * 1.047) * 5, y * T - 4 + Math.sin(k * 1.047) * 3, 4, 2.6); c.fillStyle = '#ffe36e'; circ(c, x * T, y * T - 4, 2.4); }
   }
+  paintRailway(c);
 }
 paintGround();
 // A phone can throw a big canvas's pixels away while the page is in the background or memory is tight; then the
@@ -3135,6 +3319,7 @@ function interact(e) {
   if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.w === 'vokzal') return wordCard('vokzal', { note: '🚂 ' + xl('Dolyna station. The train comes every morning, at midday, in the evening and at night, from the east to the west.') });
   if (e.w === 'kavarnia') return wordCard('kavarnia', { note: '☕ ' + xl('Solomiia\'s café. Go in for a coffee, a cake and a warm welcome.'), acts: [{ k: 'enter', fn: enterCafe }] });
   if (e.w === 'shkola') return wordCard('shkola', { note: '🏫 ' + xl('The village school. Go in and have a look round the classroom.'), acts: [{ k: 'enter', fn: enterSchool }] });
   if (e.w === 'tserkva') return wordCard('tserkva', { note: '⛪ ' + xl('The village church. Go in: it is quiet and beautiful inside.'), acts: [{ k: 'enter', fn: enterChurch }] });
@@ -7692,6 +7877,15 @@ function nightLamps(c, list, sx, sy, t) {
   const W0 = c.canvas.width, H0 = c.canvas.height;
   c.save();
   for (const e of list) {
+    if (e.k === 'station') {
+      const sc = e.s * T * zoom / 100, bx = sx(e.x), by = sy(e.y);
+      if (bx < -200 * sc || bx > W0 + 200 * sc || by < -160 * sc || by > H0 + 120 * sc) continue;
+      const win = (x0, y0, ww, hh) => { const X = bx + x0 * sc, Y = by + y0 * sc, Wd = ww * sc, Hd = hh * sc; c.globalCompositeOperation = 'lighter'; let g = c.createRadialGradient(X + Wd / 2, Y + Hd / 2, 0, X + Wd / 2, Y + Hd / 2, Math.max(Wd, Hd) * 1.2); g.addColorStop(0, 'rgba(255,190,100,' + (0.3 * on) + ')'); g.addColorStop(1, 'rgba(255,190,100,0)'); c.fillStyle = g; c.fillRect(X - Wd, Y - Hd, Wd * 3, Hd * 3); c.globalCompositeOperation = 'source-over'; c.globalAlpha = on; g = c.createLinearGradient(0, Y, 0, Y + Hd); g.addColorStop(0, '#ffe39a'); g.addColorStop(1, '#ffb04a'); c.fillStyle = g; c.fillRect(X, Y, Wd, Hd); c.globalAlpha = 1; };
+      for (const x0 of [-58, 20]) for (let k = 0; k < 2; k++) win(x0 + 9 + k * 17 - 4.5, -36, 9, 22);
+      win(-5.5, -35, 11, 5); win(-5, -88, 10, 10);
+      c.globalCompositeOperation = 'lighter'; for (const lx of [-14, 14]) { const X = bx + lx * sc, Y = by - 31 * sc, g = c.createRadialGradient(X, Y, 0, X, Y, 14 * sc); g.addColorStop(0, 'rgba(255,210,130,' + (0.7 * on) + ')'); g.addColorStop(1, 'rgba(255,210,130,0)'); c.fillStyle = g; c.fillRect(X - 14 * sc, Y - 14 * sc, 28 * sc, 28 * sc); } c.globalCompositeOperation = 'source-over';
+      continue;
+    }
     if (e.k === 'cafe') {
       const sc = e.s * T * zoom / 100, bx = sx(e.x), by = sy(e.y);
       if (bx < -200 * sc || bx > W0 + 200 * sc || by < -150 * sc || by > H0 + 120 * sc) continue;
@@ -7736,6 +7930,10 @@ function nightLamps(c, list, sx, sy, t) {
         c.globalAlpha = 1;
       }
     }
+  }
+  if (TRAIN.on) {   // the train's windows, and the beam of its headlamp
+    for (const [wx, wy, ww, wh] of trainWindows()) { const X = sx(wx), Y = sy(wy), Wd = ww * T * zoom, Hd = wh * T * zoom; c.globalCompositeOperation = 'lighter'; const g = c.createRadialGradient(X + Wd / 2, Y + Hd / 2, 0, X + Wd / 2, Y + Hd / 2, Wd * 1.6); g.addColorStop(0, 'rgba(255,200,110,' + (0.4 * on) + ')'); g.addColorStop(1, 'rgba(255,200,110,0)'); c.fillStyle = g; c.fillRect(X - Wd, Y - Hd, Wd * 3, Hd * 3); c.globalCompositeOperation = 'source-over'; c.globalAlpha = on; c.fillStyle = '#ffd98a'; c.fillRect(X, Y, Wd, Hd); c.globalAlpha = 1; }
+    const hx = sx(TRAIN.x) + 5 * zoom, hy = sy(RAIL_Y) - 57 * zoom; c.globalCompositeOperation = 'lighter'; const g = c.createLinearGradient(hx, 0, hx - 4 * T * zoom, 0); g.addColorStop(0, 'rgba(255,240,180,' + (0.55 * on) + ')'); g.addColorStop(1, 'rgba(255,240,180,0)'); c.fillStyle = g; c.beginPath(); c.moveTo(hx, hy - 4 * zoom); c.lineTo(hx - 4 * T * zoom, hy - 30 * zoom); c.lineTo(hx - 4 * T * zoom, hy + 34 * zoom); c.lineTo(hx, hy + 6 * zoom); c.closePath(); c.fill(); c.globalCompositeOperation = 'source-over';
   }
   c.restore();
 }
@@ -7935,7 +8133,7 @@ function update(dt, t, rdt = dt) {
     P.va = cur + P.vav * rdt;
     if (Math.abs(P.vav) < 0.01 && Math.abs(goal - P.va) < 0.003) { P.va = ((goal % TAU) + TAU) % TAU; P.vav = 0; }
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
-  villageNight(dt);
+  villageNight(dt); trainStep(dt);
   for (const e of ents) {
     if (e.face !== undefined && !e.route2) turnTo(e, e.face, dt, TURN_SLOW[e.an] || 1);
     if (e.route2 || e.asleep) continue;   // heading home for the night
@@ -7995,14 +8193,14 @@ function update(dt, t, rdt = dt) {
   const vw = cv.width / zoom, vh = cv.height / zoom;
   // The camera follows the player smoothly; a drag adds a "peek" offset on top, which springs back
   // (with a little overshoot) once the finger lets go.
-  { const k = 1 - Math.exp(-rdt * 5.5); camBX += (P.rx * T - vw / 2 - camBX) * k; camBY += (P.ry * T - vh * 0.52 - camBY) * k; }
+  { const k = 1 - Math.exp(-rdt * 5.5); camBX += (P.rx * T - vw / 2 - camBX) * k; camBY += (P.ry * T - vh * 0.52 - (P.ry < 9 ? (9 - P.ry) * 0.45 * T : 0) - camBY) * k; }   // near the station it looks up, so the railway shows below the top bar
   if (!peeking) {
     peekVX += (-110 * peekX - 13 * peekVX) * rdt; peekVY += (-110 * peekY - 13 * peekVY) * rdt;
     peekX += peekVX * rdt; peekY += peekVY * rdt;
     if (Math.abs(peekX) < 0.5 && Math.abs(peekVX) < 2) { peekX = 0; peekVX = 0; }
     if (Math.abs(peekY) < 0.5 && Math.abs(peekVY) < 2) { peekY = 0; peekVY = 0; }
   }
-  camX = Math.max(0, Math.min(MW * T - vw, camBX + peekX)); camY = Math.max(0, Math.min(MH * T - vh, camBY + peekY));
+  camX = Math.max(0, Math.min(MW * T - vw, camBX + peekX)); camY = Math.max(-3 * T, Math.min(MH * T - vh, camBY + peekY));
 }
 
 // A round speech bubble with a soft shadow and a little tail.
@@ -8070,9 +8268,10 @@ function drawWorld(t) {
   const c = ctx;
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#8fd169'; c.fillRect(0, 0, cv.width, cv.height);   // never leave an old frame showing
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
-  c.drawImage(seasonGround(), 0, 0);
+  c.drawImage(seasonGround(), 0, -GROUND_TOP * T);
   if (winter()) { drawIce(c, t); drawPrints(c, t); } else if (GFX.water) drawWater(c, t);
   drawFalls(c, t);
+  drawTrain(c, t);   // the train runs behind everything standing in the village
   const vw = cv.width / zoom, vh = cv.height / zoom;
   const list = ents.filter(e => !(e.hide && !ready(e)) && !goneNow(e) && e.x * T > camX - 200 && e.x * T < camX + vw + 200 && e.y * T > camY - 100 && e.y * T < camY + vh + 320);
   list.push({ me: true, y: P.ry, x: P.rx });
