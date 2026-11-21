@@ -1705,7 +1705,7 @@ function add(e) {
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (inPond(x + 0.5, y + 0.5)) block(x, y);
   // Your cottage, garden and fence.
   rect(5, 8, 8, 10);
-  add({ w: 'khata', x: 7, y: 11, s: 3.7, kind: 'home' });
+  add({ w: 'khata', x: 7.5, y: 11, s: 3.7, kind: 'home' });   // door over the middle of the path (x = 7)
   for (let i = 0; i < 6; i++) add({ w: 'horod', k: 'plot' + i, x: 10.1 + (i % 3) * 1.6, y: 8.6 + Math.floor(i / 3) * 1.6, s: 1.5, kind: 'plot', i, flat: true });
   for (let i = 0; i < 4; i++) add({ w: 'parkan', x: 9.5 + i, y: 11.95, s: 1, solid: true, quiet: i !== 1, labelX: 11 });   // one label for the whole fence   // the gap at the end is the garden gate
   add({ w: 'yablunia', x: 3.5, y: 10.8, s: 2.3, solid: true, give: 'yabluko', cd: 60 });
