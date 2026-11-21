@@ -79,7 +79,8 @@ const curRecipe = () => {
 const NEED = 1;
 const recipeHave = id => Math.min(NEED, S.recipe.have[id] || 0);
 const recipeTotal = R => R.needs.reduce((a, id) => a + recipeHave(id), 0);
-const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
+let noSave = false;   // set while starting over
+const save = () => { if (noSave) return; clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
 
 // How far along the learner is. English fades out as this rises.
 const mastered = () => Object.values(S.words).filter(w => w.l >= 3).length;
@@ -2467,8 +2468,8 @@ function visRestore() {
   return true;
 }
 let visBack = false, visForce = false, visSnapT = 0;
-addEventListener('pagehide', () => { try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
-document.addEventListener('visibilitychange', () => { if (document.hidden) try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
+addEventListener('pagehide', () => { if (noSave) return; try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
+document.addEventListener('visibilitychange', () => { if (document.hidden && !noSave) try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
 function visitorsStep(dt) {
   const C = S.clock; if (!C) return;
   const late = C.t >= 0.66 || nightNow();
@@ -10244,7 +10245,7 @@ const A = {
   mgNesy() { if (!mg || mg.id !== 'andriiko' || mg.phase !== 'b') return; mgAct('nesy', true); useWord('nesy', true); mg.phase = 'home'; blip(880, 0.06); },
   festDone() { festDone(); },
   spGo() { const R = sp && sp.R; sp = null; if (R) cookScene(R); },
-  reset() { if (confirm('Start the village over from the beginning?')) { try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },
+  reset() { if (confirm('Start the village over from the beginning?')) { noSave = true; clearTimeout(saveT); try { localStorage.removeItem(SAVE); } catch (e) {} location.reload(); } },   // (noSave: closing the page mustn't write the old village back)
   close() { if (sp) return; closeSheet(); },   // a stray tap outside must not throw away a speaking round
   words: wordsSheet, bag: bagSheet,
   guide() { say(guideClip); },
