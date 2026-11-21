@@ -774,50 +774,51 @@ const DRAW = {
   },
   well(c, o) {
     // a: seconds into drawing water (-1 when nobody is). 0-0.9 the bucket drops, 0.9-1.3 it fills, 1.3-3.3 it's
-    // wound up, 3.3-4.3 it's tipped into the can.
-    const a = o && o.fx != null ? o.fx : -1, ease = q => q * q * (3 - 2 * q);
-    let L = 8, ang = 0, tilt = 0, full = false;
-    if (a >= 0) {
-      if (a < 0.9) { const q = ease(a / 0.9); L = 8 + q * 32; ang = -q * 9; }
-      else if (a < 1.3) { L = 40; ang = -9; full = true; }
-      else if (a < 3.3) { const q = ease((a - 1.3) / 2); L = 40 - q * 32; ang = -9 + q * 24; full = true; }
-      else { L = 8; ang = 15; full = a < 3.9; tilt = Math.min(1, (a - 3.3) / 0.3) * (a < 4.0 ? 1 : Math.max(0, 1 - (a - 4.0) / 0.3)); }
-    }
+    // wound up, 3.3-4.3 it's tipped into the can. wellPose(a) gives the crank angle (always increasing, so it
+    // only ever turns clockwise), the rope's length and the bucket's tilt; Vicky's hand follows the same crank.
+    const a = o && o.fx != null ? o.fx : -1, W0 = wellPose(a), ang = W0.ang, L = W0.L, tilt = W0.tilt, full = W0.full, K = WELL_CRANK;
     // posts and roof
     c.fillStyle = '#8a5a2b'; c.fillRect(-27, -82, 6, 48); c.fillRect(21, -82, 6, 48);
     c.fillStyle = '#6b4422'; c.fillRect(-27, -82, 2, 48); c.fillRect(21, -82, 2, 48);
     c.fillStyle = '#c0503a'; poly(c, [[-38, -76], [0, -100], [38, -76]]); c.fillStyle = '#a33f2c'; poly(c, [[0, -100], [38, -76], [30, -76]]);
     c.fillStyle = 'rgba(255,255,255,.18)'; poly(c, [[-38, -76], [0, -100], [-4, -96], [-32, -77]]);
+    c.strokeStyle = '#7a4e26'; c.lineWidth = 2; for (const sx of [-1, 1]) { c.beginPath(); c.moveTo(sx * 24, -74); c.lineTo(sx * 12, -80); c.stroke(); }   // braces under the roof
     // the well's mouth: dark water, rippling once the bucket goes in
     c.fillStyle = '#2f5f8a'; ell(c, 0, -38, 26, 5); c.fillStyle = '#4a90d9'; ell(c, 0, -38.5, 22, 3.8);
     if (a > 0.85 && a < 2.2) { const q = (a - 0.85) / 1.35; c.strokeStyle = 'rgba(255,255,255,' + (0.8 * (1 - q)) + ')'; c.lineWidth = 1.2; for (const k of [0.5, 1]) { c.beginPath(); c.ellipse(0, -38.5, 22 * q * k, 3.8 * q * k, 0, 0, 7); c.stroke(); } }
-    // the roller, with the rope wound on it (its stripes turn with the crank)
-    c.fillStyle = '#9b6b3c'; rr(c, -21, -65, 42, 9, 4); c.fillStyle = '#b9824a'; c.fillRect(-21, -64, 42, 2);
-    c.strokeStyle = '#c8b27a'; c.lineWidth = 1.3; for (let i = 0; i < 6; i++) { const x = -15 + ((i * 6 + ang * 1.9) % 30 + 30) % 30; c.beginPath(); c.moveTo(x, -65); c.lineTo(x + 3, -56); c.stroke(); }
-    // the crank on the right post: an iron arm and a wooden grip, going round
-    { const cx = 27, cy = -60.5, ax = cx + 6 + Math.cos(ang) * 0, hx = cx + 6 + Math.cos(ang) * 13, hy = cy + Math.sin(ang) * 13;
-      c.fillStyle = '#4a4a4a'; c.fillRect(cx, cy - 1.2, 6, 2.4); c.strokeStyle = '#3a3a3a'; c.lineWidth = 2.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(ax, cy); c.lineTo(hx, hy); c.stroke();
-      c.fillStyle = '#7a4e26'; rr(c, hx - 1.8, hy - 1.8, 7, 3.6, 1.6); }
-    // the rope and the bucket (behind the front wall when it's down the shaft)
-    c.save(); c.beginPath(); c.rect(-60, -120, 120, 118); c.clip(); c.translate(0, -56);   // (clipped: down the shaft it never shows below the well)
-    c.strokeStyle = '#a8905a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(tilt * 10, L - 2); c.stroke();
-    c.translate(tilt * 12, L); c.rotate(tilt * 1.05);
+    // the rope and the bucket, hanging from the roller (clipped: down the shaft it never shows below the well)
+    c.save(); c.beginPath(); c.rect(-60, -120, 120, 118); c.clip(); c.translate(0, K.y);
+    c.strokeStyle = '#a8905a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(-tilt * 10, L - 2); c.stroke();
+    c.translate(-tilt * 12, L); c.rotate(-tilt * 1.05);
     const sw = a >= 0 && a < 3.3 ? Math.sin(a * 5) * 0.06 : 0; c.rotate(sw);
     c.fillStyle = '#6b7a88'; poly(c, [[-8, 0], [8, 0], [6, 14], [-6, 14]]); c.fillStyle = '#8a9aa8'; c.fillRect(-8, 2, 16, 2); c.fillRect(-7, 9, 14, 2);
     c.strokeStyle = '#4a5560'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, 0, 8, Math.PI, 0); c.stroke();
     if (full) { c.fillStyle = '#5aa8e8'; ell(c, 0, 0.6, 7.4, 1.8); c.fillStyle = 'rgba(255,255,255,.6)'; ell(c, -2.5, 0.3, 2, 0.6); }
     c.restore();
+    // the roller across the mouth, with the rope coiled on it: the coil grows as the rope winds in, and its turns
+    // run round with the crank
+    c.fillStyle = '#9b6b3c'; rr(c, -21, K.y - 4.5, 42, 9, 4); c.fillStyle = '#b9824a'; c.fillRect(-21, K.y - 3.5, 42, 2);
+    { const cw = 4 + (40 - L) * 0.42; c.fillStyle = '#c8b27a'; rr(c, -cw / 2, K.y - 4, cw, 8, 3);
+      c.strokeStyle = 'rgba(120,96,50,.7)'; c.lineWidth = 0.9; for (let i = 0; i < 9; i++) { const x = -cw / 2 + ((i * 3 + ang * 2.2) % cw + cw) % cw; c.beginPath(); c.moveTo(x, K.y - 4); c.lineTo(x + 1.5, K.y + 4); c.stroke(); } }
+    c.fillStyle = '#6b4422'; for (const sx of [-1, 1]) { rr(c, sx * 24 - 3, K.y - 3, 6, 6, 1.5); }   // where the roller sits in the posts
+    // the crank on the right post: an iron arm and a wooden grip, going round clockwise
+    { const ax = K.x, hx = ax + Math.cos(ang) * K.r, hy = K.y + Math.sin(ang) * K.r;
+      c.fillStyle = '#4a4a4a'; c.fillRect(27, K.y - 1.2, ax - 27, 2.4); c.strokeStyle = '#3a3a3a'; c.lineWidth = 2.6; c.lineCap = 'round'; c.beginPath(); c.moveTo(ax, K.y); c.lineTo(hx, hy); c.stroke();
+      c.fillStyle = '#2e2e2e'; circ(c, ax, K.y, 1.8);
+      c.fillStyle = '#7a4e26'; circ(c, hx, hy, 2.6); c.fillStyle = 'rgba(255,255,255,.3)'; circ(c, hx - 0.8, hy - 0.8, 0.9); }
     // drips off the full bucket as it comes up (only above the rim)
-    if (a > 1.4 && a < 3.4) for (let i = 0; i < 3; i++) { const q = ((a * 1.6 + i / 3) % 1), dy = -56 + L + 14 + q * 18; if (dy < -38) { c.fillStyle = 'rgba(90,168,232,' + (1 - q) + ')'; ell(c, -4 + i * 4, dy, 1, 1.6); } }
+    if (a > 1.4 && a < 3.4) for (let i = 0; i < 3; i++) { const q = ((a * 1.6 + i / 3) % 1), dy = K.y + L + 14 + q * 18; if (dy < -38) { c.fillStyle = 'rgba(90,168,232,' + (1 - q) + ')'; ell(c, -4 + i * 4, dy, 1, 1.6); } }
     // the front of the well: stones over the bottom of the shaft
     c.fillStyle = '#b9b4ad'; rr(c, -30, -38, 60, 38, 6);
     c.fillStyle = '#9d9891'; for (let i = 0; i < 4; i++) { rr(c, -26 + i * 14, -32, 10, 7, 2); rr(c, -20 + i * 14, -20, 10, 7, 2); }
     c.fillStyle = '#cfcac2'; rr(c, -30, -40, 60, 4, 2);
-    // pouring: the stream arcs from the tipped bucket down into the watering can on the ground
+    // the splash, thrown up out of the mouth when the bucket hits the water
+    if (a > 0.88 && a < 1.5) { const q = (a - 0.88) / 0.62; for (let i = 0; i < 9; i++) { const vx = (i - 4) * 2.6, vy = 22 + (i % 3) * 7, x = vx * q * 1.6, y = -40 - vy * q + 40 * q * q; if (y < -39) { c.fillStyle = 'rgba(150,205,250,' + (0.9 - q * 0.6) + ')'; ell(c, x, y, 1.3, 1.9); } } }
+    // pouring: the bucket tips toward the left, and the stream arcs down into the watering can on the ground
     if (a >= 3.3) {
-      const cx = 38, cy = 0;
-      c.fillStyle = '#3f7fb8'; rr(c, cx - 7, cy - 13, 14, 13, 3); c.fillStyle = '#5a98d0'; c.fillRect(cx - 7, cy - 11, 14, 2); c.strokeStyle = '#3f7fb8'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy - 13, 5, Math.PI, 0); c.stroke(); c.beginPath(); c.moveTo(cx - 6, cy - 9); c.lineTo(cx - 14, cy - 17); c.stroke();   // the watering can
-      if (tilt > 0.6) { c.strokeStyle = 'rgba(90,168,232,.85)'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(17, -46); c.quadraticCurveTo(34, -40, cx, cy - 12); c.stroke();
+      const cx = -42, cy = 0;
+      c.fillStyle = '#3f7fb8'; rr(c, cx - 7, cy - 13, 14, 13, 3); c.fillStyle = '#5a98d0'; c.fillRect(cx - 7, cy - 11, 14, 2); c.strokeStyle = '#3f7fb8'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy - 13, 5, Math.PI, 0); c.stroke(); c.beginPath(); c.moveTo(cx + 6, cy - 9); c.lineTo(cx + 14, cy - 17); c.stroke();   // the watering can
+      if (tilt > 0.6) { c.strokeStyle = 'rgba(90,168,232,.85)'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(-17, K.y + 2); c.quadraticCurveTo(-36, K.y + 6, cx, cy - 12); c.stroke();
         for (let i = 0; i < 4; i++) { const q = ((a * 3 + i / 4) % 1); c.fillStyle = 'rgba(160,210,255,.8)'; circ(c, cx + Math.cos(i * 1.7) * 4 * q, cy - 13 - Math.sin(q * Math.PI) * 5, 1.1); } }
     }
   },
@@ -2308,6 +2309,16 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
     if (far && L.boots) { c.fillStyle = 'rgba(0,0,0,.2)'; rr(c, -3.5 + dx, -13 - lift, 7, 13, 2.5); }
   };
   const limb = (sw, far) => {
+    if (!far && L.reach) {   // reaching to a point: upper arm and forearm, the elbow bending down and out
+      const sx = 0, sy = -47 + bob, A = 15, B = 18, tx = L.reach[0], ty = L.reach[1], dx = tx - sx, dy = ty - sy, d = Math.max(3, Math.min(A + B - 0.05, Math.hypot(dx, dy))), base = Math.atan2(dy, dx);
+      const cA = Math.acos(Math.max(-1, Math.min(1, (A * A + d * d - B * B) / (2 * A * d))));
+      const e1 = [sx + Math.cos(base + cA) * A, sy + Math.sin(base + cA) * A], e2 = [sx + Math.cos(base - cA) * A, sy + Math.sin(base - cA) * A], el = e1[1] > e2[1] ? e1 : e2;
+      const hx = sx + Math.cos(base) * d, hy = sy + Math.sin(base) * d, fa = Math.atan2(hy - el[1], hx - el[0]);
+      c.save(); c.lineCap = 'round'; c.strokeStyle = L.sleeve || L.shirt; c.lineWidth = 7;
+      c.beginPath(); c.moveTo(sx, sy + 2); c.lineTo(el[0], el[1]); c.lineTo(hx - Math.cos(fa) * 3, hy - Math.sin(fa) * 3); c.stroke();
+      c.strokeStyle = L.fur || L.trim; c.lineWidth = 7.4; c.lineCap = 'butt'; c.beginPath(); c.moveTo(hx - Math.cos(fa) * 5.5, hy - Math.sin(fa) * 5.5); c.lineTo(hx - Math.cos(fa) * 3.2, hy - Math.sin(fa) * 3.2); c.stroke();
+      c.fillStyle = L.skin; circ(c, hx, hy, 3.6); c.restore(); return;
+    }
     c.save(); c.translate(0, -47 + bob); c.rotate(sw);
     c.fillStyle = L.sleeve || L.shirt; rr(c, -3.5, -1, 7, 18, 3); c.fillStyle = L.fur || L.trim; c.fillRect(-3.5, 13, 7, L.fur ? 4 : 2.5);
     c.fillStyle = L.skin; circ(c, 0, 19, 3.5);
@@ -2431,6 +2442,17 @@ const ASIZE = { frog: 0.62, horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.8
 // how long each animal stands about between strolls, in seconds
 const IDLE = { cow: [10, 24], horse: [8, 20], goat: [5, 13], pig: [7, 16], dog: [3, 9], cat: [5, 15], hen: [2, 6], rooster: [3, 8], duck: [3, 9], frog: [4, 10] };
 const SPEED = { frog: 0.75, horse: 0.5, cow: 0.28, goat: 0.45, pig: 0.35, dog: 0.7, cat: 0.55, hen: 0.4, rooster: 0.45, duck: 0.3 };
+// The well's crank and its timing (see WELL_SPOT, by wellStart, for where she stands to turn it).
+const WELL_CRANK = { x: 34, y: -42, r: 8 };
+const WELL_S = 1.65, WELL_X = 1.45, WELL_Y = 14.85;
+function wellPose(a) {
+  const ease = q => q * q * (3 - 2 * q);
+  if (a < 0) return { ang: 0, L: 1, tilt: 0, full: false };
+  if (a < 0.9) { const q = (a / 0.9) * (a / 0.9); return { ang: q * 8, L: 1 + q * 39, tilt: 0, full: false }; }   // let go: the bucket falls faster and faster and the crank whirls round
+  if (a < 1.3) return { ang: 8, L: 40, tilt: 0, full: true };
+  if (a < 3.3) { const q = ease((a - 1.3) / 2); return { ang: 8 + q * 22, L: 40 - q * 39, tilt: 0, full: true }; }   // wound up, three and a half turns
+  return { ang: 30, L: 1, full: a < 3.9, tilt: Math.min(1, (a - 3.3) / 0.3) * (a < 4.0 ? 1 : Math.max(0, 1 - (a - 4.0) / 0.3)) };
+}
 function add(e) {
   e.k = e.k || (e.w + ents.length);
   e.s = e.s || 1; e.ic = e.ic || W[e.w].ic;
@@ -2446,7 +2468,7 @@ function add(e) {
   for (let i = 0; i < 6; i++) add({ w: 'horod', k: 'plot' + i, x: 10.1 + (i % 3) * 1.6, y: 8.6 + Math.floor(i / 3) * 1.6, s: 1.5, kind: 'plot', i, flat: true });
   for (let i = 0; i < 4; i++) add({ w: 'parkan', x: 9.5 + i, y: 11.95, s: 1, solid: true, quiet: i !== 1, labelX: 11 });   // one label for the whole fence   // the gap at the end is the garden gate
   add({ w: 'yablunia', x: 3.5, y: 10.8, s: 2.3, solid: true, give: 'yabluko', cd: 60 });
-  add({ w: 'krynytsia', x: 1.45, y: 14.85, s: 2.0, solid: true, give: 'voda', cd: 8 });   // at the west end of the main road, past her cottage (its old spot by the garden is free)
+  add({ w: 'krynytsia', x: WELL_X, y: WELL_Y, s: WELL_S, solid: true, give: 'voda', cd: 8 });   // at the west end of the main road, past her cottage (its old spot by the garden is free)
   // Grandma Olia's corner.
   rect(26, 8, 29, 10);   // (moved 3 tiles right, off the market stall)
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5.5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
@@ -4152,8 +4174,10 @@ function talkSpot(e) {
   for (const side of [pref, -pref]) { const x = e.x + side * 1.05; if (free(x, e.y)) return { x, y: e.y }; }
   return null;
 }
-// Drawing water: she walks to the path just right of the well, turns to face it, and winds up a bucketful.
-const WELL_SPOT = { x: 2.5, y: 14.95 };
+// Drawing water: she walks to the path just right of the well, in front of its crank, turns to face it, takes the
+// handle and winds up a bucketful. The crank (in the well's own drawing units, 100 = its height) is at waist
+// height for her, so her hand stays on the grip all the way round.
+const WELL_SPOT = { x: WELL_X + (WELL_CRANK.x * WELL_S) / 100 + 26 / T, y: WELL_Y + 0.05 };
 let WELLFX = null;   // { phase: 'walk' | 'draw', t0, add }
 function wellStart(add) { WELLFX = { phase: 'walk', add, t0: nowT }; walkTo(WELL_SPOT.x, WELL_SPOT.y, null); if (!P.path.length && Math.hypot(P.x - WELL_SPOT.x, P.y - WELL_SPOT.y) > 0.04) P.path = [{ x: WELL_SPOT.x, y: WELL_SPOT.y }]; }   // (a step over even when she's already beside it)
 function wellStep() {
@@ -4167,7 +4191,7 @@ function wellStep() {
   P.lookAt = Math.PI * 1.5;
   once('drop', () => sfxTone(520, 260, 0.8, 0.03, 'triangle'));   // the rope running out
   if (a > 0.9) once('splash', () => { sfxHit(700, 0.35, 0.12, 'lowpass', 0.8); sfxHit(2200, 0.2, 0.05, 'bandpass', 2); });
-  for (let i = 0; i < 6; i++) if (a > 1.35 + i * 0.33) once('creak' + i, () => sfxHit(380 + (i % 2) * 60, 0.12, 0.05, 'bandpass', 6));   // the crank creaking round
+  if (a > 1.3 && a < 3.3) { const n = Math.floor((wellPose(a).ang - 8) / Math.PI); once('creak' + n, () => sfxHit(380 + (n % 2) * 60, 0.12, 0.05, 'bandpass', 6)); }   // the crank creaking round, each half turn
   if (a > 3.55) once('pour', () => { sfxHit(900, 0.55, 0.07, 'lowpass', 0.7); setTimeout(() => sfxHit(1300, 0.3, 0.04, 'lowpass', 0.7), 200); });
   if (a > 4.35) {
     const have = S.bag.voda || 0, add = Math.min(F.add, WATER_MAX - have); WELLFX = null; P.lookAt = null;
@@ -4187,6 +4211,7 @@ function walkTo(wx, wy, ent) {
       }
     }
   }
+  if (ent && ent.w === 'krynytsia') { const path = findPath(WELL_SPOT.x, WELL_SPOT.y, null); if (!path.length || Math.hypot(path[path.length - 1].x - WELL_SPOT.x, path[path.length - 1].y - WELL_SPOT.y) < 1.2) { if (path.length) path[path.length - 1] = { x: WELL_SPOT.x, y: WELL_SPOT.y }; else if (Math.hypot(P.x - WELL_SPOT.x, P.y - WELL_SPOT.y) > 0.04) path.push({ x: WELL_SPOT.x, y: WELL_SPOT.y }); P.path = path; P.goal = ent; if (!path.length) arrive(); return; } }
   const path = findPath(wx, wy, ent);
   // If we are tapping bare ground and the end tile is the tapped tile, finish on the exact spot.
   if (!ent && path.length && Math.hypot(path[path.length - 1].x - wx, path[path.length - 1].y - wy) < 0.75 && !solid[Math.floor(wy)][Math.floor(wx)]) path[path.length - 1] = { x: wx, y: wy };
@@ -9788,7 +9813,13 @@ function drawWorld(t) {
       // so each change of view reads as a turn rather than a swap.
       const q = Math.round((P.va || 0) / (Math.PI / 2)), view = ((q % 4) + 4) % 4, off = (P.va || 0) - q * Math.PI / 2, mid = 1 - Math.abs(Math.cos(2 * off));
       c.save(); c.translate(x, y - mid * 4); c.scale((view === 3 ? -1 : 1) * (1 - mid * 0.4), 1);
-      if (view === 1 || view === 3) personSide(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
+      let L0 = ME;
+      if (WELLFX && WELLFX.phase === 'draw' && view === 3) {   // her near hand on the crank's grip, going round with it
+        const we = ents.find(q => q.w === 'krynytsia'), k = we.s * T / 100, ang = wellPose(t - WELLFX.t0).ang;
+        const hx = we.x * T + (WELL_CRANK.x + Math.cos(ang) * WELL_CRANK.r) * k, hy = we.y * T + (WELL_CRANK.y + Math.sin(ang) * WELL_CRANK.r) * k;
+        L0 = Object.assign({}, ME, { reach: [-(hx - x) / (1 - mid * 0.4), hy - (y - mid * 4)] });
+      }
+      if (view === 1 || view === 3) personSide(c, 0, 0, L0, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
       c.restore(); continue; }
     if (e.vis && e.behind) continue;   // round the back of the market stall: drawn after the stall, above its counter
     if (e.vis) { drawVisitor(c, x, y, e, t); continue; }
