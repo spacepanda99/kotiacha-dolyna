@@ -2631,7 +2631,7 @@ function add(e) {
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5.5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
   rect(28, 25, 34, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 31.5, y: 30, s: 5.4 });  // the family cottage, bottom right, below the pond: Taras, Oksana and Andriiko live here, so it's bigger
   add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28.5, y: 11, s: 3.7 });
-  add({ w: 'kurnyk', k: 'olia_kurnyk', x: 34.6, y: 9.9, s: 1.35, solid: true });   // her little coop
+  add({ w: 'kurnyk', k: 'olia_kurnyk', x: 35.3, y: 10.4, s: 2.1, solid: true });   // her little coop
   add({ w: 'kurka', x: 32.7, y: 10.2, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens, by the tree to the right of her cottage, with the other animals
   add({ w: 'kurka', x: 33.6, y: 10.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
   add({ w: 'piven', x: 34.3, y: 10.1, kind: 'animal', r: 1.2 });
@@ -2680,7 +2680,7 @@ function add(e) {
   rect(24, 32, 25, 32); add({ w: 'stainia', x: 24.6, y: 33.6, s: 2.8, solid: true });
   add({ w: 'koryto', x: 27.6, y: 34.9, s: 1.4, solid: true });
   add({ w: 'sino', x: 30.9, y: 33.9, s: 2.2, solid: true });
-  add({ w: 'kurnyk', x: 31.8, y: 37.2, s: 1.7, solid: true });
+  add({ w: 'kurnyk', x: 32.0, y: 37.4, s: 2.5, solid: true });
   add({ w: 'kin', x: 26.3, y: 35.6, s: 1.5, kind: 'animal', r: 1.4 });
   add({ w: 'korova', x: 28.4, y: 36.8, s: 1.4, kind: 'animal', r: 1.6, give: 'moloko', cd: 120 });
   add({ w: 'korova', x: 30.2, y: 35.6, s: 1.4, kind: 'animal', r: 1.6, give: 'moloko', cd: 120 });
