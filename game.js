@@ -6690,7 +6690,7 @@ function drawChurch(t) {
 
 // ------------------------------------------------------------------ inside the village school
 // One classroom: the blackboard with the alphabet chalked on it, the teacher's desk with a globe and a hand
-// bell, rows of pupils' desks with exercise books, an alphabet poster, a tiled stove by the door, windows on
+// bell, rows of pupils' desks with exercise books, an alphabet poster (more posters to come), windows on
 // the real day outside. Tap anything to hear its name; ring the bell. (Lessons come later.)
 const SX = { door: 0.06, stove: 0.16, poster: 0.27, desk: 0.36, board: 0.52, win1: 0.73, win2: 0.89, rowA: [0.45, 0.63, 0.81], rowB: [0.54, 0.72, 0.9] };
 let schoolHits = [];
@@ -6747,14 +6747,6 @@ function drawSchool(t) {
     const L2 = [['А', '🍉'], ['Б', '🍌'], ['В', '🐺'], ['Г', '🦆'], ['Д', '🏠'], ['Е', '🦝'], ['Ж', '🐸'], ['З', '⭐'], ['І', '🦃']];
     L2.forEach(([ch, ic], i) => { const cx = x - pw * 0.33 + (i % 3) * pw * 0.33, cy = y + ph * 0.28 + Math.floor(i / 3) * ph * 0.24; c.fillStyle = ['#2f5f9e', '#3f8a3a', '#c0392b'][i % 3]; c.font = '900 ' + Math.round(u * 0.04) + 'px system-ui'; c.fillText(ch, cx - u * 0.025, cy); drawIcon(c, ic, cx + u * 0.03, cy + u * 0.018, u * 0.04); });
     hit(x - pw / 2, y, pw, ph, word('abetka', { note: '🔤 ' + xl('The Ukrainian alphabet has 33 letters.') }), x); }
-  // ---- the tiled stove by the door
-  { const x = SX.stove * RW, sw = u * 0.2, top = fy - h * 0.34;
-    c.fillStyle = '#efe6d6'; rr(c, x - sw / 2, top, sw, fy - top, u * 0.01);
-    c.strokeStyle = 'rgba(60,110,160,.5)'; c.lineWidth = 1; for (let yy = top; yy < fy; yy += u * 0.04) { c.beginPath(); c.moveTo(x - sw / 2, yy); c.lineTo(x + sw / 2, yy); c.stroke(); }
-    for (let xx = x - sw / 2; xx < x + sw / 2; xx += u * 0.04) { c.beginPath(); c.moveTo(xx, top); c.lineTo(xx, fy); c.stroke(); }
-    c.fillStyle = '#3d7cc2'; for (let yy = top + u * 0.02; yy < fy - u * 0.02; yy += u * 0.08) for (let xx = x - sw / 2 + u * 0.02; xx < x + sw / 2; xx += u * 0.08) { c.save(); c.translate(xx, yy); c.rotate(Math.PI / 4); c.fillRect(-u * 0.006, -u * 0.006, u * 0.012, u * 0.012); c.restore(); }
-    c.fillStyle = '#3a3634'; rr(c, x - u * 0.04, fy - h * 0.1, u * 0.08, h * 0.07, u * 0.01); if (L.dark > 0.3 || winter()) { c.fillStyle = 'rgba(255,150,60,' + (0.6 + 0.2 * Math.sin(t * 7)) + ')'; rr(c, x - u * 0.03, fy - h * 0.085, u * 0.06, h * 0.05, u * 0.008); }
-    hit(x - sw / 2, top, sw, fy - top, word('pich'), x); }
   // ---- the door out
   { const x = SX.door * RW, dw = u * 0.16, dt2 = fy - h * 0.3;
     c.fillStyle = '#6b4422'; rr(c, x - dw / 2 - u * 0.012, dt2 - u * 0.012, dw + u * 0.024, fy - dt2 + u * 0.012, u * 0.01);
@@ -6819,7 +6811,7 @@ function drawSchool(t) {
   c.restore();
   // dust in the window light
   if (day > 0.3) { c.fillStyle = 'rgba(255,248,225,' + (0.45 * wxL) + ')'; for (let i = 0; i < 18; i++) { const q = (t * 0.015 + i * 0.05) % 1; circ(c, ((i * 0.41 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
-  { const lights = [[SX.stove * RW - roomX, fy - h * 0.06, u * 0.5], [SX.board * RW - roomX, h * 0.06, u * 0.9], [SX.win1 * RW - roomX, h * 0.06, u * 0.6]];
+  { const lights = [[SX.board * RW - roomX, h * 0.06, u * 0.9], [SX.win1 * RW - roomX, h * 0.06, u * 0.6]];
     paintSky(c, w, h, t, lights, false); }
 }
 
