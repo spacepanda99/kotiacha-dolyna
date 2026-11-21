@@ -2237,209 +2237,247 @@ function drawSeated(c, e, chx, seatY, sg, sc, t) {
 }
 
 // ------------------------------------------------------------------ the mystery of the missing festival bell
-// A Clue-style side quest, played in English (text only). The festival bell vanishes in the night. Vicky works out
-// WHO took it (one of the six visitors), WHERE it's hidden (six places) and WHAT they moved it with (six ways to
-// carry something heavy). The answer is new each time. Like the board game, the 15 innocent cards are dealt among
-// the six visitors (never their own name), and what each one knows comes from the cards they hold: asked the right
-// question they mention something that quietly rules one out. Nobody says it outright; Vicky has to read it.
-// Three innocent visitors have also noticed a trace of the real thing. She can also put a theory to anyone ("It was
-// Ostap, at the mill, with the wheelbarrow") and they'll tell her one thing that doesn't fit, if they can.
-// When she's sure, she tells Officer Petro by the fountain (one accusation a day).
+// A Clue-style side quest, in English with a button to read every line in Ukrainian. The festival bell vanished from
+// its post by the fountain yesterday evening, just before the last train (the visitors were all still here then).
+// Vicky works out WHO took it (one of the six visitors), WHERE it's hidden (six places) and WHAT they moved it with
+// (six ways to carry something heavy). The answer is new each time. Like the board game, the 15 innocent cards are
+// dealt among the six visitors (never their own name): asked the right question, each says something about yesterday
+// evening that quietly rules one out. Everyone tells the truth; nobody says anything outright. Three of them also
+// noticed a trace of the real thing when they got off the train this morning. She can put a theory to anyone, and
+// they'll tell her one thing that doesn't fit, if they can. Then she tells Officer Petro by the fountain.
+// Lines are [English, Ukrainian]. In the Ukrainian, {a|b} is the man's|woman's form for whoever it's about.
 const MY_WHO = ['myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna'];
-const MY_WHERE = { mill: 'the windmill', station: 'the train station', church: 'the church', reeds: 'the reeds by the lake', wheat: 'the wheat field', bridge: 'under the bridge' };
-const MY_WITH = { wheelbarrow: 'the wheelbarrow', cart: 'the horse and cart', mule: 'the mule', sled: 'the pull sled', ox: 'the ox', haywagon: 'the hay wagon' };
-const myName = id => NPC[id].nameEn;
-const myShort = id => ({ myron: 'Myron', yaroslava: 'Yaroslava', ostap: 'Ostap', lesia: 'Lesia', zakhar: 'Zakhar', halyna: 'Halyna' })[id];
-const myCardName = c => c.k === 'who' ? myName(c.v) : c.k === 'where' ? MY_WHERE[c.v] : MY_WITH[c.v];
+const MY_SEX = { myron: 'm', yaroslava: 'f', ostap: 'm', lesia: 'f', zakhar: 'm', halyna: 'f' };
+const MY_NAME = { myron: ['Myron', 'Мирон', 'Мирона'], yaroslava: ['Yaroslava', 'Ярослава', 'Ярослави'], ostap: ['Ostap', 'Остап', 'Остапа'], lesia: ['Lesia', 'Леся', 'Лесі'], zakhar: ['Zakhar', 'Захар', 'Захара'], halyna: ['Halyna', 'Галина', 'Галини'] };
+// places: English, Ukrainian (as a name), Ukrainian (where: "in/at it")
+const MY_WHERE = { mill: ['the windmill', 'вітряк', 'у вітряку'], station: ['the train station', 'вокзал', 'на вокзалі'], church: ['the church', 'церква', 'у церкві'], reeds: ['the reeds by the lake', 'очерет біля озера', 'в очереті біля озера'], wheat: ['the wheat field', 'пшеничне поле', 'у пшеничному полі'], bridge: ['under the bridge', 'під мостом', 'під мостом'] };
+// ways to move it: English, Ukrainian (as a name), Ukrainian ("with it")
+const MY_WITH = { wheelbarrow: ['the wheelbarrow', 'тачка', 'тачкою'], cart: ['the horse and cart', 'кінь із возом', 'конем і возом'], mule: ['the mule', 'мул', 'мулом'], sled: ['the pull sled', 'санчата', 'санчатами'], ox: ['the ox', 'віл', 'волом'], haywagon: ['the hay wagon', 'віз із сіном', 'возом із сіном'] };
+let MY_LANG = 'en';   // 'en' or 'uk': which the conversations show
+const myL = pr => Array.isArray(pr) ? pr[MY_LANG === 'uk' ? 1 : 0] : pr;
+const mySex = (str, sex) => str.replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => sex === 'f' ? f : m);
+const myName = id => [NPC[id].nameEn, NPC[id].name];
 const myPick = a => a[Math.floor(Math.random() * a.length)];
-// What clears each card, as someone who was there might put it: two ways each, chosen at random.
+const myCard = c => c.k === 'who' ? myName(c.v) : c.k === 'where' ? [MY_WHERE[c.v][0], MY_WHERE[c.v][1]] : [MY_WITH[c.v][0], MY_WITH[c.v][1]];
+// What clears each card: something about yesterday evening, as someone who was there might put it (two ways each).
 const MY_CLEAR = {
   who: {
-    myron: ["Mr. Myron? He was out on the platform before the sun was up, timing the milk train with that pocket watch of his. He didn't look up once.", "Myron spent the whole dawn arguing with the station clock. Two minutes slow, he said. Two! He wouldn't leave until someone fixed it."],
-    yaroslava: ["Pani Yaroslava was in the café from first light, reading poems to the café cat. The cat never left her lap, so neither did she.", "Yaroslava? She was writing at the café table by the window all night long. Her candle had burned right down to the saucer by morning."],
-    ostap: ["Ostap was up on the hill before sunrise, playing his flute to nobody in particular. Half the valley heard him. The other half wished they hadn't.", "Ostap was at the lake with me at dawn, splashing about and frightening every fish within a mile."],
-    lesia: ["Lesia was painting the sunrise by the fountain. She still has a streak of pink on her nose from it.", "Lesia sat sketching the church roof from first light. Her sky's only half finished, if you want proof."],
-    zakhar: ["Zakhar was out on the water before the mist lifted. He came back with three carp and not a single word.", "Zakhar? He was first in the bakery queue at dawn, as he is every morning. You could set your watch by his stomach."],
-    halyna: ["Pani Halyna was at the market at daybreak, telling Oksana everyone's news. Loudly. For hours.", "Halyna never left the market stall all morning. I could hear her laughing from the other end of the village."],
+    myron: [["Mr. Myron? He spent the whole of yesterday evening on the station platform, timing the trains with that pocket watch of his. He didn't look up once.", "Пан Мирон? Він увесь учорашній вечір простояв на пероні, засікаючи потяги своїм кишеньковим годинником. Ні разу не підвів очей."],
+      ["Myron spent yesterday evening arguing with the station clock. Two minutes slow, he said. Two! He wouldn't leave until it was put right.", "Мирон учора ввечері сперечався з вокзальним годинником. Каже, відстає на дві хвилини. На дві! Не пішов, доки його не підкрутили."]],
+    yaroslava: [["Pani Yaroslava sat in the café all yesterday evening, reading poems to the café cat. The cat never left her lap, so neither did she.", "Пані Ярослава весь учорашній вечір сиділа в кав'ярні й читала вірші кав'ярняному котові. Кіт не злазив із її колін, тож і вона не вставала."],
+      ["Yaroslava? She was writing at the café table by the window right up to the last train. Her candle had burned down to the saucer.", "Ярослава? Вона писала за столиком біля вікна в кав'ярні аж до останнього потяга. Її свічка догоріла до самого блюдця."]],
+    ostap: [["Ostap was up on the hill yesterday evening, playing his flute to nobody in particular. Half the valley heard him. The other half wished they hadn't.", "Остап учора ввечері сидів на пагорбі й грав на сопілці невідомо для кого. Пів долини його чуло. Друга половина воліла б не чути."],
+      ["Ostap was down by the lake with me yesterday evening, splashing about and frightening every fish in the water.", "Остап учора ввечері був зі мною біля озера: хлюпався й розлякав усю рибу."]],
+    lesia: [["Lesia was painting the sunset by the fountain yesterday. She still has a streak of pink on her nose from it.", "Леся вчора малювала захід сонця біля фонтана. У неї досі рожева смужка на носі."],
+      ["Lesia sat sketching the church roof all yesterday evening. Her sky's only half finished, if you want proof.", "Леся весь учорашній вечір замальовувала дах церкви. Небо в неї ще не домальоване, якщо треба доказ."]],
+    zakhar: [["Zakhar was out on the lake all yesterday evening. He came back with three carp and not a single word.", "Захар увесь учорашній вечір був на озері. Повернувся з трьома коропами й без жодного слова."],
+      ["Zakhar? He was first in line at Oksana's stall for her last loaves yesterday evening, as always. You could set your watch by his stomach.", "Захар? Він учора ввечері, як завжди, першим стояв біля прилавка Оксани по останній хліб. За його шлунком можна звіряти годинник."]],
+    halyna: [["Pani Halyna was at the market all yesterday evening, telling Oksana everyone's news. Loudly. For hours.", "Пані Галина весь учорашній вечір провела на ринку, переказуючи Оксані всі новини. Голосно. Годинами."],
+      ["Halyna never left the market stall yesterday evening. I could hear her laughing from the other end of the village.", "Галина вчора ввечері не відходила від ринкового прилавка. Її сміх було чути з іншого кінця села."]],
   },
   where: {
-    mill: ["I went up to the windmill early. Flour dust on every step, smooth as fresh snow, and the only footprints in it were mine.", "The windmill's been locked since the miller went to his sister's. The padlock's rusted shut. Nobody's been in there."],
-    station: ["I was at the station at sunrise. Swept clean, every bench empty. You couldn't hide a teaspoon on that platform.", "The station? Nothing on that platform this morning but pigeons and Mr. Myron's opinions."],
-    church: ["I lit a candle in the church at dawn. Every bench, every icon in its place, and the floor freshly swept.", "The church was locked until seven, and the only key hangs round the priest's neck. He sleeps with it."],
-    reeds: ["I walked the lake shore this morning. The reeds stood straight and untouched, with dew on every single one.", "The ducks are nesting in the reeds. If anyone had pushed anything heavy in there, they'd still be complaining."],
-    wheat: ["I walked through the wheat field at dawn. Not a stalk bent anywhere. You'd see a path if anything had been dragged through.", "The wheat field? Smooth as a combed beard. Nothing's been through it but the wind."],
-    bridge: ["I sat under the bridge with my feet in the stream this morning. Nothing down there but frogs and one lost sock.", "The water under the bridge is running clear as glass. Drop anything heavy in there and it'd be muddy for hours."],
+    mill: [["I went up to the windmill yesterday evening. Flour dust on every step, smooth as fresh snow, and the only footprints in it were mine.", "Учора ввечері я {заходив|заходила} до вітряка. На кожній сходинці борошняний пил, рівний, як свіжий сніг, і в ньому тільки мої сліди."],
+      ["The windmill was full of sacks and spiders yesterday evening. I looked in. You couldn't hide a teacup in there, let alone a bell.", "Учора ввечері у вітряку були самі мішки й павуки. Я {зазирнув|зазирнула} туди. Там і чашку не сховаєш, не те що дзвін."]],
+    station: [["I was at the station yesterday evening, waiting for the train. Swept clean, every bench empty. You couldn't hide a teaspoon on that platform.", "Учора ввечері я {чекав|чекала} потяга на вокзалі. Чисто, всі лавки порожні. На тому пероні й ложечки не сховаєш."],
+      ["The station? Nothing on that platform yesterday evening but pigeons and Mr. Myron's opinions.", "Вокзал? Учора ввечері на пероні не було нічого, крім голубів і думок пана Мирона."]],
+    church: [["I lit a candle in the church yesterday evening. Every bench and icon in its place, and the floor freshly swept.", "Учора ввечері я {поставив|поставила} свічку в церкві. Кожна лавка й ікона на своєму місці, підлога щойно підметена."],
+      ["The church? I sat in there for an hour yesterday evening, listening to the quiet. Nobody came in, and nothing came in with them.", "Церква? Я {просидів|просиділа} там годину вчора ввечері, слухаючи тишу. Ніхто не заходив і нічого не заносив."]],
+    reeds: [["I walked along the lake shore yesterday evening. The reeds stood straight and untouched, every one of them.", "Учора ввечері я {гуляв|гуляла} берегом озера. Очерет стояв рівно, ніким не займаний."],
+      ["The ducks are nesting in the reeds. If anyone had pushed anything heavy in there, they'd still be complaining about it.", "В очереті гніздяться качки. Якби хтось запхав туди щось важке, вони б досі обурювалися."]],
+    wheat: [["I walked through the wheat field yesterday evening. Not a stalk bent anywhere. You'd see a path if anything had been dragged through.", "Учора ввечері я {пройшов|пройшла} пшеничним полем. Жоден колосок не зламаний. Якби там щось тягли, лишилася б стежка."],
+      ["The wheat field? Smooth as a combed beard. Nothing's been through it but the wind.", "Пшеничне поле? Рівне, як розчесана борода. Крізь нього пройшов лише вітер."]],
+    bridge: [["I sat under the bridge with my feet in the stream yesterday evening. Nothing down there but frogs and one lost sock.", "Учора ввечері я {сидів|сиділа} під мостом, опустивши ноги в струмок. Там тільки жаби й одна загублена шкарпетка."],
+      ["The water under the bridge is running clear as glass. Drop anything heavy in there and it would be muddy for hours.", "Вода під мостом чиста, як скло. Кинь туди щось важке, і вона годинами була б каламутна."]],
   },
   with: {
-    wheelbarrow: ["The wheelbarrow's still by the garden gate, with a spider's web strung across the handles. Nobody's touched it in days.", "The wheelbarrow? Its wheel squeaks like an angry goose. I'd have heard it in my sleep, and I didn't."],
-    cart: ["The horse spent the night in the meadow, and the cart hasn't moved an inch. There's a hen nesting in it.", "The cart's got a wheel off for mending. It's propped up on a log behind the barn."],
-    mule: ["The mule? Asleep in its stall all night, snoring like a kettle on the boil.", "That mule won't pull anything before breakfast. It wouldn't pull for a king."],
-    sled: ["The pull sled's under a stack of firewood behind Mr. Bohdan's house. Nobody's dug it out since winter.", "A sled, on dry roads? You'd hear it scraping a mile away. And nobody heard a thing."],
-    ox: ["The ox was yoked to the plough in the far field all morning, with the farmer beside it.", "The ox? Lying in the mud by the pond, chewing. It hasn't stood up since yesterday afternoon."],
-    haywagon: ["The hay wagon's still piled high and roped down tight. Not one knot undone.", "The hay wagon's had a broken axle for a week. It's going nowhere."],
+    wheelbarrow: [["Grandma Olia's wheelbarrow is still by her garden, with a spider's web strung across the handles. Nobody's touched it in days.", "Тачка баби Олі досі стоїть біля її городу, а на ручках натягнуте павутиння. Ніхто її не чіпав уже кілька днів."],
+      ["The wheelbarrow? Its wheel squeaks like an angry goose. The whole valley would have heard it, and nobody did.", "Тачка? Її колесо скрипить, як сердитий гусак. Уся долина почула б, а ніхто не чув."]],
+    cart: [["Grandma Olia's horse was grazing beside her cottage all yesterday evening, and the cart never moved. There's a hen nesting in it.", "Кінь баби Олі весь учорашній вечір пасся біля її хати, а віз так і не рушив. У ньому сидить курка на яйцях."],
+      ["The cart has a wheel off for mending. It's propped up on a log behind Grandma Olia's cottage.", "Віз стоїть без колеса, його лагодять. Він підпертий колодою за хатою баби Олі."]],
+    mule: [["The mule from the farm across the stream? Asleep in its stall all evening, snoring like a kettle on the boil.", "Мул із хутора за струмком? Увесь вечір спав у стійлі й хропів, як чайник на вогні."],
+      ["That mule won't pull anything after supper. It wouldn't pull for a king.", "Той мул нічого не тягне після вечері. Навіть для короля не потягне."]],
+    sled: [["The pull sled is under a stack of firewood behind Mr. Bohdan's cottage. Nobody's dug it out since winter.", "Санчата лежать під купою дров за хатою пана Богдана. Ніхто не діставав їх із зими."],
+      ["A sled, on dry roads? You'd hear it scraping a mile away. And nobody heard a thing.", "Санчата сухою дорогою? Їхній скрегіт було б чути за версту. А ніхто нічого не чув."]],
+    ox: [["The ox from the next farm was pulling the plough in the far field all yesterday evening, with the farmer beside it.", "Віл із сусіднього хутора весь учорашній вечір тягнув плуг на дальньому полі, а поруч ішов господар."],
+      ["The ox? Lying in the mud by the farm pond, chewing. It hasn't stood up since yesterday afternoon.", "Віл? Лежить у болоті біля ставка на хуторі й жує. Не вставав від учорашнього обіду."]],
+    haywagon: [["The hay wagon is still piled high by the farm gate and roped down tight. Not one knot undone.", "Віз із сіном досі стоїть біля воріт хутора, високо навантажений і туго перев'язаний. Жоден вузол не розв'язаний."],
+      ["The hay wagon has had a broken axle all week. It's going nowhere.", "У воза з сіном уже тиждень зламана вісь. Він нікуди не поїде."]],
   },
 };
-// Traces of the real answer, noticed in passing. Never named; they point, and Vicky has to see where.
+// Traces of the real answer, noticed this morning on the way from the train. They point; Vicky has to see where.
 const MY_TRACE = {
   with: {
-    wheelbarrow: "There was a single narrow wheel track in the mud on the back road this morning. Pressed deep, as if it carried something heavy.",
-    cart: "Two wheel ruts and horseshoe prints on the road before dawn. And the horse was sweating when I passed it, at that hour.",
-    mule: "Small, neat hoof prints going down the lane in the dark. Too small for the horse, too tidy for the cow.",
-    sled: "Two long, straight scrape marks along the road, side by side, as if something had been dragged on runners.",
-    ox: "Deep, split hoof prints in the mud. Big ones, far bigger than any cow's, and the ground churned up around them.",
-    haywagon: "There was hay scattered all along the road this morning. Nobody's been haying this week.",
+    wheelbarrow: ["When I got off the train this morning, there was a single narrow wheel track in the mud by the road, pressed deep, as if it had carried something heavy.", "Коли я {зійшов|зійшла} з потяга сьогодні вранці, біля дороги в багнюці був один вузький слід колеса, глибокий, ніби везли щось важке."],
+    cart: ["Two wheel ruts and horseshoe prints in the mud this morning, and fresh ones. Somebody had a horse out late last night.", "Сьогодні вранці в багнюці були дві колії від коліс і сліди підків, зовсім свіжі. Хтось пізно ввечері виводив коня."],
+    mule: ["Small, neat hoof prints going down the lane this morning. Too small for a horse, too tidy for a cow.", "Сьогодні вранці провулком тягнулися маленькі акуратні сліди копит. Замалі для коня, заохайні для корови."],
+    sled: ["Two long, straight scrape marks along the road this morning, side by side, as if something had been dragged on runners.", "Сьогодні вранці вздовж дороги тяглися дві довгі рівні подряпини, поруч одна з одною, ніби щось тягли на полозах."],
+    ox: ["Deep, split hoof prints in the mud this morning. Big ones, far bigger than any cow's, and the ground all churned up.", "Сьогодні вранці в багнюці були глибокі роздвоєні сліди копит. Великі, набагато більші за коров'ячі, і земля вся перекопана."],
+    haywagon: ["There was hay scattered all along the road this morning. And nobody's been making hay this week.", "Сьогодні вранці вздовж усієї дороги було розсипане сіно. А цього тижня ніхто не косив."],
   },
   where: {
-    mill: "The windmill's sails were turned the wrong way round this morning. Somebody's been up there in the night.",
-    station: "Something heavy is sitting under a tarpaulin at the far end of the platform. Luggage, I suppose. Odd shape for luggage.",
-    church: "The church door was open a crack at dawn. It's never open at dawn.",
-    reeds: "There was a flash of gold among the reeds when the sun came up. A fish, probably. A very large, very still fish.",
-    wheat: "The crows were all circling one spot in the middle of the wheat field this morning, cawing at something.",
-    bridge: "The frogs under the bridge have gone quiet. They only go quiet when something's bothering them.",
+    mill: ["The windmill's door was standing open this morning, and there were drag marks in the flour on the step.", "Сьогодні вранці двері вітряка стояли відчинені, а на сходинці в борошні були сліди, ніби щось тягли."],
+    station: ["Something heavy is sitting under a tarpaulin at the far end of the platform. Luggage, I suppose. Odd shape for luggage.", "У кінці перону під брезентом стоїть щось важке. Мабуть, багаж. Дивної форми багаж."],
+    church: ["The church door was open a crack this morning. It's never open that early.", "Сьогодні вранці двері церкви були трохи прочинені. Так рано вони ніколи не відчинені."],
+    reeds: ["There was a flash of gold among the reeds when the sun came up. A fish, probably. A very large, very still fish.", "Коли зійшло сонце, в очереті щось блиснуло золотом. Мабуть, риба. Дуже велика й дуже нерухома риба."],
+    wheat: ["The crows were all circling one spot in the middle of the wheat field this morning, cawing at something.", "Сьогодні вранці ворони кружляли над одним місцем посеред пшеничного поля й на щось каркали."],
+    bridge: ["The frogs under the bridge have gone quiet. They only go quiet when something's bothering them.", "Жаби під мостом замовкли. Вони замовкають, тільки коли їх щось турбує."],
   },
-  who: [
-    "%s yawned all through breakfast, like somebody who'd been up half the night.",
-    "%s had mud on their boots up to the ankles this morning, and the roads were dry.",
-    "%s was humming the festival song this morning, a little too cheerfully, and wouldn't say why.",
+  who: [   // %s: their name; %g: their name, Ukrainian "of" form; {a|b}: the culprit's forms
+    ["%s yawned all the way here on the train this morning, like somebody who'd been up half the night.", "%s сьогодні вранці всю дорогу в потязі {позіхав|позіхала}, ніби півночі не {спав|спала}."],
+    ["%s had rope burns on both hands this morning, and laughed it off when I asked.", "У %g сьогодні вранці на обох долонях були сліди від мотузки, а на запитання {він|вона} лише {засміявся|засміялася}."],
+    ["%s was humming the festival song this morning, a little too cheerfully, and wouldn't say why.", "%s сьогодні вранці {наспівував|наспівувала} святкову пісню, трохи надто весело, і не {казав|казала} чому."],
   ],
 };
-// How each of them talks: an opener before what they know, and how they start the gossip.
 const MY_VOICE = {
-  myron: { open: ["Ha! Let me tell you, a railwayman notices things.", "Mark my words, young lady.", "Now then. Facts, in order, like a timetable."], none: "Ha! Nothing more from me, I'm afraid. But I'd keep my eyes on the tracks, if I were you.", hmm: "Hmm! I can't say it wasn't, and that's the truth. Not with what I know." },
-  yaroslava: { open: ["Hmm. The morning was so quiet, my dear, one notices the little things.", "Let me think. Memory is a slow river.", "Ah. There's a small thing, if you'll let an old poet wander."], none: "That is all I have, my dear. The rest is silence, as they say.", hmm: "I'm afraid I can't argue with that. I wish I could." },
-  ostap: { open: ["Oh, I've got one! Listen, listen!", "Ha! You're a real detective!", "Right, right, here's what I saw!"], none: "That's everything! Ooh, go and ask the others, it's like a hunt!", hmm: "Huh! I can't say no to that one. Not a thing I know says otherwise!" },
-  lesia: { open: ["Ooh, I notice everything. It's an artist thing.", "Hmm, it's all colours in my head... let me see.", "Okay, okay, I saw this, I think. I'm almost sure."], none: "That's all I've got! But if you find the bell, can I paint it?", hmm: "Hmm, I can't say that's wrong... nothing I saw goes against it." },
-  zakhar: { open: ["Hm.", "Here's mine.", "Saw something. Maybe nothing."], none: "That's all.", hmm: "Can't say it wasn't." },
-  halyna: { open: ["Ooh, sonechko, I've heard things! Everyone's talking!", "Now don't tell anyone I told you this...", "Well! You'll never guess. Oksana says, and I quite agree..."], none: "Oh, that's all the news I have, sonechko! For now!", hmm: "Ooh, I can't say no to that! Nobody's told me different!" },
+  myron: { open: [["Ha! Let me tell you, a railwayman notices things.", "Ха! Скажу тобі, залізничник усе помічає."], ["Mark my words, young lady.", "Запам'ятай мої слова, панночко."], ["Now then. Facts, in order, like a timetable.", "Отже. Факти по порядку, як у розкладі."]], none: ["Ha! Nothing more from me, I'm afraid. But I'd keep my eyes on the tracks, if I were you.", "Ха! Більше нічого не знаю. Але я б на твоєму місці стежив за слідами."], hmm: ["Hmm! I can't say it wasn't, and that's the truth. Not with what I know.", "Гм! Не можу сказати, що ні, і це правда. Не з тим, що я знаю."] },
+  yaroslava: { open: [["Hmm. Yesterday evening was so quiet, my dear, one notices the little things.", "Гм. Учорашній вечір був такий тихий, люба, що помічаєш дрібниці."], ["Let me think. Memory is a slow river.", "Дай подумати. Пам'ять — повільна ріка."], ["Ah. There's a small thing, if you'll let an old poet wander.", "А. Є одна дрібничка, якщо дозволиш старій поетесі трохи поблукати."]], none: ["That is all I have, my dear. The rest is silence, as they say.", "Це все, що я маю, люба. Решта — тиша, як кажуть."], hmm: ["I'm afraid I can't argue with that. I wish I could.", "Боюся, я не можу з цим сперечатися. А хотіла б."] },
+  ostap: { open: [["Oh, I've got one! Listen, listen!", "О, у мене є! Слухай, слухай!"], ["Ha! You're a real detective!", "Ха! Ти справжня детективка!"], ["Right, right, here's what I saw!", "Так, так, ось що я бачив!"]], none: ["That's everything! Ooh, go and ask the others, it's like a hunt!", "Це все! О, піди спитай інших, це як полювання!"], hmm: ["Huh! I can't say no to that one. Nothing I know says otherwise!", "Ого! На це я не скажу «ні». Ніщо з того, що я знаю, цьому не суперечить!"] },
+  lesia: { open: [["Ooh, I notice everything. It's an artist thing.", "О, я все помічаю. Це в художників так."], ["Hmm, it's all colours in my head... let me see.", "Гм, у мене в голові самі кольори... зараз."], ["Okay, okay, I saw this, I think. I'm almost sure.", "Так, так, я це бачила, здається. Майже впевнена."]], none: ["That's all I've got! But if you find the bell, can I paint it?", "Це все, що я знаю! Але як знайдеш дзвін, можна я його намалюю?"], hmm: ["Hmm, I can't say that's wrong... nothing I saw goes against it.", "Гм, не можу сказати, що це неправда... ніщо з того, що я бачила, цьому не суперечить."] },
+  zakhar: { open: [["Hm.", "Гм."], ["Here's mine.", "Ось моє."], ["Saw something. Maybe nothing.", "Бачив дещо. Може, й нічого."]], none: ["That's all.", "Це все."], hmm: ["Can't say it wasn't.", "Не скажу, що ні."] },
+  halyna: { open: [["Ooh, sonechko, I've heard things! Everyone's talking!", "Ой, сонечко, я таке чула! Усі говорять!"], ["Now don't tell anyone I told you this...", "Тільки нікому не кажи, що це я тобі розповіла..."], ["Well! You'll never guess. Oksana says, and I quite agree...", "Ну! Ніколи не вгадаєш. Оксана каже, і я з нею згодна..."]], none: ["Oh, that's all the news I have, sonechko! For now!", "Ой, це всі мої новини, сонечко! Поки що!"], hmm: ["Ooh, I can't say no to that! Nobody's told me different!", "Ой, на це я не скажу «ні»! Ніхто мені іншого не казав!"] },
 };
 const MY_GOSSIP = {
-  myron: "Have you heard? The festival bell has gone! Vanished in the night, like a train that never arrives. Somebody in this valley knows something, mark my words.",
-  yaroslava: "My dear, the festival bell is gone. Its post by the fountain stands empty, like a line of verse with no rhyme. Someone here is keeping a secret.",
-  ostap: "The bell! The festival bell! Gone! Who steals a bell?! This is the best mystery since the bear took my boots!",
-  lesia: "Did you hear? The festival bell's gone! I was going to paint it for the festival. Someone took it in the night!",
-  zakhar: "Bell's gone. The festival one. Took it in the night. Heavy thing. Nobody carried that off in their arms, I'll tell you.",
-  halyna: "Oh, sonechko, haven't you heard?! The festival bell! Stolen! In the night! Everyone's whispering about it, and I mean everyone!",
+  myron: ["Have you heard? The festival bell has gone! It vanished from its post by the fountain yesterday evening, just before the last train. Somebody in this valley knows something, mark my words.", "Ти чула? Святковий дзвін зник! Учора ввечері, якраз перед останнім потягом, він пропав зі свого стовпа біля фонтана. Хтось у цій долині щось знає, запам'ятай мої слова."],
+  yaroslava: ["My dear, the festival bell is gone. Its post by the fountain stands empty, like a line of verse with no rhyme. It was there when I sat down to write yesterday, and gone by the last train.", "Люба, святкового дзвона немає. Його стовп біля фонтана стоїть порожній, як рядок вірша без рими. Учора, коли я сідала писати, він ще був, а до останнього потяга зник."],
+  ostap: ["The bell! The festival bell! Gone! Right off its hook by the fountain, yesterday evening! Who steals a bell?! This is the best mystery since the bear took my boots!", "Дзвін! Святковий дзвін! Зник! Просто з гака біля фонтана, вчора ввечері! Хто краде дзвони?! Це найкраща загадка відтоді, як ведмідь поцупив мої чоботи!"],
+  lesia: ["Did you hear? The festival bell's gone from its post by the fountain! I was going to paint it for the festival. Someone took it yesterday evening!", "Ти чула? Святковий дзвін зник зі стовпа біля фонтана! Я хотіла намалювати його до свята. Хтось забрав його вчора ввечері!"],
+  zakhar: ["Bell's gone. The festival one, off the post by the fountain. Yesterday evening. Heavy thing. Nobody carried that off in their arms, I'll tell you.", "Дзвона нема. Святкового, зі стовпа біля фонтана. Учора ввечері. Важкий він. На руках такого не віднесеш, кажу тобі."],
+  halyna: ["Oh, sonechko, haven't you heard?! The festival bell! Stolen! Right off its post by the fountain, yesterday evening! Everyone's whispering about it, and I mean everyone!", "Ой, сонечко, ти не чула?! Святковий дзвін! Украли! Просто зі стовпа біля фонтана, вчора ввечері! Усі про це шепочуться, геть усі!"],
 };
-// Why the culprit did it, told when they're caught: never anything bad.
 const MY_WHY = {
-  myron: "I only wanted to polish it! A bell should shine on a festival day, like brass on a good locomotive. I meant to have it back before anyone noticed. I'm sorry for the fuss.",
-  yaroslava: "I wanted to hear it ring alone, at dawn, far from everyone. I was writing a poem about it. Forgive an old woman her small adventure.",
-  ostap: "I wanted to teach it a Carpathian tune! A bell that only knows one song is a sad bell. I was going to give it back, honest!",
-  lesia: "I wanted to paint it in the morning light, just once, without anyone watching. Look, I finished the picture! Isn't it lovely?",
-  zakhar: "Wanted to see if it'd scare the big carp out of the reeds. It didn't. Sorry.",
-  halyna: "I was going to tie it with ribbons and flowers and surprise the whole village! Oh, sonechko, you've spoiled my surprise. But well done!",
+  myron: ["I only wanted to polish it! A bell should shine on a festival day, like brass on a good locomotive. I meant to have it back before anyone noticed. I'm sorry for the fuss.", "Я лише хотів його начистити! У свято дзвін має сяяти, як мідь на доброму паротязі. Я збирався повернути його, перш ніж хтось помітить. Вибачте за метушню."],
+  yaroslava: ["I wanted to hear it ring alone, at dusk, far from everyone. I was writing a poem about it. Forgive an old woman her small adventure.", "Я хотіла почути, як він дзвенить сам, у сутінках, далеко від усіх. Я писала про нього вірш. Пробачте старій жінці її маленьку пригоду."],
+  ostap: ["I wanted to teach it a Carpathian tune! A bell that only knows one song is a sad bell. I was going to give it back, honest!", "Я хотів навчити його карпатської мелодії! Дзвін, що знає лише одну пісню, — сумний дзвін. Я б його повернув, чесно!"],
+  lesia: ["I wanted to paint it in the evening light, just once, without anyone watching. Look, I finished the picture! Isn't it lovely?", "Я хотіла намалювати його у вечірньому світлі, хоч раз, щоб ніхто не бачив. Дивись, я закінчила картину! Правда, гарна?"],
+  zakhar: ["Wanted to see if it'd scare the big carp out of the reeds. It didn't. Sorry.", "Хотів подивитися, чи вижене він великого коропа з очерету. Не вигнав. Вибачте."],
+  halyna: ["I was going to tie it with ribbons and flowers and surprise the whole village! Oh, sonechko, you've spoiled my surprise. But well done!", "Я хотіла прикрасити його стрічками й квітами та здивувати все село! Ой, сонечко, ти зіпсувала мені сюрприз. Але молодець!"],
 };
-const MY_ASK = { who: 'Who did you see early this morning?', where: 'Where were you this morning?', with: 'Did you notice anything odd?' };
+const MY_ASK = { where: ["Where were you yesterday evening?", "Де ви були вчора ввечері?"], who: ["Who did you see yesterday evening?", "Кого ви бачили вчора ввечері?"], with: ["Did you notice anything odd?", "Ви помітили щось дивне?"] };
+const MY_T = {
+  more: ["Anything else at all?", "Ще щось?"], theory: ["I have a theory...", "У мене є здогадка..."], bye: ["Goodbye.", "До побачення."], tell: ["Tell me more...", "Розкажіть більше..."],
+  menu: [["What would you like to know?", "Що ти хочеш знати?"], ["Ask away, detective.", "Питай, детективко."], ["Go on, then.", "Ну, питай."]],
+  whoQ: ["Who do you think it was?", "Хто, на твою думку, це був?"], whereQ: ["And where is the bell now?", "А де тепер дзвін?"], withQ: ["And what did they move it with?", "А чим його перевезли?"],
+  never: ["(Never mind.)", "(Неважливо.)"], thanks: ["Thank you.", "Дякую."], isee: ["I see.", "Зрозуміло."], notIt: ["Oh no, not %s.", "Ой ні, тільки не %s."],
+  hint: ["🔍 A mystery! Ask the visitors what they saw. When you know <b>who</b> took the bell, <b>where</b> it is and <b>what</b> they moved it with, tell Officer Petro by the fountain. Your notes are in the 🔍 notebook.", "🔍 Загадка! Розпитай гостей, що вони бачили. Коли знатимеш, <b>хто</b> забрав дзвін, <b>де</b> він і <b>чим</b> його перевезли, скажи офіцеру Петру біля фонтана. Твої записи — у 🔍 блокноті."],
+  // Officer Petro
+  quiet: [["All quiet in Dolyna today. Just the way I like it.", "У Долині сьогодні тихо. Саме так, як я люблю."], ["Good day to you, young lady. Nothing to report. The ducks are behaving themselves.", "Добрий день, панночко. Нічого не сталося. Качки поводяться чемно."]],
+  goodday: ["Good day, Officer.", "Добрий день, пане офіцере."], solved: ["That bell rings sweeter than ever, thanks to you. I'll be keeping an eye on you, detective. A friendly eye.", "Завдяки тобі цей дзвін дзвенить солодше, ніж будь-коли. Я наглядатиму за тобою, детективко. По-дружньому."],
+  thanksO: ["Thank you, Officer.", "Дякую, пане офіцере."], already: ["I'm still looking into your last idea, young lady. Come back tomorrow, and bring me something solid.", "Я ще перевіряю твою минулу здогадку, панночко. Приходь завтра й принеси щось певне."], allright: ["All right.", "Гаразд."],
+  askP: ["Ah, the festival bell. A bad business. Have you worked out who did it, detective?", "А, святковий дзвін. Погана справа. Ти вже з'ясувала, хто це зробив, детективко?"], know: ["I know who did it.", "Я знаю, хто це зробив."], notyet: ["Not yet.", "Ще ні."], notyet2: ["(Not yet.)", "(Ще ні.)"],
+  pWho: ["Who took it?", "Хто його забрав?"], pWhere: ["Where is the bell?", "Де дзвін?"], pWith: ["And how did they get it there?", "А чим його туди доправили?"],
+  right: ["Hmm. Hmm! Ah, I have a hunch you're right, young lady. I'll go and have a word.", "Гм. Гм! А, маю передчуття, що ти маєш рацію, панночко. Піду поговорю."], goOn: ["Go on!", "Ідіть!"], back: ["The bell is back!", "Дзвін повернувся!"],
+  wrong: ["I'll look into it... but I have my doubts. Something there doesn't fit. Come and see me again tomorrow.", "Я перевірю... але маю сумніви. Щось тут не сходиться. Приходь до мене завтра."], keep: ["I'll keep looking.", "Шукатиму далі."],
+};
+// A theory, as said: "Myron, the windmill, with the wheelbarrow."
+const myTheory = p => ['<i>"' + NPC[p.who].nameEn + ', ' + MY_WHERE[p.where][0] + ', with ' + MY_WITH[p.what][0] + '."</i><br>', '<i>«' + MY_NAME[p.who][1] + ', ' + MY_WHERE[p.where][2] + ', ' + MY_WITH[p.what][2] + '.»</i><br>'];
+const myCat = (...prs) => [prs.map(x => Array.isArray(x) ? x[0] : x).join(''), prs.map(x => Array.isArray(x) ? x[1] : x).join('')];
 
-// Saying hello when there's no mystery on: their recorded greeting, and a few things to say back.
-const VIS_WHY = {
-  myron: "Forty years I rode the rails, young lady. Now I ride them for fun, and get off wherever the coffee smells best.",
-  yaroslava: "I came for the quiet. Kyiv is very loud, and poems are shy creatures. They only come out where it's peaceful.",
-  ostap: "I'm walking from the mountains to the sea! Well, I'm taking the train for the boring bits. This bit isn't boring at all!",
-  lesia: "The light here! Have you seen the light here? Golden in the morning, pink at night. I could paint it forever.",
-  zakhar: "Heard there's a carp in your lake as big as a dog. Came to meet him.",
-  halyna: "Oh, I come for the news, sonechko! A village this size, something's always happening. And the cake at the café, of course.",
-};
-function visHello(id) {
-  const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'];
-  n0.met = true; save(); say('v_' + id + '_' + (first ? 'intro' : 'again'));
-  myDialog(id, L.en, [{ label: first ? 'Nice to meet you too!' : 'Good to see you too!', fn: () => myDialog(id, ['Lovely!', 'Wonderful.', 'Ha, that it is!'][Math.floor(Math.random() * 3)], [{ label: 'Goodbye.', fn: closeSheet }]) }, { label: 'What brings you to Dolyna?', fn: () => myDialog(id, VIS_WHY[id], [{ label: 'Goodbye.', fn: closeSheet }]) }, { label: 'Goodbye.', fn: closeSheet }]);
-}
 function myNewCase() {
   const who = myPick(MY_WHO), where = myPick(Object.keys(MY_WHERE)), what = myPick(Object.keys(MY_WITH));
   const cards = [...MY_WHO.filter(x => x !== who).map(v => ({ k: 'who', v })), ...Object.keys(MY_WHERE).filter(x => x !== where).map(v => ({ k: 'where', v })), ...Object.keys(MY_WITH).filter(x => x !== what).map(v => ({ k: 'with', v }))];
   for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
-  // deal them round, so nobody holds their own name (that would be a strange thing to say about yourself)
+  // dealt round, so nobody holds their own name; each card's line is written for the one who says it
   const hands = Object.fromEntries(MY_WHO.map(id => [id, []])); let seat = 0;
-  for (const c of cards) { for (let tries = 0; tries < 6; tries++) { const id = MY_WHO[(seat + tries) % 6]; if (!(c.k === 'who' && c.v === id)) { hands[id].push({ k: c.k, v: c.v, said: false, line: myPick(MY_CLEAR[c.k][c.v]) }); seat = (seat + tries + 1) % 6; break; } } }
+  for (const c of cards) { for (let tries = 0; tries < 6; tries++) { const id = MY_WHO[(seat + tries) % 6]; if (!(c.k === 'who' && c.v === id)) { const ln = myPick(MY_CLEAR[c.k][c.v]); hands[id].push({ k: c.k, v: c.v, said: false, line: [ln[0], mySex(ln[1], MY_SEX[id])] }); seat = (seat + tries + 1) % 6; break; } } }
   // three innocent visitors each noticed one trace of the real thing
-  const witnesses = MY_WHO.filter(x => x !== who).sort(() => Math.random() - 0.5).slice(0, 3);
-  const traces = {}; [['with', MY_TRACE.with[what]], ['where', MY_TRACE.where[where]], ['who', myPick(MY_TRACE.who).replace('%s', myShort(who))]].forEach(([k, txt], i) => { traces[witnesses[i]] = { k, txt, said: false }; });
-  return { day: S.clock.day, who, where, what, hands, traces, met: {}, notes: {}, heard: [], acc: 0, solved: false };
+  const witnesses = MY_WHO.filter(x => x !== who).sort(() => Math.random() - 0.5).slice(0, 3), wt = myPick(MY_TRACE.who);
+  const whoTrace = [wt[0].replace('%s', MY_NAME[who][0]), mySex(wt[1].replace('%s', MY_NAME[who][1]).replace('%g', MY_NAME[who][2]), MY_SEX[who])];
+  const traces = {};
+  [['with', MY_TRACE.with[what]], ['where', MY_TRACE.where[where]], ['who', whoTrace]].forEach(([k, ln], i) => { traces[witnesses[i]] = { k, txt: [ln[0], mySex(ln[1], MY_SEX[witnesses[i]])], said: false }; });
+  return { v: 2, day: S.clock.day, who, where, what, hands, traces, met: {}, notes: {}, heard: [], acc: 0, solved: false };
 }
-// The case opens on a morning the visitors are in (if none is open), and a new one can start a few days after one is solved.
 function myMaybeStart() {
-  if (S.mystery && !S.mystery.solved) return;
+  if (S.mystery && !S.mystery.solved && S.mystery.v === 2) return;
   if (S.mystery && S.mystery.solved && (S.clock.day || 1) - S.mystery.solvedDay < 3) return;
-  S.mystery = myNewCase(); save();
-  setTimeout(() => { if (mode === 'world') toast('🔔 The visitors are whispering about something this morning...', 3600); }, 4000);
+  S.mystery = myNewCase(); save();   // (an older case, from before the dialogue was rewritten, starts afresh)
 }
 const myOpen = () => S.mystery && !S.mystery.solved;
-function myNote(c, src) {   // ruled out, in the notebook
-  const M = S.mystery, key = c.k + ':' + c.v; if (!M.notes[key] || M.notes[key] === '?') M.notes[key] = 'x:' + src;
-}
-// A mystery conversation: a face, a name, what they say, and things for Vicky to say back.
+function myNote(c, src) { const M = S.mystery, key = c.k + ':' + c.v; if (!M.notes[key] || M.notes[key] === '?') M.notes[key] = 'x:' + src; }
+// A conversation card: a face, a name, what they say (in English or Ukrainian), Vicky's choices, and a button to
+// switch the language (the same card comes back in the other one).
+let MYC = [], myLast = null;
 function myDialog(id, text, choices) {
-  const npc = NPC[id];
-  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npc.look) + '" alt=""><div style="flex:1"><div class="who">' + npc.nameEn + '</div><div class="line" style="font-size:19px;line-height:1.35">' + text + '</div></div></div>' +
-    '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + c.label + '</button>').join('') + '</div>');
-  MYC = choices;
+  myLast = [id, text, choices]; MYC = choices;
+  const npc = NPC[id], uk = MY_LANG === 'uk';
+  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npc.look) + '" alt=""><div style="flex:1"><div class="who">' + (uk ? npc.name : npc.nameEn) + '</div><div class="line" style="font-size:19px;line-height:1.35">' + myL(text) + '</div></div></div>' +
+    '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>' +
+    '<div style="text-align:center;margin-top:8px"><button class="subt mylang" data-a="myLang">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div>');
 }
-let MYC = [];
 function myTalk(id) {
   // every conversation opens with their spoken hello: their name the first time, nice to see you again after
-  const M = S.mystery, n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, hello = NPC[id].lines[first ? 'intro' : 'again'].en;
+  const M = S.mystery, n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hello = [L.en, L.uk];
   n0.met = true; say('v_' + id + '_' + (first ? 'intro' : 'again'));
-  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, hello + '<br><br>' + MY_GOSSIP[id] + (Object.keys(M.met).length === 1 ? '<div class="hint" style="margin-top:8px">🔍 A mystery! Ask the visitors what they saw. When you know <b>who</b> took the bell, <b>where</b> it is and <b>what</b> they moved it with, tell Officer Petro by the fountain. Your notes are in the 🔍 notebook.</div>' : ''), [{ label: 'Tell me more...', fn: () => myMenu(id) }, { label: 'Goodbye.', fn: closeSheet }]); }
+  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, myCat(hello, '<br><br>', MY_GOSSIP[id], Object.keys(M.met).length === 1 ? myCat('<div class="hint" style="margin-top:8px">', MY_T.hint, '</div>') : ''), [{ label: MY_T.tell, fn: () => myMenu(id) }, { label: MY_T.bye, fn: closeSheet }]); }
   save(); myMenu(id, hello);
 }
 function myMenu(id, said) {
   const M = S.mystery, hand = M.hands[id], v = MY_VOICE[id], ch = [];
-  for (const k of ['where', 'who', 'with']) { const c = hand.find(c => c.k === k && !c.said); if (c) ch.push({ label: MY_ASK[k], fn: () => { c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save(); myMenu(id, myPick(v.open) + ' ' + c.line); } }); }
+  for (const k of ['where', 'who', 'with']) { const c = hand.find(c => c.k === k && !c.said); if (c) ch.push({ label: MY_ASK[k], fn: () => { c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save(); myMenu(id, myCat(myPick(v.open), ' ', c.line)); } }); }
   const tr = M.traces[id];
-  if (hand.every(c => c.said) && tr && !tr.said) ch.push({ label: 'Anything else at all?', fn: () => { tr.said = true; M.heard.push({ id, txt: tr.txt, trace: 1 }); save(); myMenu(id, myPick(v.open) + ' ' + tr.txt); } });
-  ch.push({ label: 'I have a theory...', fn: () => mySuggest(id) });
-  ch.push({ label: 'Goodbye.', fn: closeSheet });
+  if (hand.every(c => c.said) && tr && !tr.said) ch.push({ label: MY_T.more, fn: () => { tr.said = true; M.heard.push({ id, txt: tr.txt, trace: 1 }); save(); myMenu(id, myCat(myPick(v.open), ' ', tr.txt)); } });
+  ch.push({ label: MY_T.theory, fn: () => mySuggest(id) });
+  ch.push({ label: MY_T.bye, fn: closeSheet });
   const left = hand.some(c => !c.said) || (tr && !tr.said);
-  myDialog(id, said || (left ? ['What would you like to know?', 'Ask away, detective.', 'Go on, then.'][Math.floor(Math.random() * 3)] : v.none), ch);
+  myDialog(id, said || (left ? myPick(MY_T.menu) : v.none), ch);
 }
-// Putting a theory to someone: who, then where, then with what; they answer with one thing that doesn't fit, if they can.
 function mySuggest(id, pick = {}) {
-  if (!pick.who) return myDialog(id, 'Who do you think it was?', MY_WHO.map(x => ({ label: myName(x), fn: () => mySuggest(id, { who: x }) })).concat([{ label: '(Never mind.)', fn: () => myMenu(id) }]));
-  if (!pick.where) return myDialog(id, 'And where is the bell now?', Object.keys(MY_WHERE).map(x => ({ label: cap(MY_WHERE[x]), fn: () => mySuggest(id, Object.assign(pick, { where: x })) })));
-  if (!pick.what) return myDialog(id, 'And what did they move it with?', Object.keys(MY_WITH).map(x => ({ label: cap(MY_WITH[x]), fn: () => mySuggest(id, Object.assign(pick, { what: x })) })));
+  if (!pick.who) return myDialog(id, MY_T.whoQ, MY_WHO.map(x => ({ label: myName(x), fn: () => mySuggest(id, { who: x }) })).concat([{ label: MY_T.never, fn: () => myMenu(id) }]));
+  if (!pick.where) return myDialog(id, MY_T.whereQ, Object.keys(MY_WHERE).map(x => ({ label: [cap(MY_WHERE[x][0]), cap(MY_WHERE[x][1])], fn: () => mySuggest(id, Object.assign(pick, { where: x })) })));
+  if (!pick.what) return myDialog(id, MY_T.withQ, Object.keys(MY_WITH).map(x => ({ label: [cap(MY_WITH[x][0]), cap(MY_WITH[x][1])], fn: () => mySuggest(id, Object.assign(pick, { what: x })) })));
   const M = S.mystery, hand = M.hands[id], hits = hand.filter(c => (c.k === 'who' && c.v === pick.who) || (c.k === 'where' && c.v === pick.where) || (c.k === 'with' && c.v === pick.what));
-  const theory = '<i>"' + myName(pick.who) + ', ' + MY_WHERE[pick.where] + ', with ' + MY_WITH[pick.what] + '."</i><br>';
-  if (!hits.length) return myDialog(id, theory + MY_VOICE[id].hmm, [{ label: 'Thank you.', fn: () => myMenu(id) }]);
+  if (!hits.length) return myDialog(id, myCat(myTheory(pick), MY_VOICE[id].hmm), [{ label: MY_T.thanks, fn: () => myMenu(id) }]);
   const c = hits.find(c => !c.said) || hits[0]; c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save();
-  myDialog(id, theory + 'Oh no, not ' + myCardName(c) + '. ' + c.line, [{ label: 'I see.', fn: () => myMenu(id) }]);
+  const nm = myCard(c);
+  myDialog(id, myCat(myTheory(pick), [MY_T.notIt[0].replace('%s', nm[0]), MY_T.notIt[1].replace('%s', nm[1])], ' ', c.line), [{ label: MY_T.isee, fn: () => myMenu(id) }]);
 }
-// The detective's notebook: every suspect, place and way to move it, with what's been ruled out (and who said so),
-// and everything Vicky's heard. Tap a line to mark it as a hunch.
 function myNotebook() {
   const M = S.mystery; if (!M) return toast('🔍 No mystery right now.', 2000);
-  const row = (k, v, name) => { const n = M.notes[k + ':' + v] || '', out = n.startsWith('x:'), src = out ? myShort(n.slice(2)) : '';
+  const uk = MY_LANG === 'uk';
+  const row = (k, v, name) => { const n = M.notes[k + ':' + v] || '', out = n.startsWith('x:'), src = out ? MY_NAME[n.slice(2)][uk ? 1 : 0] : '';
     return '<button class="mynb' + (out ? ' out' : n === '?' ? ' hunch' : '') + '" data-a="myMark" data-v="' + k + ':' + v + '"><span>' + (out ? '✗' : n === '?' ? '★' : '·') + '</span><b>' + name + '</b>' + (src ? '<small>' + src + '</small>' : '') + '</button>'; };
   const sec = (title, k, list) => '<div class="mysec"><div class="mysech">' + title + '</div>' + list.map(([v, name]) => row(k, v, name)).join('') + '</div>';
-  const heard = M.heard.slice().reverse().map(h => '<div class="myheard"><b>' + myShort(h.id) + ':</b> ' + h.txt + '</div>').join('') || '<div class="myheard">Nothing yet. Go and talk to the visitors.</div>';
-  openSheet('<div class="card" style="text-align:left"><div class="tag">🔍 Detective notebook</div><div class="word" style="font-size:22px">The missing festival bell</div><div class="en" style="font-size:14px">✗ ruled out (and who said so) · tap a line to mark a hunch ★</div>' +
-    '<div class="mygrid">' + sec('Who?', 'who', MY_WHO.map(x => [x, myName(x)])) + sec('Where?', 'where', Object.entries(MY_WHERE).map(([v, n]) => [v, cap(n)])) + sec('With what?', 'with', Object.entries(MY_WITH).map(([v, n]) => [v, cap(n)])) + '</div>' +
-    '<details class="myclues"><summary>Everything you\'ve heard (' + M.heard.length + ')</summary>' + heard + '</details>' +
-    '<div class="row">' + btn('close', '', lab('close'), 'ghost') + '</div></div>');
+  const heard = M.heard.slice().reverse().map(h => '<div class="myheard"><b>' + MY_NAME[h.id][uk ? 1 : 0] + ':</b> ' + myL(h.txt) + '</div>').join('') || '<div class="myheard">' + (uk ? 'Поки нічого. Поговори з гостями.' : 'Nothing yet. Go and talk to the visitors.') + '</div>';
+  openSheet('<div class="card" style="text-align:left"><div class="tag">🔍 ' + (uk ? 'Детективний блокнот' : 'Detective notebook') + '</div><div class="word" style="font-size:22px">' + (uk ? 'Зниклий святковий дзвін' : 'The missing festival bell') + '</div><div class="en" style="font-size:14px">' + (uk ? '✗ виключено (і хто сказав) · торкнися рядка, щоб позначити здогадку ★' : '✗ ruled out (and who said so) · tap a line to mark a hunch ★') + '</div>' +
+    '<div class="mygrid">' + sec(uk ? 'Хто?' : 'Who?', 'who', MY_WHO.map(x => [x, uk ? NPC[x].name : NPC[x].nameEn])) + sec(uk ? 'Де?' : 'Where?', 'where', Object.entries(MY_WHERE).map(([v, n]) => [v, cap(n[uk ? 1 : 0])])) + sec(uk ? 'Чим?' : 'With what?', 'with', Object.entries(MY_WITH).map(([v, n]) => [v, cap(n[uk ? 1 : 0])])) + '</div>' +
+    '<details class="myclues"><summary>' + (uk ? 'Усе, що ти чула' : 'Everything you\'ve heard') + ' (' + M.heard.length + ')</summary>' + heard + '</details>' +
+    '<div class="row"><button class="subt mylang" data-a="myLangNb">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button>' + btn('close', '', lab('close'), 'ghost') + '</div></div>');
 }
 function myMark(key) { const M = S.mystery; if (!M) return; const n = M.notes[key] || ''; if (n.startsWith('x:')) return; M.notes[key] = n === '?' ? '' : '?'; save(); myNotebook(); }
-// Officer Petro, the village constable, by the fountain.
 function petroTalk() {
   const M = S.mystery, id = 'petro';
-  if (!M || !M.started) return myDialog(id, ["All quiet in Dolyna this morning. Just the way I like it.", "Good day to you, young lady. Nothing to report. The ducks are behaving themselves."][Math.floor(Math.random() * 2)], [{ label: 'Good day, Officer.', fn: closeSheet }]);
-  if (M.solved) return myDialog(id, 'That bell rings sweeter than ever, thanks to you. I\'ll be keeping an eye on you, detective. A friendly eye.', [{ label: 'Thank you, Officer.', fn: closeSheet }]);
-  if (M.acc === (S.clock.day || 1)) return myDialog(id, 'I\'m still looking into your last idea, young lady. Come back tomorrow, and bring me something solid.', [{ label: 'All right.', fn: closeSheet }]);
-  myDialog(id, 'Ah, the festival bell. A bad business. Have you worked out who did it, detective?', [{ label: 'I know who did it.', fn: () => petroAccuse({}) }, { label: 'Not yet.', fn: closeSheet }]);
+  if (!M || !M.started) return myDialog(id, myPick(MY_T.quiet), [{ label: MY_T.goodday, fn: closeSheet }]);
+  if (M.solved) return myDialog(id, MY_T.solved, [{ label: MY_T.thanksO, fn: closeSheet }]);
+  if (M.acc === (S.clock.day || 1)) return myDialog(id, MY_T.already, [{ label: MY_T.allright, fn: closeSheet }]);
+  myDialog(id, MY_T.askP, [{ label: MY_T.know, fn: () => petroAccuse({}) }, { label: MY_T.notyet, fn: closeSheet }]);
 }
 function petroAccuse(pick) {
   const id = 'petro';
-  if (!pick.who) return myDialog(id, 'Who took it?', MY_WHO.map(x => ({ label: myName(x), fn: () => petroAccuse({ who: x }) })).concat([{ label: '(Not yet.)', fn: closeSheet }]));
-  if (!pick.where) return myDialog(id, 'Where is the bell?', Object.keys(MY_WHERE).map(x => ({ label: cap(MY_WHERE[x]), fn: () => petroAccuse(Object.assign(pick, { where: x })) })));
-  if (!pick.what) return myDialog(id, 'And how did they get it there?', Object.keys(MY_WITH).map(x => ({ label: cap(MY_WITH[x]), fn: () => petroAccuse(Object.assign(pick, { what: x })) })));
-  const M = S.mystery, sum = '<i>"' + myName(pick.who) + ', ' + MY_WHERE[pick.where] + ', with ' + MY_WITH[pick.what] + '."</i><br>';
+  if (!pick.who) return myDialog(id, MY_T.pWho, MY_WHO.map(x => ({ label: myName(x), fn: () => petroAccuse({ who: x }) })).concat([{ label: MY_T.notyet2, fn: closeSheet }]));
+  if (!pick.where) return myDialog(id, MY_T.pWhere, Object.keys(MY_WHERE).map(x => ({ label: [cap(MY_WHERE[x][0]), cap(MY_WHERE[x][1])], fn: () => petroAccuse(Object.assign(pick, { where: x })) })));
+  if (!pick.what) return myDialog(id, MY_T.pWith, Object.keys(MY_WITH).map(x => ({ label: [cap(MY_WITH[x][0]), cap(MY_WITH[x][1])], fn: () => petroAccuse(Object.assign(pick, { what: x })) })));
+  const M = S.mystery, sum = myTheory(pick);
   if (pick.who === M.who && pick.where === M.where && pick.what === M.what) {
     M.solved = true; M.solvedDay = S.clock.day || 1; S.decor.kubok = 1; save(); myBtnShow(); blip(880, 0.1); setTimeout(() => blip(1320, 0.14), 120);
-    return myDialog(id, sum + 'Hmm. Hmm! Ah, I have a hunch you\'re right, young lady. I\'ll go and have a word.', [{ label: 'Go on!', fn: () => myDialog(M.who, MY_WHY[M.who], [{ label: 'The bell is back!', fn: () => { closeSheet(); toast('🏆 The bell is back for the festival! A golden bell trophy is waiting on your bookshelf at home.', 5000); try { churchBell(0.6, 196); } catch (e) {} } }]) }]);
+    return myDialog(id, myCat(sum, MY_T.right), [{ label: MY_T.goOn, fn: () => myDialog(M.who, MY_WHY[M.who], [{ label: MY_T.back, fn: () => { closeSheet(); toast(MY_LANG === 'uk' ? '🏆 Дзвін повернувся до свята! На твоїй книжковій полиці вдома чекає золотий дзвін-кубок.' : '🏆 The bell is back for the festival! A golden bell trophy is waiting on your bookshelf at home.', 5000); try { churchBell(0.5, 196); } catch (e) {} } }]) }]);
   }
   M.acc = S.clock.day || 1; save();
-  myDialog(id, sum + 'I\'ll look into it... but I have my doubts. Something there doesn\'t fit. Come and see me again tomorrow.', [{ label: 'I\'ll keep looking.', fn: closeSheet }]);
+  myDialog(id, myCat(sum, MY_T.wrong), [{ label: MY_T.keep, fn: closeSheet }]);
 }
-
+// Saying hello when there's no mystery on: their recorded greeting, and a few things to say back.
+const VIS_WHY = {
+  myron: ["Forty years I rode the rails, young lady. Now I ride them for fun, and get off wherever the coffee smells best.", "Сорок років я їздив залізницею, панночко. Тепер їжджу для втіхи й виходжу там, де найкраще пахне кава."],
+  yaroslava: ["I came for the quiet. Kyiv is very loud, and poems are shy creatures. They only come out where it's peaceful.", "Я приїхала по тишу. У Києві дуже гамірно, а вірші — створіння сором'язливі. Вони з'являються лише там, де спокійно."],
+  ostap: ["I'm walking from the mountains to the sea! Well, I'm taking the train for the boring bits. This bit isn't boring at all!", "Я йду з гір аж до моря! Ну, нудні шматки проїжджаю потягом. А тут зовсім не нудно!"],
+  lesia: ["The light here! Have you seen the light here? Golden in the morning, pink at night. I could paint it forever.", "Світло тут! Ти бачила, яке тут світло? Уранці золоте, увечері рожеве. Я б малювала його вічно."],
+  zakhar: ["Heard there's a carp in your lake as big as a dog. Came to meet him.", "Чув, у вашому озері є короп завбільшки з собаку. Приїхав познайомитися."],
+  halyna: ["Oh, I come for the news, sonechko! A village this size, something's always happening. And the cake at the café, of course.", "Ой, я приїжджаю по новини, сонечко! У такому селі завжди щось відбувається. І по торт у кав'ярні, звісно."],
+};
+function visHello(id) {
+  const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'];
+  n0.met = true; save(); say('v_' + id + '_' + (first ? 'intro' : 'again'));
+  const bye = { label: MY_T.bye, fn: closeSheet };
+  myDialog(id, [L.en, L.uk], [{ label: first ? ['Nice to meet you too!', 'Мені теж приємно!'] : ['Good to see you too!', 'І я рада вас бачити!'], fn: () => myDialog(id, myPick([['Lovely!', 'Чудово!'], ['Wonderful.', 'Прекрасно.'], ['Ha, that it is!', 'Ха, так і є!']]), [bye]) }, { label: ['What brings you to Dolyna?', 'Що привело вас до Долини?'], fn: () => myDialog(id, VIS_WHY[id], [bye]) }, bye]);
+}
 // ------------------------------------------------------------------ the railway
 // The line runs east to west along the top of the valley. A little steam train (a green locomotive with red
 // wheels and a brass dome, then three blue-and-yellow carriages) comes in from the east, slows into Dolyna
@@ -8288,7 +8326,7 @@ function dayTick(dt) {
   C.ev = C.ev || {};
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
-    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 0.75;   // the noon bell rings out through the whole village (a little softer than full)
+    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 0.55;   // the noon bell rings out through the whole village (a little softer than full)
     duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer
     for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol, 147), 300 + i * 4000);   // pitched a fourth above the big bell's 110 Hz   // three slow strokes of the big bell (this line had slipped into the comment above, so noon was silent)
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
@@ -9854,7 +9892,7 @@ const A = {
   exitHome,
   enterHome,
   hear(v) { say(v); },
-  myChoose(v) { const c = MYC[+v]; if (c) c.fn(); }, myMark(v) { myMark(v); }, myBook() { myNotebook(); },
+  myChoose(v) { const c = MYC[+v]; if (c) c.fn(); }, myLang() { MY_LANG = MY_LANG === 'uk' ? 'en' : 'uk'; if (myLast) myDialog(...myLast); }, myLangNb() { MY_LANG = MY_LANG === 'uk' ? 'en' : 'uk'; myNotebook(); }, myMark(v) { myMark(v); }, myBook() { myNotebook(); },
   cafeBuy(v) { cafeBuy(v); },
   abDone() { abDone(); }, abPick(v) { abPick(v); }, abNext() { abNext(); }, abSay() { abSay(); }, abHear() { if (ab && ab.sent) { stopSay(); say(...ab.sent.clips); } }, abHearN() { if (ab) { stopSay(); say('w_' + numId(ab.list[ab.i].n)); } }, abAgain() { closeSheet(); setTimeout(abStart, 200); },
   prac(v) { pracAttempt(v); },
