@@ -6658,11 +6658,13 @@ function setGuide() {
   g.querySelector('.en').textContent = guideEnOn ? full : en;
   g.querySelector('.eye').classList.toggle('on', guideEnOn);
 }
+// The money bag in the top bar: a plain tied sack (the 💰 emoji has a dollar sign on it).
+const BAG_SVG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><radialGradient id="g" cx="40%" cy="55%" r="65%"><stop offset="0" stop-color="#f6c25a"/><stop offset=".65" stop-color="#d98a2b"/><stop offset="1" stop-color="#a8601c"/></radialGradient></defs><path d="M22 20 C10 28 6 40 10 50 C14 60 50 60 54 50 C58 40 54 28 42 20 Z" fill="url(#g)"/><path d="M23 21 C19 14 20 8 24 6 C27 9 29 10 32 7 C35 10 37 9 40 6 C44 8 45 14 41 21 Z" fill="#d98a2b"/><path d="M24 6 C27 9 29 10 32 7 C35 10 37 9 40 6" fill="none" stroke="#a8601c" stroke-width="1.5"/><rect x="20" y="18" width="24" height="5" rx="2.5" fill="#8a4a14"/><path d="M38 21 C42 25 44 27 45 30" stroke="#8a4a14" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="22" cy="36" rx="4" ry="8" fill="#fff" opacity=".28" transform="rotate(18 22 36)"/></svg>');
 function hud() {
   for (const [id, txt] of [['#coins', devOn ? '💰 ∞' : `💰 ${S.coins}`], ['#hearts', `❤️ ${S.hearts}`], ['#water', `💧 ${S.bag.voda || 0}`]]) {
     myBtnShow();
     const el = $(id); if (!el || el.dataset.txt === txt) continue;   // (the water counter was taken off the top bar)
-    const first = !el.dataset.set; el.dataset.set = 1; el.dataset.txt = txt; const [ic, n] = txt.split(' '); el.innerHTML = '<span class="ic">' + ic + '</span><b class="' + (n.length > 3 ? 'long' : n.length > 2 ? 'mid' : '') + '">' + n + '</b>';   // the number sits inside the icon
+    const first = !el.dataset.set; el.dataset.set = 1; el.dataset.txt = txt; const [ic, n] = txt.split(' '); el.innerHTML = (ic === '💰' ? '<img class="ic bag" src="' + BAG_SVG + '" alt="">' : '<span class="ic">' + ic + '</span>') + '<b class="' + (n.length > 3 ? 'long' : n.length > 2 ? 'mid' : '') + '">' + n + '</b>';   // the number sits inside the icon
     if (!first) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }   // the counter hops when it changes
   }
 }
