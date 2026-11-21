@@ -28,7 +28,7 @@
   #hud .grow { flex:1; }
   .pill.bump { animation:bump .5s cubic-bezier(.3,1.6,.5,1); }
   @keyframes bump { 35% { transform:scale(1.28); } }
-  @media (max-width: 420px) { .pill { padding:6px 9px; font-size:15px; } .pill.btn { padding:6px 8px; font-size:18px; } #hud { gap:6px; } }
+  @media (max-width: 420px) { .pill { padding:6px 8px; font-size:15px; } .pill.btn { padding:6px 6px; font-size:17px; } #hud { gap:4px; } }   /* room for the detective notebook and the ✕ on one row */
   #quit { color:var(--soft); font-weight:800; }   /* in the top bar, far right */
   #quit:active { transform:translateY(1px); }
   #guide { position:fixed; top:calc(58px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(94vw, 560px); background:rgba(255,248,234,.95); border-radius:16px; padding:6px 12px; box-shadow:0 3px 0 rgba(60,40,20,.18); z-index:5; text-align:center; display:flex; gap:10px; align-items:center; }
@@ -294,12 +294,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v252</div>
+  <div class="ver">v253</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '252';</script>
-<script src="data.js?v=252"></script>
-<script src="game.js?v=252"></script>
+<script>window.APP_VERSION = '253';</script>
+<script src="data.js?v=253"></script>
+<script src="game.js?v=253"></script>
 </body>
 </html>

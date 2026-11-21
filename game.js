@@ -678,6 +678,26 @@ const DRAW = {
     c.fillStyle = '#c99a32'; c.beginPath(); c.arc(0, -81, 5, Math.PI, 0); c.lineWidth = 3; c.strokeStyle = '#c99a32'; c.stroke();
     c.fillStyle = '#2c6ed5'; poly(c, [[-24, -38], [-36, -22], [-30, -20], [-22, -32]]); c.fillStyle = '#f2c230'; poly(c, [[24, -38], [36, -22], [30, -20], [22, -32]]);
   },
+  // The festival bell's post: a carved wooden post on a stone base, an iron arm, and a hook. The bell hangs from
+  // the hook, except while it's missing (then the hook is bare and the rope cut).
+  bellpost(c, o) {
+    const t = (o && o.t) || 0, gone = typeof myOpen === 'function' && myOpen();
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 4, 0, 16, 4);
+    c.fillStyle = '#8d8a84'; poly(c, [[-10, 0], [-8, -8], [8, -8], [10, 0]]); c.fillStyle = '#a8a59e'; ell(c, -3, -4, 3.5, 2); ell(c, 4, -3, 3, 1.8);
+    const pg = c.createLinearGradient(-4, 0, 4, 0); pg.addColorStop(0, '#5d3b1f'); pg.addColorStop(0.45, '#8a5c33'); pg.addColorStop(1, '#4e3118'); c.fillStyle = pg; c.fillRect(-4, -96, 8, 88);
+    c.fillStyle = '#c0392b'; for (const y of [-30, -60]) c.fillRect(-4.4, y, 8.8, 3); c.fillStyle = '#f2c230'; for (const y of [-28.5, -58.5]) for (const dx of [-2, 2]) circ(c, dx, y, 0.8);   // painted bands
+    c.fillStyle = '#4e3118'; poly(c, [[-5, -96], [5, -96], [0, -104]]); c.fillStyle = '#d9a63a'; circ(c, 0, -105, 2);
+    c.strokeStyle = '#2e2c2a'; c.lineWidth = 2; c.lineCap = 'round'; c.beginPath(); c.moveTo(4, -88); c.lineTo(26, -88); c.moveTo(4, -76); c.quadraticCurveTo(16, -78, 20, -88); c.stroke();
+    c.lineWidth = 1.4; c.beginPath(); c.arc(24, -84, 3, -Math.PI / 2, Math.PI * 0.9); c.stroke();   // the hook
+    if (gone) { c.strokeStyle = '#c8b27a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(24, -81); c.lineTo(24.6, -75); c.stroke(); c.beginPath(); c.moveTo(23.2, -75); c.lineTo(26, -74); c.stroke(); return; }   // a cut end of rope, and no bell
+    const sw = Math.sin(t * 1.6) * 0.06;
+    c.save(); c.translate(24, -81); c.rotate(sw);
+    c.strokeStyle = '#c8b27a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, 5); c.stroke();
+    const g = c.createLinearGradient(-9, 0, 9, 0); g.addColorStop(0, '#b8862a'); g.addColorStop(0.4, '#ffe08a'); g.addColorStop(1, '#a8761e'); c.fillStyle = g;
+    c.beginPath(); c.moveTo(-9, 22); c.quadraticCurveTo(-9, 4, 0, 4); c.quadraticCurveTo(9, 4, 9, 22); c.closePath(); c.fill(); c.fillStyle = '#c99a32'; ell(c, 0, 22, 9.5, 2); c.fillStyle = '#8a6a2a'; circ(c, 0, 23, 1.8);
+    c.fillStyle = 'rgba(255,255,255,.5)'; ell(c, -3.5, 12, 1.6, 5);
+    c.restore();
+  },
   khata(c) { khataArt(c, KHATA_LOOK.mine); },
   khata_olia(c) { khataArt(c, KHATA_LOOK.olia); },
   khata_bohdan(c) { khataArt(c, KHATA_LOOK.bohdan); },
@@ -1984,7 +2004,7 @@ function add(e) {
   // Street lamps: one behind each bench in the square, one by the road between her cottage and the market,
   // one between the market and Grandma Olia's, one each side of the crossroads on the back road (towards the
   // windmill and towards the church), one on each half of the bottom road, and one halfway down the road from the square to it. (Tapping one says «лампа».)
-  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [22.65, 31.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
+  for (const [lx, ly, fl] of [[22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [22.65, 31.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   add({ w: 'lavka', ic: '@benchside', x: 35.15, y: 13.4, s: 1.25, solid: true });   // beside the school, facing its porch
@@ -2018,7 +2038,8 @@ function add(e) {
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
   // (the flag now flies from the station's clock tower, not the fountain)
-  add({ w: 'khata', k: 'n_petro', x: 19.0, y: 16.35, kind: 'npc', npc: 'petro', s: 1.3 });   // Officer Petro, the village constable, just above the fountain
+  add({ w: 'khata', k: 'n_petro', x: 19.0, y: 16.35, kind: 'npc', npc: 'petro', s: 1.3 });
+  add({ w: 'dzvonyk', ic: '@bellpost', k: 'bellpost', x: 15.95, y: 17.7, s: 2.2, solid: true });   // the festival bell's post, behind the left bench   // Officer Petro, the village constable, just above the fountain
   add({ w: 'koloda', k: 'koloda', x: 4.75, y: 12.75, s: 1.0, solid: true });   // the chopping block: split firewood
   add({ w: 'doshka', k: 'board', x: 23.6, y: 17.5, s: 1.35, solid: true });   // the notice board: what the next festival needs
   add({ w: 'lastivka', x: 12.6, y: 6.9, s: 0.7, kind: 'fly', cx: 12.6, cy: 6.9, ph: 1.3, swoop: true });
@@ -2066,14 +2087,21 @@ const VIS_FAV = {   // away from the café: the market, or a bench (how much eac
   myron: { market: 2, bench: 2 }, yaroslava: { market: 1, bench: 3 }, ostap: { market: 3, bench: 1 },
   lesia: { market: 1, bench: 3 }, zakhar: { market: 1, bench: 2 }, halyna: { market: 4, bench: 1 },
 };
-const CAFE_CROWD = 3;   // how many of them are in the café at a time
+const CAFE_CROWD = 2;   // how many of them are in the café at a time (the rest about the village, so it feels lived in)
 // the benches they sit on: where to stand to sit down, where they sit, and which way they face
 const VIS_BENCHES = [{ walk: [16.9, 18.6], at: [16.45, 17.92], face: 1 }, { walk: [21.1, 18.6], at: [21.55, 17.92], face: -1 }, { walk: [35.6, 14.2], at: [35.15, 13.42], face: 1 }];
 const VIS_SPOTS = {
   cafe: [[18.5, 36.75]], lake: [[26.6, 23.7], [31.8, 23.9], [25.6, 21.4]], fountain: [[16.9, 19.0], [21.1, 19.0], [19.0, 16.4]],
   market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1]], church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
 };
-const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];   // the café's chairs (the other one by the window is the cat's)
+const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];
+const VIS_SLOT = 0.07;    // one stop of their day, in day-clock units (about 70 seconds); the day runs from the morning train to the evening one
+const VIS_LEAD = 0.025;   // whoever is due in the café next sets off this much early, so they arrive as the others leave
+const visSlot = (ahead = 0) => Math.max(0, Math.floor((S.clock.t + ahead - 0.3) / VIS_SLOT));
+function visPlan(e, k = visSlot()) {   // what this visitor is doing in slot k
+  const i = VIS_IDS.indexOf(e.npc), r = (k + i) % 3;
+  return r === 0 ? 'cafe' : (i % 2 ? (r === 1 ? 'market' : 'bench') : (r === 1 ? 'bench' : 'market'));
+}   // the café's chairs (the other one by the window is the cat's)
 const STATION_DOOR = [18.5, 5.6];
 let visQueue = 0;
 const visEnts = () => ents.filter(e => e.vis);
@@ -2082,6 +2110,8 @@ function visSpawn(id, x, y) {
   const e = { w: 'khata', ic: '@khata', k: 'v_' + id, x, y, kind: 'npc', npc: id, s: 1.3, vis: true, vp: [], va: '', vt: 0, vface: 1, vwalk: 0, vstep: 0, petCd: 2 + Math.random() * 5 };
   ents.push(e); return e;
 }
+// Off the train: down the road to a first stop. Some stop at the market or a bench on the way; the rest go straight to the café.
+function visFirst(e, i) { const plan = ['cafe', 'market', 'bench', 'cafe', 'market', 'bench'][i % 6]; const crowd = visEnts().filter(v => v !== e && (v.inside === 'cafe' || v.va === 'cafe')).length; return plan === 'cafe' && crowd >= CAFE_CROWD ? 'market' : plan; }
 function visPick(e) {
   // the café first: whenever fewer than three are in (or on their way), somebody goes
   const crowd = visEnts().filter(v => v !== e && (v.inside === 'cafe' || (v.va === 'cafe' && v.vp && v.vp.length))).length;
@@ -2097,9 +2127,26 @@ function visGo(e, act) {
   if (act === 'bench') { const free = VIS_BENCHES.map((b, i) => i).filter(i => !visEnts().some(v => v !== e && (v.bench === i || v.benchTo === i))); const i = free[Math.floor(Math.random() * free.length)]; if (i == null) act = e.va = 'market'; else { e.benchTo = i; to = VIS_BENCHES[i].walk; } }
   if (act === 'stroll') { const tiles = []; for (let y = 6; y < 31; y++) for (let x = 2; x < 38; x++) if (isRoad(x, y)) tiles.push([x + 0.5, y + 0.5]); to = tiles[Math.floor(Math.random() * tiles.length)]; }
   else if (act === 'leave') to = STATION_DOOR;
-  else if (!to) { const L = VIS_SPOTS[act]; to = L[Math.floor(Math.random() * L.length)]; }
-  e.goal = to; e.vp = findPath(to[0], to[1], null, e);
+  else if (!to) { const L = VIS_SPOTS[act]; to = act === 'market' ? L[VIS_IDS.indexOf(e.npc) % L.length] : L[Math.floor(Math.random() * L.length)]; }
+  e.goal = to; e.vp = visRoute(e.x, e.y, to[0], to[1]);
   if (!e.vp.length) e.vp = [{ x: to[0], y: to[1] }];
+}
+// A route that keeps to the roads and paths: grass costs four times as much to cross as a road, so they only
+// step off the path near where they're going. (Dijkstra over the tile grid; it's small.)
+function visRoute(fx, fy, tx, ty) {
+  const sx = Math.floor(fx), sy = Math.floor(fy), gx = Math.floor(tx), gy = Math.floor(ty), N = MW * MH, dist = new Float32Array(N).fill(1e9), prev = new Int32Array(N).fill(-1), done = new Uint8Array(N);
+  const ok = (x, y) => x >= 1 && y >= 1 && x < MW - 1 && y < MH - 1 && (!solid[y][x] || (x === gx && y === gy)) && !inPond(x + 0.5, y + 0.5, -0.3);
+  const s0 = sy * MW + sx; dist[s0] = 0; const open = [s0];
+  while (open.length) {
+    let bi = 0; for (let i = 1; i < open.length; i++) if (dist[open[i]] < dist[open[bi]]) bi = i;
+    const cur = open[bi]; open[bi] = open[open.length - 1]; open.pop(); if (done[cur]) continue; done[cur] = 1;
+    const cx = cur % MW, cy = (cur / MW) | 0; if (cx === gx && cy === gy) break;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = cx + dx, ny = cy + dy; if (!ok(nx, ny)) continue; const ni = ny * MW + nx, nd = dist[cur] + (isRoad(nx, ny) ? 1 : 4); if (nd < dist[ni]) { dist[ni] = nd; prev[ni] = cur; open.push(ni); } }
+  }
+  const g0 = gy * MW + gx; if (prev[g0] < 0 && g0 !== s0) { const fb = findPath(tx, ty, null, { x: fx, y: fy }); return fb.length ? fb : [{ x: tx, y: ty }]; }
+  const path = []; for (let i = g0; i >= 0 && i !== s0; i = prev[i]) path.unshift({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 });
+  if (path.length) path[path.length - 1] = { x: tx, y: ty }; else path.push({ x: tx, y: ty });
+  return path;
 }
 function visArrive(e) {
   e.vwalk = 0;
@@ -2118,22 +2165,18 @@ function visitorsStep(dt) {
   if (!C.ev.visIn && !late) {
     if (TRAIN.on && TRAIN.phase === 'wait' && C.ev.mtrain === true) {
       const n = Math.min(VIS_IDS.length, Math.floor((TRAIN.wait - 1) / 0.9) + 1);
-      for (let i = visQueue; i < n && i < VIS_IDS.length; i++) { const e = visSpawn(VIS_IDS[i], STATION_DOOR[0] + (i % 2 ? 0.3 : -0.3), STATION_DOOR[1]); if (e) visGo(e, visPick(e)); visQueue = i + 1; }
+      for (let i = visQueue; i < n && i < VIS_IDS.length; i++) { const e = visSpawn(VIS_IDS[i], STATION_DOOR[0] + (i % 2 ? 0.3 : -0.3), STATION_DOOR[1]); if (e) { e.slot = visSlot(); visGo(e, visPlan(e)); } visQueue = i + 1; }
       if (visQueue >= VIS_IDS.length) { C.ev.visIn = 1; visQueue = 0; myMaybeStart(); }
     } else if (C.t >= 0.45 && !TRAIN.on) {
       C.ev.visIn = 1; myMaybeStart();
-      for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; const act = visPick(e); if (act === 'bench') { visGo(e, 'bench'); if (e.benchTo != null) { e.vp = []; e.va = 'bench'; visArrive(e); continue; } } const L = VIS_SPOTS[e.va === 'bench' ? 'market' : act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act === 'bench' ? 'market' : act; e.vp = []; visArrive(e); }
+      for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; e.slot = visSlot(); const act = visPlan(e); if (act === 'bench') { visGo(e, 'bench'); if (e.benchTo != null) { e.vp = []; e.va = 'bench'; visArrive(e); continue; } } const L = VIS_SPOTS[e.va === 'bench' ? 'market' : act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act === 'bench' ? 'market' : act; e.vp = []; visArrive(e); }
     }
   }
   for (const e of visEnts()) {
     if (late && e.va !== 'leave') { if (e.inside) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.75; } e.pet = null; visGo(e, 'leave'); }
     e.petCd -= dt;
     if (e.inside) { e.vt -= dt;
-      if (e.vt <= 0) {   // time to go: but only once somebody else has come in, so the café never empties
-        const vs = visEnts(), inside = vs.filter(v => v.inside === 'cafe').length, coming = vs.filter(v => v.va === 'cafe' && !v.inside);
-        if (inside > CAFE_CROWD || inside >= vs.length) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPick(e)); }
-        else if (!coming.length) { const out = vs.filter(v => !v.inside && v.va !== 'leave' && v.va !== 'cafe' && !v.pet); const r = out.sort((a, b) => (a.vt || 0) - (b.vt || 0))[0]; if (r) visGo(r, 'cafe'); }
-      }
+      if (visSlot() > e.slot) { e.slot = visSlot(); e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPlan(e)); }   // on to the next stop of their day
       continue; }
     // petting a cat
     if (e.pet) {
@@ -2149,12 +2192,13 @@ function visitorsStep(dt) {
     }
     // walking the path, or passing the time where they are
     if (e.vp && e.vp.length) {
-      const n = e.vp[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = 1.25 * dt;
+      const n = e.vp[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = 1.7 * dt;
       e.vwalk = Math.min(1, e.vwalk + dt * 4); if (Math.abs(dx) > 0.02) e.vface = dx > 0 ? 1 : -1;
       { const ax = Math.abs(dx), ay = Math.abs(dy); if (!e.vview || e.vview === 'side' ? ay > ax * 1.4 : ax > ay * 1.4) e.vview = ay > ax ? (dy > 0 ? 'front' : 'back') : 'side'; else if (e.vview !== 'side') e.vview = dy > 0 ? 'front' : 'back'; }   // which way they're walking: towards you, away, or across
       if (d <= sp) { e.x = n.x; e.y = n.y; e.vp.shift(); if (!e.vp.length) visArrive(e); } else { e.x += dx / d * sp; e.y += dy / d * sp; }
       e.vstep += sp;
-    } else { e.vwalk = Math.max(0, e.vwalk - dt * 4); e.vt -= dt; if (e.vt <= 0 && e.va !== 'leave') visGo(e, visPick(e)); }
+    } else { e.vwalk = Math.max(0, e.vwalk - dt * 4);
+      if (e.va !== 'leave') { const kn = visSlot(VIS_LEAD); if (kn > e.slot && e.va !== 'cafe' && visPlan(e, kn) === 'cafe') { e.slot = kn; visGo(e, 'cafe'); } else if (visSlot() > e.slot) { e.slot = visSlot(); visGo(e, visPlan(e)); } } }   // the café a little early; anywhere else when the stop ends
   }
 }
 // Drawing one in the village: walking (side on), standing about (facing out, with a little something of their
@@ -2333,9 +2377,11 @@ function myDialog(id, text, choices) {
 }
 let MYC = [];
 function myTalk(id) {
-  const M = S.mystery, v = MY_VOICE[id];
-  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, MY_GOSSIP[id] + (Object.keys(M.met).length === 1 ? '<div class="hint" style="margin-top:8px">🔍 A mystery! Ask the visitors what they saw. When you know <b>who</b> took the bell, <b>where</b> it is and <b>what</b> they moved it with, tell Officer Petro by the fountain. Your notes are in the 🔍 notebook.</div>' : ''), [{ label: 'Tell me more...', fn: () => myMenu(id) }, { label: 'Goodbye.', fn: closeSheet }]); }
-  myMenu(id);
+  // every conversation opens with their spoken hello: their name the first time, nice to see you again after
+  const M = S.mystery, n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, hello = NPC[id].lines[first ? 'intro' : 'again'].en;
+  n0.met = true; say('v_' + id + '_' + (first ? 'intro' : 'again'));
+  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, hello + '<br><br>' + MY_GOSSIP[id] + (Object.keys(M.met).length === 1 ? '<div class="hint" style="margin-top:8px">🔍 A mystery! Ask the visitors what they saw. When you know <b>who</b> took the bell, <b>where</b> it is and <b>what</b> they moved it with, tell Officer Petro by the fountain. Your notes are in the 🔍 notebook.</div>' : ''), [{ label: 'Tell me more...', fn: () => myMenu(id) }, { label: 'Goodbye.', fn: closeSheet }]); }
+  save(); myMenu(id, hello);
 }
 function myMenu(id, said) {
   const M = S.mystery, hand = M.hands[id], v = MY_VOICE[id], ch = [];
@@ -3706,6 +3752,7 @@ function interact(e) {
   if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.k === 'bellpost') { if (myOpen()) return toast('🔔 The festival bell\'s post. The hook is bare, and the rope has been cut.', 3400); learn('dzvonyk'); return toast('🔔 The festival bell, back on its post where it belongs.', 3000); }
   if (e.w === 'vokzal') { learn('prapor'); return wordCard('vokzal', { note: '🚂 ' + xl('Dolyna station. The train comes every morning, at midday, in the evening and at night, from the east to the west.') + '<br>🇺🇦 <b>' + W.prapor.uk + '</b>' + xl(' · the flag flies from the clock tower') + ' <button class="subt" data-a="hear" data-v="w_prapor">🔊</button>' }); }
   if (e.w === 'kavarnia') return wordCard('kavarnia', { note: '☕ ' + xl('Solomiia\'s café. Go in for a coffee, a cake and a warm welcome.'), acts: [{ k: 'enter', fn: enterCafe }] });
   if (e.w === 'shkola') return wordCard('shkola', { note: '🏫 ' + xl('The village school. Go in and have a look round the classroom.'), acts: [{ k: 'enter', fn: enterSchool }] });
@@ -8497,6 +8544,7 @@ function peopleApart(dt) {
   const sep = (a, b, share) => { let dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy); if (d >= PEOPLE_GAP) return; if (d < 0.001) { dx = 0.3; dy = 0.05; d = Math.hypot(dx, dy); } const m = (PEOPLE_GAP - d) * share; nudge(a, dx / d * m, dy / d * m); };
   // someone standing in the way: step out to a point beside them first, then carry on
   const round = (o, path, mx, my, b) => { const ax = b.x - o.x, ay = b.y - o.y, d = Math.hypot(ax, ay), ahead = ax * mx + ay * my, lat = Math.abs(ax * my - ay * mx);
+    const bp = b === P ? (P.path.length ? P.path[0] : null) : (b.vp && b.vp[0]); if (bp) { const bx = bp.x - b.x, by = bp.y - b.y, bd = Math.hypot(bx, by) || 1; if ((bx * mx + by * my) / bd > 0.3) return; }   // they're walking the same way: just follow
     if (o.detour === b) { if (ahead < -0.2 || d > 1.6) o.detour = null; return; }
     if (d < 1.1 && ahead > 0.05 && lat < PEOPLE_GAP && path.length) { const side = (ax * my - ay * mx) > 0 ? -1 : 1;
       for (const sd of [side, -side]) { const wx = b.x - my * sd * 0.8, wy = b.y + mx * sd * 0.8, ux = wx + mx * 0.85, uy = wy + my * 0.85; if (free(wx, wy) && free(ux, uy)) {
