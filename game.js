@@ -6914,7 +6914,7 @@ function abRender() {
     row.innerHTML = ab.choices.map(n => '<button class="b abnum" data-a="abPick" data-v="' + n + '">' + W[numId(n)].uk + '<small>' + n + '</small></button>').join('') + btn('abHear', '', '🔊', 'round blue'); return;
   }
   if (ab.phase === 'right') {
-    L(PH.pravylno.uk + ' ' + cap(W[numId(P0.n)].uk) + '!', 'Correct! ' + cap(abEnNum(P0.n)) + '.' + (ab.said ? '<br>' + ab.said : '<br><small>Tap 🔊 to hear it, then 🎤 to say it.</small>'));
+    L(PH.pravylno.uk + ' ' + cap(W[numId(P0.n)].uk) + '!', 'Correct! ' + cap(abEnNum(P0.n)) + '.' + (ab.said ? ab.said : '<br><small>Tap 🔊 to hear it, then 🎤 to say it.</small>'));
     row.innerHTML = btn('abHearN', '', '🔊', 'round blue') + btn('abSay', '', '🎤 ' + W[numId(P0.n)].uk + '<small>Say it</small>', 'green prb') + btn('abNext', '', (ab.i >= 5 ? 'Оцінка' : 'Далі') + '<small>' + (ab.i >= 5 ? 'Your mark' : 'Next') + '</small>');
   }
 }
@@ -6944,7 +6944,7 @@ async function abSay() {
   if (!ab || ab.phase !== 'right' || ab.busy) return; if (!micOk()) return micHelp(MIC.lastReason && MIC.lastReason !== 'site' ? MIC.lastReason : 'chrome');
   const me = ab, id = numId(ab.list[ab.i].n); ab.busy = true; stopSay(); ab.said = '🎤 Say it now…'; abRender();
   try { const rec = await recordOnce({ stop: false }, () => {}); if (ab !== me) return; if (rec.quiet) { ab.said = '🤫 I didn’t hear anything. Tap 🎤 and say it out loud.'; }
-    else { ab.said = '⏳ Listening…'; abRender(); const out = await scoreWord(id, rec.wav); if (ab !== me) return; if (out.limit) ab.said = '🌙 ' + (out.message || ''); else { const n = starsFor(out.score); S.say = S.say || {}; S.say[id] = Math.max(S.say[id] || 0, out.score); save(); ab.said = '<span style="color:#e0a01c">' + starStr(n) + '</span> <b>' + n + '/10</b> ' + (out.tip || ''); } } }
+    else { ab.said = '⏳ Listening…'; abRender(); const out = await scoreWord(id, rec.wav); if (ab !== me) return; if (out.limit) ab.said = '🌙 ' + (out.message || ''); else { const n = starsFor(out.score); S.say = S.say || {}; S.say[id] = Math.max(S.say[id] || 0, out.score); save(); ab.said = '<div class="saidres"><div class="st" style="color:' + (n >= 9 ? '#3f8a3a' : n >= 6 ? '#e0a01c' : '#e2574c') + '">' + starStr(n) + ' <b>' + n + '/10</b></div>' + (out.tip ? '<div class="tip">' + out.tip + '</div>' : '') + '</div>'; } } }
   catch (e) { if (ab === me) ab.said = 'The microphone didn’t start.'; }
   if (ab === me) { ab.busy = false; abRender(); }
 }
