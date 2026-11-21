@@ -2405,7 +2405,7 @@ const BRIDGE = { x: 34.6, y: 17.1, a: -0.85 };             // across the stream,
 // The forest edge. forestDepth is how far into the trees a spot is (in tiles; 0 or less is outside). The path
 // leads in from the bridge; FOREST_GLADES are the clearings (x, y, radius); FOREST_SPOTS are kept free of trees
 // for the stump and the animals' patches.
-const TRAIL = [[34.6, 17.1], [35.3, 17.9], [36.5, 19.2], [37.9, 20.5], [39.4, 22.4], [40.3, 24.8], [41.5, 26.9], [42.3, 29.6], [41.6, 32.3], [42.2, 34.6], [43.6, 35.9], [42.4, 37.1], [39.6, 37.0], [37.2, 35.6], [35.6, 33.4], [33.9, 31.6], [32.75, 30.95]];   // ...and back out of the trees to the blue cottage on the bottom road
+const TRAIL = [[34.6, 17.1], [35.3, 17.9], [36.5, 19.2], [37.9, 20.5], [39.4, 22.4], [40.3, 24.8], [41.5, 26.9], [42.3, 29.6], [41.6, 32.3], [42.2, 34.6], [43.6, 35.9], [42.4, 37.1], [39.6, 37.0], [37.2, 35.6], [35.6, 33.4], [33.9, 31.6], [32.6, 30.85], [31.75, 30.5]];   // ...and back out of the trees to the blue cottage on the bottom road
 const FOREST_GLADES = [[42.8, 27.6, 2.6], [44.4, 35.2, 2.2], [37.9, 20.5, 1.3]];
 const FOREST_SPOTS = [[43.5, 27.1], [41.9, 26.4], [38.3, 21.0], [41.8, 31.6], [45.2, 34.6], [40.7, 33.7],   // stump, squirrel, hare, fox, deer, hedgehog
   [46.4, 24.2], [39.0, 33.2], [47.2, 31.0], [44.2, 29.6], [38.9, 35.3], [45.0, 21.0],   // hares and leverets, hares, deer and fawn, deer, wild boar, more hares
@@ -3260,8 +3260,8 @@ function paintGround() {
       } }
   }
   // the market square: the same sandy ground as the path and the town square (no paving of its own)
-  { const rp = seeded(41), px0 = 19.0, px1 = 24.4, py0 = 11.0, py1 = 15.6;
-    c.fillStyle = '#e6d29d'; rr(c, px0 * T, py0 * T, (px1 - px0) * T, (py1 - py0) * T, T * 0.7);   // round-cornered, like the roads
+  { const rp = seeded(41), px0 = 18.97, px1 = 24.4, py0 = 11.0, py1 = 15.6;
+    c.fillStyle = '#e6d29d'; { const x0 = px0 * T, x1 = px1 * T, y0 = py0 * T, y1 = py1 * T, R = T * 0.7; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1 - R, y0); c.quadraticCurveTo(x1, y0, x1, y0 + R); c.lineTo(x1, y1 - R); c.quadraticCurveTo(x1, y1, x1 - R, y1); c.lineTo(x0, y1); c.closePath(); c.fill(); }   // square where it joins the village road, round-cornered on the grass side
     // its bottom edge sits half a tile below the main road's, so where it meets the road on either side it made a
     // little step: sweep each one into the road with a curve instead
     { const RB = 14.5 + 0.5 + 6 / T;   // the main road's bottom edge
@@ -7978,10 +7978,11 @@ function churchTap(sx, py) {
 // seconds). Every partial is a pair of slightly detuned tones, so the note warbles slowly as real bells do,
 // and the clapper's strike is a short metallic clang. It all rings into a long echo, like a tower over a valley.
 let bellVerb = null, bellComp = null, bellIR = null, bellLim = null;
+const BELL_MAKEUP = 2.6;   // the gain after each strike's compressor, times its volume
 // One limiter that every strike goes through AFTER its volume: overlapping strokes (noon's three, the rope's two)
 // and their long echoes add up, and without it the sum clipped and crackled more with each stroke. It only acts
 // on peaks near full scale, so the volume set for each strike still decides how loud it is.
-function bellLimiter() { if (bellLim) return bellLim; bellLim = actx.createDynamicsCompressor(); bellLim.threshold.value = -8; bellLim.knee.value = 2; bellLim.ratio.value = 20; bellLim.attack.value = 0.002; bellLim.release.value = 0.3; const trim = actx.createGain(); trim.gain.value = 0.9; bellLim.connect(trim); trim.connect(actx.destination); return bellLim; }
+function bellLimiter() { if (bellLim) return bellLim; bellLim = actx.createDynamicsCompressor(); bellLim.threshold.value = -4; bellLim.knee.value = 4; bellLim.ratio.value = 12; bellLim.attack.value = 0.012; bellLim.release.value = 0.4; const trim = actx.createGain(); trim.gain.value = 0.9; bellLim.connect(trim); trim.connect(actx.destination); return bellLim; }
 function bellBus() { if (bellComp) return bellComp; bellComp = actx.createDynamicsCompressor(); bellComp.threshold.value = -18; bellComp.knee.value = 8; bellComp.ratio.value = 4; bellComp.attack.value = 0.003; bellComp.release.value = 0.4; const mk = actx.createGain(); mk.gain.value = 2.6; bellComp.connect(mk); mk.connect(actx.destination); return bellComp; }
 function bellReverb() {
   if (bellVerb) return bellVerb;
@@ -7994,16 +7995,24 @@ function bellReverb() {
 // ring an octave up, a minor third above that, the fifth, the bright nominal two octaves up), and they die away
 // well before the low hum does. Each sounds as a slightly detuned pair, so the note swells and shimmers slowly,
 // and a soft metallic tap marks the strike. The overtones also let a phone's small speaker carry the note.
-function churchBell(vol = 1, f0 = 110, len = 1) {
+// The strikes still ringing, so a new one can take over from them (see below).
+let BELL_RINGING = [];
+function churchBell(vol = 1, f0 = 110, len = 1, delay = 0) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
     // Each strike has its own compressor and its volume comes AFTER it. (It used to share one compressor with a fixed
     // boost behind it, which squashed any volume change to a couple of dB, so a "softer" bell sounded just as loud.)
-    const t0 = actx.currentTime + 0.01, out = actx.createGain(), comp = actx.createDynamicsCompressor(), post = actx.createGain();
-    comp.threshold.value = -18; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.4; post.gain.value = 2.6 * vol;
+    const t0 = actx.currentTime + 0.01 + delay, out = actx.createGain(), comp = actx.createDynamicsCompressor(), post = actx.createGain();
+    comp.threshold.value = -18; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.4; post.gain.value = BELL_MAKEUP * vol;
+    // A new stroke takes over from the ones still ringing: they fall back to a third of where they were. Without
+    // this, noon's three strokes (4 s apart, each ringing about 20 s) piled up to three full bells at once by the
+    // third, and squashing all that through the limiter is what made it sound distorted.
+    BELL_RINGING = BELL_RINGING.filter(p => p.end > t0);
+    for (const p of BELL_RINGING) { p.k *= 0.33; p.post.gain.setTargetAtTime(BELL_MAKEUP * p.vol * p.k, t0, 0.35); }
+    BELL_RINGING.push({ post, vol, k: 1, end: t0 + 22 * len });
     bellReverb(); const cv2 = actx.createConvolver(); cv2.buffer = bellIR; const wet = actx.createGain(); wet.gain.value = 0.6;
     out.connect(comp); out.connect(cv2); cv2.connect(wet); wet.connect(comp); comp.connect(post); post.connect(bellLimiter());
-    setTimeout(() => { try { post.disconnect(); cv2.disconnect(); } catch (e) {} }, (22 * len + 7) * 1000);
+    setTimeout(() => { try { post.disconnect(); cv2.disconnect(); } catch (e) {} }, (22 * len + 7 + delay) * 1000);
     //  ratio to the hum, loudness, how long it rings (s): the hum carries on longest; the overtones fade sooner
     for (const [r, amp, d0, det] of [[1, 0.85, 22, 0.25], [2.0, 0.42, 13, 0.6], [2.4, 0.3, 9, 0.7], [3.0, 0.14, 6, 0.8], [4.0, 0.26, 7, 1.0], [5.05, 0.09, 3, 1.2], [5.4, 0.07, 2.4, 1.3]]) for (const sd of [-1, 1]) {
       const o = actx.createOscillator(), g = actx.createGain(), d = d0 * len; o.type = 'sine'; o.frequency.value = f0 * r + sd * det * 0.5;
@@ -8017,7 +8026,7 @@ function churchBell(vol = 1, f0 = 110, len = 1) {
   } catch (e) {}
 }
 // Pulling the rope: the one bell, rung twice.
-function churchPeal(vol = 0.45) { churchBell(vol); setTimeout(() => churchBell(vol), 3500); }
+function churchPeal(vol = 0.45) { churchBell(vol); churchBell(vol, 110, 1, 3.5); }
 function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.75; setTimeout(() => { duck = 1; }, 10000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
 // The only thing to do at the altar: put a few coins in the box. It counts what you've given, and that's all.
 function donateCard() {
@@ -9325,7 +9334,7 @@ function dayTick(dt) {
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
     const d = Math.hypot(P.x - 30.5, P.y - 6), vol = Math.max(0.12, 0.35 - d * 0.012);   // heard all over the village, softer the farther from the church
     duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer
-    for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol, 147), 300 + i * 4000);   // pitched a fourth above the big bell's 110 Hz   // three slow strokes of the big bell (this line had slipped into the comment above, so noon was silent)
+    for (let i = 0; i < 3; i++) churchBell(vol, 147, 1, 0.3 + i * 4);   // pitched a fourth above the big bell's 110 Hz   // three slow strokes of the big bell (this line had slipped into the comment above, so noon was silent)
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
   if (was < 0.86 && C.t >= 0.86 && !C.ev.night) { C.ev.night = 1; setGuide(); learn('nich'); say('w_nich', 'p_chas_spaty'); toast(`🌙 ${PH.chas_spaty.uk}${stage() < 3 ? ' · Night: go home to sleep 🏠' : ' 🏠'}`, 3600); }
