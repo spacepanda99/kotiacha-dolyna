@@ -2121,6 +2121,64 @@ const DRAW = {
     }
     c.restore();
   },
+  // A chicken coop: a little plank house raised on legs, a thatched roof, a round door with a ramp up to it,
+  // a nest-box window, and straw poking out.
+  kurnyk(c) {
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, -1, 40, 6);
+    c.fillStyle = '#6b4422'; for (const x of [-28, 22]) c.fillRect(x, -26, 6, 26);   // legs
+    c.fillStyle = '#a06a35'; c.fillRect(-32, -66, 64, 42); c.strokeStyle = 'rgba(70,40,15,.35)'; c.lineWidth = 1; for (let x = -26; x < 32; x += 8) { c.beginPath(); c.moveTo(x, -66); c.lineTo(x, -24); c.stroke(); }
+    c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(14, -66, 18, 42);
+    c.fillStyle = '#d8a23a'; poly(c, [[-40, -62], [0, -92], [40, -62]]); c.fillStyle = '#e6b95a'; poly(c, [[-40, -62], [0, -92], [-6, -86], [-32, -62]]); c.strokeStyle = '#b9842a'; c.lineWidth = 1.2; for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 4, -88 + Math.abs(i) * 4); c.lineTo(i * 11, -63); c.stroke(); }
+    c.fillStyle = '#b9842a'; for (let x = -38; x <= 38; x += 5) poly(c, [[x, -63], [x + 2.5, -58], [x + 5, -63]]);   // the thatch's ragged edge
+    c.fillStyle = '#3a2412'; c.beginPath(); c.moveTo(-14, -26); c.lineTo(-14, -42); c.arc(-6, -42, 8, Math.PI, 0); c.lineTo(2, -26); c.closePath(); c.fill();   // the little door
+    c.fillStyle = '#7a4e26'; poly(c, [[-13, -26], [1, -26], [14, 0], [4, 0]]); c.strokeStyle = '#5a381b'; c.lineWidth = 1.2; for (let k = 1; k < 5; k++) { const q = k / 5; c.beginPath(); c.moveTo(-13 + 17 * q, -26 + 26 * q); c.lineTo(1 + 13 * q, -26 + 26 * q); c.stroke(); }   // the ramp, with its rungs
+    c.fillStyle = '#5a381b'; c.fillRect(10, -56, 16, 12); c.fillStyle = '#e8c35e'; c.fillRect(12, -54, 12, 8); c.fillStyle = '#f6f0e0'; ell(c, 16, -48, 2.6, 2); ell(c, 20.5, -48.5, 2.4, 1.9);   // the nest box, with eggs in the straw
+    c.strokeStyle = '#e8c35e'; c.lineWidth = 1; for (const [x, y] of [[-32, -30], [30, -28], [-8, -26]]) { c.beginPath(); c.moveTo(x, y); c.lineTo(x - 3, y + 4); c.moveTo(x, y); c.lineTo(x + 3, y + 5); c.stroke(); }
+  },
+  // A stable for the horse: a plank shed with a shingled lean-to roof, an open half-door with hay inside, a
+  // hay fork leaning by it and a horseshoe nailed up for luck.
+  stainia(c) {
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, -1, 54, 7);
+    c.fillStyle = '#9b6b3c'; c.fillRect(-46, -60, 92, 60); c.strokeStyle = 'rgba(70,40,15,.35)'; c.lineWidth = 1; for (let x = -40; x < 46; x += 8) { c.beginPath(); c.moveTo(x, -60); c.lineTo(x, 0); c.stroke(); }
+    c.fillStyle = 'rgba(0,0,0,.14)'; c.fillRect(22, -60, 24, 60);
+    c.fillStyle = '#6b4422'; c.fillRect(-46, -62, 92, 4); for (const x of [-46, 42]) c.fillRect(x, -60, 4, 60);
+    // the roof: shingles sloping down to the front
+    c.fillStyle = '#7a3f28'; poly(c, [[-54, -58], [54, -58], [46, -84], [-46, -84]]);
+    c.strokeStyle = 'rgba(40,15,8,.35)'; c.lineWidth = 0.9; for (let y = -80; y < -58; y += 5) { c.beginPath(); c.moveTo(-52, y); c.lineTo(52, y); c.stroke(); for (let x = -50 + ((y / 5) % 2 ? 3 : 0); x < 52; x += 7) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 5); c.stroke(); } }
+    c.fillStyle = '#5a2e1c'; c.fillRect(-55, -60, 110, 3);
+    // the doorway: dark inside, hay heaped in the back, the lower half-door closed and the top open
+    c.fillStyle = '#2e1c0e'; c.fillRect(-20, -50, 40, 50);
+    c.fillStyle = '#d9b25a'; c.beginPath(); c.moveTo(-20, -18); c.quadraticCurveTo(-10, -34, 0, -26); c.quadraticCurveTo(10, -36, 20, -20); c.lineTo(20, -18); c.closePath(); c.fill();
+    c.strokeStyle = '#b8902f'; c.lineWidth = 0.8; for (let k = 0; k < 9; k++) { const x = -18 + k * 4.4; c.beginPath(); c.moveTo(x, -20); c.lineTo(x + 2, -28 - (k % 3) * 2); c.stroke(); }
+    c.fillStyle = '#8a5a2b'; c.fillRect(-20, -22, 40, 22); c.strokeStyle = '#5a381b'; c.lineWidth = 1.6; c.strokeRect(-19, -21, 38, 20); c.beginPath(); c.moveTo(-19, -21); c.lineTo(19, -1); c.stroke();
+    c.fillStyle = '#6b4422'; c.fillRect(-23, -52, 46, 3);
+    c.strokeStyle = '#9aa3a8'; c.lineWidth = 1.6; c.beginPath(); c.arc(0, -55, 3, 0.3, Math.PI - 0.3, true); c.stroke();   // a horseshoe over the door
+    // a hay fork leaning by the door
+    c.strokeStyle = '#a06a35'; c.lineWidth = 2; c.beginPath(); c.moveTo(30, 0); c.lineTo(36, -46); c.stroke(); c.strokeStyle = '#7a7f84'; c.lineWidth = 1.2; for (const dx of [-3, 0, 3]) { c.beginPath(); c.moveTo(36, -46); c.lineTo(36 + dx, -56); c.stroke(); }
+  },
+  // A wooden watering trough on two trestles, full of water that catches the sky.
+  koryto(c, o) {
+    const t = (o && o.t) || 0;
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, -1, 44, 5);
+    c.fillStyle = '#6b4422'; for (const x of [-30, 26]) { poly(c, [[x - 4, 0], [x, -16], [x + 4, -16], [x + 8, 0]]); }
+    c.fillStyle = '#8a5a2b'; poly(c, [[-42, -30], [42, -30], [36, -14], [-36, -14]]); c.fillStyle = '#a06a35'; c.fillRect(-42, -32, 84, 4);
+    c.strokeStyle = 'rgba(60,35,15,.4)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-39, -23); c.lineTo(39, -23); c.stroke();
+    c.fillStyle = '#5aa8e8'; c.beginPath(); c.ellipse(0, -31, 38, 3.2, 0, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1; for (let k = 0; k < 3; k++) { const x = -22 + k * 20 + Math.sin(t * 1.4 + k) * 3; c.beginPath(); c.moveTo(x - 4, -31); c.lineTo(x + 4, -31); c.stroke(); }
+  },
+  // A haystack (стіг): a tall rounded stack of hay built round a pole, with loose wisps and a bit pulled out
+  // at the foot for the cows.
+  sino(c) {
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, -1, 40, 7);
+    c.strokeStyle = '#6b4422'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(0, -70); c.lineTo(0, -96); c.stroke();
+    const gr = c.createLinearGradient(-34, 0, 34, 0); gr.addColorStop(0, '#e8c56a'); gr.addColorStop(0.5, '#d9b25a'); gr.addColorStop(1, '#b8902f'); c.fillStyle = gr;
+    c.beginPath(); c.moveTo(-34, 0); c.bezierCurveTo(-40, -30, -26, -72, 0, -76); c.bezierCurveTo(26, -72, 40, -30, 34, 0); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(140,100,30,.55)'; c.lineWidth = 0.9; let r = 11; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 46; i++) { const y = -4 - rnd() * 68, hw = 34 * Math.sin(Math.min(1, (-y + 6) / 74) * Math.PI * 0.62 + 0.55), x = (rnd() - 0.5) * 2 * hw * 0.9; c.beginPath(); c.moveTo(x, y); c.lineTo(x + (rnd() - 0.5) * 6, y + 5 + rnd() * 4); c.stroke(); }
+    c.fillStyle = 'rgba(255,240,190,.3)'; c.beginPath(); c.ellipse(-12, -48, 6, 18, -0.2, 0, 7); c.fill();
+    c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.4; for (const y of [-26, -50]) { c.beginPath(); c.moveTo(-30 + (y + 50) * 0.1, y); c.quadraticCurveTo(0, y + 4, 30 - (y + 50) * 0.1, y); c.stroke(); }   // ropes round it
+    c.fillStyle = '#d9b25a'; c.beginPath(); c.ellipse(26, -3, 14, 4, 0, 0, 7); c.fill(); c.strokeStyle = '#b8902f'; c.lineWidth = 0.8; for (let k = 0; k < 6; k++) { c.beginPath(); c.moveTo(16 + k * 4, -3); c.lineTo(18 + k * 4, -8); c.stroke(); }   // a pile pulled out for the cows
+  },
   // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
   // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
   bilyhryb(c) {
@@ -2573,6 +2631,7 @@ function add(e) {
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5.5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
   rect(28, 25, 34, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 31.5, y: 30, s: 5.4 });  // the family cottage, bottom right, below the pond: Taras, Oksana and Andriiko live here, so it's bigger
   add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28.5, y: 11, s: 3.7 });
+  add({ w: 'kurnyk', k: 'olia_kurnyk', x: 34.6, y: 9.9, s: 1.35, solid: true });   // her little coop
   add({ w: 'kurka', x: 32.7, y: 10.2, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens, by the tree to the right of her cottage, with the other animals
   add({ w: 'kurka', x: 33.6, y: 10.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
   add({ w: 'piven', x: 34.3, y: 10.1, kind: 'animal', r: 1.2 });
@@ -2615,9 +2674,22 @@ function add(e) {
   add({ w: 'kachka', x: 28.6, y: 19.9, kind: 'animal', r: 0.8, water: true });
   add({ w: 'zhaba', x: 26.3, y: 23.2, s: 0.7, kind: 'animal', r: 0.5 });
   // Pasture.
-  add({ w: 'korova', x: 30.0, y: 12.2, s: 1.4, kind: 'animal', r: 1.3, give: 'moloko', cd: 120, olias: true });   // Grandma's cow
-  add({ w: 'kin', x: 32.6, y: 13.0, s: 1.5, kind: 'animal', r: 1.3 });
-  add({ w: 'koza', x: 31.0, y: 13.4, s: 1.1, kind: 'animal', r: 0.9 });
+  // (Grandma's animals are her hens, rooster and pig; the cows, horse and goats belong to the family at the bottom right)
+  // the family's farmyard, in the big field below their cottage: a stable for the horse, a trough, a haystack,
+  // two cows, three goats, and their own hens and rooster by their coop
+  rect(24, 32, 25, 32); add({ w: 'stainia', x: 24.6, y: 33.6, s: 2.8, solid: true });
+  add({ w: 'koryto', x: 27.6, y: 34.9, s: 1.4, solid: true });
+  add({ w: 'sino', x: 30.9, y: 33.9, s: 2.2, solid: true });
+  add({ w: 'kurnyk', x: 31.8, y: 37.2, s: 1.7, solid: true });
+  add({ w: 'kin', x: 26.3, y: 35.6, s: 1.5, kind: 'animal', r: 1.4 });
+  add({ w: 'korova', x: 28.4, y: 36.8, s: 1.4, kind: 'animal', r: 1.6, give: 'moloko', cd: 120 });
+  add({ w: 'korova', x: 30.2, y: 35.6, s: 1.4, kind: 'animal', r: 1.6, give: 'moloko', cd: 120 });
+  add({ w: 'koza', x: 24.0, y: 36.6, s: 1.1, kind: 'animal', r: 1.2 });
+  add({ w: 'koza', x: 25.6, y: 38.0, s: 1.1, kind: 'animal', r: 1.2 });
+  add({ w: 'koza', x: 27.8, y: 38.8, s: 1.0, kind: 'animal', r: 1.2 });
+  add({ w: 'kurka', x: 30.6, y: 38.3, kind: 'animal', r: 1.0, give: 'yaitse', cd: 90 });
+  add({ w: 'kurka', x: 32.9, y: 38.6, kind: 'animal', r: 1.0, give: 'yaitse', cd: 90 });
+  add({ w: 'piven', x: 31.7, y: 39.0, kind: 'animal', r: 1.1 });
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [26.4, 11.15], [29.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
