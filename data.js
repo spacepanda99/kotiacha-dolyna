@@ -13,7 +13,7 @@ window.DATA = {
     { id: "yablunia", uk: "яблуня", tr: "YA-blu-nia", en: "apple tree", ic: "@appletree", acc: "яблуню" },
     { id: "kushch", uk: "кущ", tr: "kushch", en: "bush", ic: "@bush" },
     { id: "kamin", uk: "камінь", tr: "KA-min", en: "stone", ic: "@stone" },
-    { id: "kvitka", uk: "квітка", tr: "KVIT-ka", en: "flower", ic: "🌷", acc: "квітку" },
+    { id: "kvitka", uk: "квітка", tr: "KVIT-ka", en: "flower", ic: "@kvitka", acc: "квітку" },
     { id: "soniashnyk", uk: "соняшник", tr: "SO-niash-nyk", en: "sunflower", ic: "🌻", fact: { uk: "Україна вирощує дуже багато соняшників.", en: "Ukraine is one of the world's biggest sunflower growers." } },
     { id: "hryb", uk: "гриб", tr: "hryb", en: "mushroom", ic: "🍄", fact: { uk: "Восени всі ходять по гриби.", en: "In autumn, going to the forest to pick mushrooms is a favourite pastime." } },
     { id: "stavok", uk: "ставок", tr: "sta-VOK", en: "pond", ic: "@pond" },

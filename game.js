@@ -1979,6 +1979,48 @@ const DRAW = {
     c.strokeStyle = '#3d86bf'; c.lineWidth = 5; c.beginPath(); c.arc(-26, -26, 14, Math.PI * 0.5, Math.PI * 1.5); c.stroke();
     c.fillStyle = '#3d86bf'; circ(c, 46, -52, 6);
   },
+  // A wild flower, one of several kinds, chosen from where it grows (o.v): a tulip, a daisy (ромашка), a cornflower
+  // (волошка), a five-petalled flower, harebells (дзвоники) or a cluster of buttercups; each in a few colours.
+  kvitka(c, o) {
+    const v = (o && o.v) || 0, h = k => { const q = Math.sin((v + k) * 91.7) * 43758.5; return q - Math.floor(q); }, kind = Math.floor(h(1) * 6), col = h(2);
+    c.save(); c.rotate(((o && o.sway) || 0) * 3);
+    c.fillStyle = 'rgba(40,60,20,.18)'; ell(c, 0, -1, 16, 3.5);
+    c.strokeStyle = '#3f8a3a'; c.lineWidth = 4; c.lineCap = 'round';
+    const leaf = (x, y, a, L) => { c.save(); c.translate(x, y); c.rotate(a); c.fillStyle = '#4f9e44'; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(L * 0.5, -L * 0.35, L, 0); c.quadraticCurveTo(L * 0.5, L * 0.35, 0, 0); c.fill(); c.restore(); };
+    const stem = (x2, y2) => { c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(x2 * 0.2, y2 * 0.5, x2, y2); c.stroke(); };
+    if (kind === 0) {   // tulip
+      const P = [['#e2403a', '#b82a28'], ['#ff8fb3', '#d9668c'], ['#f6cf3a', '#d9a520'], ['#9b5bd6', '#7440ad'], ['#ffffff', '#e3d6e8']][Math.floor(col * 5)];
+      stem(0, -60); leaf(0, -14, -2.2, 30); leaf(0, -22, -0.9, 26);
+      c.fillStyle = P[1]; c.beginPath(); c.moveTo(-15, -74); c.quadraticCurveTo(-16, -55, 0, -54); c.quadraticCurveTo(16, -55, 15, -74); c.lineTo(8, -66); c.lineTo(0, -80); c.lineTo(-8, -66); c.closePath(); c.fill();
+      c.fillStyle = P[0]; c.beginPath(); c.moveTo(-9, -66); c.lineTo(0, -82); c.lineTo(9, -66); c.quadraticCurveTo(10, -55, 0, -55); c.quadraticCurveTo(-10, -55, -9, -66); c.fill();
+      c.fillStyle = 'rgba(255,255,255,.3)'; ell(c, -4, -68, 2.5, 7);
+    } else if (kind === 1) {   // daisy
+      stem(2, -56); leaf(1, -12, -2.5, 22); leaf(1, -20, -0.6, 20);
+      c.fillStyle = col < 0.7 ? '#ffffff' : '#ffd6e6'; for (let k = 0; k < 12; k++) { c.save(); c.translate(2, -62); c.rotate(k * 0.5236); ell(c, 0, -11, 4, 10); c.restore(); }
+      c.fillStyle = '#f4c21f'; circ(c, 2, -62, 7.5); c.fillStyle = '#e09a14'; circ(c, 3.5, -60.5, 3.5);
+    } else if (kind === 2) {   // cornflower
+      const blue = ['#3d6fe0', '#5a4bd1', '#2f8ad6'][Math.floor(col * 3)];
+      stem(-3, -58); leaf(-1, -18, -2.4, 24); leaf(-1, -30, -0.7, 20);
+      c.fillStyle = blue; for (let k = 0; k < 9; k++) { c.save(); c.translate(-3, -64); c.rotate(k * 0.698); c.beginPath(); c.moveTo(-3, -2); c.lineTo(-5, -14); c.lineTo(-1.5, -11); c.lineTo(0, -16); c.lineTo(1.5, -11); c.lineTo(5, -14); c.lineTo(3, -2); c.closePath(); c.fill(); c.restore(); }
+      c.fillStyle = '#2a2f7a'; circ(c, -3, -64, 4.5);
+    } else if (kind === 3) {   // five round petals
+      const P = [['#ff6fa1', '#c93b6e'], ['#ff9a3c', '#c75f12'], ['#c86bf0', '#8a3cb8'], ['#ff5252', '#7a1f1f'], ['#fff07a', '#d49b14']][Math.floor(col * 5)];
+      stem(1, -56); leaf(1, -16, -2.3, 24); leaf(1, -26, -0.8, 22);
+      c.fillStyle = P[0]; for (let k = 0; k < 5; k++) circ(c, 1 + Math.cos(k * 1.2566 - 1.57) * 9, -62 + Math.sin(k * 1.2566 - 1.57) * 9, 8);
+      c.fillStyle = 'rgba(255,255,255,.25)'; for (let k = 0; k < 5; k++) circ(c, 1 + Math.cos(k * 1.2566 - 1.57) * 10.5, -63 + Math.sin(k * 1.2566 - 1.57) * 10.5, 3);
+      c.fillStyle = P[1]; circ(c, 1, -62, 5);
+    } else if (kind === 4) {   // harebells: little bells hanging from an arching stem
+      const bell = ['#8a6ce0', '#5e8ff0', '#c38ef0'][Math.floor(col * 3)];
+      c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(-2, -60, 18, -64); c.stroke(); leaf(0, -10, -2.3, 22);
+      c.lineWidth = 2; for (const [x, y] of [[4, -54], [12, -62], [19, -64]]) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 1, y + 6); c.stroke(); c.fillStyle = bell; c.beginPath(); c.moveTo(x - 6, y + 17); c.quadraticCurveTo(x - 6, y + 5, x + 1, y + 5); c.quadraticCurveTo(x + 8, y + 5, x + 8, y + 17); c.lineTo(x + 5, y + 15); c.lineTo(x + 1, y + 18); c.lineTo(x - 3, y + 15); c.closePath(); c.fill(); }
+    } else {   // a cluster of buttercups (or forget-me-nots)
+      const fmn = col > 0.6, pet = fmn ? '#7fb6f5' : '#f8d22a', mid = fmn ? '#ffe36e' : '#e8a512';
+      for (const [x, y, a] of [[-10, -40, -0.3], [2, -54, 0], [12, -44, 0.3]]) { c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(x * 0.3, y * 0.5, x, y); c.stroke(); }
+      leaf(0, -8, -2.6, 20); leaf(0, -10, -0.5, 20);
+      for (const [x, y, r] of [[-10, -40, 7], [2, -54, 8], [12, -44, 7]]) { c.fillStyle = pet; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.2566) * r * 0.6, y + Math.sin(k * 1.2566) * r * 0.6, r * 0.55); c.fillStyle = mid; circ(c, x, y, r * 0.35); }
+    }
+    c.restore();
+  },
   // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
   // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
   bilyhryb(c) {
@@ -2509,6 +2551,16 @@ function add(e) {
     for (const [x, y] of [[41.2, 26.1], [44.3, 28.9], [41.5, 29.0], [45.6, 36.3], [38.2, 23.2]]) if (free(x, y)) add({ w: 'chornytsi', ic: '@chornytsi', x, y, s: 1.0, give: 'chornytsi', cd: 150, hide: true, only: ['lito'] });
     for (const [x, y] of [[38.6, 20.6], [40.9, 23.9], [40.6, 31.4], [43.0, 34.6]]) if (free(x, y)) add({ w: 'sunytsi', ic: '@sunytsi', x, y, s: 0.8, give: 'sunytsi', cd: 150, hide: true, only: ['vesna', 'lito'] });
     for (const [x, y] of [[39.8, 21.7], [44.7, 26.4], [42.3, 33.0], [43.3, 36.7], [41.0, 27.9], [46.1, 9.4], [39.6, 30.0]]) if (free(x, y)) { const a0 = add({ w: 'bilyhryb', x, y, s: 0.72, give: 'bilyhryb', yield: 2, cd: 120, hide: true }); for (const [dx, dy, ss] of [[0.27, 0.1, 0.58], [-0.21, 0.15, 0.5]]) if (free(x + dx, y + dy)) add({ w: 'bilyhryb', x: x + dx, y: y + dy, s: ss, give: 'bilyhryb', yield: 2, cd: 120, hide: true, quiet: true, clumpOf: a0 }); }   // mushrooms grow in little clumps of three
+    // wild apple trees, kalyna bushes and flowers at the edges of the clearings: a trip to the woods is a good way to
+    // fill the basket for the market (each spot is used only if it's clear ground, off the path)
+    const roomy = (x, y, m, gap) => { for (const dx of [-m, 0, m]) for (const dy of [-m, 0, m]) if (!free(x + dx, y + dy)) return false; return trailDist(x, y) > 1.1 + m && !ents.some(q => (q.solid || q.give) && Math.hypot(q.x - x, (q.y - y) * 1.3) < gap); };
+    // scan the woods for open ground, best spots first (nearest the clearings), keeping each kind spread out
+    const spots = []; for (let y = 19.5; y < MH - 1.5; y += 0.5) for (let x = 36.5; x < MW - 1.5; x += 0.5) spots.push([x, y, Math.min(...FOREST_GLADES.map(([gx, gy, gr]) => Math.hypot(x - gx, y - gy) - gr))]);
+    spots.sort((p, q) => p[2] - q[2]);
+    const sow = (n, m, gap, spread, mk) => { const put = []; for (const [x, y] of spots) { if (put.length >= n) break; if (put.some(([px, py]) => Math.hypot(px - x, py - y) < spread) || !roomy(x, y, m, gap)) continue; mk(x, y); put.push([x, y]); } return put.length; };
+    sow(3, 0.6, 1.9, 5, (x, y) => add({ w: 'yablunia', x, y, s: 2.1, solid: true, give: 'yabluko', cd: 60 }));   // wild apple trees
+    sow(3, 0.4, 1.3, 4, (x, y) => add({ w: 'kalyna', x, y, s: 1.1, solid: true, give: 'kalyna', cd: 150, hide: true }));   // kalyna bushes
+    sow(8, 0, 0.8, 1.6, (x, y) => add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true }));   // and flowers
     near('yalyna', 4, e => { const x = e.x + 0.55, y = e.y + 0.3; if (free(x, y)) add({ w: 'shyshka', ic: '@shyshka', x, y, s: 0.6, give: 'shyshka', cd: 120, hide: true }); });
     near('dub', 3, e => { const x = e.x - 0.6, y = e.y + 0.32; if (free(x, y)) add({ w: 'zholud', ic: '@zholud', x, y, s: 0.6, give: 'zholud', cd: 120, hide: true, only: ['osin'] }); });
     // a woodpecker drumming on a birch by the path, in the daytime
@@ -3199,12 +3251,29 @@ function paintGround() {
     for (let j = -1; j <= 1; j++) { c.moveTo(x + j * 3, y); c.quadraticCurveTo(x + j * 4, y - h * 0.6, x + j * 6.5, y - h - (j ? 0 : 3)); }
     c.stroke();
   }
-  // little meadow flowers with petals
+  // little meadow flowers of several kinds (their kinds come from their own seed, so nothing painted after them moves)
+  const rk = seeded(77);
   for (let i = 0; i < 300; i++) {
     const x = r() * GW, y = r() * GH, col = ['#ffffff', '#ffe36e', '#ffb3c7', '#d9c2ff'][Math.floor(r() * 4)], pr = 2 + r() * 1.2;
     if (onRoadish(x / T, y / T) || inPond(x / T, y / T, 0.45)) continue;
-    c.fillStyle = col; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257) * pr, y + Math.sin(k * 1.257) * pr, pr * 0.85);
-    c.fillStyle = col === '#ffe36e' ? '#f08a2c' : '#ffd23f'; circ(c, x, y, pr * 0.7);
+    const kind = rk();
+    if (kind < 0.3) { c.fillStyle = col; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257) * pr, y + Math.sin(k * 1.257) * pr, pr * 0.85); c.fillStyle = col === '#ffe36e' ? '#f08a2c' : '#ffd23f'; circ(c, x, y, pr * 0.7); }   // five petals
+    else if (kind < 0.5) { c.fillStyle = '#ffffff'; for (let k = 0; k < 8; k++) ell(c, x + Math.cos(k * 0.785) * pr * 1.1, y + Math.sin(k * 0.785) * pr * 0.9, pr * 0.55, pr * 0.42); c.fillStyle = '#f4c21f'; circ(c, x, y, pr * 0.6); }   // a daisy
+    else if (kind < 0.65) { c.fillStyle = ['#3d6fe0', '#5a4bd1', '#2f8ad6'][Math.floor(rk() * 3)]; for (let k = 0; k < 7; k++) circ(c, x + Math.cos(k * 0.9) * pr * 0.9, y + Math.sin(k * 0.9) * pr * 0.75, pr * 0.5); c.fillStyle = '#2a2f7a'; circ(c, x, y, pr * 0.4); }   // a cornflower
+    else if (kind < 0.8) { const cc = ['#ff8fb3', '#c86bf0', '#ffffff', '#7fb6f5'][Math.floor(rk() * 4)]; for (const [dx, dy] of [[-2.2, 0.6], [1.8, -1.4], [2.4, 1.6], [-0.4, -2.6]]) { c.fillStyle = cc; circ(c, x + dx * pr * 0.55, y + dy * pr * 0.45, pr * 0.55); } c.fillStyle = 'rgba(255,230,120,.9)'; circ(c, x, y, pr * 0.3); }   // a little cluster
+    else if (kind < 0.9) { c.fillStyle = '#e2403a'; for (let k = 0; k < 4; k++) circ(c, x + Math.cos(k * 1.571 + 0.4) * pr * 0.7, y + Math.sin(k * 1.571 + 0.4) * pr * 0.6, pr * 0.8); c.fillStyle = '#2a1a1a'; circ(c, x, y, pr * 0.4); }   // a field poppy
+    else { c.fillStyle = '#9b6be0'; for (let k = 0; k < 4; k++) ell(c, x - pr * 0.6 + k * pr * 0.4, y - k * pr * 0.55, pr * 0.45, pr * 0.38); }   // a spike of purple (sage, bellflower)
+  }  // ...and a scattering of bigger ones, so the kinds and colours show from a little way off
+  for (let i = 0; i < 560; i++) {
+    const x = rk() * GW, y = rk() * GH, col = ['#ffffff', '#ffe36e', '#ffb3c7', '#d9c2ff'][Math.floor(rk() * 4)], pr = 3.4 + rk() * 1.8;
+    if (onRoadish(x / T, y / T) || inPond(x / T, y / T, 0.45)) continue;
+    const kind = rk();
+    if (kind < 0.3) { c.fillStyle = col; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257) * pr, y + Math.sin(k * 1.257) * pr, pr * 0.85); c.fillStyle = col === '#ffe36e' ? '#f08a2c' : '#ffd23f'; circ(c, x, y, pr * 0.7); }   // five petals
+    else if (kind < 0.5) { c.fillStyle = '#ffffff'; for (let k = 0; k < 8; k++) ell(c, x + Math.cos(k * 0.785) * pr * 1.1, y + Math.sin(k * 0.785) * pr * 0.9, pr * 0.55, pr * 0.42); c.fillStyle = '#f4c21f'; circ(c, x, y, pr * 0.6); }   // a daisy
+    else if (kind < 0.65) { c.fillStyle = ['#3d6fe0', '#5a4bd1', '#2f8ad6'][Math.floor(rk() * 3)]; for (let k = 0; k < 7; k++) circ(c, x + Math.cos(k * 0.9) * pr * 0.9, y + Math.sin(k * 0.9) * pr * 0.75, pr * 0.5); c.fillStyle = '#2a2f7a'; circ(c, x, y, pr * 0.4); }   // a cornflower
+    else if (kind < 0.8) { const cc = ['#ff8fb3', '#c86bf0', '#ffffff', '#7fb6f5'][Math.floor(rk() * 4)]; for (const [dx, dy] of [[-2.2, 0.6], [1.8, -1.4], [2.4, 1.6], [-0.4, -2.6]]) { c.fillStyle = cc; circ(c, x + dx * pr * 0.55, y + dy * pr * 0.45, pr * 0.55); } c.fillStyle = 'rgba(255,230,120,.9)'; circ(c, x, y, pr * 0.3); }   // a little cluster
+    else if (kind < 0.9) { c.fillStyle = '#e2403a'; for (let k = 0; k < 4; k++) circ(c, x + Math.cos(k * 1.571 + 0.4) * pr * 0.7, y + Math.sin(k * 1.571 + 0.4) * pr * 0.6, pr * 0.8); c.fillStyle = '#2a1a1a'; circ(c, x, y, pr * 0.4); }   // a field poppy
+    else { c.fillStyle = '#9b6be0'; for (let k = 0; k < 4; k++) ell(c, x - pr * 0.6 + k * pr * 0.4, y - k * pr * 0.55, pr * 0.45, pr * 0.38); }   // a spike of purple (sage, bellflower)
   }
   // the forest path and the little one up to the road, over the road edges but under the stream bank
   { const trail = FOREST_TRAIL, rf = seeded(29);
@@ -4462,8 +4531,10 @@ let shopTab = 'food', shopSel = null;
 // Cottage and cat things are one of a kind: owning one (placed or not) means the market won't sell another.
 const catThings = k => (S.home[k] || 0) + nPlaced(k);
 const owned = k => shopTab === 'clothes' ? !!(S.wardrobe && S.wardrobe[k]) : shopTab === 'farm' ? farmN(k) >= FARM_MAX[k] : shopTab === 'cats' && MULTI[k] ? catThings(k) >= MULTI[k] : (shopTab === 'home' || shopTab === 'cats' || shopTab === 'tools') && ((S.home[k] || 0) > 0 || !!S.decor[k] || !!S.gear[k]);
+const FOREST_PRICE = { bilyhryb: 4, chornytsi: 3, sunytsi: 3, yabluko: 3, kalyna: 3 };   // what you gather in the woods is worth the walk
 const sellPrice = id => { if (id === 'ryba') return winter() ? 8 : 4;   // a fish takes a rod and some patience (and in winter, a hole in the ice)
   if (id === 'kalyna' && winter()) return 4;   // the red berries are about the only thing to pick in winter
+  if (FOREST_PRICE[id]) return FOREST_PRICE[id];
   for (const t of ['food', 'seeds']) if (D.shop[t][id]) return Math.max(1, Math.floor(D.shop.food[id] ? D.shop.food[id] / 2 : 3)); return 2; };   // things you simply pick (flowers, mushrooms, berries) sell for less
 let shopShown = null;   // the tab the shop was last drawn on
 // The shop's title and its row of tabs, shown above every tab (Oksana's helping game too, so you can always
