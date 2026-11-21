@@ -3224,9 +3224,22 @@ function paintGround() {
   road(T + 26, 'rgba(98,150,70,.15)');
   road(T + 12, '#d4bb82');
   road(T + 4, '#ecd9a6');
+  // Inside corners: where two roads meet (or a road meets the square), the grass between them came to a sharp
+  // 90-degree point. Each one gets a curved fillet in the road's own colours, its arc centred in the grass so the
+  // edge sweeps round smoothly; the light middle follows the same curve a little further in.
+  { const fil = (cx, cy, R, sx, sy) => { const ox = cx - sx * R, oy = cy - sy * R;   // the arc's centre, out in the grass
+      c.beginPath(); c.moveTo(cx - sx * R, cy); c.lineTo(cx, cy); c.lineTo(cx, cy - sy * R);
+      const a0 = Math.atan2(0 * sy, sx), a1 = Math.atan2(sy, 0); c.arc(ox, oy, R, a0, a1, sx * sy < 0); c.closePath(); c.fill(); };
+    for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) { if (isRoad(x, y)) continue;
+      for (const [sx, sy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {   // which corner of this grass tile: the roads lie to that side
+        if (!isRoad(x + sx, y) || !isRoad(x, y + sy) || !isRoad(x + sx, y + sy)) continue;
+        for (const [h, col, R] of [[(T + 12) / 2, '#d4bb82', T * 0.62], [(T + 4) / 2, '#ecd9a6', T * 0.62 + 4]]) {
+          const cx = (x + 0.5 + sx) * T - sx * h, cy = (y + 0.5 + sy) * T - sy * h; c.fillStyle = col; fil(cx, cy, R, sx, sy); }
+      } }
+  }
   // the market square: the same sandy ground as the path and the town square (no paving of its own)
   { const rp = seeded(41), px0 = 19.0, px1 = 24.4, py0 = 11.0, py1 = 15.6;
-    c.fillStyle = '#e6d29d'; c.fillRect(px0 * T, py0 * T, (px1 - px0) * T, (py1 - py0) * T);
+    c.fillStyle = '#e6d29d'; rr(c, px0 * T, py0 * T, (px1 - px0) * T, (py1 - py0) * T, T * 0.7);   // round-cornered, like the roads
     for (let i = 0; i < 260; i++) { const x = (px0 + rp() * (px1 - px0)) * T, y = (py0 + rp() * (py1 - py0)) * T; c.fillStyle = rp() < 0.5 ? 'rgba(255,255,255,.45)' : 'rgba(190,160,100,.35)'; ell(c, x, y, 2 + rp() * 4, 1.2 + rp() * 2); }
   }
   { const sx = STALL.x * T, sy = (STALL.y - 0.25) * T, R = T * 3.1, gr = c.createRadialGradient(sx, sy, 0, sx, sy, R); gr.addColorStop(0, '#e6d29d'); gr.addColorStop(0.5, 'rgba(222,200,146,.85)'); gr.addColorStop(0.8, 'rgba(200,178,120,.3)'); gr.addColorStop(1, 'rgba(200,178,120,0)');
