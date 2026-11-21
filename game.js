@@ -2323,7 +2323,7 @@ function add(e) {
   rect(16, 3, 20, 4); add({ w: 'vokzal', ic: '@vokzal', k: 'station', x: 18.5, y: 5.0, s: 4.4 });   // Dolyna station, at the north end of the village road
   for (const x of [2.5, 8.5, 27.5, 33.5, 39.5]) add({ w: 'potiah', ic: '@stovp', k: 'pole' + x, x, y: 2.3, s: 1.4, quiet: true });   // telegraph poles along the line
   rect(16, 33, 20, 35); add({ w: 'kavarnia', ic: '@kavarnia', k: 'cafe', x: 18.5, y: 36.0, s: 4.2 });   // the café, at the bottom centre, on its own little square
-  for (const [tx, ty] of [[16.6, 37.55], [20.4, 37.55]]) add({ w: 'parasolka', ic: '@cafestil', k: 'ctab' + tx, x: tx, y: ty, s: 1.5, solid: true });   // tables on the terrace   // the village school, at the east end of the main road, its door over the road's end
+  for (const [tx, ty] of [[16.9, 39.45], [20.1, 39.45]]) add({ w: 'parasolka', ic: '@cafestil', k: 'ctab' + tx, x: tx, y: ty, s: 3.2, solid: true });   /* sized for people: the table top at Vicky's waist, the parasol over her head */   // tables on the terrace   // the village school, at the east end of the main road, its door over the road's end
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
   for (const [x, y] of streamPts(0.1)) { const tx = Math.floor(x), ty = Math.floor(y); if (Math.hypot(x - BRIDGE.x, y - BRIDGE.y) > 0.75) block(tx, ty); }   // the stream: wade-proof, but the bridge is open
