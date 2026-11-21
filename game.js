@@ -207,7 +207,7 @@ addEventListener('load', () => { musicBtn(); startMusic(); });
 // Each interior has its own theme (music/room-<mode>.mp3, made with tools/music.mjs). Going in or out fades the
 // music down, swaps the track and fades back up; the village theme picks up where it left off. A room whose file
 // is missing (not made yet) just keeps the village theme.
-const ROOM_TUNES = { home: 'room-home2', olia: 'room-olia', mill: 'room-mill', church: 'room-church', school: 'room-school' };
+const ROOM_TUNES = { home: 'room-home2', olia: 'room-olia', mill: 'room-mill', church: 'room-church', school: 'room-school', cafe: 'room-cafe' };
 const tuneBad = {};
 let curTune = 'theme', themePos = 0, seekTo = 0;
 // The market has its own tune while its card is open (it's a card over the village, not a room).
@@ -5872,7 +5872,7 @@ function enterHomeNow() {
   else if (panMax() > 10 && (S.tours || 0) < 3) { S.tours = (S.tours || 0) + 1; save(); roomX = -roomPL(); tour = { t0: nowT, mid }; }
   blip(520);
 }
-function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); }
+function exitHomeNow() { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; blip(440); P.va = 0; P.vav = 0; P.lookAt = null; }   // out of the door: she faces away from the house (towards you)
 let homeDoor = null;
 function homeTap(sx, py) {
   if (bed) { bed.tap = true; return; }
@@ -6959,7 +6959,7 @@ function drawChurch(t) {
 // blue-tiled front, coffee brewing in little copper džezvas on hot sand (the Lviv way), a brass grinder, a Kyiv cake
 // under a glass dome and a basket of pampushky; shelves of honey and jam; a chalk menu; wicker lamps; two tables
 // with embroidered cloths; a cat asleep on a chair; a gramophone with notes drifting up. Tap Solomiia to order.
-const CF = { door: 0.05, gram: 0.15, tableA: 0.29, counter: 0.53, owner: 0.535, shelf: 0.68, win: 0.83, tableB: 0.86 };
+const CF = { door: 0.05, gram: 0.15, tableA: 0.29, counter: 0.53, owner: 0.535, shelf: 0.68, win: 0.83, tableB: 0.88, tableC: 0.72 };
 const CAFE_MENU = [['kava', 3], ['chai', 2], ['pampushka', 2], ['medivnyk', 4], ['syrnyky', 3], ['uzvar', 2]];
 const CAFE = { served: null, gramT: -9, purrT: -9 };
 let cafeHits = [];
@@ -7091,9 +7091,9 @@ function drawCafe(t) {
     c.fillStyle = '#f2c230'; circ(c, x + dw * 0.32, dt2 + (fy - dt2) * 0.55, u * 0.01);
     hit(x - dw / 2, dt2, dw, fy - dt2, () => exitHome(), x); }
   // ---- wicker lamps hanging from the beams
-  for (const fx of [CF.tableA, CF.counter, CF.tableB]) { const x = fx * RW, ly = h * 0.2 + (fx === CF.counter ? -h * 0.06 : 0); c.strokeStyle = '#5a381b'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, h * 0.025); c.lineTo(x, ly - u * 0.03); c.stroke(); c.fillStyle = '#c8a060'; c.beginPath(); c.moveTo(x - u * 0.05, ly); c.quadraticCurveTo(x, ly - u * 0.07, x + u * 0.05, ly); c.closePath(); c.fill(); c.strokeStyle = 'rgba(90,60,20,.4)'; c.lineWidth = 1; for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x + k * u * 0.018, ly); c.lineTo(x + k * u * 0.006, ly - u * 0.035); c.stroke(); } c.fillStyle = 'rgba(255,220,140,.9)'; ell(c, x, ly + u * 0.004, u * 0.02, u * 0.008); }
+  for (const fx of [CF.tableA, CF.counter, CF.tableC, CF.tableB]) { const x = fx * RW, ly = h * 0.2 + (fx === CF.counter ? -h * 0.06 : 0); c.strokeStyle = '#5a381b'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, h * 0.025); c.lineTo(x, ly - u * 0.03); c.stroke(); c.fillStyle = '#c8a060'; c.beginPath(); c.moveTo(x - u * 0.05, ly); c.quadraticCurveTo(x, ly - u * 0.07, x + u * 0.05, ly); c.closePath(); c.fill(); c.strokeStyle = 'rgba(90,60,20,.4)'; c.lineWidth = 1; for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x + k * u * 0.018, ly); c.lineTo(x + k * u * 0.006, ly - u * 0.035); c.stroke(); } c.fillStyle = 'rgba(255,220,140,.9)'; ell(c, x, ly + u * 0.004, u * 0.02, u * 0.008); }
   // ---- the tables (one by the window has the cat asleep on a chair) and Vicky, back to front
-  const table = (fx, cat) => {
+  const table = (fx, cat, third) => {   // (third: the extra table between the counter and the window; your order goes on the first one)
     const x = fx * RW, base = fy + h * 0.1, tw = u * 0.28, top = base - h * 0.1;
     c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, base + h * 0.008, tw * 0.6, h * 0.016);
     for (const sg of [-1, 1]) { const chx = x + sg * tw * 0.62; c.fillStyle = '#7a4e26'; c.fillRect(chx - u * 0.035, base - h * 0.055, u * 0.07, u * 0.014); c.fillRect(chx - u * 0.03, base - h * 0.055, u * 0.008, h * 0.055); c.fillRect(chx + u * 0.022, base - h * 0.055, u * 0.008, h * 0.055); c.fillRect(chx + sg * u * 0.03 - u * 0.004, base - h * 0.13, u * 0.008, h * 0.08);
@@ -7107,11 +7107,11 @@ function drawCafe(t) {
     c.fillStyle = '#b8642e'; poly(c, [[x - u * 0.016, top], [x + u * 0.016, top], [x + u * 0.022, top - u * 0.04], [x - u * 0.022, top - u * 0.04]]); ell(c, x, top - u * 0.041, u * 0.012, u * 0.004);   // a clay jug of flowers
     for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + (k - 2) * 0.35; c.strokeStyle = '#4f8f3a'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, top - u * 0.04); c.lineTo(x + Math.cos(a) * u * 0.05, top - u * 0.04 + Math.sin(a) * u * 0.05); c.stroke(); c.fillStyle = ['#f5b800', '#d43a3a', '#2f5f9e', '#f5b800', '#e86fa0'][k]; circ(c, x + Math.cos(a) * u * 0.05, top - u * 0.04 + Math.sin(a) * u * 0.05, u * 0.01); }
     // what you ordered, steaming, on the table nearest the counter
-    if (!cat && CAFE.served && t - CAFE.served.t < 90) { const sx2 = x + tw * 0.24, sy2 = top - u * 0.008; c.fillStyle = '#fffdf5'; ell(c, sx2, sy2, u * 0.035, u * 0.009); drawIcon(c, W[CAFE.served.id].ic[0] === '@' ? W[CAFE.served.id].ic : W[CAFE.served.id].ic, sx2, sy2 + u * 0.005, u * 0.05);
+    if (!cat && !third && CAFE.served && t - CAFE.served.t < 90) { const sx2 = x + tw * 0.24, sy2 = top - u * 0.008; c.fillStyle = '#fffdf5'; ell(c, sx2, sy2, u * 0.035, u * 0.009); drawIcon(c, W[CAFE.served.id].ic[0] === '@' ? W[CAFE.served.id].ic : W[CAFE.served.id].ic, sx2, sy2 + u * 0.005, u * 0.05);
       for (let i = 0; i < 3; i++) { const q = (t * 0.45 + i / 3) % 1; c.fillStyle = 'rgba(255,255,255,' + (0.5 * (1 - q)) + ')'; circ(c, sx2 + Math.sin(t * 2 + i) * u * 0.008, sy2 - u * 0.05 - q * u * 0.08, u * (0.007 + q * 0.01)); } }
     hit(x - tw / 2, top - u * 0.05, tw, base - top + u * 0.05, word('stil'), x);
   };
-  const order = [{ y: fy + h * 0.1, f: () => table(CF.tableA, false) }, { y: fy + h * 0.1, f: () => table(CF.tableB, true) }, { y: IN.y, f: () => inDraw(c, t) }];
+  const order = [{ y: fy + h * 0.1, f: () => table(CF.tableA, false) }, { y: fy + h * 0.1, f: () => table(CF.tableC, false, true) }, { y: fy + h * 0.1, f: () => table(CF.tableB, true) }, { y: IN.y, f: () => inDraw(c, t) }];
   order.sort((p, q) => p.y - q.y).forEach(o => o.f());
   c.restore();
   if (day > 0.3) { c.fillStyle = 'rgba(255,248,225,' + (0.4 * wxL) + ')'; for (let i = 0; i < 16; i++) { const q = (t * 0.015 + i * 0.06) % 1; circ(c, ((i * 0.43 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
@@ -7996,7 +7996,7 @@ function skyEvents(c, w, h, t, L) {
   if (season() === 'osin' && L.dark < 0.5 && !wet(wx)) {
     const per = 38, q = (t % per) / 14;
     if (q < 1) { if (!Cl.ev.cranes) { Cl.ev.cranes = 1; learn('zhuravel'); say('p_zhuravli_letiat'); toast(`🕊️ ${PH.zhuravli_letiat.uk}${stage() < 3 ? ' · ' + PH.zhuravli_letiat.en : ''}`, 3400); }
-      const lx = w * (1.15 - q * 1.35), ly = h * 0.16, sp = w * 0.045;
+      const lx = w * (1.15 - q * 1.35), ly = h * 0.34, sp = w * 0.045;   // (low enough to fly below the top bar and the goal panel)
       for (let i = 0; i < 11; i++) { const row = i === 0 ? 0 : Math.ceil(i / 2), side = i === 0 ? 0 : i % 2 ? -1 : 1, x = lx + row * sp, y = ly + side * row * sp * 0.55, fl = Math.sin(t * 6 + i) * sp * 0.25;
         c.strokeStyle = 'rgba(60,60,70,.75)'; c.lineWidth = Math.max(1.5, w / 260); c.beginPath(); c.moveTo(x - sp * 0.35, y - fl); c.quadraticCurveTo(x - sp * 0.1, y - sp * 0.1, x, y); c.quadraticCurveTo(x + sp * 0.1, y - sp * 0.1, x + sp * 0.35, y - fl); c.moveTo(x, y); c.lineTo(x - sp * 0.3, y + sp * 0.02); c.stroke(); }
     }
