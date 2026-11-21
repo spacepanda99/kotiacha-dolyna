@@ -2550,7 +2550,7 @@ function cafeVisitorAt(key) { return ents.find(v => v.inside === 'cafe' && v.sea
 function drawSeated(c, e, chx, seatY, sg, sc, t) {
   const L = NPC[e.npc].look;
   c.save(); c.beginPath(); c.rect(chx - 60 * sc, seatY - 120 * sc, 120 * sc, 120 * sc + 3 * sc); c.clip();
-  c.translate(chx, seatY + 16 * sc); c.scale(-sg, 1); person(c, 0, 0, Object.assign({}, L, { armR: 1.1, armL: 0.2 }), t + chx, false, sc, undefined, { side: 0.55 }); c.restore();
+  c.translate(chx, seatY + 16 * sc); c.scale(-sg, 1); personSide(c, 0, 0, L, t + chx, 0, sc); c.restore();   // side on, facing across the table
 }
 
 // ------------------------------------------------------------------ the mystery of the missing festival bell
@@ -7894,8 +7894,8 @@ function drawCafe(t) {
         else { c.fillStyle = '#fffdf5'; rr(c, jx - u * 0.016, sy - u * 0.03, u * 0.032, u * 0.03, u * 0.006); c.fillStyle = ['#2f5f9e', '#c0392b', '#3f8a3a', '#2f5f9e', '#c0392b'][k]; c.fillRect(jx - u * 0.016, sy - u * 0.02, u * 0.032, u * 0.006); c.strokeStyle = '#fffdf5'; c.lineWidth = 1.5; c.beginPath(); c.arc(jx + u * 0.018, sy - u * 0.016, u * 0.008, -1.4, 1.4); c.stroke(); } } }
     hit(x - sw / 2, y - u * 0.06, sw, u * 0.06, word('med'), x); }
   // ---- Solomiia behind the counter, wiping it with a cloth (drawn before the counter front, so it hides her legs)
-  const ox = CF.owner * RW, oy = h * 0.6 + u * 0.06, osc = u * 0.0052, wipe = Math.sin(t * 2.4);
-  { const L2 = Object.assign({}, NPC.solomiia.look, { armR: 0.9 + wipe * 0.35, armL: 0.4 }); person(c, ox, oy, L2, t, false, osc); }
+  const ox = CF.owner * RW, oy = h * 0.6 + u * 0.06, osc = inScale(oy),   /* the same scale as everyone else at her depth (it was a fixed, larger one) */ wipe = Math.sin(t * 2.4);
+  { const L2 = Object.assign({}, NPC.solomiia.look, { armR: 0.9 + wipe * 0.35, armL: 0.4 }); person(c, ox, oy - u * 0.05, L2, t, false, osc); }   // on the step behind the counter
   // ---- the counter: a wooden top over a front of blue-and-white painted tiles
   { const x = CF.counter * RW, cw = u * 0.7, top = fy - h * 0.085;
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, fy + h * 0.01, cw * 0.55, h * 0.015);
@@ -7951,7 +7951,7 @@ function drawCafe(t) {
         c.strokeStyle = '#4a2c1a'; c.lineWidth = 1; c.beginPath(); c.arc(cx2 - u * 0.04, cy2 - u * 0.03, u * 0.004, 0, Math.PI); c.stroke();
         { const q = (t * 0.4) % 1; c.globalAlpha = Math.sin(q * Math.PI); c.fillStyle = '#4a2c1a'; c.font = '700 ' + Math.round(u * 0.025) + 'px system-ui'; c.textAlign = 'center'; c.fillText('z', cx2 - u * 0.02 + q * u * 0.03, cy2 - u * 0.07 - q * u * 0.05); c.globalAlpha = 1; }
         hit(cx2 - u * 0.06, cy2 - u * 0.08, u * 0.12, u * 0.08, () => { CAFE.purrT = nowT; purr('Рудик'); }, cx2); }   // a sleepy ginger cat: pet it for a purr
-      { const key = (fx === CF.tableA ? 'A' : third ? 'C' : 'B') + sg, v = cafeVisitorAt(key); if (v) { const sc2 = inScale(base) * 0.9, seatY = base - h * 0.055; drawSeated(c, v, chx, seatY, sg, sc2, t); seatHits.push([chx - u * 0.06, seatY - u * 0.3, u * 0.12, u * 0.3, () => talk(NPC[v.npc]), chx]); } } }
+      { const key = (fx === CF.tableA ? 'A' : third ? 'C' : 'B') + sg, v = cafeVisitorAt(key); if (v) { const sc2 = inScale(base), seatY = base - h * 0.055; drawSeated(c, v, chx, seatY, sg, sc2, t); seatHits.push([chx - u * 0.06, seatY - u * 0.3, u * 0.12, u * 0.3, () => talk(NPC[v.npc]), chx]); } } }
     c.fillStyle = '#6b4422'; c.fillRect(x - u * 0.01, top, u * 0.02, base - top); c.fillRect(x - u * 0.05, base - u * 0.01, u * 0.1, u * 0.01);
     c.fillStyle = '#fffdf5'; c.beginPath(); c.ellipse(x, top, tw / 2, u * 0.025, 0, 0, 7); c.fill(); c.beginPath(); c.moveTo(x - tw / 2, top); c.lineTo(x - tw * 0.46, top + h * 0.045); c.quadraticCurveTo(x, top + h * 0.06, x + tw * 0.46, top + h * 0.045); c.lineTo(x + tw / 2, top); c.closePath(); c.fill();
     c.fillStyle = '#c0392b'; for (let k = -4; k <= 4; k++) { c.save(); c.translate(x + k * tw * 0.1, top + h * 0.04 + Math.abs(k) * -h * 0.002); c.rotate(Math.PI / 4); c.fillRect(-u * 0.006, -u * 0.006, u * 0.012, u * 0.012); c.restore(); }   // the embroidered hem
@@ -7964,8 +7964,8 @@ function drawCafe(t) {
     for (const sg of [-1, 1]) { const key = (fx === CF.tableA ? 'A' : third ? 'C' : 'B') + sg; if (cafeVisitorAt(key)) { const cx3 = x + sg * tw * 0.22; c.fillStyle = '#fffdf5'; c.fillRect(cx3 - u * 0.012, top - u * 0.03, u * 0.024, u * 0.022); c.fillStyle = '#e9dcc0'; ell(c, cx3, top - u * 0.008, u * 0.022, u * 0.005); for (let i = 0; i < 2; i++) { const q = (t * 0.5 + i / 2 + sg) % 1; c.fillStyle = 'rgba(255,255,255,' + (0.4 * (1 - q)) + ')'; circ(c, cx3, top - u * 0.04 - q * u * 0.06, u * (0.006 + q * 0.008)); } } }   // their cups
     for (const sh of seatHits) hit(...sh);
   };
-  const order = [{ y: fy + h * 0.045, f: () => { const v = cafeVisitorAt('counter'); if (!v) return; const vx = (CF.counter - 0.115) * RW, vy = fy + h * 0.045, sc3 = inScale(vy) * 0.95; person(c, vx, vy, NPC[v.npc].look, t, false, sc3, undefined, { side: 0.5 }); hit(vx - u * 0.07, vy - u * 0.32, u * 0.14, u * 0.32, () => talk(NPC[v.npc]), vx); } },   // chatting with Solomiia at the counter
-    ...[['st0', 0.41], ['st1', 0.63], ['st2', 0.19]].map(([key, fx]) => ({ y: fy + h * 0.14, f: () => { const v = cafeVisitorAt(key); if (!v) return; const vx = fx * RW, vy = fy + h * 0.14, sc3 = inScale(vy) * 0.95; person(c, vx, vy, NPC[v.npc].look, t + fx * 9, false, sc3, undefined, { side: key === 'st1' ? -0.5 : 0.5 }); hit(vx - u * 0.07, vy - u * 0.32, u * 0.14, u * 0.32, () => talk(NPC[v.npc]), vx); } })),   // standing about, dripping, on a rainy day
+  const order = [{ y: fy + h * 0.045, f: () => { const v = cafeVisitorAt('counter'); if (!v) return; const vx = (CF.counter - 0.115) * RW, vy = fy + h * 0.045, sc3 = inScale(vy); c.save(); c.translate(vx, vy); personSide(c, 0, 0, NPC[v.npc].look, t, 0, sc3); c.restore(); hit(vx - u * 0.07, vy - u * 0.32, u * 0.14, u * 0.32, () => talk(NPC[v.npc]), vx); } },   // chatting with Solomiia at the counter
+    ...[['st0', 0.35, 1], ['st1', 0.63, -1], ['st2', 0.19, 1]].map(([key, fx, fc]) => ({ y: fy + h * 0.14, f: () => { const v = cafeVisitorAt(key); if (!v) return; const vx = fx * RW, vy = fy + h * 0.14, sc3 = inScale(vy); c.save(); c.translate(vx, vy); c.scale(fc, 1); personSide(c, 0, 0, NPC[v.npc].look, t + fx * 9, 0, sc3); c.restore(); hit(vx - u * 0.07, vy - u * 0.32, u * 0.14, u * 0.32, () => talk(NPC[v.npc]), vx); } })),   // standing about, dripping, on a rainy day
     { y: fy + h * 0.1, f: () => table(CF.tableA, false) }, { y: fy + h * 0.1, f: () => table(CF.tableC, false, true) }, { y: fy + h * 0.1, f: () => table(CF.tableB, true) }, { y: IN.y, f: () => inDraw(c, t) }];
   order.sort((p, q) => p.y - q.y).forEach(o => o.f());
   c.restore();
