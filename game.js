@@ -829,7 +829,7 @@ const DRAW = {
     // pouring: the bucket is lifted out over the rim on the left and tipped, and the water runs from its lip down
     // into the watering can on the ground (all in front of the well, so it plainly comes from the bucket)
     if (a >= 3.3) {
-      const cx = -42, cy = 0, q = Math.min(1, (a - 3.3) / 0.35), e2 = q * q * (3 - 2 * q), bx = -30 * e2, by = K.y + 1 - 9 * e2 - Math.sin(e2 * Math.PI) * 4, th = -1.15 * tilt;
+      const cx = -6, cy = 12, q = Math.min(1, (a - 3.3) / 0.35), e2 = q * q * (3 - 2 * q), bx = 6 * e2, by = K.y + 1 - 10 * e2 - Math.sin(e2 * Math.PI) * 4, th = -1.15 * tilt;
       c.strokeStyle = '#a8905a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, K.y); c.quadraticCurveTo(bx * 0.5, K.y + 6, bx, by); c.stroke();   // the rope, slack now
       c.save(); c.translate(bx, by); c.rotate(th); bucket(full); c.restore();
       const lipX = bx + (-8 * Math.cos(th)), lipY = by + (-8 * Math.sin(th));   // the bucket's left lip, where the water leaves it
@@ -6883,7 +6883,7 @@ function talk(npc) {
   if (npc.visitor) { const n0 = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 }); const st = line(npc, n0.met ? 'again' : 'intro'); n0.met = true; save(); return dialog(npc, [st]); }
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
-  { const rs = rainSay(npc.id); if (rs) steps.unshift({ en: rs[0], uk: rs[1] }); }   // (text only: no recording)
+  { const rs = rainSay(npc.id); if (rs) { const st = { en: rs[0], uk: rs[1] }; if (npc.id === 'olia') steps.splice(1, 0, st); else steps.unshift(st); } }   // (text only: no recording; Grandma always says good day first, then talks about the rain)
   if (!n.met) { steps.push(line(npc, 'intro')); n.met = true; }
   if (n.mad) return dialog(npc, [line(npc, 'angry')]);
   if (npc.id !== 'olia') {
@@ -8016,11 +8016,11 @@ function churchTap(sx, py) {
 // seconds). Every partial is a pair of slightly detuned tones, so the note warbles slowly as real bells do,
 // and the clapper's strike is a short metallic clang. It all rings into a long echo, like a tower over a valley.
 let bellVerb = null, bellComp = null, bellIR = null, bellLim = null;
-const BELL_MAKEUP = 2.6;   // the gain after each strike's compressor, times its volume
+const BELL_MAKEUP = 1.7;   // the gain after each strike's compressor, times its volume (keeps a stroke's peaks near half scale: louder overdrives phone speakers)
 // One limiter that every strike goes through AFTER its volume: overlapping strokes (noon's three, the rope's two)
 // and their long echoes add up, and without it the sum clipped and crackled more with each stroke. It only acts
 // on peaks near full scale, so the volume set for each strike still decides how loud it is.
-function bellLimiter() { if (bellLim) return bellLim; bellLim = actx.createDynamicsCompressor(); bellLim.threshold.value = -4; bellLim.knee.value = 4; bellLim.ratio.value = 12; bellLim.attack.value = 0.012; bellLim.release.value = 0.4; const trim = actx.createGain(); trim.gain.value = 0.9; bellLim.connect(trim); trim.connect(actx.destination); return bellLim; }
+function bellLimiter() { if (bellLim) return bellLim; bellLim = actx.createDynamicsCompressor(); bellLim.threshold.value = -6; bellLim.knee.value = 6; bellLim.ratio.value = 10; bellLim.attack.value = 0.006; bellLim.release.value = 0.4; const trim = actx.createGain(); trim.gain.value = 0.9; bellLim.connect(trim); trim.connect(actx.destination); return bellLim; }
 function bellBus() { if (bellComp) return bellComp; bellComp = actx.createDynamicsCompressor(); bellComp.threshold.value = -18; bellComp.knee.value = 8; bellComp.ratio.value = 4; bellComp.attack.value = 0.003; bellComp.release.value = 0.4; const mk = actx.createGain(); mk.gain.value = 2.6; bellComp.connect(mk); mk.connect(actx.destination); return bellComp; }
 function bellReverb() {
   if (bellVerb) return bellVerb;
