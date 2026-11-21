@@ -3131,8 +3131,21 @@ function paintGround() {
   }
   // the forest path and the little one up to the road, over the road edges but under the stream bank
   { const trail = FOREST_TRAIL, rf = seeded(29);
+    // the bridge path stops at the road's edge (it is clipped off the road), then its last stretch fades into the road's own sand
+    const RE = 14.5 + 0.5 + 4 / T;   // the bottom edge of the road's light surface, in tiles
+    c.save(); c.beginPath(); c.rect(0, 0, GW, GH); c.rect(30.5 * T, 13.4 * T, 4 * T, (RE - 13.4) * T); c.clip('evenodd');
     trail(T * 0.95, 'rgba(60,100,40,.16)'); trail(T * 0.6, '#b39463'); trail(T * 0.42, '#c9ad7a');
-    { const jx = 32.3 * T, jy = 14.5 * T, jr = T * 0.9, gj = c.createRadialGradient(jx, jy, 0, jx, jy, jr); gj.addColorStop(0, 'rgba(222,200,146,.85)'); gj.addColorStop(0.6, 'rgba(222,200,146,.4)'); gj.addColorStop(1, 'rgba(222,200,146,0)'); c.fillStyle = gj; c.fillRect(jx - jr, jy - jr, jr * 2, jr * 2); }   // the soft corner where it meets the road
+    c.restore();
+    { const [ax, ay] = TRAIL_SPUR[1], [bx, by] = TRAIL_SPUR[2], q = (ay - RE) / (ay - by), ex = ax + (bx - ax) * q, sx = ax + (bx - ax) * (q - 0.55), sy = ay + (by - ay) * (q - 0.55), g = c.createLinearGradient(ex * T, RE * T, sx * T, sy * T);
+      g.addColorStop(0, '#ecd9a6'); g.addColorStop(0.45, 'rgba(226,206,155,.7)'); g.addColorStop(1, 'rgba(201,173,122,0)');
+      c.save(); c.lineCap = 'butt'; c.strokeStyle = g; c.lineWidth = T * 0.66; c.beginPath(); c.moveTo(sx * T, sy * T); c.lineTo(ex * T, RE * T); c.stroke(); c.restore();
+      // the mouth: small round fillets in the road's sand where the path's edges meet the road's edge, so there is no hard corner or rim line across it
+      const L = Math.hypot(ax - bx, ay - by), dx = (ax - bx) / L, dy = (ay - by) / L, hw = 0.33, fr = 0.32;
+      c.fillStyle = '#ecd9a6'; c.beginPath();
+      for (const sg of [-1, 1]) { const nx = -dy * sg, ny = dx * sg, t = -(ny * hw) / dy, px = ex + nx * hw + dx * t;   // where this edge of the path crosses the road's edge
+        const ox = px + (nx > 0 ? 1 : -1) * fr, qx = px + dx * fr / dy * 0.9, qy = RE + fr * 0.9;
+        c.moveTo(ox * T, (RE - 0.07) * T); c.lineTo(ox * T, RE * T); c.quadraticCurveTo(px * T, RE * T, qx * T, qy * T); c.lineTo(ex * T, (RE + 0.1) * T); c.lineTo(ex * T, (RE - 0.07) * T); c.closePath(); }
+      c.fill(); }
     { const cx = 31.5 * T, cy = 30.3 * T, R = T * 1.45, gr = c.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, '#ecd9a6'); gr.addColorStop(0.45, 'rgba(230,210,157,.92)'); gr.addColorStop(0.75, 'rgba(212,187,130,.45)'); gr.addColorStop(1, 'rgba(212,187,130,0)'); c.save(); c.translate(cx, cy); c.scale(1, 0.78); c.translate(-cx, -cy); c.fillStyle = gr; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.restore(); }   // where the path reaches the blue cottage: it fades into the worn doorstep
     for (let i = 0; i < 160; i++) { const k = rf() * (TRAIL.length - 1), j = Math.floor(k), f = k - j, [ax, ay] = TRAIL[j], [bx, by] = TRAIL[j + 1]; c.fillStyle = rf() < 0.5 ? 'rgba(140,110,62,.5)' : 'rgba(226,206,160,.55)'; ell(c, (ax + (bx - ax) * f + (rf() - 0.5) * 0.4) * T, (ay + (by - ay) * f + (rf() - 0.5) * 0.4) * T, 1.5 + rf() * 2.5, 1 + rf() * 1.4); }
   }
