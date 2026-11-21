@@ -1677,7 +1677,7 @@ function pondPath(c, grow, stroke) {
   for (let i = 0; i <= 72; i++) { const a = i / 72 * Math.PI * 2, w = pondWob(a); const px = (POND.x + Math.cos(a) * (POND.rx * w + grow)) * T, py = (POND.y + Math.sin(a) * (POND.ry * w + grow)) * T; i ? c.lineTo(px, py) : c.moveTo(px, py); }
   c.closePath(); if (stroke) c.stroke(); else c.fill();
 }
-const isRoad = (x, y) => (y === 14 && x >= 1 && x <= 34) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
+const isRoad = (x, y) => (y === 14 && x >= 2 && x <= 34) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
    (x === 18 && y >= 6 && y <= 30) || (y === 30 && x >= 5 && x <= 31) ||   // the village road runs on down to the bottom road, past Mr. Bohdan's and Taras's cottages
     (x === 7 && y >= 11 && y <= 13) || (x === 28 && y >= 11 && y <= 13) || (x === 11 && y === 5) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
@@ -1709,7 +1709,7 @@ function add(e) {
   for (let i = 0; i < 6; i++) add({ w: 'horod', k: 'plot' + i, x: 10.1 + (i % 3) * 1.6, y: 8.6 + Math.floor(i / 3) * 1.6, s: 1.5, kind: 'plot', i, flat: true });
   for (let i = 0; i < 4; i++) add({ w: 'parkan', x: 9.5 + i, y: 11.95, s: 1, solid: true, quiet: i !== 1, labelX: 11 });   // one label for the whole fence   // the gap at the end is the garden gate
   add({ w: 'yablunia', x: 3.5, y: 10.8, s: 2.3, solid: true, give: 'yabluko', cd: 60 });
-  add({ w: 'krynytsia', x: 14.5, y: 12.9, s: 1.5, solid: true, give: 'voda', cd: 8 });
+  add({ w: 'krynytsia', x: 1.45, y: 14.85, s: 2.0, solid: true, give: 'voda', cd: 8 });   // at the west end of the main road, past her cottage (its old spot by the garden is free)
   // Grandma Olia's corner.
   rect(26, 8, 29, 10);   // (moved 3 tiles right, off the market stall)
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5.5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
@@ -1725,7 +1725,7 @@ function add(e) {
   add({ w: 'svynia', x: 31.7, y: 10.3, kind: 'animal', r: 1.0 });
   // Landmarks.
   rect(29, 3, 31, 5); add({ w: 'tserkva', x: 30.5, y: 6, s: 5.4 });
-  add({ w: 'leleka', k: 'nest', x: 21.5, y: 5.05, s: 2.6, solid: true, hitW: 0.2 });   // (on the far side of the back road, out of the way)   // the stork's nest on its pole: storks in spring and summer, empty in autumn and winter
+  add({ w: 'leleka', k: 'nest', x: 33.2, y: 5.6, s: 2.6, solid: true, hitW: 0.2 });   // (to the right of the church, off the paths and clear of the goal panel)   // the stork's nest on its pole: storks in spring and summer, empty in autumn and winter
   add({ w: 'yizhak', k: 'yizhak', x: 16.5, y: 10.6, s: 0.7, kind: 'crawl', cx: 16.5, cy: 10.6, ph: 0.7, only: ['lito', 'osin', 'vesna'] });   // a hedgehog pottering about by the bushes
   add({ w: 'yizhak', k: 'yizhak_spyt', x: 15.2, y: 10.4, s: 0.9, only: ['zyma'], sleep: true });   // ...and asleep in his leaf pile all winter
   add({ w: 'hodivnychka', k: 'feeder', x: 6.0, y: 12.7, s: 1.6, solid: true, only: ['zyma'] });   // the bird feeder by the cottage in winter
@@ -1774,7 +1774,7 @@ function add(e) {
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
-  for (const [x, y] of [[2.5, 6.9], [15.7, 10.4], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [1.5, 12.9]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
+  for (const [x, y] of [[2.5, 6.9], [15.7, 10.4], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [15.5, 2.9], [7.5, 3.9], [27.5, 2.9], [0.9, 17.6]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [16.8, 8.7], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
