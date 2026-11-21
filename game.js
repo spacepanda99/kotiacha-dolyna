@@ -2676,14 +2676,13 @@ function add(e) {
   // Pasture.
   // (Grandma's animals are her hens, rooster and pig; the cows, horse and goats belong to the family at the bottom right)
   // the family's farmyard, in the big field below their cottage: a stable for the horse, a trough, a haystack,
-  // two cows, three goats, and their own hens and rooster by their coop
+  // one cow, three goats, and their own hens and rooster by their coop
   rect(24, 32, 25, 32); add({ w: 'stainia', x: 24.6, y: 33.6, s: 2.8, solid: true });
   add({ w: 'koryto', x: 27.6, y: 34.9, s: 1.4, solid: true });
   add({ w: 'sino', x: 30.9, y: 33.9, s: 2.2, solid: true });
   add({ w: 'kurnyk', x: 32.0, y: 37.4, s: 2.5, solid: true });
   add({ w: 'kin', x: 26.3, y: 35.6, s: 1.5, kind: 'animal', r: 1.4 });
   add({ w: 'korova', x: 28.4, y: 36.8, s: 1.4, kind: 'animal', r: 1.6, give: 'moloko', cd: 120 });
-  add({ w: 'korova', x: 30.2, y: 35.6, s: 1.4, kind: 'animal', r: 1.6, give: 'moloko', cd: 120 });
   add({ w: 'koza', x: 24.0, y: 36.6, s: 1.1, kind: 'animal', r: 1.2 });
   add({ w: 'koza', x: 25.6, y: 38.0, s: 1.1, kind: 'animal', r: 1.2 });
   add({ w: 'koza', x: 27.8, y: 38.8, s: 1.0, kind: 'animal', r: 1.2 });
