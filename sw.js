@@ -3,7 +3,7 @@
 // the saved copy is only used when there's no connection.
 // Voice clips, music and icons: saved after first use. The whole cache is renamed each release
 // (tools/release.mjs), so a new version starts clean.
-const CACHE = 'kotiacha-dolyna-268';
+const CACHE = 'kotiacha-dolyna-269';
 const CORE = ['./', 'index.html', 'game.js', 'data.js', 'manifest.webmanifest', 'version.json', 'icons/icon-192.png?v=2', 'icons/icon-512.png?v=2', 'icons/apple-touch-icon.png?v=2'];
 
 self.addEventListener('install', e => {

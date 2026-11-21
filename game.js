@@ -2755,7 +2755,7 @@ const MY_T = {
   menu: [["What would you like to know?", "Що ти хочеш знати?"], ["Ask away, detective.", "Питай, детективко."], ["Go on, then.", "Ну, питай."]],
   whoQ: ["Who do you think it was?", "Хто, на твою думку, це був?"], whereQ: ["And where is the bell now?", "А де тепер дзвін?"], withQ: ["And what did they move it with?", "А чим його перевезли?"],
   never: ["(Never mind.)", "(Неважливо.)"], thanks: ["Thank you.", "Дякую."], isee: ["I see.", "Зрозуміло."], notIt: ["Oh no, not %s.", "Ой ні, тільки не %s."],
-  hint: ["🔍 A mystery! Ask the visitors what they saw. When you know <b>who</b> took the bell, <b>where</b> it is and <b>what</b> they moved it with, tell Officer Petro by the fountain. Your notes are in the 🔍 notebook.", "🔍 Загадка! Розпитай гостей, що вони бачили. Коли знатимеш, <b>хто</b> забрав дзвін, <b>де</b> він і <b>чим</b> його перевезли, скажи офіцеру Петру біля фонтана. Твої записи — у 🔍 блокноті."],
+  hint: ["🔍 A mystery! Ask the visitors what they saw. When you know <b>who</b> took the bell, <b>where</b> it is and <b>what</b> they moved it with, tell Officer Petro by the fountain. Your notes are in the 📖 book, under 🔍 The mystery.", "🔍 Загадка! Розпитай гостей, що вони бачили. Коли знатимеш, <b>хто</b> забрав дзвін, <b>де</b> він і <b>чим</b> його перевезли, скажи офіцеру Петру біля фонтана. Твої записи — у 📖 книжці, на вкладці 🔍 Загадка."],
   // Officer Petro
   quiet: [["All quiet in Dolyna today. Just the way I like it.", "У Долині сьогодні тихо. Саме так, як я люблю."], ["Good day to you, young lady. Nothing to report. The ducks are behaving themselves.", "Добрий день, панночко. Нічого не сталося. Качки поводяться чемно."]],
   goodday: ["Good day, Officer.", "Добрий день, пане офіцере."], solved: ["That bell rings sweeter than ever, thanks to you. I'll be keeping an eye on you, detective. A friendly eye.", "Завдяки тобі цей дзвін дзвенить солодше, ніж будь-коли. Я наглядатиму за тобою, детективко. По-дружньому."],
@@ -2796,9 +2796,9 @@ let MYC = [], myLast = null;
 function myDialog(id, text, choices) {
   myLast = [id, text, choices]; MYC = choices;
   const npc = NPC[id], uk = MY_LANG === 'uk';
-  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npc.look) + '" alt=""><div style="flex:1"><div class="who">' + (uk ? npc.name : npc.nameEn) + '</div><div class="line" style="font-size:19px;line-height:1.35">' + myL(text) + '</div></div></div>' +
-    '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>' +
-    '<div style="text-align:center;margin-top:8px"><button class="subt mylang" data-a="myLang">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div>');
+  const body = myL(text), long = body.replace(/<[^>]+>/g, '').length > 230;   // a long card (a first hello with the news and the hint) gets smaller type, so it all fits
+  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npc.look) + '" alt=""' + (long ? ' style="width:64px;height:64px"' : '') + '><div style="flex:1"><div class="who" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">' + (uk ? npc.name : npc.nameEn) + '</span><button class="subt mylang" data-a="myLang" style="font-size:13px;padding:3px 10px">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div><div class="line" style="font-size:' + (long ? 16.5 : 19) + 'px;line-height:1.3">' + body + '</div></div></div>' +
+    '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>');   // (the language button sits up by their name, where it can't scroll out of sight)
 }
 function myTalk(id) {
   // every conversation opens with their spoken hello: their name the first time, nice to see you again after
