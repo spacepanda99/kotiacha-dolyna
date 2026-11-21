@@ -2445,10 +2445,13 @@ function myNotebook() {
 function myMark(key) { const M = S.mystery; if (!M) return; const n = M.notes[key] || ''; if (n.startsWith('x:')) return; M.notes[key] = n === '?' ? '' : '?'; save(); myNotebook(); }
 function petroTalk() {
   const M = S.mystery, id = 'petro';
-  if (!M || !M.started) return myDialog(id, myPick(MY_T.quiet), [{ label: MY_T.goodday, fn: closeSheet }]);
-  if (M.solved) return myDialog(id, MY_T.solved, [{ label: MY_T.thanksO, fn: closeSheet }]);
-  if (M.acc === (S.clock.day || 1)) return myDialog(id, MY_T.already, [{ label: MY_T.allright, fn: closeSheet }]);
-  myDialog(id, MY_T.askP, [{ label: MY_T.know, fn: () => petroAccuse({}) }, { label: MY_T.notyet, fn: closeSheet }]);
+  // his spoken hello first: who he is the first time, how are you after that
+  const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hi = [L.en + '<br><br>', L.uk + '<br><br>'];
+  n0.met = true; save(); say('v_petro_' + (first ? 'intro' : 'again'));
+  if (!M || !M.started) return myDialog(id, myCat(hi, myPick(MY_T.quiet)), [{ label: MY_T.goodday, fn: closeSheet }]);
+  if (M.solved) return myDialog(id, myCat(hi, MY_T.solved), [{ label: MY_T.thanksO, fn: closeSheet }]);
+  if (M.acc === (S.clock.day || 1)) return myDialog(id, myCat(hi, MY_T.already), [{ label: MY_T.allright, fn: closeSheet }]);
+  myDialog(id, myCat(hi, MY_T.askP), [{ label: MY_T.know, fn: () => petroAccuse({}) }, { label: MY_T.notyet, fn: closeSheet }]);
 }
 function petroAccuse(pick) {
   const id = 'petro';

@@ -559,9 +559,12 @@ window.DATA = {
     },
     {
       id: "petro", name: "Офіцер Петро", nameEn: "Officer Petro", voice: "orus",
-      style: "A kindly, slow-talking village policeman.",
+      style: "A kindly, slow-talking Ukrainian village policeman in his fifties. Warm and steady, a little formal and proper, with a gentle smile in his voice. Speaks Ukrainian clearly.",
       look: { skin: "#f0c4a0", shirt: "#dfe8f2", trim: "#1f3a6b", skirt: "#1f3a6b", hair: "#6b4a2a", hat: "cap", hatCol: "#1f3a6b", vest: "#2c4f8a", vestTrim: "#d9a63a", mustache: "#6b4a2a" },
-      lines: {},
+      lines: {
+        intro: { uk: "Добрий день, громадянко! Я офіцер Петро. Усе гаразд?", en: "Good day, citizen! I'm Officer Petro. Is everything all right?" },
+        again: { uk: "А, знову ти! Як ся маєш сьогодні, громадянко?", en: "Ah, you again! How are you today, citizen?" }
+      },
       wants: []
     },
     {
