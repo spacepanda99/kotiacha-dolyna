@@ -2062,17 +2062,16 @@ function add(e) {
 // market, the church, the school, the mill, or just a stroll). Whenever one passes close to a cat they stop, crouch
 // and stroke it. In the late afternoon they walk back to the station for the evening train. Tap one to say hello.
 const VIS_IDS = ['myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna'];
-const VIS_FAV = {
-  myron: { cafe: 5, station: 2, fountain: 2, market: 2 },
-  yaroslava: { cafe: 6, church: 2, fountain: 2, school: 1 },
-  ostap: { cafe: 3, lake: 3, mill: 2, stroll: 3 },
-  lesia: { cafe: 4, fountain: 3, lake: 2, market: 1 },
-  zakhar: { cafe: 4, lake: 5, stroll: 1 },
-  halyna: { cafe: 5, market: 3, church: 1, fountain: 1 },
+const VIS_FAV = {   // away from the café: the market, or a bench (how much each likes which)
+  myron: { market: 2, bench: 2 }, yaroslava: { market: 1, bench: 3 }, ostap: { market: 3, bench: 1 },
+  lesia: { market: 1, bench: 3 }, zakhar: { market: 1, bench: 2 }, halyna: { market: 4, bench: 1 },
 };
+const CAFE_CROWD = 3;   // how many of them are in the café at a time
+// the benches they sit on: where to stand to sit down, where they sit, and which way they face
+const VIS_BENCHES = [{ walk: [16.9, 18.6], at: [16.45, 17.92], face: 1 }, { walk: [21.1, 18.6], at: [21.55, 17.92], face: -1 }, { walk: [35.6, 14.2], at: [35.15, 13.42], face: 1 }];
 const VIS_SPOTS = {
   cafe: [[18.5, 36.75]], lake: [[26.6, 23.7], [31.8, 23.9], [25.6, 21.4]], fountain: [[16.9, 19.0], [21.1, 19.0], [19.0, 16.4]],
-  market: [[20.6, 14.6], [22.8, 14.6]], church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
+  market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1]], church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
 };
 const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];   // the café's chairs (the other one by the window is the cat's)
 const STATION_DOOR = [18.5, 5.6];
@@ -2084,15 +2083,21 @@ function visSpawn(id, x, y) {
   ents.push(e); return e;
 }
 function visPick(e) {
-  const fav = VIS_FAV[e.npc], keys = Object.keys(fav).filter(k => k !== e.va || k === 'cafe' && Math.random() < 0.3), tot = keys.reduce((a, k) => a + fav[k], 0);
-  let r = Math.random() * tot; for (const k of keys) { r -= fav[k]; if (r <= 0) return k; } return keys[0];
+  // the café first: whenever fewer than three are in (or on their way), somebody goes
+  const crowd = visEnts().filter(v => v !== e && (v.inside === 'cafe' || (v.va === 'cafe' && v.vp && v.vp.length))).length;
+  if (crowd < CAFE_CROWD && e.va !== 'cafe') return 'cafe';
+  const benchFree = VIS_BENCHES.some((b, i) => !visEnts().some(v => v !== e && v.bench === i));
+  const fav = VIS_FAV[e.npc], keys = Object.keys(fav).filter(k => k !== 'bench' || benchFree), tot = keys.reduce((a, k) => a + fav[k], 0);
+  let r = Math.random() * tot; for (const k of keys) { r -= fav[k]; if (r <= 0) return k; } return keys[0] || 'market';
 }
 function visGo(e, act) {
-  e.va = act; e.vt = 0; e.inside = null; e.asleep = false; e.seat = null;
+  if (e.bench != null) { const B = VIS_BENCHES[e.bench]; e.x = B.walk[0]; e.y = B.walk[1]; }
+  e.va = act; e.vt = 0; e.inside = null; e.asleep = false; e.seat = null; e.bench = null; e.sit = null;
   let to;
+  if (act === 'bench') { const free = VIS_BENCHES.map((b, i) => i).filter(i => !visEnts().some(v => v !== e && (v.bench === i || v.benchTo === i))); const i = free[Math.floor(Math.random() * free.length)]; if (i == null) act = e.va = 'market'; else { e.benchTo = i; to = VIS_BENCHES[i].walk; } }
   if (act === 'stroll') { const tiles = []; for (let y = 6; y < 31; y++) for (let x = 2; x < 38; x++) if (isRoad(x, y)) tiles.push([x + 0.5, y + 0.5]); to = tiles[Math.floor(Math.random() * tiles.length)]; }
   else if (act === 'leave') to = STATION_DOOR;
-  else { const L = VIS_SPOTS[act]; to = L[Math.floor(Math.random() * L.length)]; }
+  else if (!to) { const L = VIS_SPOTS[act]; to = L[Math.floor(Math.random() * L.length)]; }
   e.goal = to; e.vp = findPath(to[0], to[1], null, e);
   if (!e.vp.length) e.vp = [{ x: to[0], y: to[1] }];
 }
@@ -2103,7 +2108,8 @@ function visArrive(e) {
     const used = new Set(visEnts().filter(v => v.inside === 'cafe').map(v => v.seat));
     e.inside = 'cafe'; e.asleep = true; e.seat = CAFE_SEATS.find(k => !used.has(k)) || 'counter'; e.vt = 55 + Math.random() * 55; return;
   }
-  e.vt = 20 + Math.random() * 22; e.vface = Math.random() < 0.5 ? 1 : -1;
+  if (e.va === 'bench' && e.benchTo != null) { const B = VIS_BENCHES[e.benchTo]; e.bench = e.benchTo; e.benchTo = null; e.x = B.at[0]; e.y = B.at[1]; e.sit = B; e.vface = B.face; e.vt = 30 + Math.random() * 30; return; }   // sit down
+  e.vt = 22 + Math.random() * 22; e.vface = Math.random() < 0.5 ? 1 : -1;
 }
 function visitorsStep(dt) {
   const C = S.clock; if (!C) return;
@@ -2112,17 +2118,23 @@ function visitorsStep(dt) {
   if (!C.ev.visIn && !late) {
     if (TRAIN.on && TRAIN.phase === 'wait' && C.ev.mtrain === true) {
       const n = Math.min(VIS_IDS.length, Math.floor((TRAIN.wait - 1) / 0.9) + 1);
-      for (let i = visQueue; i < n && i < VIS_IDS.length; i++) { const e = visSpawn(VIS_IDS[i], STATION_DOOR[0] + (i % 2 ? 0.3 : -0.3), STATION_DOOR[1]); if (e) visGo(e, i % 3 === 0 ? 'stroll' : visPick(e)); visQueue = i + 1; }
+      for (let i = visQueue; i < n && i < VIS_IDS.length; i++) { const e = visSpawn(VIS_IDS[i], STATION_DOOR[0] + (i % 2 ? 0.3 : -0.3), STATION_DOOR[1]); if (e) visGo(e, visPick(e)); visQueue = i + 1; }
       if (visQueue >= VIS_IDS.length) { C.ev.visIn = 1; visQueue = 0; myMaybeStart(); }
     } else if (C.t >= 0.45 && !TRAIN.on) {
       C.ev.visIn = 1; myMaybeStart();
-      for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; const act = visPick(e), L = VIS_SPOTS[act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act; e.vp = []; visArrive(e); }
+      for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; const act = visPick(e); if (act === 'bench') { visGo(e, 'bench'); if (e.benchTo != null) { e.vp = []; e.va = 'bench'; visArrive(e); continue; } } const L = VIS_SPOTS[e.va === 'bench' ? 'market' : act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act === 'bench' ? 'market' : act; e.vp = []; visArrive(e); }
     }
   }
   for (const e of visEnts()) {
     if (late && e.va !== 'leave') { if (e.inside) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.75; } e.pet = null; visGo(e, 'leave'); }
     e.petCd -= dt;
-    if (e.inside) { e.vt -= dt; if (e.vt <= 0) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPick(e)); } continue; }
+    if (e.inside) { e.vt -= dt;
+      if (e.vt <= 0) {   // time to go: but only once somebody else has come in, so the café never empties
+        const vs = visEnts(), inside = vs.filter(v => v.inside === 'cafe').length, coming = vs.filter(v => v.va === 'cafe' && !v.inside);
+        if (inside > CAFE_CROWD || inside >= vs.length) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPick(e)); }
+        else if (!coming.length) { const out = vs.filter(v => !v.inside && v.va !== 'leave' && v.va !== 'cafe' && !v.pet); const r = out.sort((a, b) => (a.vt || 0) - (b.vt || 0))[0]; if (r) visGo(r, 'cafe'); }
+      }
+      continue; }
     // petting a cat
     if (e.pet) {
       e.pet.t -= dt; const ct = e.pet.cat;
@@ -2156,6 +2168,12 @@ function drawVisitor(c, x, y, e, t) {
     c.strokeStyle = L.vest || L.shirt; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(shX, shY); c.quadraticCurveTo((shX + hx) / 2, shY - 2, hx, hy); c.stroke();
     c.fillStyle = L.skin; circ(c, hx, hy, 3.3);
     for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1; c.globalAlpha = Math.sin(q * Math.PI); c.fillStyle = ['#e2392f', '#ff7aa8', '#e2392f'][i]; c.font = '700 ' + (10 + i * 2) + 'px system-ui'; c.textAlign = 'center'; c.fillText('♥', cx + (i - 1) * 8 + Math.sin(t * 2 + i) * 3, cy - 30 - q * 26); c.globalAlpha = 1; }
+    return;
+  }
+  if (e.sit) {
+    c.save(); c.beginPath(); c.rect(x - 40, y - 140, 80, 140 - 16); c.clip();
+    c.translate(x, y + 9); c.scale(e.sit.face, 1); person(c, 0, 0, Object.assign({}, L, { armR: 0.5, armL: 0.5 }), t + e.x * 3, false, 1, undefined, { side: 0.65 }); c.restore();
+    if (e.npc === 'lesia') { c.fillStyle = '#fffdf5'; rr(c, x + e.sit.face * 4 - 7, y - 33, 14, 10, 1.5); c.strokeStyle = '#8a5a2b'; c.lineWidth = 1; c.strokeRect(x + e.sit.face * 4 - 7, y - 33, 14, 10); c.fillStyle = ['#e86fa0', '#2f6fb0', '#f2c230'][Math.floor(t * 0.5) % 3]; circ(c, x + e.sit.face * 4, y - 28, 2); }   // sketching
     return;
   }
   if (e.vp && e.vp.length && e.vwalk > 0.05) {
@@ -7350,8 +7368,8 @@ function cafeBuy(id) {
   const it = CAFE_MENU.find(r => r[0] === id); if (!it) return;
   if ((S.coins || 0) < it[1] && !devOn) { toast('💰 ' + (stage() < 3 ? 'Not enough coins.' : '…'), 2000); return; }
   if (!devOn) S.coins -= it[1]; S.hearts = (S.hearts || 0) + 1; learn(id); useWord(id, true); hud(); save();
-  CAFE.served = { id, t: nowT }; closeSheet(); blip(880, 0.08); setTimeout(() => blip(1175, 0.1), 110);
-  say('w_' + id, 'p_smachnoho'); toast('😋 ' + PH.smachnoho.uk + ' +1 ❤️' + (stage() < 3 ? ' · ' + PH.smachnoho.en + ' Your ' + W[id].en + ' is on the table.' : ''), 3200);
+  closeSheet(); blip(880, 0.08); setTimeout(() => blip(1175, 0.1), 110);
+  say('v_solomiia_thanks'); toast('😊 ' + NPC.solomiia.lines.thanks.uk + ' +1 ❤️' + (stage() < 3 ? ' · ' + NPC.solomiia.lines.thanks.en : ''), 3000);
 }
 function drawCafe(t) {
   const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), fy = h * 0.66, L = skyLight(S.clock.t), day = 1 - L.dark;
@@ -8474,7 +8492,7 @@ function peopleApart(dt) {
     if (Math.hypot(end.x - P.x, end.y - P.y) < 1.2 && people.some(o => o !== P.goal && Math.hypot(o.x - end.x, o.y - end.y) < PEOPLE_GAP)) P.path = [{ x: P.x, y: P.y }];   // someone's standing there: stop short
     for (const o of people) { if (o === P.goal) continue; round(P, P.path, P.mdx || 0, P.mdy || 0, o); sep(P, o, 1); }
   }
-  for (const v of people) if (v.vis && !v.pet) {
+  for (const v of people) if (v.vis && !v.pet && !v.sit) {
     const n = v.vp && v.vp[0], md = n ? Math.hypot(n.x - v.x, n.y - v.y) || 1 : 1, mx = n ? (n.x - v.x) / md : 0, my = n ? (n.y - v.y) / md : 0;
     for (const o of people) { if (o === v) continue; if (n) round(v, v.vp, mx, my, o); sep(v, o, o.vis ? 0.5 : 1); }
     if (n) round(v, v.vp, mx, my, P); sep(v, P, 1);
