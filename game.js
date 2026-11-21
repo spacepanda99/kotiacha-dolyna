@@ -72,8 +72,9 @@ const curRecipe = () => {
   const R = D.recipes.filter(r => WINTER_DISHES.includes(r.id))[S.recipe.i % WINTER_DISHES.length];
   return winterR[R.id] || (winterR[R.id] = Object.assign({}, R, { needs: [...R.needs, 'drova'] }));
 };
-// She needs six of every ingredient, so you hear and say each word over and over.
-const NEED = 6;
+// She needs two of every ingredient: enough to hear and say each word more than once, without a dish taking
+// most of a day now that days end at night (it was six, which was a lot of fetching for 5-6 ingredients).
+const NEED = 2;
 const recipeHave = id => Math.min(NEED, S.recipe.have[id] || 0);
 const recipeTotal = R => R.needs.reduce((a, id) => a + recipeHave(id), 0);
 const save = () => { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} }, 300); };
