@@ -203,6 +203,16 @@ window.DATA = {
     { id: "rakhivnytsia", uk: "рахівниця", tr: "ra-KHIV-ny-tsia", en: "abacus", ic: "🧮", acc: "рахівницю" },
     { id: "porakhui", uk: "порахуй", tr: "po-ra-KHUI", en: "count!", ic: "🔢", verb: true },
     { id: "vidnymy", uk: "відніми", tr: "vid-NY-my", en: "take away!", ic: "➖", verb: true },
+    // --- at the café
+    { id: "kavarnia", uk: "кав'ярня", tr: "ka-VIAR-nia", en: "café", ic: "@kavarnia", acc: "кав'ярню", fact: { uk: "Львів називають кавовою столицею України.", en: "Lviv is called Ukraine's coffee capital, and its cafés are famous for coffee brewed on hot sand." } },
+    { id: "kava", uk: "кава", tr: "KA-va", en: "coffee", ic: "☕", acc: "каву" },
+    { id: "pampushka", uk: "пампушка", tr: "pam-PUSH-ka", en: "pampushka (a soft little bun)", ic: "🥯", acc: "пампушку", fact: { uk: "Пампушки з часником їдять із борщем.", en: "Garlic pampushky are eaten with borscht; sweet ones come with jam or poppy seed." } },
+    { id: "medivnyk", uk: "медівник", tr: "me-DIV-nyk", en: "honey cake", ic: "🍰" },
+    { id: "tort", uk: "торт", tr: "tort", en: "cake", ic: "🎂" },
+    { id: "kavomolka", uk: "кавомолка", tr: "ka-vo-MOL-ka", en: "coffee grinder", ic: "⚙️", acc: "кавомолку" },
+    { id: "hramofon", uk: "грамофон", tr: "hra-mo-FON", en: "gramophone", ic: "📻" },
+    { id: "menu", uk: "меню", tr: "me-NIU", en: "menu", ic: "📜" },
+    { id: "parasolka", uk: "парасолька", tr: "pa-ra-SOL-ka", en: "parasol", ic: "⛱️", acc: "парасольку" },
     // --- Ukrainian culture
     { id: "pysanka", uk: "писанка", tr: "py-SAN-ka", en: "painted Easter egg", ic: "@pysanka", acc: "писанку", fact: { uk: "Писанки малюють воском і фарбами на Великдень.", en: "Pysanky are eggs painted with wax and dyes at Easter. Every pattern has a meaning." } },
     { id: "kalyna", uk: "калина", tr: "ka-LY-na", en: "viburnum (red berries)", ic: "@kalyna", acc: "калину", fact: { uk: "Калина — символ України. Про неї співають у піснях.", en: "Kalyna, the red viburnum, is a symbol of Ukraine. It appears in songs and embroidery." } },
@@ -316,6 +326,8 @@ window.DATA = {
     { id: "skilky_yabluk", uk: "Скільки яблук?", en: "How many apples?" },
     { id: "skilky_hrush", uk: "Скільки груш?", en: "How many pears?" },
     { id: "skilky_vyshen", uk: "Скільки вишень?", en: "How many cherries?" },
+    { id: "shcho_bazhaiete", uk: "Що бажаєте?", en: "What would you like?" },
+    { id: "smachnoho", uk: "Смачного!", en: "Enjoy your meal!" },
     { id: "skilky_bude", uk: "Скільки буде?", en: "How many is it?" },
     { id: "pravylno", uk: "Правильно!", en: "Correct!" },
     { id: "shche_raz", uk: "Порахуй ще раз.", en: "Count again." },
@@ -522,6 +534,20 @@ window.DATA = {
         greet: { uk: "Доброго ранку! Що бажаєте?", en: "Good morning! What would you like?" },
         intro: { uk: "Я — Оксана. Тут усе свіже!", en: "I'm Oksana. Everything here is fresh!" },
         thanks: { uk: "Дякую за допомогу!", en: "Thank you for the help!" }
+      },
+      wants: []
+    },
+    {
+      id: "solomiia", name: "Пані Соломія", nameEn: "Mrs. Solomiia", voice: "sulafat",
+      style: "A warm, cheerful Ukrainian café owner in her thirties, kind and welcoming. Speaks Ukrainian clearly and gently, with a smile in her voice.",
+      look: { skin: "#f4cba6", shirt: "#ffffff", trim: "#c0392b", skirt: "#7a2e46", hair: "#3a2416", long: true, hat: "wreath", hatCol: "#f5b800", apron: "#fffaf0", apronTrim: "#c0392b", beads: true },
+      lines: {
+        greet: { uk: "Ласкаво просимо до кав'ярні!", en: "Welcome to the café!" },
+        intro: { uk: "Я — Соломія. Тут найсмачніша кава в долині!", en: "I'm Solomiia. The tastiest coffee in the valley is here!" },
+        chat_1: { uk: "Сьогодні я спекла свіжі пампушки.", en: "I baked fresh pampushky today." },
+        chat_2: { uk: "Котик знову спить на стільці біля вікна.", en: "The cat is asleep on the chair by the window again." },
+        chat_3: { uk: "Медівник — за рецептом моєї бабусі.", en: "The honey cake is my grandmother's recipe." },
+        thanks: { uk: "Дякую! Смачного!", en: "Thank you! Enjoy!" }
       },
       wants: []
     }

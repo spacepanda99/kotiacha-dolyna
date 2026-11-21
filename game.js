@@ -8,7 +8,7 @@ const NPC = Object.fromEntries(D.npcs.map(n => [n.id, n]));
 const PH = Object.fromEntries(D.phrases.map(p => [p.id, p]));
 const $ = s => document.querySelector(s);
 const cv = $('#c'), ctx = cv.getContext('2d');
-const T = 64, MW = 42, MH = 32;   // (36 wide until the school was added at the east end of the main road)   // (28 rows until the neighbours' cottages along the bottom road were added)
+const T = 64, MW = 42, MH = 38;   // (32 rows until the café's square was added at the bottom)   // (36 wide until the school was added at the east end of the main road)   // (28 rows until the neighbours' cottages along the bottom road were added)
 // Spaced review: how long until a word at each level is "due" again.
 const IV = [0, 60e3, 300e3, 1800e3, 4 * 3600e3, 86400e3];
 const now = () => Date.now();
@@ -515,6 +515,83 @@ const DRAW = {
     c.fillStyle = '#fffdf7'; poly(c, [[-15, -46.5], [0, -55.5], [15, -46.5]]);
     c.fillStyle = '#d43a3a'; circ(c, 0, -50, 2); c.fillStyle = '#f2c230'; circ(c, 0, -50, 0.9);   // a painted flower in the gable
     c.fillStyle = '#5a381b'; rr(c, -14, -44.8, 28, 7, 1.5); c.fillStyle = '#fff8ea'; c.font = '800 5.6px "Cozy", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ШКОЛА', 0, -41.2);
+  },
+  // The village café (кав'ярня): a cream cottage with a red clay-tile roof and an attic window with a flower box,
+  // a red-and-white striped awning over a window full of pastries, a blue door with a round pane, a carved sign
+  // on an iron bracket with a steaming cup, hanging flower baskets, a string of lights under the eaves (lit at night
+  // in the night pass), a chalkboard menu, and a bicycle with a basket of sunflowers. 100 units = 1 width; door at x = 0.
+  kavarnia(c) {
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 0, 1, 64, 5.5);
+    c.fillStyle = '#8d8a84'; c.fillRect(-56, -6, 112, 6); c.fillStyle = '#a19e97'; for (let x = -54; x < 55; x += 8.5) rr(c, x, -5.4, 7, 4.6, 1.4);   // stone footing
+    // walls: warm cream plaster with a soft wash of light, a painted blue skirting band
+    const wg = c.createLinearGradient(-56, 0, 56, 0); wg.addColorStop(0, '#f1e3c4'); wg.addColorStop(0.5, '#fbf1db'); wg.addColorStop(1, '#ecdcb8'); c.fillStyle = wg; c.fillRect(-55, -60, 110, 54);
+    c.fillStyle = 'rgba(120,96,60,.16)'; c.fillRect(-55, -59, 110, 6);
+    c.fillStyle = '#3d7cc2'; c.fillRect(-55, -11, 110, 5); c.fillStyle = '#f2c230'; for (let x = -52; x < 54; x += 7) { c.save(); c.translate(x, -8.5); c.rotate(Math.PI / 4); c.fillRect(-1.1, -1.1, 2.2, 2.2); c.restore(); }   // a yellow diamond trim
+    // a painted flower vine across the wall, like the old painted houses
+    for (let x = -50; x <= 50; x += 12.5) { if (Math.abs(x) < 14) continue; c.strokeStyle = '#4f8f3a'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(x - 5, -16); c.quadraticCurveTo(x, -19, x + 5, -16); c.stroke(); c.fillStyle = (Math.round(x / 12.5) % 2) ? '#d43a3a' : '#2f5f9e'; for (let k = 0; k < 5; k++) { const a = k * 1.2566; circ(c, x + Math.cos(a) * 1.4, -18 + Math.sin(a) * 1.4, 1); } c.fillStyle = '#f2c230'; circ(c, x, -18, 0.7); }
+    // the roof: red clay tiles in rows, a little attic gable with a round window and a flower box
+    c.fillStyle = '#b5452f'; poly(c, [[-64, -58], [-40, -92], [40, -92], [64, -58]]);
+    c.save(); c.beginPath(); c.moveTo(-64, -58); c.lineTo(-40, -92); c.lineTo(40, -92); c.lineTo(64, -58); c.closePath(); c.clip();
+    for (let r = 0; r < 7; r++) { const y = -90 + r * 5; c.fillStyle = r % 2 ? '#a83d28' : '#c24e35'; c.fillRect(-66, y, 132, 5); c.fillStyle = 'rgba(70,20,10,.28)'; for (let x = -66 + (r % 2) * 3; x < 66; x += 6) { c.beginPath(); c.arc(x + 3, y + 5, 3, Math.PI, 0); c.fill(); } }
+    c.restore();
+    c.fillStyle = '#8f3424'; c.fillRect(-65, -59.5, 130, 3); c.fillStyle = '#7a2c1e'; c.fillRect(-41, -93.5, 82, 2.5);
+    c.fillStyle = '#fbf1db'; poly(c, [[-13, -72], [0, -88], [13, -72]]); c.fillStyle = '#b5452f'; poly(c, [[-16, -71], [0, -91], [16, -71], [13, -71], [0, -87], [-13, -71]]);
+    c.fillStyle = '#2f5f9e'; circ(c, 0, -77, 5.2); c.fillStyle = '#ffe9a8'; circ(c, 0, -77, 4); c.fillStyle = '#2f5f9e'; c.fillRect(-0.5, -81, 1, 8); c.fillRect(-4, -77.5, 8, 1);
+    c.fillStyle = '#8a5a2b'; c.fillRect(-7, -71.5, 14, 2.4); for (let k = 0; k < 4; k++) { c.fillStyle = ['#d43a3a', '#f2c230', '#e86fa0', '#d43a3a'][k]; circ(c, -5 + k * 3.4, -72.3, 1.5); }
+    // chimney with a curl of smoke
+    c.fillStyle = '#9a7b62'; c.fillRect(30, -104, 9, 20); c.fillStyle = '#7d634e'; c.fillRect(28.5, -106, 12, 3.5);
+    // the big front window (left) with pastries on show, and a smaller one (right)
+    c.fillStyle = '#6b4422'; rr(c, -49, -47, 30, 29, 2);
+    c.fillStyle = '#ffe9b8'; rr(c, -47, -45, 26, 25, 1.5);
+    c.fillStyle = '#c9a06a'; c.fillRect(-47, -27, 26, 2); for (const [x, ic] of [[-42, '#e8b25a'], [-35, '#f0c879'], [-28, '#d98e3a']]) { c.fillStyle = ic; ell(c, x, -28.5, 3.2, 2.2); c.fillStyle = 'rgba(255,255,255,.5)'; ell(c, x - 0.8, -29.3, 1.2, 0.6); }   // pampushky on a tray
+    c.fillStyle = '#f3e6c8'; c.fillRect(-40, -38, 10, 6); c.fillStyle = '#8a4a2a'; c.fillRect(-40, -36, 10, 1.4); c.fillStyle = '#f2f2f2'; c.beginPath(); c.arc(-35, -38, 5.5, Math.PI, 0); c.fill(); c.strokeStyle = 'rgba(160,180,200,.7)'; c.lineWidth = 0.7; c.beginPath(); c.arc(-35, -38, 6, Math.PI, 0); c.stroke();   // the Kyiv cake under its glass dome
+    c.fillStyle = '#6b4422'; c.fillRect(-34.6, -45, 1.2, 25); c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(-46, -44, 2, 9);
+    c.fillStyle = '#6b4422'; rr(c, 22, -45, 22, 24, 2); c.fillStyle = '#ffe9b8'; rr(c, 24, -43, 18, 20, 1.5); c.fillStyle = '#6b4422'; c.fillRect(32.4, -43, 1.2, 20); c.fillRect(24, -33.5, 18, 1.2);
+    c.fillStyle = '#e9dcc0'; c.fillRect(22, -21, 22, 2.5); c.fillStyle = '#8a5a2b'; c.fillRect(22.5, -20.5, 21, 3); for (let k = 0; k < 5; k++) { c.fillStyle = ['#d43a3a', '#f2c230', '#e86fa0', '#d43a3a', '#f2c230'][k]; circ(c, 24.5 + k * 4.2, -21.4, 1.8); } c.fillStyle = '#4f8f3a'; for (let k = 0; k < 4; k++) ell(c, 26.6 + k * 4.2, -20.6, 1.4, 0.7);
+    // embroidered curtains in the small window
+    c.fillStyle = '#fffdf5'; poly(c, [[24, -43], [29, -43], [26, -33.5], [24, -33.5]]); poly(c, [[42, -43], [37, -43], [40, -33.5], [42, -33.5]]); c.fillStyle = '#d43a3a'; for (let k = 0; k < 3; k++) { c.fillRect(24.4, -41 + k * 3, 1.5, 1); c.fillRect(40, -41 + k * 3, 1.5, 1); }
+    // the striped awning over the big window
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#fffaf0' : '#d43a3a'; poly(c, [[-52 + i * 4.5, -53], [-47.5 + i * 4.5, -53], [-46.5 + i * 4.8, -46], [-51 + i * 4.8, -46]]); }
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#fffaf0' : '#d43a3a'; c.beginPath(); c.arc(-48.6 + i * 4.8, -46, 2.4, 0, Math.PI); c.fill(); }   // scalloped edge
+    c.fillStyle = '#8f2c22'; c.fillRect(-53, -54, 38, 1.6);
+    // the door: blue, with a round pane and a little lamp
+    c.fillStyle = '#6b4422'; c.fillRect(-11, -42, 22, 36);
+    c.fillStyle = '#2f6fb0'; c.fillRect(-9, -40, 18, 34); c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 0.8; c.strokeRect(-7, -22, 14, 13);
+    c.fillStyle = '#ffe9b8'; circ(c, 0, -32, 5); c.strokeStyle = '#6b4422'; c.lineWidth = 1; c.beginPath(); c.arc(0, -32, 5, 0, 7); c.moveTo(-5, -32); c.lineTo(5, -32); c.moveTo(0, -37); c.lineTo(0, -27); c.stroke();
+    c.fillStyle = '#f2c230'; circ(c, 6, -21, 1.2);
+    c.fillStyle = '#9b6b3c'; c.fillRect(-14, -6, 28, 3); c.fillRect(-11, -3, 22, 3);   // step
+    // the carved sign on its iron bracket, with a steaming cup
+    c.strokeStyle = '#2e2c2a'; c.lineWidth = 1.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(11, -50); c.lineTo(23, -50); c.moveTo(11, -45); c.quadraticCurveTo(16, -46, 18, -50); c.stroke(); c.lineWidth = 0.9; c.beginPath(); c.arc(14.5, -48, 1.8, 0.4, 5.5); c.stroke();
+    c.beginPath(); c.moveTo(14, -50); c.lineTo(14, -48.5); c.moveTo(22, -50); c.lineTo(22, -48.5); c.stroke();
+    c.fillStyle = '#7a4b22'; rr(c, 9, -48.5, 18, 11, 2); c.fillStyle = '#9b6b3c'; rr(c, 10, -47.5, 16, 9, 1.6);
+    c.fillStyle = '#fffaf0'; c.fillRect(14.5, -45.5, 6, 4.5); c.beginPath(); c.arc(21, -43.5, 1.6, -1.4, 1.4); c.strokeStyle = '#fffaf0'; c.lineWidth = 0.9; c.stroke(); c.fillRect(13.5, -41.3, 8, 0.8);
+    c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 0.6; for (const dx of [16, 18.5]) { c.beginPath(); c.moveTo(dx, -46.5); c.quadraticCurveTo(dx - 1, -48, dx, -49.5); c.stroke(); }
+    c.fillStyle = '#5a381b'; rr(c, -15, -58, 30, 6.5, 1.5); c.fillStyle = '#fff8ea'; c.font = '800 4.4px "Cozy", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText("КАВ'ЯРНЯ", 0, -54.6);
+    // hanging flower baskets either side of the door
+    for (const x of [-15.5, 15.5]) { if (x > 0) continue; c.strokeStyle = '#5a381b'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x - 2, -52); c.lineTo(x, -47); c.lineTo(x + 2, -52); c.stroke(); c.fillStyle = '#9b6b3c'; ell(c, x, -46, 3.2, 2); for (let k = 0; k < 5; k++) { c.fillStyle = ['#e86fa0', '#d43a3a', '#f2c230', '#e86fa0', '#ffffff'][k]; circ(c, x - 2.6 + k * 1.3, -48 + (k % 2), 1.2); } c.fillStyle = '#4f8f3a'; ell(c, x - 1.5, -44.5, 1.2, 2.2); ell(c, x + 1.5, -44, 1, 2); }
+    // the string of little lights under the eaves (they glow at night)
+    c.strokeStyle = '#3a3634'; c.lineWidth = 0.5; c.beginPath(); for (let i = 0; i <= 20; i++) { const x = -53 + i * 5.3, y = -56.5 + Math.sin(i / 20 * Math.PI * 4) ** 2 * 2.4; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+    for (let i = 0; i <= 20; i++) { const x = -53 + i * 5.3, y = -55.5 + Math.sin(i / 20 * Math.PI * 4) ** 2 * 2.4; c.fillStyle = ['#ffd96b', '#ff9ab0', '#9fd4ff', '#b8f08a'][i % 4]; circ(c, x, y, 0.9); }
+    // the chalkboard menu stand
+    c.fillStyle = '#6b4422'; poly(c, [[-31, 0], [-27, -15], [-26, -15], [-29, 0]]); poly(c, [[-19, 0], [-23, -15], [-24, -15], [-21, 0]]);
+    c.fillStyle = '#2f4a3a'; rr(c, -30.5, -15, 11, 12, 1); c.fillStyle = '#f5f5eb'; c.font = '700 2.6px "Cozy", system-ui'; c.textAlign = 'center'; c.fillText('МЕНЮ', -25, -12.5); c.font = '600 1.9px system-ui'; c.fillText('кава', -25, -9.8); c.fillText('пампушки', -25, -7.6); c.fillText('медівник', -25, -5.4); c.fillStyle = '#f2c230'; circ(c, -28.4, -12.6, 0.6);
+    // the bicycle with a basket of sunflowers, leaning by the small window
+    { const bx = 34, by = -3; c.strokeStyle = '#2f6fb0'; c.lineWidth = 1.1; c.beginPath(); c.arc(bx - 6, by - 2.5, 3.6, 0, 7); c.arc(bx + 7, by - 2.5, 3.6, 0, 7); c.stroke(); c.strokeStyle = '#3a3634'; c.lineWidth = 0.4; for (const wx of [bx - 6, bx + 7]) for (let a = 0; a < 6; a++) { c.beginPath(); c.moveTo(wx, by - 2.5); c.lineTo(wx + Math.cos(a) * 3.4, by - 2.5 + Math.sin(a) * 3.4); c.stroke(); }
+      c.strokeStyle = '#d43a3a'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(bx - 6, by - 2.5); c.lineTo(bx - 1, by - 8.5); c.lineTo(bx + 5, by - 8.5); c.lineTo(bx + 7, by - 2.5); c.moveTo(bx - 1, by - 8.5); c.lineTo(bx + 1, by - 2.5); c.lineTo(bx + 5, by - 8.5); c.moveTo(bx + 5, by - 8.5); c.lineTo(bx + 6, by - 11); c.stroke();
+      c.fillStyle = '#3a3634'; c.fillRect(bx - 2.5, by - 9.7, 3.5, 1); c.fillStyle = '#c8a060'; rr(c, bx + 4.6, by - 13.5, 5.6, 3.6, 0.8);
+      for (let k = 0; k < 3; k++) { const fx = bx + 5.6 + k * 1.9, fy = by - 15 - (k % 2) * 1.2; c.fillStyle = '#f5b800'; for (let p = 0; p < 8; p++) { const a = p / 8 * Math.PI * 2; circ(c, fx + Math.cos(a) * 1.1, fy + Math.sin(a) * 1.1, 0.6); } c.fillStyle = '#6b3d1a'; circ(c, fx, fy, 0.6); } }
+  },
+  // A terrace table under a blue-and-yellow parasol, with two chairs, a cloth and a cup.
+  cafestil(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 1, 26, 5);
+    c.fillStyle = '#8a5a2b'; c.fillRect(-1.2, -60, 2.4, 60);   // parasol pole
+    for (const sx of [-1, 1]) { c.fillStyle = '#9b6b3c'; c.fillRect(sx * 16 - 1, -12, 2, 12); c.fillRect(sx * 16 - 4, -12, 8, 2); c.fillRect(sx * (16 + 3) - 1, -22, 2, 12); }   // chairs
+    c.fillStyle = '#7a4e26'; c.fillRect(-1.5, -16, 3, 16); ell(c, 0, -1, 6, 1.6);
+    c.fillStyle = '#fffdf5'; ell(c, 0, -17, 14, 3.6); c.fillStyle = '#d43a3a'; for (let k = -2; k <= 2; k++) c.fillRect(k * 5 - 0.8, -14.5, 1.6, 1.6);   // cloth with red stitch
+    c.fillStyle = '#ffffff'; c.fillRect(2, -21, 4, 3.4); c.strokeStyle = '#ffffff'; c.lineWidth = 0.7; c.beginPath(); c.arc(6.4, -19.4, 1.1, -1.4, 1.4); c.stroke(); c.fillStyle = '#e9dcc0'; ell(c, 4, -17.8, 3.4, 0.8);
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#f2c230' : '#2c6ed5'; poly(c, [[0, -66], [-30 + i * 7.5, -56], [-22.5 + i * 7.5, -56]]); }
+    for (let i = 0; i < 8; i++) { c.fillStyle = i % 2 ? '#f2c230' : '#2c6ed5'; c.beginPath(); c.arc(-26.25 + i * 7.5, -56, 3.75, 0, Math.PI); c.fill(); }
+    c.fillStyle = '#8a5a2b'; circ(c, 0, -66.5, 1.5);
   },
   khata(c) { khataArt(c, KHATA_LOOK.mine); },
   khata_olia(c) { khataArt(c, KHATA_LOOK.olia); },
@@ -1739,7 +1816,7 @@ function pondPath(c, grow, stroke) {
 }
 const isRoad = (x, y) => (y === 14 && x >= 2 && x <= 38) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
    (x === 18 && y >= 6 && y <= 30) || (y === 30 && x >= 5 && x <= 31) ||   // the village road runs on down to the bottom road, past Mr. Bohdan's and Taras's cottages
-    (x === 7 && y >= 11 && y <= 13) || (x === 28 && y >= 11 && y <= 13) || (x === 11 && y === 5) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
+    (x === 7 && y >= 11 && y <= 13) || (x === 28 && y >= 11 && y <= 13) || (x === 11 && y === 5) || ((x === 15 || x === 22) && y >= 31 && y <= 36) || (y === 36 && x >= 15 && x <= 22) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
 const ents = [];
 const STALL = { x: 21.6, y: 12.95 };   // where the market stall stands (its front edge)
@@ -1796,11 +1873,13 @@ function add(e) {
   // Street lamps: one behind each bench in the square, one by the road between her cottage and the market,
   // one between the market and Grandma Olia's, one each side of the crossroads on the back road (towards the
   // windmill and towards the church), one on each half of the bottom road, and one halfway down the road from the square to it. (Tapping one says «лампа».)
-  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
+  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [22.65, 31.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   add({ w: 'lavka', ic: '@benchside', x: 35.15, y: 13.4, s: 1.25, solid: true });   // beside the school, facing its porch
-  rect(36, 11, 40, 13); add({ w: 'shkola', ic: '@shkola', k: 'school', x: 38.5, y: 14.0, s: 4.0 });   // the village school, at the east end of the main road, its door over the road's end
+  rect(36, 11, 40, 13); add({ w: 'shkola', ic: '@shkola', k: 'school', x: 38.5, y: 14.0, s: 4.0 });
+  rect(16, 33, 20, 35); add({ w: 'kavarnia', ic: '@kavarnia', k: 'cafe', x: 18.5, y: 36.0, s: 4.2 });   // the café, at the bottom centre, on its own little square
+  for (const [tx, ty] of [[16.6, 37.55], [20.4, 37.55]]) add({ w: 'parasolka', ic: '@cafestil', k: 'ctab' + tx, x: tx, y: ty, s: 1.5, solid: true });   // tables on the terrace   // the village school, at the east end of the main road, its door over the road's end
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
   for (const [x, y] of streamPts(0.1)) { const tx = Math.floor(x), ty = Math.floor(y); if (Math.hypot(x - BRIDGE.x, y - BRIDGE.y) > 0.75) block(tx, ty); }   // the stream: wade-proof, but the bridge is open
@@ -3056,6 +3135,7 @@ function interact(e) {
   if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.w === 'kavarnia') return wordCard('kavarnia', { note: '☕ ' + xl('Solomiia\'s café. Go in for a coffee, a cake and a warm welcome.'), acts: [{ k: 'enter', fn: enterCafe }] });
   if (e.w === 'shkola') return wordCard('shkola', { note: '🏫 ' + xl('The village school. Go in and have a look round the classroom.'), acts: [{ k: 'enter', fn: enterSchool }] });
   if (e.w === 'tserkva') return wordCard('tserkva', { note: '⛪ ' + xl('The village church. Go in: it is quiet and beautiful inside.'), acts: [{ k: 'enter', fn: enterChurch }] });
   if (e.w === 'mlyn') return wordCard('mlyn', { note: '⚙️ ' + xl('A working windmill: go in and grind wheat into flour.'), acts: [{ k: 'enter', fn: enterMill }] });
@@ -5370,6 +5450,7 @@ function talk(npc) {
   if (npc.id === 'olia') tutEvent('olia');
   if (npc.id === 'olia') return talkOlia(npc, n, steps);
   if (npc.id === 'oksana') { steps[steps.length - 1].after = () => setTimeout(shop, 50); save(); return dialog(npc, steps); }
+  if (npc.id === 'solomiia') { steps[steps.length - 1].after = () => setTimeout(cafeMenu, 50); save(); return dialog(npc, steps); }
   const quest = id => ({ uk: D.payLine.uk.replace('%s', W[id].acc || W[id].uk), en: D.payLine.en.replace('%s', (MASS.includes(id) ? 'some ' : 'a ') + W[id].en).replace('a a', 'an a').replace('a o', 'an o').replace('a e', 'an e'), clip: `qp_${npc.id}_${id}`, hint: (stage() < 2 ? `<img src="${iconURL(id)}" style="width:34px;height:34px;vertical-align:middle" alt=""> ` : '') + sourceHint(id) });
   questsFit();
   if (n.q) {
@@ -5542,7 +5623,7 @@ const DECOR = {
 };
 const WIN_X = 0.3;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
-const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : mode === 'church' ? 3.0 : mode === 'school' ? 2.9 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
+const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : mode === 'church' ? 3.0 : mode === 'school' ? 2.9 : mode === 'cafe' ? 3.1 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 // Your cottage and Grandma's have a strip of room left of x = 0, with the door out, so the view can pan to -roomPL().
 const roomPL = () => mode === 'home' || mode === 'olia' ? roomU() * 0.5 : 0;
@@ -6000,7 +6081,7 @@ function drawHome(t) {
 // there; tap something and she walks over to it first, then it opens. The view follows her as she goes, and
 // you can still drag to look around. Further down the floor is nearer, so she's a little bigger there.
 const IN = { x: 0, y: 0, tx: 0, ty: 0, wk: 0, step: 0, face: 1, dir: 'front', then: null, follow: false, lt: 0 };
-const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : mode === 'church' || mode === 'school' ? [h * 0.72, h * 0.9] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
+const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : mode === 'church' || mode === 'school' || mode === 'cafe' ? [h * 0.72, h * 0.9] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
 const inScale = y => { const [a, b] = inBand(); return roomU() * 0.0043 * (0.93 + 0.14 * (Math.max(a, Math.min(b, y)) - a) / Math.max(1, b - a)); };   // up a ladder she's as far back as the back wall
 function inStart(fx) { const [a, b] = inBand(); IN.x = IN.tx = fx * roomW(); IN.y = IN.ty = b - (b - a) * 0.35; IN.wk = 0; IN.then = null; IN.face = 1; IN.dir = 'front'; IN.follow = false; IN.path = null; IN.climb = false; IN.wait = 0; IN.pose = null; }
 // A scripted walk off the floor (up the mill's ladder and along the landing): points {x, y, climb, fn, wait, pose}
@@ -6686,6 +6767,170 @@ function drawChurch(t) {
   if (day > 0.3) { c.fillStyle = `rgba(255,248,225,${0.5 * wxL})`; for (let i = 0; i < 26; i++) { const q = (t * 0.015 + i * 0.037) % 1; circ(c, ((i * 0.37 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
   { const lights = [[CH.standL * RW - roomX, fy - u * 0.26, u * 0.55], [CH.standR * RW - roomX, fy - u * 0.26, u * 0.55], [CH.cx * RW - roomX, h * 0.19 + u * 0.12, u * 0.8], [CH.lect * RW - roomX, fy - u * 0.32, u * 0.3]];
     paintSky(c, w, h, t, lights, false); }
+}
+
+// ------------------------------------------------------------------ inside the café (кав'ярня)
+// Solomiia's café: warm wood, beams hung with dried herbs, garlic and peppers, embroidered towels; a counter with a
+// blue-tiled front, coffee brewing in little copper džezvas on hot sand (the Lviv way), a brass grinder, a Kyiv cake
+// under a glass dome and a basket of pampushky; shelves of honey and jam; a chalk menu; wicker lamps; two tables
+// with embroidered cloths; a cat asleep on a chair; a gramophone with notes drifting up. Tap Solomiia to order.
+const CF = { door: 0.05, gram: 0.15, tableA: 0.29, counter: 0.53, owner: 0.535, shelf: 0.68, win: 0.83, tableB: 0.86 };
+const CAFE_MENU = [['kava', 3], ['chai', 2], ['pampushka', 2], ['medivnyk', 4], ['syrnyky', 3], ['uzvar', 2]];
+const CAFE = { served: null, gramT: -9, purrT: -9 };
+let cafeHits = [];
+function enterCafe() { closeSheet(); fadeThen(enterCafeNow); }
+function enterCafeNow() {
+  mode = 'cafe'; learn('kavarnia');
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
+  roomX = CF.counter * roomW() - cv.width / 2; clampPan(); tour = null; blip(520);
+  inStart(CF.counter - 0.1);
+  setTimeout(() => { if (mode === 'cafe' && !sheetOpen()) talk(NPC.solomiia); }, 600);
+}
+function cafeTap(sx, py) {
+  const px = sx + roomX;
+  for (let i = cafeHits.length - 1; i >= 0; i--) { const r = cafeHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return inGo(r.gx, r.gy, r.fn); } }
+  if (py > cv.height * 0.68) { blip(560, 0.05); inWalkTo(px, py); }
+}
+// Her menu: tap a name to hear it, buy to have it served at your table (a heart for treating yourself).
+function cafeMenu() {
+  const st = stage();
+  const rows = CAFE_MENU.map(([id, p]) => '<div class="cmrow"><img src="' + iconURL(id) + '" alt=""><button class="subt cmname" data-a="hear" data-v="w_' + id + '"><b>' + W[id].uk + '</b>' + (st < 3 ? '<small>' + W[id].en + '</small>' : '') + '</button>' +
+    '<button class="b cmbuy" data-a="cafeBuy" data-v="' + id + '"' + ((S.coins || 0) < p && !devOn ? ' disabled' : '') + '>' + p + ' ₴</button></div>').join('');
+  openSheet('<div class="card"><div class="tag">☕ ' + W.menu.uk + (st < 3 ? ' · Menu' : '') + '</div><div class="word" style="font-size:26px">' + PH.shcho_bazhaiete.uk + '</div>' + (st < 3 ? '<div class="en">' + PH.shcho_bazhaiete.en + ' Tap a name to hear it.</div>' : '') +
+    '<div class="cafemenu">' + rows + '</div><div class="row">' + btn('close', '', lab('close'), 'ghost') + '</div></div>');
+  say('p_shcho_bazhaiete');
+}
+function cafeBuy(id) {
+  const it = CAFE_MENU.find(r => r[0] === id); if (!it) return;
+  if ((S.coins || 0) < it[1] && !devOn) { toast('💰 ' + (stage() < 3 ? 'Not enough coins.' : '…'), 2000); return; }
+  if (!devOn) S.coins -= it[1]; S.hearts = (S.hearts || 0) + 1; learn(id); useWord(id, true); hud(); save();
+  CAFE.served = { id, t: nowT }; closeSheet(); blip(880, 0.08); setTimeout(() => blip(1175, 0.1), 110);
+  say('w_' + id, 'p_smachnoho'); toast('😋 ' + PH.smachnoho.uk + ' +1 ❤️' + (stage() < 3 ? ' · ' + PH.smachnoho.en + ' Your ' + W[id].en + ' is on the table.' : ''), 3200);
+}
+function drawCafe(t) {
+  const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), fy = h * 0.66, L = skyLight(S.clock.t), day = 1 - L.dark;
+  const wxL = S.wx === 'sun' ? 1 : S.wx === 'cloud' ? 0.6 : 0.35;
+  clampPan(); inStep(t);
+  cafeHits = [];
+  const hit = (x, y, ww, hh, fn, gx) => cafeHits.push({ x, y, w: ww, h: hh, fn, gx: gx ?? x + ww / 2, gy: fy });
+  const word = (id, o) => () => wordCard(id, o);
+  let g;
+  c.save(); c.translate(-roomX, 0);
+  // ---- walls: honey-coloured wood panelling below, warm plaster above, a painted border
+  g = c.createLinearGradient(0, 0, 0, fy); g.addColorStop(0, '#f6e7c8'); g.addColorStop(1, '#efd9b0'); c.fillStyle = g; c.fillRect(0, 0, RW, fy);
+  const wy = fy - h * 0.16; g = c.createLinearGradient(0, wy, 0, fy); g.addColorStop(0, '#b07a44'); g.addColorStop(1, '#8f5f33'); c.fillStyle = g; c.fillRect(0, wy, RW, fy - wy);
+  c.fillStyle = 'rgba(60,30,10,.18)'; for (let x = 0; x < RW; x += u * 0.06) c.fillRect(x, wy, 1.5, fy - wy);
+  c.fillStyle = '#6b4422'; c.fillRect(0, wy - u * 0.014, RW, u * 0.016);
+  { const by = h * 0.05; for (let x = 0; x < RW; x += u * 0.05) { const k = Math.round(x / (u * 0.05)); c.fillStyle = k % 2 ? '#c0392b' : '#2f5f9e'; c.beginPath(); c.moveTo(x, by); c.lineTo(x + u * 0.025, by - u * 0.018); c.lineTo(x + u * 0.05, by); c.lineTo(x + u * 0.025, by + u * 0.018); c.closePath(); c.fill(); } }
+  // ---- the floor: warm wide boards, a woven runner down the middle
+  g = c.createLinearGradient(0, fy, 0, h); g.addColorStop(0, '#a8743f'); g.addColorStop(1, '#8a5a2b'); c.fillStyle = g; c.fillRect(0, fy, RW, h - fy);
+  c.strokeStyle = 'rgba(60,30,10,.22)'; c.lineWidth = 1; for (let i = 1; i < 7; i++) { const y = fy + (h - fy) * (i / 7) ** 1.3; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
+  { const ry = fy + (h - fy) * 0.38, rh = (h - fy) * 0.3; c.fillStyle = '#c0392b'; c.fillRect(CF.door * RW, ry, (CF.tableB - CF.door) * RW, rh); c.fillStyle = '#f2c230'; c.fillRect(CF.door * RW, ry + rh * 0.12, (CF.tableB - CF.door) * RW, rh * 0.06); c.fillRect(CF.door * RW, ry + rh * 0.82, (CF.tableB - CF.door) * RW, rh * 0.06); c.fillStyle = '#2f5f9e'; for (let x = CF.door * RW + u * 0.05; x < CF.tableB * RW; x += u * 0.1) { c.save(); c.translate(x, ry + rh / 2); c.rotate(Math.PI / 4); c.fillRect(-u * 0.016, -u * 0.016, u * 0.032, u * 0.032); c.restore(); } }   // a striped rug
+  // ---- beams across the ceiling, with bunches of herbs, a garlic braid and strings of red peppers hanging
+  c.fillStyle = '#6b4422'; c.fillRect(0, 0, RW, h * 0.025); for (let x = u * 0.2; x < RW; x += u * 0.7) { c.fillStyle = '#7a4e26'; c.fillRect(x - u * 0.02, 0, u * 0.04, h * 0.1); }
+  for (let i = 0; i < 9; i++) { const x = (i + 0.5) / 9 * RW, kind = i % 3, sway = Math.sin(t * 0.8 + i) * u * 0.004; c.strokeStyle = '#5a381b'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, h * 0.025); c.lineTo(x + sway, h * 0.07); c.stroke();
+    if (kind === 0) { c.fillStyle = '#7a9a4a'; for (let k = 0; k < 6; k++) ell(c, x + sway + (k - 2.5) * u * 0.006, h * 0.085 + Math.abs(k - 2.5) * u * 0.006, u * 0.006, u * 0.025); c.fillStyle = '#c9a06a'; c.fillRect(x + sway - u * 0.01, h * 0.07, u * 0.02, u * 0.008); }   // herbs
+    else if (kind === 1) { c.fillStyle = '#f3ece0'; for (let k = 0; k < 6; k++) circ(c, x + sway + (k % 2 ? 1 : -1) * u * 0.008, h * 0.075 + k * u * 0.018, u * 0.012); }   // garlic
+    else { c.fillStyle = '#c8322b'; for (let k = 0; k < 7; k++) { c.save(); c.translate(x + sway + (k % 2 ? 1 : -1) * u * 0.006, h * 0.075 + k * u * 0.016); c.rotate(k % 2 ? 0.4 : -0.4); ell(c, 0, 0, u * 0.005, u * 0.014); c.restore(); } } }   // peppers
+  // ---- the window with the real day outside, embroidered curtains, a geranium on the sill
+  { const x = CF.win * RW, ww = u * 0.34, wh = h * 0.24, wt = h * 0.16;
+    c.fillStyle = '#6b4422'; rr(c, x - ww / 2 - u * 0.018, wt - u * 0.018, ww + u * 0.036, wh + u * 0.036, u * 0.012);
+    c.save(); c.beginPath(); c.rect(x - ww / 2, wt, ww, wh); c.clip(); windowView(c, x - ww / 2, wt, ww, wh, t, 3, 3); c.restore();
+    c.fillStyle = '#6b4422'; c.fillRect(x - u * 0.006, wt, u * 0.012, wh); c.fillRect(x - ww / 2, wt + wh * 0.5, ww, u * 0.01);
+    for (const sg of [-1, 1]) { c.fillStyle = '#fffdf5'; poly(c, [[x + sg * ww / 2, wt - u * 0.02], [x + sg * ww * 0.26, wt - u * 0.02], [x + sg * ww * 0.38, wt + wh * 0.6], [x + sg * ww / 2 + sg * u * 0.02, wt + wh * 0.75]]); c.fillStyle = '#c0392b'; for (let k = 0; k < 4; k++) { c.save(); c.translate(x + sg * ww * 0.44, wt + k * wh * 0.15); c.rotate(Math.PI / 4); c.fillRect(-u * 0.006, -u * 0.006, u * 0.012, u * 0.012); c.restore(); } }
+    c.fillStyle = '#e9dcc0'; c.fillRect(x - ww / 2 - u * 0.03, wt + wh + u * 0.014, ww + u * 0.06, u * 0.02);
+    c.fillStyle = '#b5552f'; poly(c, [[x + ww * 0.2, wt + wh + u * 0.014], [x + ww * 0.34, wt + wh + u * 0.014], [x + ww * 0.32, wt + wh - u * 0.03], [x + ww * 0.22, wt + wh - u * 0.03]]); c.fillStyle = '#4f8f3a'; circ(c, x + ww * 0.27, wt + wh - u * 0.045, u * 0.025); c.fillStyle = '#e2392f'; for (let k = 0; k < 5; k++) circ(c, x + ww * 0.27 + Math.cos(k * 1.3) * u * 0.018, wt + wh - u * 0.06 + Math.sin(k * 1.3) * u * 0.01, u * 0.01);
+    if (day > 0.2) { c.fillStyle = 'rgba(255,240,200,' + (0.15 * day * wxL) + ')'; poly(c, [[x - ww / 2, wt], [x + ww / 2, wt], [x + ww * 0.1, h], [x - ww * 1.2, h]]); } }
+  // ---- embroidered towel (рушник) draped on the wall, and a little painting of the valley
+  { const x = CF.tableA * RW, y = h * 0.14, tw = u * 0.36;
+    c.fillStyle = '#fffdf5'; c.beginPath(); c.moveTo(x - tw / 2, y); c.quadraticCurveTo(x, y + h * 0.04, x + tw / 2, y); c.lineTo(x + tw / 2 - u * 0.02, y + h * 0.17); c.lineTo(x + tw / 2 - u * 0.07, y + h * 0.17); c.lineTo(x + tw / 2 - u * 0.06, y + h * 0.04); c.quadraticCurveTo(x, y + h * 0.075, x - tw / 2 + u * 0.06, y + h * 0.04); c.lineTo(x - tw / 2 + u * 0.07, y + h * 0.17); c.lineTo(x - tw / 2 + u * 0.02, y + h * 0.17); c.closePath(); c.fill();
+    c.fillStyle = '#c0392b'; for (const sg of [-1, 1]) for (let k = 0; k < 4; k++) { c.save(); c.translate(x + sg * (tw / 2 - u * 0.045), y + h * 0.08 + k * h * 0.022); c.rotate(Math.PI / 4); c.fillRect(-u * 0.008, -u * 0.008, u * 0.016, u * 0.016); c.restore(); }
+    c.fillStyle = '#6b4422'; rr(c, x - u * 0.09, y + h * 0.04, u * 0.18, h * 0.12, u * 0.008); c.fillStyle = '#9fd4f0'; c.fillRect(x - u * 0.08, y + h * 0.05, u * 0.16, h * 0.05); c.fillStyle = '#7cc26a'; c.fillRect(x - u * 0.08, y + h * 0.1, u * 0.16, h * 0.05);
+    c.fillStyle = '#fffdf5'; c.fillRect(x - u * 0.03, y + h * 0.09, u * 0.035, h * 0.025); c.fillStyle = '#c99a3a'; poly(c, [[x - u * 0.036, y + h * 0.09], [x - u * 0.0125, y + h * 0.075], [x + u * 0.011, y + h * 0.09]]); c.fillStyle = '#f2c230'; circ(c, x + u * 0.05, y + h * 0.065, u * 0.01); }
+  // ---- the chalk menu over the counter
+  { const x = CF.counter * RW - u * 0.18, y = h * 0.12, mw = u * 0.3, mh = h * 0.2;
+    c.fillStyle = '#6b4422'; rr(c, x - mw / 2 - u * 0.012, y - u * 0.012, mw + u * 0.024, mh + u * 0.024, u * 0.008); c.fillStyle = '#2f4a3a'; c.fillRect(x - mw / 2, y, mw, mh);
+    c.fillStyle = '#f5f5eb'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '800 ' + Math.round(u * 0.032) + 'px "Cozy", system-ui'; c.fillText(W.menu.uk.toUpperCase(), x, y + mh * 0.13);
+    c.font = '700 ' + Math.round(u * 0.022) + 'px "Cozy", system-ui'; CAFE_MENU.forEach(([id, p], i) => { c.textAlign = 'left'; c.fillStyle = '#f5f5eb'; c.fillText(W[id].uk, x - mw * 0.42, y + mh * (0.28 + i * 0.12)); c.textAlign = 'right'; c.fillStyle = '#ffe78a'; c.fillText(p + ' ₴', x + mw * 0.43, y + mh * (0.28 + i * 0.12)); });
+    hit(x - mw / 2, y, mw, mh, () => cafeMenu(), x); }
+  // ---- shelves of honey and jam, and a row of painted cups
+  { const x = CF.shelf * RW + u * 0.04, y = h * 0.18, sw = u * 0.3;
+    for (let r = 0; r < 2; r++) { const sy = y + r * h * 0.1; c.fillStyle = '#7a4e26'; c.fillRect(x - sw / 2, sy, sw, u * 0.014);
+      for (let k = 0; k < 5; k++) { const jx = x - sw * 0.4 + k * sw * 0.2; if (r === 0) { c.fillStyle = ['#e8a01c', '#c0392b', '#e8a01c', '#7a2e46', '#e8a01c'][k]; rr(c, jx - u * 0.018, sy - u * 0.05, u * 0.036, u * 0.05, u * 0.008); c.fillStyle = '#fffdf5'; c.fillRect(jx - u * 0.02, sy - u * 0.058, u * 0.04, u * 0.012); c.fillStyle = '#d43a3a'; c.fillRect(jx - u * 0.02, sy - u * 0.058, u * 0.04, u * 0.004); }
+        else { c.fillStyle = '#fffdf5'; rr(c, jx - u * 0.016, sy - u * 0.03, u * 0.032, u * 0.03, u * 0.006); c.fillStyle = ['#2f5f9e', '#c0392b', '#3f8a3a', '#2f5f9e', '#c0392b'][k]; c.fillRect(jx - u * 0.016, sy - u * 0.02, u * 0.032, u * 0.006); c.strokeStyle = '#fffdf5'; c.lineWidth = 1.5; c.beginPath(); c.arc(jx + u * 0.018, sy - u * 0.016, u * 0.008, -1.4, 1.4); c.stroke(); } } }
+    hit(x - sw / 2, y - u * 0.06, sw, u * 0.06, word('med'), x); }
+  // ---- Solomiia behind the counter, wiping it with a cloth (drawn before the counter front, so it hides her legs)
+  const ox = CF.owner * RW, oy = h * 0.6 + u * 0.06, osc = u * 0.0052, wipe = Math.sin(t * 2.4);
+  { const L2 = Object.assign({}, NPC.solomiia.look, { armR: 0.9 + wipe * 0.35, armL: 0.4 }); person(c, ox, oy, L2, t, false, osc); }
+  // ---- the counter: a wooden top over a front of blue-and-white painted tiles
+  { const x = CF.counter * RW, cw = u * 0.7, top = fy - h * 0.085;
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, fy + h * 0.01, cw * 0.55, h * 0.015);
+    c.fillStyle = '#f4f1ea'; c.fillRect(x - cw / 2, top, cw, fy - top);
+    const ts = (fy - top) / 3; for (let r = 0; r < 3; r++) for (let k = 0; k < Math.ceil(cw / ts); k++) { const tx = x - cw / 2 + k * ts, ty = top + r * ts; c.strokeStyle = 'rgba(47,95,158,.35)'; c.lineWidth = 1; c.strokeRect(tx, ty, ts, ts); c.fillStyle = '#2f5f9e'; c.save(); c.translate(tx + ts / 2, ty + ts / 2); for (let p = 0; p < 4; p++) { c.rotate(Math.PI / 2); ell(c, 0, -ts * 0.22, ts * 0.07, ts * 0.16); } c.fillStyle = '#e8a01c'; circ(c, 0, 0, ts * 0.07); c.restore(); }   // painted tiles
+    c.fillStyle = '#7a4e26'; c.fillRect(x - cw / 2 - u * 0.02, top - u * 0.03, cw + u * 0.04, u * 0.034); c.fillStyle = 'rgba(255,240,210,.25)'; c.fillRect(x - cw / 2 - u * 0.02, top - u * 0.03, cw + u * 0.04, u * 0.006);
+    const ct = top - u * 0.03;
+    // coffee on hot sand: a copper tray of sand with two little džezvas, gently steaming
+    { const sx = x - cw * 0.38, sw2 = u * 0.13; c.fillStyle = '#b86b2e'; rr(c, sx - sw2 / 2, ct - u * 0.025, sw2, u * 0.025, u * 0.006); c.fillStyle = '#e3c08a'; c.fillRect(sx - sw2 / 2 + u * 0.006, ct - u * 0.025, sw2 - u * 0.012, u * 0.008);
+      for (const dx of [-0.028, 0.028]) { const jx = sx + dx * u, jy = ct - u * 0.03; c.fillStyle = '#c87533'; poly(c, [[jx - u * 0.014, jy], [jx + u * 0.014, jy], [jx + u * 0.01, jy - u * 0.034], [jx - u * 0.01, jy - u * 0.034]]); c.fillStyle = '#e8a060'; c.fillRect(jx - u * 0.008, jy - u * 0.032, u * 0.004, u * 0.026); c.strokeStyle = '#7a4b22'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(jx + u * 0.012, jy - u * 0.03); c.lineTo(jx + u * 0.045, jy - u * 0.04); c.stroke();
+        for (let i = 0; i < 3; i++) { const q = (t * 0.5 + i / 3 + dx * 7) % 1; c.fillStyle = 'rgba(255,255,255,' + (0.45 * (1 - q)) + ')'; circ(c, jx + Math.sin(t * 2 + i) * u * 0.008, jy - u * 0.04 - q * u * 0.09, u * (0.008 + q * 0.012)); } }
+      hit(sx - sw2 / 2, ct - u * 0.15, sw2, u * 0.15, word('kava', { note: '☕ ' + xl('In Lviv, coffee is often brewed in a little džezva on hot sand.') }), sx); }
+    // the brass coffee grinder, its handle turning slowly
+    { const gx = x - cw * 0.2, gy = ct; c.fillStyle = '#7a4e26'; c.fillRect(gx - u * 0.022, gy - u * 0.045, u * 0.044, u * 0.045); c.fillStyle = '#c9a23a'; c.fillRect(gx - u * 0.025, gy - u * 0.06, u * 0.05, u * 0.016); c.fillStyle = '#e8c45a'; ell(c, gx, gy - u * 0.062, u * 0.02, u * 0.006);
+      const a = t * 1.5; c.strokeStyle = '#c9a23a'; c.lineWidth = u * 0.005; c.beginPath(); c.moveTo(gx, gy - u * 0.066); c.lineTo(gx + Math.cos(a) * u * 0.03, gy - u * 0.072 + Math.sin(a) * u * 0.008); c.stroke(); c.fillStyle = '#6b4422'; circ(c, gx + Math.cos(a) * u * 0.03, gy - u * 0.075 + Math.sin(a) * u * 0.008, u * 0.008);
+      hit(gx - u * 0.04, gy - u * 0.09, u * 0.08, u * 0.09, word('kavomolka'), gx); }
+    // the Kyiv cake under a glass dome
+    { const kx = x + cw * 0.2, ky = ct; c.fillStyle = '#e9dcc0'; ell(c, kx, ky - u * 0.004, u * 0.06, u * 0.01); c.fillStyle = '#f3e6c8'; c.fillRect(kx - u * 0.045, ky - u * 0.04, u * 0.09, u * 0.036); c.fillStyle = '#8a4a2a'; c.fillRect(kx - u * 0.045, ky - u * 0.026, u * 0.09, u * 0.008); c.fillStyle = '#f7f0e0'; ell(c, kx, ky - u * 0.04, u * 0.045, u * 0.008);
+      for (let k = 0; k < 5; k++) { c.fillStyle = ['#7cc26a', '#e86fa0', '#f2c230', '#e86fa0', '#7cc26a'][k]; circ(c, kx - u * 0.032 + k * u * 0.016, ky - u * 0.043, u * 0.006); }
+      c.fillStyle = 'rgba(220,235,245,.25)'; c.beginPath(); c.arc(kx, ky - u * 0.004, u * 0.06, Math.PI, 0); c.fill(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1.5; c.beginPath(); c.arc(kx, ky - u * 0.004, u * 0.06, Math.PI * 1.15, Math.PI * 1.45); c.stroke();
+      hit(kx - u * 0.06, ky - u * 0.07, u * 0.12, u * 0.07, word('tort', { note: '🎂 ' + xl('The Kyiv cake: layers of nut meringue and buttercream, a famous Ukrainian cake.') }), kx); }
+    // a basket of pampushky
+    { const px2 = x + cw * 0.38, py2 = ct; c.fillStyle = '#c8a060'; c.beginPath(); c.ellipse(px2, py2 - u * 0.015, u * 0.05, u * 0.018, 0, 0, Math.PI); c.fill(); c.fillRect(px2 - u * 0.05, py2 - u * 0.03, u * 0.1, u * 0.015);
+      for (let k = 0; k < 5; k++) { c.fillStyle = '#e0a24a'; circ(c, px2 - u * 0.032 + k * u * 0.016, py2 - u * 0.035 - (k % 2) * u * 0.01, u * 0.012); c.fillStyle = 'rgba(255,255,255,.4)'; circ(c, px2 - u * 0.035 + k * u * 0.016, py2 - u * 0.04 - (k % 2) * u * 0.01, u * 0.004); }
+      hit(px2 - u * 0.055, py2 - u * 0.06, u * 0.11, u * 0.06, word('pampushka'), px2); }
+    hit(ox - u * 0.12, oy - u * 0.42, u * 0.24, u * 0.3, () => talk(NPC.solomiia), ox); }
+  // ---- the gramophone on its little cabinet, with notes drifting up
+  { const x = CF.gram * RW, base = fy - h * 0.005, top = base - h * 0.13;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, x, base + h * 0.008, u * 0.1, h * 0.012);
+    c.fillStyle = '#7a4e26'; c.fillRect(x - u * 0.08, top, u * 0.16, base - top); c.fillStyle = '#9b6b3c'; c.fillRect(x - u * 0.07, top + u * 0.02, u * 0.14, (base - top) * 0.45); c.fillStyle = '#c9a23a'; circ(c, x, top + (base - top) * 0.6, u * 0.006);
+    c.fillStyle = '#5a381b'; c.fillRect(x - u * 0.06, top - u * 0.03, u * 0.12, u * 0.03); c.fillStyle = '#1d1d1d'; ell(c, x, top - u * 0.03, u * 0.055, u * 0.012); c.fillStyle = '#c0392b'; ell(c, x, top - u * 0.03, u * 0.012, u * 0.004);
+    c.strokeStyle = '#c9a23a'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(x + u * 0.04, top - u * 0.032); c.quadraticCurveTo(x + u * 0.05, top - u * 0.08, x + u * 0.02, top - u * 0.11); c.stroke();
+    c.fillStyle = '#d9a63a'; c.beginPath(); c.moveTo(x + u * 0.02, top - u * 0.11); c.quadraticCurveTo(x - u * 0.06, top - u * 0.14, x - u * 0.09, top - u * 0.24); c.quadraticCurveTo(x + u * 0.02, top - u * 0.28, x + u * 0.1, top - u * 0.2); c.quadraticCurveTo(x + u * 0.05, top - u * 0.16, x + u * 0.025, top - u * 0.105); c.closePath(); c.fill();
+    c.fillStyle = '#f2cc66'; c.beginPath(); c.ellipse(x + u * 0.005, top - u * 0.235, u * 0.08, u * 0.04, -0.4, 0, 7); c.fill(); c.fillStyle = '#8a5a1a'; c.beginPath(); c.ellipse(x + u * 0.005, top - u * 0.235, u * 0.055, u * 0.024, -0.4, 0, 7); c.fill();
+    const loud = t - CAFE.gramT < 6 ? 1 : 0.5;
+    for (let i = 0; i < 4; i++) { const q = (t * 0.25 + i / 4) % 1; c.globalAlpha = Math.sin(q * Math.PI) * loud; c.fillStyle = ['#c0392b', '#2f5f9e', '#3f8a3a', '#7a2e46'][i]; c.font = '700 ' + Math.round(u * (0.035 + (i % 2) * 0.01)) + 'px system-ui'; c.textAlign = 'center'; c.fillText(i % 2 ? '♫' : '♪', x - u * 0.02 + Math.sin(t + i * 2) * u * 0.05 + q * u * 0.06, top - u * 0.28 - q * h * 0.18); c.globalAlpha = 1; }
+    hit(x - u * 0.1, top - u * 0.3, u * 0.2, base - top + u * 0.3, () => { CAFE.gramT = nowT; wordCard('hramofon'); }, x); }
+  // ---- the door out
+  { const x = CF.door * RW, dw = u * 0.15, dt2 = fy - h * 0.3;
+    c.fillStyle = '#6b4422'; rr(c, x - dw / 2 - u * 0.012, dt2 - u * 0.012, dw + u * 0.024, fy - dt2 + u * 0.012, u * 0.01);
+    c.fillStyle = '#2f6fb0'; c.fillRect(x - dw / 2, dt2, dw, fy - dt2); c.fillStyle = '#ffe9b8'; circ(c, x, dt2 + (fy - dt2) * 0.22, dw * 0.25); c.strokeStyle = '#6b4422'; c.lineWidth = 2; c.beginPath(); c.arc(x, dt2 + (fy - dt2) * 0.22, dw * 0.25, 0, 7); c.stroke();
+    c.fillStyle = '#f2c230'; circ(c, x + dw * 0.32, dt2 + (fy - dt2) * 0.55, u * 0.01);
+    hit(x - dw / 2, dt2, dw, fy - dt2, () => exitHome(), x); }
+  // ---- wicker lamps hanging from the beams
+  for (const fx of [CF.tableA, CF.counter, CF.tableB]) { const x = fx * RW, ly = h * 0.2 + (fx === CF.counter ? -h * 0.06 : 0); c.strokeStyle = '#5a381b'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, h * 0.025); c.lineTo(x, ly - u * 0.03); c.stroke(); c.fillStyle = '#c8a060'; c.beginPath(); c.moveTo(x - u * 0.05, ly); c.quadraticCurveTo(x, ly - u * 0.07, x + u * 0.05, ly); c.closePath(); c.fill(); c.strokeStyle = 'rgba(90,60,20,.4)'; c.lineWidth = 1; for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x + k * u * 0.018, ly); c.lineTo(x + k * u * 0.006, ly - u * 0.035); c.stroke(); } c.fillStyle = 'rgba(255,220,140,.9)'; ell(c, x, ly + u * 0.004, u * 0.02, u * 0.008); }
+  // ---- the tables (one by the window has the cat asleep on a chair) and Vicky, back to front
+  const table = (fx, cat) => {
+    const x = fx * RW, base = fy + h * 0.1, tw = u * 0.28, top = base - h * 0.1;
+    c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, base + h * 0.008, tw * 0.6, h * 0.016);
+    for (const sg of [-1, 1]) { const chx = x + sg * tw * 0.62; c.fillStyle = '#7a4e26'; c.fillRect(chx - u * 0.035, base - h * 0.055, u * 0.07, u * 0.014); c.fillRect(chx - u * 0.03, base - h * 0.055, u * 0.008, h * 0.055); c.fillRect(chx + u * 0.022, base - h * 0.055, u * 0.008, h * 0.055); c.fillRect(chx + sg * u * 0.03 - u * 0.004, base - h * 0.13, u * 0.008, h * 0.08);
+      if (cat && sg > 0) { const br = 1 + Math.sin(t * 1.4) * 0.04, cx2 = chx, cy2 = base - h * 0.06; c.fillStyle = '#f0a24c'; ell(c, cx2, cy2 - u * 0.02, u * 0.045 * br, u * 0.026 * br); circ(c, cx2 - u * 0.035, cy2 - u * 0.03, u * 0.018); c.fillStyle = '#c26f22'; c.strokeStyle = '#c26f22'; c.lineWidth = u * 0.008; c.beginPath(); c.arc(cx2 + u * 0.01, cy2 - u * 0.012, u * 0.04, 0.2, 1.8); c.stroke(); poly(c, [[cx2 - u * 0.048, cy2 - u * 0.04], [cx2 - u * 0.043, cy2 - u * 0.058], [cx2 - u * 0.034, cy2 - u * 0.044]]); poly(c, [[cx2 - u * 0.03, cy2 - u * 0.045], [cx2 - u * 0.022, cy2 - u * 0.06], [cx2 - u * 0.02, cy2 - u * 0.042]]);
+        c.strokeStyle = '#4a2c1a'; c.lineWidth = 1; c.beginPath(); c.arc(cx2 - u * 0.04, cy2 - u * 0.03, u * 0.004, 0, Math.PI); c.stroke();
+        { const q = (t * 0.4) % 1; c.globalAlpha = Math.sin(q * Math.PI); c.fillStyle = '#4a2c1a'; c.font = '700 ' + Math.round(u * 0.025) + 'px system-ui'; c.textAlign = 'center'; c.fillText('z', cx2 - u * 0.02 + q * u * 0.03, cy2 - u * 0.07 - q * u * 0.05); c.globalAlpha = 1; }
+        hit(cx2 - u * 0.06, cy2 - u * 0.08, u * 0.12, u * 0.08, () => { CAFE.purrT = nowT; purr('Рудик'); }, cx2); } }   // a sleepy ginger cat: pet it for a purr
+    c.fillStyle = '#6b4422'; c.fillRect(x - u * 0.01, top, u * 0.02, base - top); c.fillRect(x - u * 0.05, base - u * 0.01, u * 0.1, u * 0.01);
+    c.fillStyle = '#fffdf5'; c.beginPath(); c.ellipse(x, top, tw / 2, u * 0.025, 0, 0, 7); c.fill(); c.beginPath(); c.moveTo(x - tw / 2, top); c.lineTo(x - tw * 0.46, top + h * 0.045); c.quadraticCurveTo(x, top + h * 0.06, x + tw * 0.46, top + h * 0.045); c.lineTo(x + tw / 2, top); c.closePath(); c.fill();
+    c.fillStyle = '#c0392b'; for (let k = -4; k <= 4; k++) { c.save(); c.translate(x + k * tw * 0.1, top + h * 0.04 + Math.abs(k) * -h * 0.002); c.rotate(Math.PI / 4); c.fillRect(-u * 0.006, -u * 0.006, u * 0.012, u * 0.012); c.restore(); }   // the embroidered hem
+    c.fillStyle = '#b8642e'; poly(c, [[x - u * 0.016, top], [x + u * 0.016, top], [x + u * 0.022, top - u * 0.04], [x - u * 0.022, top - u * 0.04]]); ell(c, x, top - u * 0.041, u * 0.012, u * 0.004);   // a clay jug of flowers
+    for (let k = 0; k < 5; k++) { const a = -Math.PI / 2 + (k - 2) * 0.35; c.strokeStyle = '#4f8f3a'; c.lineWidth = 1; c.beginPath(); c.moveTo(x, top - u * 0.04); c.lineTo(x + Math.cos(a) * u * 0.05, top - u * 0.04 + Math.sin(a) * u * 0.05); c.stroke(); c.fillStyle = ['#f5b800', '#d43a3a', '#2f5f9e', '#f5b800', '#e86fa0'][k]; circ(c, x + Math.cos(a) * u * 0.05, top - u * 0.04 + Math.sin(a) * u * 0.05, u * 0.01); }
+    // what you ordered, steaming, on the table nearest the counter
+    if (!cat && CAFE.served && t - CAFE.served.t < 90) { const sx2 = x + tw * 0.24, sy2 = top - u * 0.008; c.fillStyle = '#fffdf5'; ell(c, sx2, sy2, u * 0.035, u * 0.009); drawIcon(c, W[CAFE.served.id].ic[0] === '@' ? W[CAFE.served.id].ic : W[CAFE.served.id].ic, sx2, sy2 + u * 0.005, u * 0.05);
+      for (let i = 0; i < 3; i++) { const q = (t * 0.45 + i / 3) % 1; c.fillStyle = 'rgba(255,255,255,' + (0.5 * (1 - q)) + ')'; circ(c, sx2 + Math.sin(t * 2 + i) * u * 0.008, sy2 - u * 0.05 - q * u * 0.08, u * (0.007 + q * 0.01)); } }
+    hit(x - tw / 2, top - u * 0.05, tw, base - top + u * 0.05, word('stil'), x);
+  };
+  const order = [{ y: fy + h * 0.1, f: () => table(CF.tableA, false) }, { y: fy + h * 0.1, f: () => table(CF.tableB, true) }, { y: IN.y, f: () => inDraw(c, t) }];
+  order.sort((p, q) => p.y - q.y).forEach(o => o.f());
+  c.restore();
+  if (day > 0.3) { c.fillStyle = 'rgba(255,248,225,' + (0.4 * wxL) + ')'; for (let i = 0; i < 16; i++) { const q = (t * 0.015 + i * 0.06) % 1; circ(c, ((i * 0.43 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
+  { const lights = [CF.tableA, CF.counter, CF.tableB].map(fx => [fx * RW - roomX, h * 0.2, u * 0.7]); lights.push([CF.counter * RW - roomX, fy - h * 0.15, u * 0.5]); paintSky(c, w, h, t, lights, false); }
 }
 
 // ------------------------------------------------------------------ inside the village school
@@ -7447,6 +7692,18 @@ function nightLamps(c, list, sx, sy, t) {
   const W0 = c.canvas.width, H0 = c.canvas.height;
   c.save();
   for (const e of list) {
+    if (e.k === 'cafe') {
+      const sc = e.s * T * zoom / 100, bx = sx(e.x), by = sy(e.y);
+      if (bx < -200 * sc || bx > W0 + 200 * sc || by < -150 * sc || by > H0 + 120 * sc) continue;
+      const win = (x0, y0, ww, hh) => { const X = bx + x0 * sc, Y = by + y0 * sc, Wd = ww * sc, Hd = hh * sc; c.globalCompositeOperation = 'lighter'; let g = c.createRadialGradient(X + Wd / 2, Y + Hd / 2, 0, X + Wd / 2, Y + Hd / 2, Math.max(Wd, Hd) * 1.3); g.addColorStop(0, 'rgba(255,190,100,' + (0.35 * on) + ')'); g.addColorStop(1, 'rgba(255,190,100,0)'); c.fillStyle = g; c.fillRect(X - Wd, Y - Hd, Wd * 3, Hd * 3); c.globalCompositeOperation = 'source-over'; c.globalAlpha = on; g = c.createLinearGradient(0, Y, 0, Y + Hd); g.addColorStop(0, '#ffe39a'); g.addColorStop(1, '#ffb04a'); c.fillStyle = g; c.fillRect(X, Y, Wd, Hd); c.globalAlpha = 1; };
+      win(-47, -45, 26, 25); win(24, -43, 18, 20); win(-3.5, -35.5, 7, 7); win(-3, -80, 6, 6);
+      c.globalCompositeOperation = 'lighter';
+      for (let i = 0; i <= 20; i++) { const X = bx + (-53 + i * 5.3) * sc, Y = by + (-55.5 + Math.sin(i / 20 * Math.PI * 4) ** 2 * 2.4) * sc, tw = 0.6 + 0.4 * Math.sin(t * 3 + i * 1.7), col = ['255,217,107', '255,154,176', '159,212,255', '184,240,138'][i % 4];
+        const g = c.createRadialGradient(X, Y, 0, X, Y, 4 * sc); g.addColorStop(0, 'rgba(' + col + ',' + (0.9 * on * tw) + ')'); g.addColorStop(1, 'rgba(' + col + ',0)'); c.fillStyle = g; c.fillRect(X - 4 * sc, Y - 4 * sc, 8 * sc, 8 * sc); }
+      const pool = c.createRadialGradient(bx, by + 8 * sc, 0, bx, by + 8 * sc, 55 * sc); pool.addColorStop(0, 'rgba(255,190,100,' + (0.22 * on) + ')'); pool.addColorStop(1, 'rgba(255,190,100,0)'); c.fillStyle = pool; c.save(); c.translate(bx, by + 8 * sc); c.scale(1, 0.35); c.beginPath(); c.arc(0, 0, 55 * sc, 0, 7); c.restore(); c.fill();
+      c.globalCompositeOperation = 'source-over';
+      continue;
+    }
     const isHouse = e.kind === 'home' || e.k === 'oliaHome' || (e.w === 'khata' && e.kind !== 'npc');
     if (!e.street && !isHouse) continue;
     const sc = e.s * T * zoom / 100, bx = sx(e.x), by = sy(e.y);
@@ -8471,7 +8728,7 @@ function devMenu() {
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
 }
 // Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
-function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill' || mode === 'church' || mode === 'school') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
+function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill' || mode === 'church' || mode === 'school' || mode === 'cafe') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
 
 // ------------------------------------------------------------------ the title screen, drawn
 const tcv = $('#tc'), tctx = tcv.getContext('2d');
@@ -8724,6 +8981,7 @@ function frame(ms) {
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
   else if (mode === 'church') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawChurch(t); }
   else if (mode === 'school') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawSchool(t); }
+  else if (mode === 'cafe') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawCafe(t); }
   else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); }
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
@@ -8778,6 +9036,7 @@ cv.addEventListener('pointerup', ev => {
   if (mode === 'mill') return millTap(px, py);
   if (mode === 'church') return churchTap(px, py);
   if (mode === 'school') return schoolTap(px, py);
+  if (mode === 'cafe') return cafeTap(px, py);
   if (mode === 'fest') return;   // the festival takes its taps on pointerdown, for the beat
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
@@ -8926,6 +9185,7 @@ const A = {
   exitHome,
   enterHome,
   hear(v) { say(v); },
+  cafeBuy(v) { cafeBuy(v); },
   abDone() { abDone(); }, abPick(v) { abPick(v); }, abNext() { abNext(); }, abSay() { abSay(); }, abHear() { if (ab && ab.sent) { stopSay(); say(...ab.sent.clips); } }, abHearN() { if (ab) { stopSay(); say('w_' + numId(ab.list[ab.i].n)); } }, abAgain() { closeSheet(); setTimeout(abStart, 200); },
   prac(v) { pracAttempt(v); },
   subs() {
