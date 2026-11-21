@@ -1036,14 +1036,45 @@ const DRAW = {
     const t = (o && o.t) || 0, run = o && o.walk, dip = run ? 0 : Math.max(0, Math.sin(t * 0.5)) , st = run ? Math.sin(t * 6) : 0;
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 0, 30, 5);
     c.fillStyle = '#7a4e2c'; for (const [x, k] of [[-16, 1], [-11, -1], [12, -1], [17, 1]]) { c.save(); c.translate(x, -24); c.rotate(st * k * 0.25); c.fillRect(-1.6, 0, 3.2, 24); c.fillStyle = '#2a1a10'; c.fillRect(-1.8, 21, 3.6, 3); c.fillStyle = '#7a4e2c'; c.restore(); }
-    c.fillStyle = '#a8683a'; ell(c, 0, -30, 22, 10);
+    c.fillStyle = o && o.fawn ? '#b8784a' : '#a8683a'; ell(c, 0, -30, 22, 10);
+    if (o && o.fawn) { c.fillStyle = '#f6ead6'; for (const [x, y] of [[-12, -34], [-6, -36], [0, -35], [6, -36], [-9, -29], [-2, -30], [4, -31], [10, -33]]) circ(c, x, y, 1.6); }
     c.fillStyle = '#f2e2c8'; ell(c, -20, -31, 5, 6.5); c.fillStyle = '#c28456'; ell(c, 2, -26, 16, 4);
     c.save(); c.translate(16, -34); c.rotate(dip * 1.15);
     c.fillStyle = '#a8683a'; poly(c, [[-4, 4], [0, -16], [7, -16], [6, 4]]);
     c.fillStyle = '#a8683a'; ell(c, 6, -19, 7, 5); poly(c, [[8, -22], [18, -18], [17, -15], [8, -15]]); c.fillStyle = '#2a1a10'; circ(c, 17.5, -17, 1.4);
     c.fillStyle = '#9a5e34'; ell(c, 1, -25, 2.4, 5); c.fillStyle = '#e8cfb0'; ell(c, 1, -25, 1, 3.4);
-    c.strokeStyle = '#d8c6a4'; c.lineWidth = 1.8; c.lineCap = 'round'; c.beginPath(); c.moveTo(5, -23); c.lineTo(4, -36); c.moveTo(4.5, -30); c.lineTo(9, -34); c.moveTo(8, -23); c.lineTo(9, -35); c.moveTo(8.8, -31); c.lineTo(13, -33); c.stroke();
+    if (!(o && o.fawn)) c.strokeStyle = '#d8c6a4'; else c.strokeStyle = 'rgba(0,0,0,0)'; c.lineWidth = 1.8; c.lineCap = 'round'; c.beginPath(); c.moveTo(5, -23); c.lineTo(4, -36); c.moveTo(4.5, -30); c.lineTo(9, -34); c.moveTo(8, -23); c.lineTo(9, -35); c.moveTo(8.8, -31); c.lineTo(13, -33); c.stroke();
     c.fillStyle = '#1e1410'; circ(c, 9, -20, 1.4); c.fillStyle = '#fff'; circ(c, 9.4, -20.4, 0.45);
+    c.restore();
+  },
+  olenia(c, o) { DRAW.olen(c, Object.assign({}, o, { fawn: 1 })); },   // a fawn
+  zaichenia(c, o) { DRAW.zaiets(c, o); },                              // a leveret: a small hare (drawn smaller)
+  // A wild boar: dark, bristly and humped, a long snout with little tusks, rooting about with its nose down.
+  kaban(c, o) {
+    const t = (o && o.t) || 0, run = o && o.walk, st = run ? Math.sin(t * 8) : 0, root = run ? 0 : Math.max(0, Math.sin(t * 1.3)) * 4;
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 0, 30, 5);
+    c.fillStyle = '#2e241e'; for (const [x, k] of [[-14, 1], [-8, -1], [10, -1], [15, 1]]) rr(c, x - 2 + st * k * 2, -12, 4.4, 12, 1.5);
+    c.fillStyle = '#4a3a2e'; c.beginPath(); c.moveTo(-24, -12); c.bezierCurveTo(-26, -30, -6, -36, 10, -32); c.bezierCurveTo(20, -30, 22, -18, 18, -10); c.lineTo(-20, -8); c.closePath(); c.fill();
+    c.strokeStyle = '#2e241e'; c.lineWidth = 1.4; for (let i = 0; i < 9; i++) { const x = -16 + i * 3.6; c.beginPath(); c.moveTo(x, -31 + Math.abs(i - 4) * 0.6); c.lineTo(x - 1, -36 + Math.abs(i - 4) * 0.8); c.stroke(); }   // the bristly mane
+    c.fillStyle = '#5c4a3a'; ell(c, -4, -20, 14, 7);
+    c.save(); c.translate(16, -20 + root * 0.6); c.rotate(root * 0.05);
+    c.fillStyle = '#4a3a2e'; poly(c, [[-4, -10], [14, -4], [16, 4], [-2, 6]]); c.fillStyle = '#6e5a48'; ell(c, 15.5, 0, 3, 4);
+    c.fillStyle = '#1e1612'; circ(c, 15, -1, 0.9); circ(c, 16.5, 1, 0.9); circ(c, 4, -5, 1.4);
+    c.fillStyle = '#f2ead8'; poly(c, [[10, 2], [12, -3], [13, 3]]);
+    c.fillStyle = '#3a2c22'; poly(c, [[-2, -10], [1, -17], [4, -9]]);
+    c.restore();
+    c.strokeStyle = '#2e241e'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-24, -16); c.quadraticCurveTo(-30, -18, -28, -12); c.stroke();
+  },
+  // A cuckoo up a tree: grey, with a barred white chest and a long tail; it bobs and opens its beak to call.
+  zozulia(c, o) {
+    const t = (o && o.t) || 0, call = (t % 11) < 1.6, bob = call ? Math.sin(t * 9) * 1.2 : 0;
+    c.save(); c.translate(0, bob);
+    c.fillStyle = '#6b6f78'; poly(c, [[-6, -10], [-20, 4], [-15, 6], [-2, -6]]);
+    c.fillStyle = '#7d828c'; ell(c, 0, -14, 9, 7);
+    c.fillStyle = '#e8e6e0'; ell(c, 3, -11, 5.5, 4.6); c.strokeStyle = '#5a5e66'; c.lineWidth = 0.8; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-1, -14 + i * 2.2); c.lineTo(7, -13 + i * 2.2); c.stroke(); }
+    c.fillStyle = '#7d828c'; circ(c, 7, -21, 5); c.fillStyle = '#f2c230'; circ(c, 8.5, -22, 1.5); c.fillStyle = '#111'; circ(c, 8.6, -22, 0.8);
+    c.fillStyle = '#3a3a3a'; if (call) { poly(c, [[11, -22], [17, -24], [12, -20.5]]); poly(c, [[11, -20.5], [16, -18], [11.5, -19.5]]); } else poly(c, [[11, -22], [17, -21], [11, -19.5]]);
+    c.fillStyle = '#c9a43a'; c.fillRect(0, -8, 1.2, 4); c.fillRect(3, -8, 1.2, 4);
     c.restore();
   },
   // A tawny owl on the stump at night: round and fluffy, blinking big dark eyes now and then, and turning its head.
@@ -2131,16 +2162,18 @@ const BRIDGE = { x: 34.6, y: 17.1, a: -0.85 };             // across the stream,
 // The forest edge. forestDepth is how far into the trees a spot is (in tiles; 0 or less is outside). The path
 // leads in from the bridge; FOREST_GLADES are the clearings (x, y, radius); FOREST_SPOTS are kept free of trees
 // for the stump and the animals' patches.
-const TRAIL = [[35.3, 17.9], [36.5, 19.2], [37.9, 20.5], [39.4, 22.4], [40.3, 24.8], [41.5, 26.9], [42.3, 29.6], [41.6, 32.3], [42.2, 34.6], [43.6, 35.9], [42.4, 37.1], [39.6, 37.0], [37.2, 35.6], [35.6, 33.4], [33.9, 31.6], [32.1, 30.6]];   // ...and back out of the trees to the blue cottage on the bottom road
+const TRAIL = [[34.6, 17.1], [35.3, 17.9], [36.5, 19.2], [37.9, 20.5], [39.4, 22.4], [40.3, 24.8], [41.5, 26.9], [42.3, 29.6], [41.6, 32.3], [42.2, 34.6], [43.6, 35.9], [42.4, 37.1], [39.6, 37.0], [37.2, 35.6], [35.6, 33.4], [33.9, 31.6], [32.1, 30.6]];   // ...and back out of the trees to the blue cottage on the bottom road
 const FOREST_GLADES = [[42.8, 27.6, 2.6], [44.4, 35.2, 2.2], [37.9, 20.5, 1.3]];
-const FOREST_SPOTS = [[43.5, 27.1], [41.9, 26.4], [38.3, 21.0], [41.8, 31.6], [45.2, 34.6], [40.7, 33.7]];   // stump, squirrel, hare, fox, deer, hedgehog
+const FOREST_SPOTS = [[43.5, 27.1], [41.9, 26.4], [38.3, 21.0], [41.8, 31.6], [45.2, 34.6], [40.7, 33.7],   // stump, squirrel, hare, fox, deer, hedgehog
+  [46.4, 24.2], [39.0, 33.2], [47.2, 31.0], [44.2, 29.6], [38.9, 35.3], [45.0, 21.0]];   // hares and leverets, hares, deer and fawn, deer, wild boar, more hares
 function forestDepth(x, y) {
   const w = 0.55 * Math.sin(y * 1.3) + 0.35 * Math.sin(y * 2.9 + 1);
   if (y < 14.6) return y < 3.4 ? -9 : x - (43.6 + 0.5 * Math.sin(y * 1.7));
   if (y < 17.4) return x - 40.8;
   return x - ((y > 31.5 ? 34.8 : 36.4) + w);
 }
-function trailDist(x, y) { let best = 1e9; for (let i = 0; i < TRAIL.length - 1; i++) { const [ax, ay] = TRAIL[i], [bx, by] = TRAIL[i + 1], dx = bx - ax, dy = by - ay, q = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); best = Math.min(best, Math.hypot(x - ax - q * dx, y - ay - q * dy)); } return best; }
+const TRAIL_SPUR = [[34.5, 15.25], [34.5, 15.7], [34.55, 16.5], [34.6, 17.1]];   // the little path from the main road down to the bridge
+function trailDist(x, y) { let best = 1e9; for (const L of [TRAIL, TRAIL_SPUR]) for (let i = 0; i < L.length - 1; i++) { const [ax, ay] = L[i], [bx, by] = L[i + 1], dx = bx - ax, dy = by - ay, q = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); best = Math.min(best, Math.hypot(x - ax - q * dx, y - ay - q * dy)); } return best; }
 function streamPath(c) { c.beginPath(); c.moveTo(STREAM[0][0] * T, STREAM[0][1] * T); for (let i = 1; i < STREAM.length - 1; i++) { const [x0, y0] = STREAM[i], [x1, y1] = STREAM[i + 1]; c.quadraticCurveTo(x0 * T, y0 * T, (x0 + x1) / 2 * T, (y0 + y1) / 2 * T); } const L = STREAM[STREAM.length - 1]; c.lineTo(L[0] * T, L[1] * T); }
 function streamPts(step = 0.15) { const out = []; for (let i = 0; i < STREAM.length - 1; i++) { const [x0, y0] = STREAM[i], [x1, y1] = STREAM[i + 1], n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / step); for (let j = 0; j < n; j++) out.push([x0 + (x1 - x0) * j / n, y0 + (y1 - y0) * j / n, Math.atan2(y1 - y0, x1 - x0), i]); } return out; }
 function pondPath(c, grow, stroke) {
@@ -2273,7 +2306,7 @@ function add(e) {
       if (d <= 0 || r() > Math.min(0.94, 0.42 + d * 0.16) || !clearOf(x, y) || x > MW - 0.35 || y > MH - 0.15) continue;
       const tx = Math.floor(x), ty = Math.floor(y - 0.01); if (solid[ty][tx]) continue;
       const k = r(), sp = d < 1.6 ? (k < 0.5 ? 'bereza' : k < 0.85 ? 'dub' : 'yalyna') : d < 4 ? (k < 0.3 ? 'bereza' : k < 0.62 ? 'dub' : 'yalyna') : (k < 0.15 ? 'bereza' : k < 0.4 ? 'dub' : 'yalyna');
-      trees.push(add({ w: sp, ic: '@' + sp, k: 'f' + sp + trees.length, x, y, s: (sp === 'dub' ? 2.7 : sp === 'yalyna' ? 2.5 : 2.4) + r() * 0.45, solid: true, quiet: true, forest: true }));
+      trees.push(add({ w: sp, ic: '@' + sp, k: 'f' + sp + trees.length, x, y, s: (sp === 'dub' ? 2.7 : sp === 'yalyna' ? 2.5 : 2.4) + r() * 0.45, solid: true, quiet: true, forest: true, hitW: 0.15, hitLow: 1.2 }));
     }
     const near = (sp, n, fn) => trees.filter(e => e.w === sp).map(e => [e, Math.min(trailDist(e.x, e.y), ...FOREST_GLADES.map(([gx, gy, gr]) => Math.hypot(e.x - gx, e.y - gy) - gr))]).sort((a, b) => a[1] - b[1]).slice(0, n).forEach(([e]) => fn(e));
     const free = (x, y) => x > 0.5 && x < MW - 0.5 && y < MH - 0.2 && !solid[Math.floor(y)][Math.floor(x)];
@@ -2296,6 +2329,26 @@ function add(e) {
     add({ w: 'lysytsia', ic: '@lysytsia', k: 'lysytsia', x: S1[3][0], y: S1[3][1], s: 1.05, kind: 'crawl', fm: true, cx: S1[3][0], cy: S1[3][1], rx: 1.4, ry: 0.4, sp: 0.6, ph: 1.0, hrs: [0.68, 0.38] });
     add({ w: 'olen', ic: '@olen', k: 'olen', x: S1[4][0], y: S1[4][1], s: 1.5, kind: 'crawl', fm: true, cx: S1[4][0], cy: S1[4][1], rx: 0.6, ry: 0.15, sp: 0.25, ph: 0.2, hrs: [0.26, 0.66] });
     add({ w: 'yizhak', k: 'yizhak_lis', x: S1[5][0], y: S1[5][1], s: 0.7, kind: 'crawl', cx: S1[5][0], cy: S1[5][1], ph: 2.2, only: ['lito', 'osin', 'vesna'] });
+    // more of them: a family of hares (with leverets in spring and summer), deer with a fawn, a wild boar at dusk
+    const beast = (w, k, [x, y], o) => add(Object.assign({ w, ic: '@' + w, k, x, y, kind: 'crawl', fm: true, cx: x, cy: y, ph: r() * 6 }, o));
+    beast('zaiets', 'zaiets2', S1[6], { s: 0.85, rx: 1.0, ry: 0.3, sp: 1.0, hrs: [0.28, 0.84] });
+    beast('zaichenia', 'zaichenia1', [S1[6][0] + 0.6, S1[6][1] + 0.4], { s: 0.55, rx: 0.5, ry: 0.15, sp: 1.3, hrs: [0.28, 0.84], only: ['vesna', 'lito'] });
+    beast('zaichenia', 'zaichenia2', [S1[6][0] - 0.5, S1[6][1] + 0.5], { s: 0.5, rx: 0.4, ry: 0.12, sp: 1.5, hrs: [0.28, 0.84], only: ['vesna', 'lito'] });
+    beast('zaiets', 'zaiets3', S1[7], { s: 0.85, rx: 1.1, ry: 0.25, sp: 0.9, hrs: [0.28, 0.84] });
+    beast('zaichenia', 'zaichenia3', [S1[7][0] + 0.5, S1[7][1] + 0.3], { s: 0.55, rx: 0.5, ry: 0.15, sp: 1.2, hrs: [0.28, 0.84], only: ['vesna', 'lito'] });
+    beast('zaiets', 'zaiets4', S1[11], { s: 0.85, rx: 0.9, ry: 0.25, sp: 1.0, hrs: [0.28, 0.84] });
+    beast('olen', 'olen2', S1[8], { s: 1.5, rx: 0.6, ry: 0.15, sp: 0.22, hrs: [0.26, 0.7] });
+    beast('olenia', 'olenia1', [S1[8][0] + 0.7, S1[8][1] + 0.3], { s: 1.0, rx: 0.5, ry: 0.15, sp: 0.3, hrs: [0.26, 0.7] });
+    beast('olen', 'olen3', S1[9], { s: 1.45, rx: 0.5, ry: 0.12, sp: 0.2, hrs: [0.26, 0.7] });
+    beast('olenia', 'olenia2', [S1[4][0] + 0.7, S1[4][1] + 0.35], { s: 1.0, rx: 0.5, ry: 0.15, sp: 0.3, hrs: [0.26, 0.66] });
+    beast('kaban', 'kaban', S1[10], { s: 1.15, rx: 1.0, ry: 0.3, sp: 0.4, hrs: [0.64, 0.4] });
+    // a cuckoo up an oak, calling «ку-ку» through the day
+    near('dub', 6, e => { if (ents.some(q => q.k === 'zozulia') || Math.hypot(e.x - 40, e.y - 22) < 4) return; add({ w: 'zozulia', ic: '@zozulia', k: 'zozulia', x: e.x + 0.18, y: e.y + 0.02, s: 0.6, lift: 1.3 + e.s * 0.1, hrs: [0.3, 0.8], only: ['vesna', 'lito'] }); });
+    // butterflies over the clearings
+    for (const [x, y] of [[42.4, 28.4], [44.0, 26.6], [44.8, 35.9]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x * 1.7 });
+    // anything to pick that ended up on or right beside the path is moved off it, into the grass
+    for (const e of ents) if (e.give && e.x > 33 && trailDist(e.x, e.y) < 1.0) {
+      for (let k = 0; k < 24; k++) { const a = k * 0.9, rr2 = 1.0 + (k % 4) * 0.25, nx = e.x + Math.cos(a) * rr2, ny = e.y + Math.sin(a) * rr2 * 0.8; if (trailDist(nx, ny) >= 1.0 && free(nx, ny) && !ents.some(q => q !== e && q.give && Math.hypot(q.x - nx, q.y - ny) < 0.8)) { e.x = nx; e.y = ny; break; } } }
   }
   // Nothing that grows stands on a road or path: any flower, mushroom or crop that would is moved onto the grass
   // beside it (checked at its foot and a little above, since it's drawn upward from there).
@@ -2879,6 +2932,7 @@ function paintGround() {
   for (let i = 0; i < 600; i++) { c.fillStyle = r() < 0.5 ? 'rgba(116,188,88,.3)' : 'rgba(172,228,130,.3)'; ell(c, r() * GW, r() * GH, 6 + r() * 18, 3 + r() * 7); }
   // The forest floor: deeper, mossy green under the trees, with fallen leaves and needles; the clearings
   // sunnier; and the footpath, a narrow worn earth track, winding in from the bridge.
+  let FOREST_TRAIL = null;
   { const rf = seeded(23);
     for (let y = 2.5; y < MH + 0.5; y += 0.7) for (let x = 31; x < MW + 0.5; x += 0.7) { const d = forestDepth(x, y); if (d < -0.8) continue;
       const X = (x + (rf() - 0.5) * 0.5) * T, Y = (y + (rf() - 0.5) * 0.5) * T, R = T * (0.8 + rf() * 0.5), a = Math.min(0.42, 0.1 + Math.max(0, d + 0.8) * 0.07), g = c.createRadialGradient(X, Y, 0, X, Y, R);
@@ -2886,9 +2940,8 @@ function paintGround() {
     for (let i = 0; i < 1400; i++) { const x = 31 + rf() * (MW - 31), y = 3 + rf() * (MH - 3); if (forestDepth(x, y) < 0.3) continue; c.fillStyle = ['rgba(122,92,48,.35)', 'rgba(150,118,60,.3)', 'rgba(70,110,50,.35)', 'rgba(170,140,70,.25)', 'rgba(40,90,48,.35)'][i % 5]; c.save(); c.translate(x * T, y * T); c.rotate(rf() * 6); ell(c, 0, 0, 2 + rf() * 4, 1 + rf() * 1.6); c.restore(); }
     for (const [gx, gy, gr] of FOREST_GLADES) { const X = gx * T, Y = gy * T, R = gr * T * 1.15, g = c.createRadialGradient(X, Y, 0, X, Y, R); g.addColorStop(0, 'rgba(196,236,140,.55)'); g.addColorStop(0.7, 'rgba(176,224,128,.25)'); g.addColorStop(1, 'rgba(176,224,128,0)'); c.save(); c.translate(X, Y); c.scale(1, 0.85); c.translate(-X, -Y); c.fillStyle = g; c.fillRect(X - R, Y - R, R * 2, R * 2); c.restore();
       for (let i = 0; i < 14; i++) { const a = rf() * 7, dd = rf() * gr * 0.85; c.fillStyle = ['#ffffff', '#f6e27a', '#c9a8ff'][i % 3]; circ(c, (gx + Math.cos(a) * dd) * T, (gy + Math.sin(a) * dd * 0.8) * T, 1.6); } }
-    const trail = (w, col) => { c.strokeStyle = col; c.lineWidth = w; c.lineCap = c.lineJoin = 'round'; c.beginPath(); c.moveTo(TRAIL[0][0] * T, TRAIL[0][1] * T); for (let i = 1; i < TRAIL.length - 1; i++) { const [x0, y0] = TRAIL[i], [x1, y1] = TRAIL[i + 1]; c.quadraticCurveTo(x0 * T, y0 * T, (x0 + x1) / 2 * T, (y0 + y1) / 2 * T); } const L = TRAIL[TRAIL.length - 1]; c.lineTo(L[0] * T, L[1] * T); c.stroke(); };
-    trail(T * 0.95, 'rgba(60,100,40,.16)'); trail(T * 0.6, '#b39463'); trail(T * 0.42, '#c9ad7a');
-    for (let i = 0; i < 160; i++) { const k = rf() * (TRAIL.length - 1), j = Math.floor(k), f = k - j, [ax, ay] = TRAIL[j], [bx, by] = TRAIL[j + 1]; c.fillStyle = rf() < 0.5 ? 'rgba(140,110,62,.5)' : 'rgba(226,206,160,.55)'; ell(c, (ax + (bx - ax) * f + (rf() - 0.5) * 0.4) * T, (ay + (by - ay) * f + (rf() - 0.5) * 0.4) * T, 1.5 + rf() * 2.5, 1 + rf() * 1.4); }
+    const trail = (w, col) => { c.strokeStyle = col; c.lineWidth = w; c.lineCap = c.lineJoin = 'round'; c.beginPath(); for (const TR of [TRAIL, TRAIL_SPUR]) { c.moveTo(TR[0][0] * T, TR[0][1] * T); for (let i = 1; i < TR.length - 1; i++) { const [x0, y0] = TR[i], [x1, y1] = TR[i + 1]; c.quadraticCurveTo(x0 * T, y0 * T, (x0 + x1) / 2 * T, (y0 + y1) / 2 * T); } const L = TR[TR.length - 1]; c.lineTo(L[0] * T, L[1] * T); } c.stroke(); };
+    FOREST_TRAIL = trail;
   }
   // Roads: one continuous ribbon with round corners (thick round lines joining the road tiles).
   const road = (w, col) => {
@@ -2935,6 +2988,11 @@ function paintGround() {
     if (onRoadish(x / T, y / T) || inPond(x / T, y / T, 0.45)) continue;
     c.fillStyle = col; for (let k = 0; k < 5; k++) circ(c, x + Math.cos(k * 1.257) * pr, y + Math.sin(k * 1.257) * pr, pr * 0.85);
     c.fillStyle = col === '#ffe36e' ? '#f08a2c' : '#ffd23f'; circ(c, x, y, pr * 0.7);
+  }
+  // the forest path and the little one up to the road, over the road edges but under the stream bank
+  { const trail = FOREST_TRAIL, rf = seeded(29);
+    trail(T * 0.95, 'rgba(60,100,40,.16)'); trail(T * 0.6, '#b39463'); trail(T * 0.42, '#c9ad7a');
+    for (let i = 0; i < 160; i++) { const k = rf() * (TRAIL.length - 1), j = Math.floor(k), f = k - j, [ax, ay] = TRAIL[j], [bx, by] = TRAIL[j + 1]; c.fillStyle = rf() < 0.5 ? 'rgba(140,110,62,.5)' : 'rgba(226,206,160,.55)'; ell(c, (ax + (bx - ax) * f + (rf() - 0.5) * 0.4) * T, (ay + (by - ay) * f + (rf() - 0.5) * 0.4) * T, 1.5 + rf() * 2.5, 1 + rf() * 1.4); }
   }
   // The stream: damp grass, a pebbly bank, then running water, painted before the pond so they join.
   c.lineCap = 'round'; c.lineJoin = 'round';
@@ -8887,6 +8945,9 @@ function forestSounds(t) {
   const near = k => { const e = ents.find(q => q.k === k); if (!e || goneNow(e)) return 0; const d = Math.hypot(P.x - e.x, P.y - e.y); return d < 8 ? 1 - d / 8 : 0; };
   const pk = Math.floor(t / 2.6), dv = near('diatel');
   if (pk !== FSND.peck) { FSND.peck = pk; if (dv > 0) for (let i = 0; i < 9; i++) { const o = actx.createOscillator(), g = actx.createGain(), at = actx.currentTime + i * 0.072; o.type = 'triangle'; o.frequency.value = 1500 - i * 25; g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.07 * dv, at + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.035); o.connect(g); g.connect(actx.destination); o.start(at); o.stop(at + 0.04); } }
+  const cv2 = near('zozulia');
+  if (cv2 > 0 && t > (FSND.cuckoo || 0)) { FSND.cuckoo = t + 10 + Math.random() * 8;
+    for (let i = 0; i < 2 + Math.floor(Math.random() * 2); i++) for (const [d0, f] of [[0, 700], [0.32, 560]]) { const o = actx.createOscillator(), g = actx.createGain(), at = actx.currentTime + i * 0.9 + d0; o.type = 'sine'; o.frequency.setValueAtTime(f, at); o.frequency.linearRampToValueAtTime(f * 0.97, at + 0.24); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.05 * cv2, at + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.26); o.connect(g); g.connect(actx.destination); o.start(at); o.stop(at + 0.3); } }
   const ov = near('sova');
   if (ov > 0 && t > FSND.hoot) { FSND.hoot = t + 8 + Math.random() * 6;
     for (const [d0, f0, f1, len] of [[0, 430, 390, 0.42], [0.95, 410, 400, 0.14], [1.2, 420, 360, 0.55]]) { const o = actx.createOscillator(), g = actx.createGain(), at = actx.currentTime + d0; o.type = 'sine'; o.frequency.setValueAtTime(f0, at); o.frequency.exponentialRampToValueAtTime(f1, at + len); g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.06 * ov, at + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, at + len); o.connect(g); g.connect(actx.destination); o.start(at); o.stop(at + len + 0.05); } }
@@ -9995,8 +10056,10 @@ function frame(ms) {
 // ------------------------------------------------------------------ taps
 function hitEnt(wx, wy) {
   let best = null, bd = 1e9;
+  const onTrail = trailDist(wx, wy) < 0.42;   // the forest path: a tap there means walk
   for (const e of ents) {
     if ((e.hide && !ready(e)) || goneNow(e)) continue;
+    if (onTrail && !e.an && e.kind !== 'crawl' && e.kind !== 'npc') continue;
     const s = Math.max(0.75, e.s), cx = e.x, cy = (e.kind === 'pond' ? e.y - 0.2 : e.flat ? e.y : e.y - s * 0.45) - (e.lift || 0);
     let d;
     if (e.kind === 'pond') { if (!inPond(wx, wy)) continue; d = 5; }
