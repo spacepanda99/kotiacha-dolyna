@@ -2698,7 +2698,7 @@ function myNotebook() {
     return '<button class="mynb' + (out ? ' out' : n === '?' ? ' hunch' : '') + '" data-a="myMark" data-v="' + k + ':' + v + '"><span>' + (out ? '✗' : n === '?' ? '★' : '·') + '</span><b>' + name + '</b>' + (src ? '<small>' + src + '</small>' : '') + '</button>'; };
   const sec = (title, k, list) => '<div class="mysec"><div class="mysech">' + title + '</div>' + list.map(([v, name]) => row(k, v, name)).join('') + '</div>';
   const heard = M.heard.slice().reverse().map(h => '<div class="myheard"><b>' + MY_NAME[h.id][uk ? 1 : 0] + ':</b> ' + myL(h.txt) + '</div>').join('') || '<div class="myheard">' + (uk ? 'Поки нічого. Поговори з гостями.' : 'Nothing yet. Go and talk to the visitors.') + '</div>';
-  openSheet('<div class="card" style="text-align:left"><div class="tag">🔍 ' + (uk ? 'Детективний блокнот' : 'Detective notebook') + '</div><div class="word" style="font-size:22px">' + (uk ? 'Зниклий святковий дзвін' : 'The missing festival bell') + '</div><div class="en" style="font-size:14px">' + (uk ? '✗ виключено (і хто сказав) · торкнися рядка, щоб позначити здогадку ★' : '✗ ruled out (and who said so) · tap a line to mark a hunch ★') + '</div>' +
+  openSheet(bookTabs('my') + '<div class="card" style="text-align:left"><div class="tag">🔍 ' + (uk ? 'Детективний блокнот' : 'Detective notebook') + '</div><div class="word" style="font-size:22px">' + (uk ? 'Зниклий святковий дзвін' : 'The missing festival bell') + '</div><div class="en" style="font-size:14px">' + (uk ? '✗ виключено (і хто сказав) · торкнися рядка, щоб позначити здогадку ★' : '✗ ruled out (and who said so) · tap a line to mark a hunch ★') + '</div>' +
     '<div class="mygrid">' + sec(uk ? 'Хто?' : 'Who?', 'who', MY_WHO.map(x => [x, uk ? NPC[x].name : NPC[x].nameEn])) + sec(uk ? 'Де?' : 'Where?', 'where', Object.entries(MY_WHERE).map(([v, n]) => [v, cap(n[uk ? 1 : 0])])) + sec(uk ? 'Чим?' : 'With what?', 'with', Object.entries(MY_WITH).map(([v, n]) => [v, cap(n[uk ? 1 : 0])])) + '</div>' +
     '<details class="myclues"><summary>' + (uk ? 'Усе, що ти чула' : 'Everything you\'ve heard') + ' (' + M.heard.length + ')</summary>' + heard + '</details>' +
     '<div class="row"><button class="subt mylang" data-a="myLangNb">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button>' + btn('close', '', lab('close'), 'ghost') + '</div></div>');
@@ -6517,12 +6517,13 @@ function bagSheet() {
   learn('koshyk');
   openSheet(`<h3><span><span class="uk">${W.koshyk.uk}</span> ${stage() < 2 ? `<small>${W.koshyk.en}</small>` : ''}</span><span>💰 ${S.coins} ₴</span></h3>${all.length ? shelves : `<div class="muted">${D.ui.empty[0]}${stage() < 3 ? ' · ' + D.ui.empty[1] : ''}</div>`}`);
 }
+const bookTabs = on => S.mystery && (S.mystery.started || S.mystery.solved) ? `<div class="tabs"><button class="tab${on === 'words' ? ' on' : ''}" data-a="words">📖 ${D.ui.words[0]}<small>Words</small></button><button class="tab${on === 'my' ? ' on' : ''}" data-a="myBook">🔍 Загадка<small>The mystery</small></button></div>` : '';
 function wordsSheet() {
   const ids = Object.keys(S.words).sort((a, b) => S.words[a].l - S.words[b].l);
   const m = mastered(), st = stage();
   const title = ['', 'Гість · Guest', 'Сусід · Neighbour', 'Свій · One of us'][st];
   const goal = STAGES[st + 1], next = goal ? goal.words : D.words.length, day = (S.clock && S.clock.day) || 1;
-  openSheet(`<h3><span><span class="uk">${D.ui.words[0]}</span> ${st < 3 ? `<small>${D.ui.words[1]}</small>` : ''}</span><small>🐈 ${catFriends()}/${D.cats.length} · ${ids.length} / ${D.words.length}</small></h3>
+  openSheet(bookTabs('words') + `<h3><span><span class="uk">${D.ui.words[0]}</span> ${st < 3 ? `<small>${D.ui.words[1]}</small>` : ''}</span><small>🐈 ${catFriends()}/${D.cats.length} · ${ids.length} / ${D.words.length}</small></h3>
     <div style="font-weight:800">${title}</div>
     <div class="bar"><i style="width:${Math.min(100, Math.round(m / next * 100))}%"></i></div>
     ${st < 3 ? `<div class="muted" style="padding:0 0 10px;text-align:left">${m} well-known words · day ${day} (${W[season()].en}). With ${next} words${goal && day < goal.day ? ` and from day ${goal.day} (${st === 1 ? 'autumn' : 'your second summer'})` : ''}, ${st === 1 ? 'the villagers stop translating themselves' : 'the village goes fully Ukrainian'}.</div>` : ''}
@@ -9969,7 +9970,9 @@ function drawTitle(t) {
 
 let last = 0, running = false;
 let nowT = 0, waterFx = null, slowT = 0;
+let busyUI = false;
 function frame(ms) {
+  { const b = !!(mg || chop || ck || ab || fest || bed); if (b !== busyUI) { busyUI = b; document.body.classList.toggle('busy', b); } }
   const raw = t0 => t0 - last || 0.016, t = ms / 1000, real = raw(t), dt = Math.min(0.05, real); last = t; nowT = t;
   // A phone that cannot keep up (under 25 frames a second for three seconds) drops the finery and stays smooth.
   if (running && !GFX.lock && GFX.cloud) { slowT = real > 0.04 && real < 0.5 ? slowT + real : Math.max(0, slowT - real * 2); if (slowT > 3) GFX.cloud = GFX.motes = GFX.smoke = GFX.sway = 0; }
