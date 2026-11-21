@@ -91,6 +91,11 @@
   .card .row { gap:8px; } .card .row .b:not(.round) { padding-left:13px; padding-right:13px; }   /* 🔊, practice, an action and OK fit on one line on a phone */
   .prac { background:#eef6e2; border-radius:12px; padding:8px 12px; margin-top:10px; font-size:15px; display:flex; align-items:center; justify-content:center; gap:10px; min-height:46px; text-align:left; }
   .prac[hidden] { display:none; }
+  .b.mych { display:block; width:100%; text-align:left; margin:6px 0 0; font-size:16px; padding:10px 14px; min-height:0; }
+  .mygrid { display:flex; flex-direction:column; gap:8px; margin:10px 0 6px; } .mysech { font-weight:800; font-size:15px; color:#8a5a2b; margin:2px 0 4px; }
+  .mysec { display:flex; flex-wrap:wrap; gap:6px; } .mynb { display:flex; align-items:center; gap:6px; background:#fff; border-radius:10px; padding:6px 9px; box-shadow:0 2px 0 #eadfc9; font-size:14px; text-align:left; }
+  .mynb span { width:14px; text-align:center; font-weight:900; color:#8a7566; } .mynb small { color:#8a7566; font-size:11px; } .mynb.out b { text-decoration:line-through; color:#a89888; } .mynb.out span { color:#c0392b; } .mynb.hunch { background:#fff3c4; } .mynb.hunch span { color:#e0a01c; }
+  .myclues { margin-top:8px; font-size:14px; } .myclues summary { font-weight:800; cursor:pointer; } .myheard { background:#fffaf0; border-radius:8px; padding:6px 9px; margin-top:6px; line-height:1.35; }
   .cafemenu { display:flex; flex-direction:column; gap:6px; margin:10px 0 2px; } .cmrow { display:flex; align-items:center; gap:10px; background:#fff; border-radius:14px; padding:6px 10px; box-shadow:0 2px 0 #eadfc9; } .cmrow img { width:38px; height:38px; } .cmname { flex:1; text-align:left; padding:4px 0; } .cmname b { font-size:19px; color:#3b2a1d; } .cmname small { display:block; font-size:13px; } .b.cmbuy { min-height:40px; padding:6px 14px; font-size:17px; } .b.cmbuy[disabled] { opacity:.4; }
   .b.abnum { background:#2f4a3a; color:#f5f5eb; box-shadow:0 4px 0 #1c2e24; font-size:30px; min-width:84px; font-family:"Cozy", system-ui; } .b.abnum small { color:#cfe3d4; font-size:14px; opacity:1; } .b.abnum:active { box-shadow:0 1px 0 #1c2e24; }
   .prac .prres { text-align:center; } .prac .st { font-size:25px; letter-spacing:0; line-height:1.15; white-space:nowrap; } .prac .st b { font-size:19px; color:#4a2c1a; margin-left:6px; } .prac .tip { display:block; font-size:17px; font-weight:600; margin-top:4px; color:#3b2a1d; }
@@ -264,6 +269,7 @@
   <button class="pill btn" data-a="music" id="musicBtn" aria-label="Музика / Music">🎵</button>
   <button class="pill btn" data-a="words" aria-label="Словник / Word book">📖</button>
   <button class="pill btn" data-a="bag" aria-label="Кошик / Basket">🧺</button>
+  <button class="pill btn" data-a="myBook" id="myBtn" aria-label="Detective notebook" style="display:none">🔍</button>
   <button class="pill btn" data-a="devMenu" id="devBtn" aria-label="Developer" style="display:none">🛠️</button>
   <button class="pill btn" data-a="quit" id="quit" aria-label="Вийти / Exit">✕</button>
 </div>
@@ -288,12 +294,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v249</div>
+  <div class="ver">v250</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '249';</script>
-<script src="data.js?v=249"></script>
-<script src="game.js?v=249"></script>
+<script>window.APP_VERSION = '250';</script>
+<script src="data.js?v=250"></script>
+<script src="game.js?v=250"></script>
 </body>
 </html>

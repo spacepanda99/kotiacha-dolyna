@@ -667,6 +667,17 @@ const DRAW = {
     c.fillStyle = '#6b4422'; c.fillRect(-1.6, -78, 3.2, 78); c.fillStyle = '#5a381b'; c.fillRect(-9, -72, 18, 2.4);
     c.fillStyle = '#9fd4f0'; for (const x of [-7.5, -3, 3, 7.5]) { c.fillRect(x - 0.8, -75, 1.6, 3); }
   },
+  // The golden bell trophy: a little gilded bell on a wooden plinth, with a blue-and-yellow ribbon.
+  kubok(c) {
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 0, 0, 30, 6);
+    c.fillStyle = '#6b4422'; rr(c, -26, -16, 52, 16, 3); c.fillStyle = '#8a5a2b'; rr(c, -22, -26, 44, 11, 3); c.fillStyle = '#d9a63a'; c.fillRect(-14, -13, 28, 6); c.fillStyle = '#6b4422'; c.font = '700 5px system-ui'; c.textAlign = 'center'; c.fillText('ДОЛИНА', 0, -8.4);
+    const g = c.createLinearGradient(-20, 0, 20, 0); g.addColorStop(0, '#b8862a'); g.addColorStop(0.4, '#ffe08a'); g.addColorStop(1, '#a8761e'); c.fillStyle = g;
+    c.beginPath(); c.moveTo(-24, -28); c.quadraticCurveTo(-24, -76, 0, -78); c.quadraticCurveTo(24, -76, 24, -28); c.closePath(); c.fill();
+    c.fillStyle = '#c99a32'; ell(c, 0, -28, 25, 5); c.fillStyle = '#8a6a2a'; circ(c, 0, -27, 4.5);
+    c.fillStyle = 'rgba(255,255,255,.55)'; ell(c, -9, -58, 4, 12);
+    c.fillStyle = '#c99a32'; c.beginPath(); c.arc(0, -81, 5, Math.PI, 0); c.lineWidth = 3; c.strokeStyle = '#c99a32'; c.stroke();
+    c.fillStyle = '#2c6ed5'; poly(c, [[-24, -38], [-36, -22], [-30, -20], [-22, -32]]); c.fillStyle = '#f2c230'; poly(c, [[24, -38], [36, -22], [30, -20], [22, -32]]);
+  },
   khata(c) { khataArt(c, KHATA_LOOK.mine); },
   khata_olia(c) { khataArt(c, KHATA_LOOK.olia); },
   khata_bohdan(c) { khataArt(c, KHATA_LOOK.bohdan); },
@@ -2007,6 +2018,7 @@ function add(e) {
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
   // (the flag now flies from the station's clock tower, not the fountain)
+  add({ w: 'khata', k: 'n_petro', x: 19.0, y: 16.35, kind: 'npc', npc: 'petro', s: 1.3 });   // Officer Petro, the village constable, just above the fountain
   add({ w: 'koloda', k: 'koloda', x: 4.75, y: 12.75, s: 1.0, solid: true });   // the chopping block: split firewood
   add({ w: 'doshka', k: 'board', x: 23.6, y: 17.5, s: 1.35, solid: true });   // the notice board: what the next festival needs
   add({ w: 'lastivka', x: 12.6, y: 6.9, s: 0.7, kind: 'fly', cx: 12.6, cy: 6.9, ph: 1.3, swoop: true });
@@ -2101,9 +2113,9 @@ function visitorsStep(dt) {
     if (TRAIN.on && TRAIN.phase === 'wait' && C.ev.mtrain === true) {
       const n = Math.min(VIS_IDS.length, Math.floor((TRAIN.wait - 1) / 0.9) + 1);
       for (let i = visQueue; i < n && i < VIS_IDS.length; i++) { const e = visSpawn(VIS_IDS[i], STATION_DOOR[0] + (i % 2 ? 0.3 : -0.3), STATION_DOOR[1]); if (e) visGo(e, i % 3 === 0 ? 'stroll' : visPick(e)); visQueue = i + 1; }
-      if (visQueue >= VIS_IDS.length) { C.ev.visIn = 1; visQueue = 0; }
+      if (visQueue >= VIS_IDS.length) { C.ev.visIn = 1; visQueue = 0; myMaybeStart(); }
     } else if (C.t >= 0.45 && !TRAIN.on) {
-      C.ev.visIn = 1;
+      C.ev.visIn = 1; myMaybeStart();
       for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; const act = visPick(e), L = VIS_SPOTS[act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act; e.vp = []; visArrive(e); }
     }
   }
@@ -2160,6 +2172,195 @@ function drawSeated(c, e, chx, seatY, sg, sc, t) {
   const L = NPC[e.npc].look;
   c.save(); c.beginPath(); c.rect(chx - 60 * sc, seatY - 120 * sc, 120 * sc, 120 * sc + 3 * sc); c.clip();
   c.translate(chx, seatY + 16 * sc); c.scale(-sg, 1); person(c, 0, 0, Object.assign({}, L, { armR: 1.1, armL: 0.2 }), t + chx, false, sc, undefined, { side: 0.55 }); c.restore();
+}
+
+// ------------------------------------------------------------------ the mystery of the missing festival bell
+// A Clue-style side quest, played in English (text only). The festival bell vanishes in the night. Vicky works out
+// WHO took it (one of the six visitors), WHERE it's hidden (six places) and WHAT they moved it with (six ways to
+// carry something heavy). The answer is new each time. Like the board game, the 15 innocent cards are dealt among
+// the six visitors (never their own name), and what each one knows comes from the cards they hold: asked the right
+// question they mention something that quietly rules one out. Nobody says it outright; Vicky has to read it.
+// Three innocent visitors have also noticed a trace of the real thing. She can also put a theory to anyone ("It was
+// Ostap, at the mill, with the wheelbarrow") and they'll tell her one thing that doesn't fit, if they can.
+// When she's sure, she tells Officer Petro by the fountain (one accusation a day).
+const MY_WHO = ['myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna'];
+const MY_WHERE = { mill: 'the windmill', station: 'the train station', church: 'the church', reeds: 'the reeds by the lake', wheat: 'the wheat field', bridge: 'under the bridge' };
+const MY_WITH = { wheelbarrow: 'the wheelbarrow', cart: 'the horse and cart', mule: 'the mule', sled: 'the pull sled', ox: 'the ox', haywagon: 'the hay wagon' };
+const myName = id => NPC[id].nameEn;
+const myShort = id => ({ myron: 'Myron', yaroslava: 'Yaroslava', ostap: 'Ostap', lesia: 'Lesia', zakhar: 'Zakhar', halyna: 'Halyna' })[id];
+const myCardName = c => c.k === 'who' ? myName(c.v) : c.k === 'where' ? MY_WHERE[c.v] : MY_WITH[c.v];
+const myPick = a => a[Math.floor(Math.random() * a.length)];
+// What clears each card, as someone who was there might put it: two ways each, chosen at random.
+const MY_CLEAR = {
+  who: {
+    myron: ["Mr. Myron? He was out on the platform before the sun was up, timing the milk train with that pocket watch of his. He didn't look up once.", "Myron spent the whole dawn arguing with the station clock. Two minutes slow, he said. Two! He wouldn't leave until someone fixed it."],
+    yaroslava: ["Pani Yaroslava was in the café from first light, reading poems to the café cat. The cat never left her lap, so neither did she.", "Yaroslava? She was writing at the café table by the window all night long. Her candle had burned right down to the saucer by morning."],
+    ostap: ["Ostap was up on the hill before sunrise, playing his flute to nobody in particular. Half the valley heard him. The other half wished they hadn't.", "Ostap was at the lake with me at dawn, splashing about and frightening every fish within a mile."],
+    lesia: ["Lesia was painting the sunrise by the fountain. She still has a streak of pink on her nose from it.", "Lesia sat sketching the church roof from first light. Her sky's only half finished, if you want proof."],
+    zakhar: ["Zakhar was out on the water before the mist lifted. He came back with three carp and not a single word.", "Zakhar? He was first in the bakery queue at dawn, as he is every morning. You could set your watch by his stomach."],
+    halyna: ["Pani Halyna was at the market at daybreak, telling Oksana everyone's news. Loudly. For hours.", "Halyna never left the market stall all morning. I could hear her laughing from the other end of the village."],
+  },
+  where: {
+    mill: ["I went up to the windmill early. Flour dust on every step, smooth as fresh snow, and the only footprints in it were mine.", "The windmill's been locked since the miller went to his sister's. The padlock's rusted shut. Nobody's been in there."],
+    station: ["I was at the station at sunrise. Swept clean, every bench empty. You couldn't hide a teaspoon on that platform.", "The station? Nothing on that platform this morning but pigeons and Mr. Myron's opinions."],
+    church: ["I lit a candle in the church at dawn. Every bench, every icon in its place, and the floor freshly swept.", "The church was locked until seven, and the only key hangs round the priest's neck. He sleeps with it."],
+    reeds: ["I walked the lake shore this morning. The reeds stood straight and untouched, with dew on every single one.", "The ducks are nesting in the reeds. If anyone had pushed anything heavy in there, they'd still be complaining."],
+    wheat: ["I walked through the wheat field at dawn. Not a stalk bent anywhere. You'd see a path if anything had been dragged through.", "The wheat field? Smooth as a combed beard. Nothing's been through it but the wind."],
+    bridge: ["I sat under the bridge with my feet in the stream this morning. Nothing down there but frogs and one lost sock.", "The water under the bridge is running clear as glass. Drop anything heavy in there and it'd be muddy for hours."],
+  },
+  with: {
+    wheelbarrow: ["The wheelbarrow's still by the garden gate, with a spider's web strung across the handles. Nobody's touched it in days.", "The wheelbarrow? Its wheel squeaks like an angry goose. I'd have heard it in my sleep, and I didn't."],
+    cart: ["The horse spent the night in the meadow, and the cart hasn't moved an inch. There's a hen nesting in it.", "The cart's got a wheel off for mending. It's propped up on a log behind the barn."],
+    mule: ["The mule? Asleep in its stall all night, snoring like a kettle on the boil.", "That mule won't pull anything before breakfast. It wouldn't pull for a king."],
+    sled: ["The pull sled's under a stack of firewood behind Mr. Bohdan's house. Nobody's dug it out since winter.", "A sled, on dry roads? You'd hear it scraping a mile away. And nobody heard a thing."],
+    ox: ["The ox was yoked to the plough in the far field all morning, with the farmer beside it.", "The ox? Lying in the mud by the pond, chewing. It hasn't stood up since yesterday afternoon."],
+    haywagon: ["The hay wagon's still piled high and roped down tight. Not one knot undone.", "The hay wagon's had a broken axle for a week. It's going nowhere."],
+  },
+};
+// Traces of the real answer, noticed in passing. Never named; they point, and Vicky has to see where.
+const MY_TRACE = {
+  with: {
+    wheelbarrow: "There was a single narrow wheel track in the mud on the back road this morning. Pressed deep, as if it carried something heavy.",
+    cart: "Two wheel ruts and horseshoe prints on the road before dawn. And the horse was sweating when I passed it, at that hour.",
+    mule: "Small, neat hoof prints going down the lane in the dark. Too small for the horse, too tidy for the cow.",
+    sled: "Two long, straight scrape marks along the road, side by side, as if something had been dragged on runners.",
+    ox: "Deep, split hoof prints in the mud. Big ones, far bigger than any cow's, and the ground churned up around them.",
+    haywagon: "There was hay scattered all along the road this morning. Nobody's been haying this week.",
+  },
+  where: {
+    mill: "The windmill's sails were turned the wrong way round this morning. Somebody's been up there in the night.",
+    station: "Something heavy is sitting under a tarpaulin at the far end of the platform. Luggage, I suppose. Odd shape for luggage.",
+    church: "The church door was open a crack at dawn. It's never open at dawn.",
+    reeds: "There was a flash of gold among the reeds when the sun came up. A fish, probably. A very large, very still fish.",
+    wheat: "The crows were all circling one spot in the middle of the wheat field this morning, cawing at something.",
+    bridge: "The frogs under the bridge have gone quiet. They only go quiet when something's bothering them.",
+  },
+  who: [
+    "%s yawned all through breakfast, like somebody who'd been up half the night.",
+    "%s had mud on their boots up to the ankles this morning, and the roads were dry.",
+    "%s was humming the festival song this morning, a little too cheerfully, and wouldn't say why.",
+  ],
+};
+// How each of them talks: an opener before what they know, and how they start the gossip.
+const MY_VOICE = {
+  myron: { open: ["Ha! Let me tell you, a railwayman notices things.", "Mark my words, young lady.", "Now then. Facts, in order, like a timetable."], none: "Ha! Nothing more from me, I'm afraid. But I'd keep my eyes on the tracks, if I were you.", hmm: "Hmm! I can't say it wasn't, and that's the truth. Not with what I know." },
+  yaroslava: { open: ["Hmm. The morning was so quiet, my dear, one notices the little things.", "Let me think. Memory is a slow river.", "Ah. There's a small thing, if you'll let an old poet wander."], none: "That is all I have, my dear. The rest is silence, as they say.", hmm: "I'm afraid I can't argue with that. I wish I could." },
+  ostap: { open: ["Oh, I've got one! Listen, listen!", "Ha! You're a real detective!", "Right, right, here's what I saw!"], none: "That's everything! Ooh, go and ask the others, it's like a hunt!", hmm: "Huh! I can't say no to that one. Not a thing I know says otherwise!" },
+  lesia: { open: ["Ooh, I notice everything. It's an artist thing.", "Hmm, it's all colours in my head... let me see.", "Okay, okay, I saw this, I think. I'm almost sure."], none: "That's all I've got! But if you find the bell, can I paint it?", hmm: "Hmm, I can't say that's wrong... nothing I saw goes against it." },
+  zakhar: { open: ["Hm.", "Here's mine.", "Saw something. Maybe nothing."], none: "That's all.", hmm: "Can't say it wasn't." },
+  halyna: { open: ["Ooh, sonechko, I've heard things! Everyone's talking!", "Now don't tell anyone I told you this...", "Well! You'll never guess. Oksana says, and I quite agree..."], none: "Oh, that's all the news I have, sonechko! For now!", hmm: "Ooh, I can't say no to that! Nobody's told me different!" },
+};
+const MY_GOSSIP = {
+  myron: "Have you heard? The festival bell has gone! Vanished in the night, like a train that never arrives. Somebody in this valley knows something, mark my words.",
+  yaroslava: "My dear, the festival bell is gone. Its post by the fountain stands empty, like a line of verse with no rhyme. Someone here is keeping a secret.",
+  ostap: "The bell! The festival bell! Gone! Who steals a bell?! This is the best mystery since the bear took my boots!",
+  lesia: "Did you hear? The festival bell's gone! I was going to paint it for the festival. Someone took it in the night!",
+  zakhar: "Bell's gone. The festival one. Took it in the night. Heavy thing. Nobody carried that off in their arms, I'll tell you.",
+  halyna: "Oh, sonechko, haven't you heard?! The festival bell! Stolen! In the night! Everyone's whispering about it, and I mean everyone!",
+};
+// Why the culprit did it, told when they're caught: never anything bad.
+const MY_WHY = {
+  myron: "I only wanted to polish it! A bell should shine on a festival day, like brass on a good locomotive. I meant to have it back before anyone noticed. I'm sorry for the fuss.",
+  yaroslava: "I wanted to hear it ring alone, at dawn, far from everyone. I was writing a poem about it. Forgive an old woman her small adventure.",
+  ostap: "I wanted to teach it a Carpathian tune! A bell that only knows one song is a sad bell. I was going to give it back, honest!",
+  lesia: "I wanted to paint it in the morning light, just once, without anyone watching. Look, I finished the picture! Isn't it lovely?",
+  zakhar: "Wanted to see if it'd scare the big carp out of the reeds. It didn't. Sorry.",
+  halyna: "I was going to tie it with ribbons and flowers and surprise the whole village! Oh, sonechko, you've spoiled my surprise. But well done!",
+};
+const MY_ASK = { who: 'Who did you see early this morning?', where: 'Where were you this morning?', with: 'Did you notice anything odd?' };
+
+function myNewCase() {
+  const who = myPick(MY_WHO), where = myPick(Object.keys(MY_WHERE)), what = myPick(Object.keys(MY_WITH));
+  const cards = [...MY_WHO.filter(x => x !== who).map(v => ({ k: 'who', v })), ...Object.keys(MY_WHERE).filter(x => x !== where).map(v => ({ k: 'where', v })), ...Object.keys(MY_WITH).filter(x => x !== what).map(v => ({ k: 'with', v }))];
+  for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
+  // deal them round, so nobody holds their own name (that would be a strange thing to say about yourself)
+  const hands = Object.fromEntries(MY_WHO.map(id => [id, []])); let seat = 0;
+  for (const c of cards) { for (let tries = 0; tries < 6; tries++) { const id = MY_WHO[(seat + tries) % 6]; if (!(c.k === 'who' && c.v === id)) { hands[id].push({ k: c.k, v: c.v, said: false, line: myPick(MY_CLEAR[c.k][c.v]) }); seat = (seat + tries + 1) % 6; break; } } }
+  // three innocent visitors each noticed one trace of the real thing
+  const witnesses = MY_WHO.filter(x => x !== who).sort(() => Math.random() - 0.5).slice(0, 3);
+  const traces = {}; [['with', MY_TRACE.with[what]], ['where', MY_TRACE.where[where]], ['who', myPick(MY_TRACE.who).replace('%s', myShort(who))]].forEach(([k, txt], i) => { traces[witnesses[i]] = { k, txt, said: false }; });
+  return { day: S.clock.day, who, where, what, hands, traces, met: {}, notes: {}, heard: [], acc: 0, solved: false };
+}
+// The case opens on a morning the visitors are in (if none is open), and a new one can start a few days after one is solved.
+function myMaybeStart() {
+  if (S.mystery && !S.mystery.solved) return;
+  if (S.mystery && S.mystery.solved && (S.clock.day || 1) - S.mystery.solvedDay < 3) return;
+  if ((S.clock.day || 1) < 2) return;   // not on the very first day
+  S.mystery = myNewCase(); save();
+  setTimeout(() => { if (mode === 'world') toast('🔔 The visitors are whispering about something this morning...', 3600); }, 4000);
+}
+const myOpen = () => S.mystery && !S.mystery.solved;
+function myNote(c, src) {   // ruled out, in the notebook
+  const M = S.mystery, key = c.k + ':' + c.v; if (!M.notes[key] || M.notes[key] === '?') M.notes[key] = 'x:' + src;
+}
+// A mystery conversation: a face, a name, what they say, and things for Vicky to say back.
+function myDialog(id, text, choices) {
+  const npc = NPC[id];
+  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npc.look) + '" alt=""><div style="flex:1"><div class="who">' + npc.nameEn + '</div><div class="line" style="font-size:19px;line-height:1.35">' + text + '</div></div></div>' +
+    '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + c.label + '</button>').join('') + '</div>');
+  MYC = choices;
+}
+let MYC = [];
+function myTalk(id) {
+  const M = S.mystery, v = MY_VOICE[id];
+  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, MY_GOSSIP[id] + (Object.keys(M.met).length === 1 ? '<div class="hint" style="margin-top:8px">🔍 A mystery! Ask the visitors what they saw. When you know <b>who</b> took the bell, <b>where</b> it is and <b>what</b> they moved it with, tell Officer Petro by the fountain. Your notes are in the 🔍 notebook.</div>' : ''), [{ label: 'Tell me more...', fn: () => myMenu(id) }, { label: 'Goodbye.', fn: closeSheet }]); }
+  myMenu(id);
+}
+function myMenu(id, said) {
+  const M = S.mystery, hand = M.hands[id], v = MY_VOICE[id], ch = [];
+  for (const k of ['where', 'who', 'with']) { const c = hand.find(c => c.k === k && !c.said); if (c) ch.push({ label: MY_ASK[k], fn: () => { c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save(); myMenu(id, myPick(v.open) + ' ' + c.line); } }); }
+  const tr = M.traces[id];
+  if (hand.every(c => c.said) && tr && !tr.said) ch.push({ label: 'Anything else at all?', fn: () => { tr.said = true; M.heard.push({ id, txt: tr.txt, trace: 1 }); save(); myMenu(id, myPick(v.open) + ' ' + tr.txt); } });
+  ch.push({ label: 'I have a theory...', fn: () => mySuggest(id) });
+  ch.push({ label: 'Goodbye.', fn: closeSheet });
+  const left = hand.some(c => !c.said) || (tr && !tr.said);
+  myDialog(id, said || (left ? ['What would you like to know?', 'Ask away, detective.', 'Go on, then.'][Math.floor(Math.random() * 3)] : v.none), ch);
+}
+// Putting a theory to someone: who, then where, then with what; they answer with one thing that doesn't fit, if they can.
+function mySuggest(id, pick = {}) {
+  if (!pick.who) return myDialog(id, 'Who do you think it was?', MY_WHO.map(x => ({ label: myName(x), fn: () => mySuggest(id, { who: x }) })).concat([{ label: '(Never mind.)', fn: () => myMenu(id) }]));
+  if (!pick.where) return myDialog(id, 'And where is the bell now?', Object.keys(MY_WHERE).map(x => ({ label: cap(MY_WHERE[x]), fn: () => mySuggest(id, Object.assign(pick, { where: x })) })));
+  if (!pick.what) return myDialog(id, 'And what did they move it with?', Object.keys(MY_WITH).map(x => ({ label: cap(MY_WITH[x]), fn: () => mySuggest(id, Object.assign(pick, { what: x })) })));
+  const M = S.mystery, hand = M.hands[id], hits = hand.filter(c => (c.k === 'who' && c.v === pick.who) || (c.k === 'where' && c.v === pick.where) || (c.k === 'with' && c.v === pick.what));
+  const theory = '<i>"' + myName(pick.who) + ', ' + MY_WHERE[pick.where] + ', with ' + MY_WITH[pick.what] + '."</i><br>';
+  if (!hits.length) return myDialog(id, theory + MY_VOICE[id].hmm, [{ label: 'Thank you.', fn: () => myMenu(id) }]);
+  const c = hits.find(c => !c.said) || hits[0]; c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save();
+  myDialog(id, theory + 'Oh no, not ' + myCardName(c) + '. ' + c.line, [{ label: 'I see.', fn: () => myMenu(id) }]);
+}
+// The detective's notebook: every suspect, place and way to move it, with what's been ruled out (and who said so),
+// and everything Vicky's heard. Tap a line to mark it as a hunch.
+function myNotebook() {
+  const M = S.mystery; if (!M) return toast('🔍 No mystery right now.', 2000);
+  const row = (k, v, name) => { const n = M.notes[k + ':' + v] || '', out = n.startsWith('x:'), src = out ? myShort(n.slice(2)) : '';
+    return '<button class="mynb' + (out ? ' out' : n === '?' ? ' hunch' : '') + '" data-a="myMark" data-v="' + k + ':' + v + '"><span>' + (out ? '✗' : n === '?' ? '★' : '·') + '</span><b>' + name + '</b>' + (src ? '<small>' + src + '</small>' : '') + '</button>'; };
+  const sec = (title, k, list) => '<div class="mysec"><div class="mysech">' + title + '</div>' + list.map(([v, name]) => row(k, v, name)).join('') + '</div>';
+  const heard = M.heard.slice().reverse().map(h => '<div class="myheard"><b>' + myShort(h.id) + ':</b> ' + h.txt + '</div>').join('') || '<div class="myheard">Nothing yet. Go and talk to the visitors.</div>';
+  openSheet('<div class="card" style="text-align:left"><div class="tag">🔍 Detective notebook</div><div class="word" style="font-size:22px">The missing festival bell</div><div class="en" style="font-size:14px">✗ ruled out (and who said so) · tap a line to mark a hunch ★</div>' +
+    '<div class="mygrid">' + sec('Who?', 'who', MY_WHO.map(x => [x, myName(x)])) + sec('Where?', 'where', Object.entries(MY_WHERE).map(([v, n]) => [v, cap(n)])) + sec('With what?', 'with', Object.entries(MY_WITH).map(([v, n]) => [v, cap(n)])) + '</div>' +
+    '<details class="myclues"><summary>Everything you\'ve heard (' + M.heard.length + ')</summary>' + heard + '</details>' +
+    '<div class="row">' + btn('close', '', lab('close'), 'ghost') + '</div></div>');
+}
+function myMark(key) { const M = S.mystery; if (!M) return; const n = M.notes[key] || ''; if (n.startsWith('x:')) return; M.notes[key] = n === '?' ? '' : '?'; save(); myNotebook(); }
+// Officer Petro, the village constable, by the fountain.
+function petroTalk() {
+  const M = S.mystery, id = 'petro';
+  if (!M || !M.started) return myDialog(id, ["All quiet in Dolyna this morning. Just the way I like it.", "Good day to you, young lady. Nothing to report. The ducks are behaving themselves."][Math.floor(Math.random() * 2)], [{ label: 'Good day, Officer.', fn: closeSheet }]);
+  if (M.solved) return myDialog(id, 'That bell rings sweeter than ever, thanks to you. I\'ll be keeping an eye on you, detective. A friendly eye.', [{ label: 'Thank you, Officer.', fn: closeSheet }]);
+  if (M.acc === (S.clock.day || 1)) return myDialog(id, 'I\'m still looking into your last idea, young lady. Come back tomorrow, and bring me something solid.', [{ label: 'All right.', fn: closeSheet }]);
+  myDialog(id, 'Ah, the festival bell. A bad business. Have you worked out who did it, detective?', [{ label: 'I know who did it.', fn: () => petroAccuse({}) }, { label: 'Not yet.', fn: closeSheet }]);
+}
+function petroAccuse(pick) {
+  const id = 'petro';
+  if (!pick.who) return myDialog(id, 'Who took it?', MY_WHO.map(x => ({ label: myName(x), fn: () => petroAccuse({ who: x }) })).concat([{ label: '(Not yet.)', fn: closeSheet }]));
+  if (!pick.where) return myDialog(id, 'Where is the bell?', Object.keys(MY_WHERE).map(x => ({ label: cap(MY_WHERE[x]), fn: () => petroAccuse(Object.assign(pick, { where: x })) })));
+  if (!pick.what) return myDialog(id, 'And how did they get it there?', Object.keys(MY_WITH).map(x => ({ label: cap(MY_WITH[x]), fn: () => petroAccuse(Object.assign(pick, { what: x })) })));
+  const M = S.mystery, sum = '<i>"' + myName(pick.who) + ', ' + MY_WHERE[pick.where] + ', with ' + MY_WITH[pick.what] + '."</i><br>';
+  if (pick.who === M.who && pick.where === M.where && pick.what === M.what) {
+    M.solved = true; M.solvedDay = S.clock.day || 1; S.decor.kubok = 1; save(); myBtnShow(); blip(880, 0.1); setTimeout(() => blip(1320, 0.14), 120);
+    return myDialog(id, sum + 'Hmm. Hmm! Ah, I have a hunch you\'re right, young lady. I\'ll go and have a word.', [{ label: 'Go on!', fn: () => myDialog(M.who, MY_WHY[M.who], [{ label: 'The bell is back!', fn: () => { closeSheet(); toast('🏆 The bell is back for the festival! A golden bell trophy is waiting on your bookshelf at home.', 5000); try { churchBell(0.6, 196); } catch (e) {} } }]) }]);
+  }
+  M.acc = S.clock.day || 1; save();
+  myDialog(id, sum + 'I\'ll look into it... but I have my doubts. Something there doesn\'t fit. Come and see me again tomorrow.', [{ label: 'I\'ll keep looking.', fn: closeSheet }]);
 }
 
 // ------------------------------------------------------------------ the railway
@@ -5772,6 +5973,8 @@ function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R
 
 let talkNpc = null;   // the neighbour you're talking to (they turn to face you while a card is open)
 function talk(npc) {
+  if (npc.id === 'petro') return petroTalk();
+  if (npc.visitor && myOpen()) return myTalk(npc.id);
   if (npc.visitor) { const n0 = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 }); const st = line(npc, n0.met ? 'again' : 'intro'); n0.met = true; save(); return dialog(npc, [st]); }
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
@@ -5891,11 +6094,13 @@ function setGuide() {
 }
 function hud() {
   for (const [id, txt] of [['#coins', devOn ? '💰 ∞' : `💰 ${S.coins}`], ['#hearts', `❤️ ${S.hearts}`], ['#water', `💧 ${S.bag.voda || 0}`]]) {
+    myBtnShow();
     const el = $(id); if (!el || el.textContent === txt) continue;   // (the water counter was taken off the top bar)
     const first = !el.dataset.set; el.dataset.set = 1; el.textContent = txt;
     if (!first) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }   // the counter hops when it changes
   }
 }
+function myBtnShow() { const b = $('#myBtn'); if (b) b.style.display = S.mystery && S.mystery.started && !S.mystery.solved ? '' : 'none'; }
 function bumpWater() { const w = $('#water'); if (!w) return; w.classList.remove('bump'); void w.offsetWidth; w.classList.add('bump'); }
 
 // ------------------------------------------------------------------ bag and word book
@@ -5943,7 +6148,7 @@ const DECOR = {
   kihtetochka: { x: 0.725, y: 0.58, s: 0.52, z: 1, hw: 0.9 },
   lizhko: { x: 0.905, y: 0.585, s: 0.58, z: 1, hw: 1.0 },
   // on the bookshelf: books on the middle shelf, a small plant on the top shelf, the mantel clock on top
-  knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 },
+  knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 }, kubok: { shelf: 0.66, dx: -0.06, s: 0.15, z: 3 },   // the golden bell trophy, for solving the mystery
   // middle of the room: rug, table, and the chair tucked in behind it
   kylym: { x: 0.82, y: 0.625, s: 1.25, z: 0, hw: 0.98, flat: true },
   stilets: { x: 0.41, y: 0.775, s: 0.29, z: 1.5, hw: 0.7 }, stil: { x: 0.44, y: 0.81, s: 0.4, z: 2, hw: 1.0 },
@@ -9568,6 +9773,7 @@ const A = {
   exitHome,
   enterHome,
   hear(v) { say(v); },
+  myChoose(v) { const c = MYC[+v]; if (c) c.fn(); }, myMark(v) { myMark(v); }, myBook() { myNotebook(); },
   cafeBuy(v) { cafeBuy(v); },
   abDone() { abDone(); }, abPick(v) { abPick(v); }, abNext() { abNext(); }, abSay() { abSay(); }, abHear() { if (ab && ab.sent) { stopSay(); say(...ab.sent.clips); } }, abHearN() { if (ab) { stopSay(); say('w_' + numId(ab.list[ab.i].n)); } }, abAgain() { closeSheet(); setTimeout(abStart, 200); },
   prac(v) { pracAttempt(v); },

@@ -208,6 +208,7 @@ window.DATA = {
     { id: "potiah", uk: "потяг", tr: "PO-tiah", en: "train", ic: "🚂" },
     { id: "reiky", uk: "рейки", tr: "REI-ky", en: "rails", ic: "🛤️" },
     { id: "rozklad", uk: "розклад", tr: "ROZ-klad", en: "timetable", ic: "🗓️" },
+    { id: "kubok", uk: "кубок", tr: "KU-bok", en: "trophy", ic: "@kubok", fact: { uk: "Ти знайшла дзвін для свята!", en: "For finding the missing festival bell." } },
     // --- at the café
     { id: "kavarnia", uk: "кав'ярня", tr: "ka-VIAR-nia", en: "café", ic: "@kavarnia", acc: "кав'ярню", fact: { uk: "Львів називають кавовою столицею України.", en: "Lviv is called Ukraine's coffee capital, and its cafés are famous for coffee brewed on hot sand." } },
     { id: "kava", uk: "кава", tr: "KA-va", en: "coffee", ic: "☕", acc: "каву" },
@@ -554,6 +555,13 @@ window.DATA = {
         chat_3: { uk: "Медівник — за рецептом моєї бабусі.", en: "The honey cake is my grandmother's recipe." },
         thanks: { uk: "Дякую! Смачного!", en: "Thank you! Enjoy!" }
       },
+      wants: []
+    },
+    {
+      id: "petro", name: "Офіцер Петро", nameEn: "Officer Petro", voice: "orus",
+      style: "A kindly, slow-talking village policeman.",
+      look: { skin: "#f0c4a0", shirt: "#dfe8f2", trim: "#1f3a6b", skirt: "#1f3a6b", hair: "#6b4a2a", hat: "cap", hatCol: "#1f3a6b", vest: "#2c4f8a", vestTrim: "#d9a63a", mustache: "#6b4a2a" },
+      lines: {},
       wants: []
     },
     {
