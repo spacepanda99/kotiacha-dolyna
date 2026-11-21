@@ -149,3 +149,61 @@ Do NOT mark down: a rolled versus unrolled R, a general foreign accent, or speak
     return res.status(500).json({ error: 'server' });
   }
 });
+
+// ---------------------------------------------------------------- who has played
+// The game sends a beat when a play starts and about once a minute while it's on screen: a random device id and
+// play id (nothing that names anyone), seconds played so far, the game day and words known. Stored in kdPlays
+// (one doc per play) and kdDevices (one per device). Hard cap: 20,000 beats a day for everyone together.
+const PLAY_DAILY_CAP = 20000;
+const ID_RE = /^[a-z0-9]{8,24}$/;
+function shortUA(ua) {
+  ua = String(ua || '');
+  const os = /Android/.test(ua) ? 'Android' : /iPhone|iPad|iPod/.test(ua) ? 'iPhone/iPad' : /Windows/.test(ua) ? 'Windows' : /Macintosh/.test(ua) ? 'Mac' : /Linux/.test(ua) ? 'Linux' : 'Other';
+  const br = /SamsungBrowser/.test(ua) ? 'Samsung' : /Edg\//.test(ua) ? 'Edge' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /Chrome|CriOS/.test(ua) ? 'Chrome' : /Safari/.test(ua) ? 'Safari' : '';
+  return br ? `${os} · ${br}` : os;
+}
+const corsJson = (req, res, methods) => {
+  const origin = req.get('origin');
+  if (okOrigin(origin)) { res.set('Access-Control-Allow-Origin', origin); res.set('Vary', 'Origin'); }
+  res.set('Access-Control-Allow-Headers', 'content-type'); res.set('Access-Control-Allow-Methods', methods + ', OPTIONS'); res.set('Cache-Control', 'no-store');
+  return okOrigin(origin);
+};
+
+exports.kdPlay = onRequest({ region: 'us-central1', invoker: 'public', memory: '256MiB', timeoutSeconds: 15, maxInstances: 2 }, async (req, res) => {
+  const ok = corsJson(req, res, 'POST');
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'POST' || !ok || !req.is('application/json')) return res.status(403).json({ error: 'not allowed' });
+  const b = req.body || {}, d = String(b.d || ''), s = String(b.s || ''), sec = Math.floor(Number(b.sec));
+  if (!ID_RE.test(d) || !ID_RE.test(s) || !(sec >= 0 && sec <= 86400)) return res.status(400).json({ error: 'bad request' });
+  const info = { dev: !!b.dev, day: Math.max(0, Math.min(9999, Math.floor(Number(b.day) || 0))), words: Math.max(0, Math.min(9999, Math.floor(Number(b.words) || 0))), v: String(b.v || '').replace(/[^0-9a-z.]/gi, '').slice(0, 10), ua: shortUA(req.get('user-agent')) };
+  const db = admin.firestore(), day = new Date().toISOString().slice(0, 10), FV = admin.firestore.FieldValue;
+  const useRef = db.doc(`kdPlayUsage/${day}`), playRef = db.doc(`kdPlays/${s}`), devRef = db.doc(`kdDevices/${d}`);
+  try {
+    const okay = await db.runTransaction(async t => {
+      const [u, p] = await Promise.all([t.get(useRef), t.get(playRef)]);
+      if (((u.exists && u.data().n) || 0) >= PLAY_DAILY_CAP) return false;
+      if (p.exists && p.data().d !== d) return false;
+      const prev = p.exists ? (p.data().sec || 0) : 0, add = Math.max(0, Math.min(600, sec - prev));   // a beat can add at most 10 minutes
+      t.set(useRef, { n: FV.increment(1), day }, { merge: true });
+      t.set(playRef, { d, sec: Math.max(prev, sec), last: FV.serverTimestamp(), ...info, ...(p.exists ? {} : { start: FV.serverTimestamp() }) }, { merge: true });
+      t.set(devRef, { last: FV.serverTimestamp(), totalSec: FV.increment(add), ...info, ...(p.exists ? {} : { plays: FV.increment(1) }) }, { merge: true });
+      return true;
+    });
+    if (!okay) return res.status(429).json({ error: 'limit' });
+    return res.json({ ok: true });
+  } catch (err) { console.error('play beat failed'); return res.status(500).json({ error: 'server' }); }
+});
+
+// The developer menu's list: the 60 devices and 120 plays seen most recently (never the whole collection).
+exports.kdPlays = onRequest({ region: 'us-central1', invoker: 'public', memory: '256MiB', timeoutSeconds: 15, maxInstances: 1 }, async (req, res) => {
+  const ok = corsJson(req, res, 'GET');
+  if (req.method === 'OPTIONS') return res.status(204).send('');
+  if (req.method !== 'GET' || !ok || req.query.k !== '7272') return res.status(403).json({ error: 'not allowed' });
+  try {
+    const db = admin.firestore(), ms = x => (x && x.toMillis ? x.toMillis() : null);
+    const [dv, pl] = await Promise.all([db.collection('kdDevices').orderBy('last', 'desc').limit(60).get(), db.collection('kdPlays').orderBy('last', 'desc').limit(120).get()]);
+    const devices = dv.docs.map(x => { const v = x.data(); return { id: x.id, last: ms(v.last), totalSec: v.totalSec || 0, plays: v.plays || 0, ua: v.ua, dev: !!v.dev, day: v.day, words: v.words }; });
+    const plays = pl.docs.map(x => { const v = x.data(); return { d: v.d, start: ms(v.start), last: ms(v.last), sec: v.sec || 0, ua: v.ua, dev: !!v.dev, day: v.day, words: v.words, v: v.v }; });
+    return res.json({ devices, plays });
+  } catch (err) { console.error('play list failed'); return res.status(500).json({ error: 'server' }); }
+});

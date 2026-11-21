@@ -10262,6 +10262,7 @@ function devMenu() {
   const sec = (title, items) => `<div style="font-weight:900;margin:12px 0 6px;color:#4a2c1a">${title}</div><div style="display:flex;flex-wrap:wrap;gap:6px">${items.map(([a, v, l]) => `<button class="b ghost" style="padding:8px 11px;font-size:14px;margin:0" data-a="${a}" data-v="${v}">${l}</button>`).join('')}</div>`;
   const ic = id => (W[id].ic[0] === '@' ? '' : W[id].ic + ' ');
   openSheet(`<div class="card" style="text-align:left"><h3><span>🛠️ Developer</span><small>${SEASON_IC[season()]} ${W[season()].uk}${seasonForce ? ' (set here)' : ''} · ${['day', 'evening', 'night'][S.clock.t >= 0.86 ? 2 : S.clock.t >= 0.78 ? 1 : 0]}</small></h3>
+    ${sec('Players', [['devPlayers', '', '👥 Who has played']])}
     ${sec('Mini games', [['devGame', 'bohdan', '🐝 Bees'], ['devGame', 'andriiko', '🐕 Fetch'], ['devGame', 'taras', '🎣 Fishing'], ['devGame', 'bohdan_w', '❄️ Winter hive'], ['devGame', 'andriiko_w', '⛄ Snowman'], ['devGame', 'andriiko_s', '❄️ Snowball fight'], ['devGame', 'taras_w', '🧊 Ice fishing'], ['devGame', 'chop', '🪓 Chopping wood']])}
     ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].uk]))}
     ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].uk + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
@@ -10270,6 +10271,44 @@ function devMenu() {
     ${sec('Day and night', [['devTime', 'morning', '🌅 Morning'], ['devTime', 'evening', '🌇 Evening'], ['devTime', 'night', '🌙 Night'], ['devTime', 'bed', '🛏️ Bedtime scene']])}
     <div class="row" style="margin-top:14px">${btn('close', '', lab('close'), 'ghost')}</div>
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
+}
+// ------------------------------------------------------------------ who has played (seen in the developer menu)
+// Each device gets a random id (kd-device) and each play a random id. A beat goes to the server when the play starts
+// and about once a minute while the game is on screen, with the seconds played, the game day and words known.
+// Nothing names the player. A device with developer mode on is marked, so your own plays are easy to tell apart.
+const PLAY_URL = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/kdPlay', PLAYS_URL = 'https://us-central1-skillsprouts-f2787.cloudfunctions.net/kdPlays';
+const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), b => (b % 36).toString(36)).join('') + Date.now().toString(36).slice(-4);
+let playDev = '', playId = '', playSec = 0, playSeen = 0, playTimer = null;
+try { playDev = localStorage.getItem('kd-device') || ''; if (!/^[a-z0-9]{8,24}$/.test(playDev)) { playDev = rid(); localStorage.setItem('kd-device', playDev); } } catch (e) { playDev = rid(); }
+function playBeat() {
+  if (!playId) return;
+  if (!document.hidden && playSeen) playSec += Math.min(90, (Date.now() - playSeen) / 1000);
+  playSeen = document.hidden ? 0 : Date.now();
+  try { fetch(PLAY_URL, { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ d: playDev, s: playId, sec: Math.round(playSec), dev: !!devOn, day: (S.clock && S.clock.day) || 1, words: Object.keys(S.words || {}).length, v: window.APP_VERSION || '' }) }).catch(() => {}); } catch (e) {}
+}
+function playStart() {
+  if (playId) return; playId = rid(); playSec = 0; playSeen = Date.now(); playBeat();
+  let beats = 0; playTimer = setInterval(() => { if (++beats > 600) return clearInterval(playTimer); if (!document.hidden) playBeat(); }, 60000);   // at most 10 hours of beats in one play
+  document.addEventListener('visibilitychange', () => { if (document.hidden) playBeat(); else playSeen = Date.now(); });
+}
+const agoTxt = ms => { if (!ms) return '?'; const m = Math.round((Date.now() - ms) / 60000); return m < 2 ? 'just now' : m < 60 ? m + ' min ago' : m < 48 * 60 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' days ago'; };
+const durTxt = sec => sec < 60 ? Math.round(sec) + ' s' : sec < 3600 ? Math.round(sec / 60) + ' min' : (sec / 3600).toFixed(1) + ' h';
+const whenTxt = ms => ms ? new Date(ms).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '?';
+async function playersSheet() {
+  openSheet(`<div class="card" style="text-align:left"><h3><span>👥 Who has played</span></h3><div style="font-size:15px;color:#8a7566">Loading…</div></div>`);
+  let j; try { const r = await fetch(PLAYS_URL + '?k=7272', { cache: 'no-store' }); if (!r.ok) throw 0; j = await r.json(); } catch (e) { j = null; }
+  if (!j) return openSheet(`<div class="card"><h3><span>👥 Who has played</span></h3><div style="font-size:15px">Couldn't reach the server. Try again in a minute.</div><div class="row" style="margin-top:12px">${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+  const label = d => (d.id === playDev || d.d === playDev ? ' <b style="color:#2e7d32">(this device)</b>' : '') + (d.dev ? ' 🛠️' : '');
+  const icon = ua => /Android|iPhone/.test(ua || '') ? '📱' : '💻';
+  const others = j.devices.filter(d => !d.dev && d.id !== playDev);
+  const devs = j.devices.map((d, i) => `<div style="padding:8px 0;border-top:1px solid #eadfcd;font-size:15px"><b>${icon(d.ua)} Player ${i + 1}</b>${label(d)}<br><span style="color:#6b5646">${d.ua || '?'} · ${d.plays} play${d.plays === 1 ? '' : 's'} · ${durTxt(d.totalSec)} in all · last seen ${agoTxt(d.last)} · game day ${d.day || 1}, ${d.words || 0} words</span></div>`).join('');
+  const names = Object.fromEntries(j.devices.map((d, i) => [d.id, 'Player ' + (i + 1)]));
+  const plays = j.plays.slice(0, 40).map(p => `<div style="padding:6px 0;border-top:1px solid #f0e7d8;font-size:14px">${whenTxt(p.start)} · <b>${names[p.d] || 'Player ?'}</b>${p.dev ? ' 🛠️' : ''} · ${durTxt(p.sec)}${Date.now() - (p.last || 0) < 150000 ? ' · <b style="color:#2e7d32">playing now</b>' : ''}</div>`).join('');
+  openSheet(`<div class="card" style="text-align:left"><h3><span>👥 Who has played</span><small>${others.length} other device${others.length === 1 ? '' : 's'}</small></h3>
+    <div style="font-size:14px;color:#8a7566;margin-bottom:4px">Each device counts as one player. 🛠️ = developer mode was on. Counting started with v276.</div>
+    <div style="max-height:56vh;overflow-y:auto">${devs || '<div style="font-size:15px">No plays yet.</div>'}
+    <div style="font-weight:900;margin:14px 0 4px;color:#4a2c1a">Recent plays</div>${plays}</div>
+    <div class="row" style="margin-top:12px">${btn('close', '', lab('close'), 'ghost')}</div></div>`);
 }
 // Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
 function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill' || mode === 'church' || mode === 'school' || mode === 'cafe') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
@@ -10646,7 +10685,7 @@ const A = {
       const inApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
       if (req && !inApp && !(document.fullscreenElement || document.webkitFullscreenElement)) { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); }
     } catch (e) {}
-    $('#start').style.display = 'none'; running = true; hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
+    $('#start').style.display = 'none'; running = true; playStart(); hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
     if (S.refunded && !S.refundTold) { S.refundTold = 1; save(); setTimeout(() => toast(`🛏️ Меблі вже в хаті! +${S.refunded} ₴`), 1500); } },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
@@ -10693,6 +10732,7 @@ const A = {
   wardTurn() { if (ward) { ward.view = (ward.view + 1) % 4; ward.t0 = nowT; blip(600, 0.03); } },
   wear(v) { if (!S.wardrobe[v]) return; S.outfit = v; wearOutfit(v); useWord(v, true); save(); blip(880, 0.06); wardrobeSheet(); if (ward) { ward.view = 0; ward.t0 = nowT; ward.pop = nowT; } say('w_' + v, 'p_harno_vyhliadaiesh'); },
   devPin() { if (devOn) { A.start(); return setTimeout(devMenu, 700); } devCode = ''; devPinDraw(); },   // already unlocked on this device: straight in
+  devPlayers() { playersSheet(); },
   devOff() { devOn = false; setTimeout(hud, 50); try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
   devPinX() { $('#devpin').classList.remove('on'); },
   devKey(v) {
