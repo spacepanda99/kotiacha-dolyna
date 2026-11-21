@@ -1752,9 +1752,10 @@ function add(e) {
   // Street lamps: one behind each bench in the square, one by the road between her cottage and the market,
   // one between the market and Grandma Olia's, one each side of the crossroads on the back road (towards the
   // windmill and towards the church), one on each half of the bottom road, and one halfway down the road from the square to it. (Tapping one says «лампа».)
-  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
+  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [35.35, 13.85, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
+  add({ w: 'lavka', ic: '@benchside', x: 35.1, y: 14.55, s: 1.25, solid: true, flipX: true });   // at the east end of the main road, looking back along it
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
   for (const [x, y] of streamPts(0.1)) { const tx = Math.floor(x), ty = Math.floor(y); if (Math.hypot(x - BRIDGE.x, y - BRIDGE.y) > 0.75) block(tx, ty); }   // the stream: wade-proof, but the bridge is open
