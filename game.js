@@ -7910,6 +7910,36 @@ function drawMill(t) {
   c.strokeStyle = 'rgba(80,50,20,.3)'; c.lineWidth = Math.max(1.5, h * 0.0025); for (let i = 1; i < 6; i++) { const y = fy + (h - fy) * (i / 6) ** 1.2; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
   c.fillStyle = 'rgba(255,250,235,.18)'; ell(c, cx - u * 0.25, fy + u * 0.03, u * 0.35, u * 0.03);
   c.fillStyle = 'rgba(60,35,15,.25)'; c.fillRect(0, fy - h * 0.006, RW, h * 0.008);
+  // the floor's flour and spilt grain, and knots in the boards
+  { let r = 3; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 26; i++) { c.fillStyle = 'rgba(250,246,232,' + (0.12 + rnd() * 0.18) + ')'; ell(c, rnd() * RW, fy + (h - fy) * (0.1 + rnd() * 0.85), u * (0.03 + rnd() * 0.08), u * (0.008 + rnd() * 0.014)); }
+    for (let i = 0; i < 40; i++) { c.fillStyle = rnd() < 0.5 ? '#d9b25a' : '#c49a45'; ell(c, rnd() * RW, fy + (h - fy) * (0.05 + rnd() * 0.9), u * 0.006, u * 0.003); }
+    c.fillStyle = 'rgba(70,40,15,.35)'; for (let i = 0; i < 10; i++) ell(c, rnd() * RW, fy + (h - fy) * (0.1 + rnd() * 0.8), u * 0.012, u * 0.006); }
+  // the frame of the tower: a wall plate and braces between the posts
+  c.fillStyle = '#7a4e26'; c.fillRect(0, h * 0.42, RW, u * 0.03); c.fillStyle = 'rgba(255,230,180,.15)'; c.fillRect(0, h * 0.42, RW, u * 0.006);
+  for (const [a, b] of [[0.2, 0.34], [0.58, 0.69]]) { c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.03; c.lineCap = 'butt'; c.beginPath(); c.moveTo(a * RW, h * 0.42 + u * 0.03); c.lineTo(b * RW, fy - u * 0.02); c.stroke(); c.strokeStyle = 'rgba(255,230,180,.12)'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(a * RW, h * 0.42 + u * 0.024); c.lineTo(b * RW, fy - u * 0.026); c.stroke(); }
+  // cobwebs up in the corners by the posts
+  for (const [x0, sx] of [[0.05 * RW, 1], [0.95 * RW, -1]]) { const y0 = h * 0.105, L = u * 0.16; c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = Math.max(1, u * 0.002);
+    for (let k = 0; k < 5; k++) { const a = (k / 4) * Math.PI / 2; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + sx * Math.cos(a) * L, y0 + Math.sin(a) * L); c.stroke(); }
+    for (let r2 = 1; r2 <= 3; r2++) { c.beginPath(); for (let k = 0; k <= 4; k++) { const a = (k / 4) * Math.PI / 2, rr2 = L * r2 / 3.4; const px = x0 + sx * Math.cos(a) * rr2, py = y0 + Math.sin(a) * rr2; if (k) c.quadraticCurveTo(x0 + sx * Math.cos(a - 0.2) * rr2 * 0.85, y0 + Math.sin(a - 0.2) * rr2 * 0.85, px, py); else c.moveTo(px, py); } c.stroke(); } }
+  // a ladder up to the cap, leaning on the wall
+  { const lx = 0.255 * RW, top = h * 0.1, w2 = u * 0.075; c.strokeStyle = '#8a5a2b'; c.lineWidth = u * 0.016; c.beginPath(); c.moveTo(lx - w2, fy); c.lineTo(lx - w2 * 0.6, top); c.moveTo(lx + w2, fy); c.lineTo(lx + w2 * 0.6 + u * 0.01, top); c.stroke();
+    c.lineWidth = u * 0.011; for (let y = fy - u * 0.08; y > top + u * 0.04; y -= u * 0.085) { const q = (fy - y) / (fy - top), ww = w2 * (1 - q * 0.4); c.beginPath(); c.moveTo(lx - ww, y); c.lineTo(lx + ww, y); c.stroke(); } }
+  // tools hung on pegs: a scythe, a wooden rake, a sickle, a coil of rope, and a lantern that glows after dark
+  { const peg = (x, y) => { c.fillStyle = '#5a381b'; circ(c, x, y, u * 0.008); };
+    const y0 = h * 0.47;
+    { const x = 0.315 * RW; peg(x, y0); c.strokeStyle = '#8a5a2b'; c.lineWidth = u * 0.012; c.beginPath(); c.moveTo(x, y0); c.lineTo(x + u * 0.02, y0 + u * 0.5); c.stroke();
+      c.fillStyle = '#9aa3a8'; c.beginPath(); c.moveTo(x - u * 0.004, y0 + u * 0.02); c.quadraticCurveTo(x - u * 0.12, y0 + u * 0.01, x - u * 0.2, y0 + u * 0.09); c.quadraticCurveTo(x - u * 0.11, y0 + u * 0.04, x, y0 + u * 0.04); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(x - u * 0.12, y0 + u * 0.022, u * 0.08, u * 0.004); }
+    { const x = 0.355 * RW; peg(x, y0); c.strokeStyle = '#a06a35'; c.lineWidth = u * 0.01; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y0 + u * 0.42); c.stroke(); c.fillStyle = '#8a5a2b'; c.fillRect(x - u * 0.06, y0 + u * 0.005, u * 0.12, u * 0.016); for (let k = 0; k < 7; k++) c.fillRect(x - u * 0.055 + k * u * 0.018, y0 + u * 0.02, u * 0.005, u * 0.035); }
+    { const x = 0.62 * RW; peg(x, y0); c.strokeStyle = '#9aa3a8'; c.lineWidth = u * 0.012; c.beginPath(); c.arc(x - u * 0.03, y0 + u * 0.06, u * 0.045, -0.4, Math.PI * 0.9); c.stroke(); c.fillStyle = '#7a4e26'; rr(c, x - u * 0.006, y0 + u * 0.01, u * 0.014, u * 0.06, u * 0.005); }
+    { const x = 0.655 * RW; peg(x, y0); c.strokeStyle = '#c8b27a'; c.lineWidth = u * 0.008; for (let k = 0; k < 4; k++) { c.beginPath(); c.ellipse(x, y0 + u * 0.07, u * (0.04 - k * 0.004), u * (0.06 - k * 0.004), 0, 0, 7); c.stroke(); } }
+    { const x = 0.69 * RW, ly = y0 + u * 0.05, L = skyLight(S.clock.t), glow = Math.max(0.15, L.dark); peg(x, y0); c.strokeStyle = '#3a3a3a'; c.lineWidth = u * 0.004; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, ly - u * 0.04); c.stroke();
+      const gl = c.createRadialGradient(x, ly, 0, x, ly, u * 0.25); gl.addColorStop(0, `rgba(255,200,110,${0.45 * glow})`); gl.addColorStop(1, 'rgba(255,200,110,0)'); c.fillStyle = gl; c.fillRect(x - u * 0.25, ly - u * 0.25, u * 0.5, u * 0.5);
+      c.fillStyle = '#3a3a3a'; c.fillRect(x - u * 0.03, ly - u * 0.045, u * 0.06, u * 0.01); c.fillRect(x - u * 0.03, ly + u * 0.04, u * 0.06, u * 0.012);
+      c.fillStyle = `rgba(255,226,150,${0.5 + 0.4 * glow})`; c.fillRect(x - u * 0.025, ly - u * 0.035, u * 0.05, u * 0.075); c.strokeStyle = '#3a3a3a'; c.lineWidth = u * 0.004; c.strokeRect(x - u * 0.025, ly - u * 0.035, u * 0.05, u * 0.075);
+      chFlame(c, x, ly + u * 0.02, u * 0.012, t, 4); } }
+  // flour dust drifting slowly in the air, catching the light
+  for (let i = 0; i < 30; i++) { const q = (t * 0.015 + i * 0.137) % 1, x = ((i * 0.618 + Math.sin(t * 0.2 + i) * 0.02) % 1) * RW, y = h * 0.15 + ((i * 0.377 + q * 0.3) % 1) * (fy - h * 0.15); c.fillStyle = `rgba(255,250,235,${0.25 + 0.25 * Math.sin(t * 1.3 + i)})`; circ(c, x, y, u * (0.003 + (i % 3) * 0.002)); }
   // ---- the door, open to the day, light falling in across the floor
   { const dx = MX.door * RW, dw = u * 0.22, dt2 = fy - u * 0.42;
     c.fillStyle = '#5a381b'; rr(c, dx - dw / 2 - u * 0.02, dt2 - u * 0.02, dw + u * 0.04, fy - dt2 + u * 0.02, u * 0.02);
@@ -8245,6 +8275,26 @@ function drawChurch(t) {
     c.strokeStyle = '#4f8f3a'; c.lineWidth = k * 0.18; c.beginPath(); for (let x = 0; x <= RW; x += k) { const y = by + Math.sin(x / k * 0.5) * k * 0.5; if (x) c.lineTo(x, y); else c.moveTo(x, y); } c.stroke();
     for (let x = k * 3; x < RW; x += k * 6.28) { const y = by + Math.sin(x / k * 0.5) * k * 0.5; c.fillStyle = '#b8322c'; for (let p = 0; p < 5; p++) { const a = p * 1.2566; circ(c, x + Math.cos(a) * k * 0.45, y + Math.sin(a) * k * 0.45, k * 0.32); } c.fillStyle = '#e8b84a'; circ(c, x, y, k * 0.25); } }
   c.fillStyle = 'rgba(120,80,40,.08)'; for (let x = u * 0.4; x < RW; x += u * 0.8) c.fillRect(x, vB * 1.25, u * 0.04, fy - vB * 1.25);   // pilasters
+  // frescoes: saints painted in roundels along the upper wall, each in a red-and-gold ring on a soft blue ground
+  { const fyy = vB * 1.25 + u * 0.1, R0 = u * 0.075;
+    for (const [fx, k] of [[0.035, 1], [0.115, 2], [0.29, 3], [0.755, 0], [0.93, 2], [0.985, 1]]) { const x = fx * RW;
+      c.fillStyle = 'rgba(160,40,40,.55)'; circ(c, x, fyy, R0 + u * 0.012); c.fillStyle = 'rgba(232,184,74,.8)'; circ(c, x, fyy, R0 + u * 0.005);
+      const gr = c.createRadialGradient(x, fyy - R0 * 0.3, 0, x, fyy, R0); gr.addColorStop(0, '#a9c1d9'); gr.addColorStop(1, '#6f8fb3'); c.fillStyle = gr; circ(c, x, fyy, R0);
+      c.save(); c.beginPath(); c.arc(x, fyy, R0, 0, 7); c.clip(); c.globalAlpha = 0.85;
+      const P = [['#8e1f2a', '#1f3f7a'], ['#1f3f7a', '#8e1f2a'], ['#2f6b4a', '#8e1f2a'], ['#6a2a6e', '#1f3f7a']][k];
+      c.fillStyle = '#f3d27a'; circ(c, x, fyy - R0 * 0.25, R0 * 0.36); c.fillStyle = '#d9a982'; ell(c, x, fyy - R0 * 0.25, R0 * 0.17, R0 * 0.22);
+      c.fillStyle = '#5a3a24'; ell(c, x - R0 * 0.06, fyy - R0 * 0.27, R0 * 0.025, R0 * 0.018); ell(c, x + R0 * 0.06, fyy - R0 * 0.27, R0 * 0.025, R0 * 0.018);
+      c.fillStyle = P[0]; c.beginPath(); c.moveTo(x - R0 * 0.62, fyy + R0); c.quadraticCurveTo(x - R0 * 0.55, fyy + R0 * 0.05, x, fyy + R0 * 0.02); c.quadraticCurveTo(x + R0 * 0.55, fyy + R0 * 0.05, x + R0 * 0.62, fyy + R0); c.fill();
+      c.fillStyle = P[1]; c.beginPath(); c.moveTo(x - R0 * 0.62, fyy + R0); c.quadraticCurveTo(x - R0 * 0.5, fyy - R0 * 0.1, x - R0 * 0.2, fyy - R0 * 0.02); c.lineTo(x - R0 * 0.1, fyy + R0); c.closePath(); c.fill();
+      c.fillStyle = '#f6efe0'; c.fillRect(x + R0 * 0.12, fyy + R0 * 0.25, R0 * 0.22, R0 * 0.3);   // a scroll in the hand
+      c.restore(); c.fillStyle = 'rgba(255,255,255,.12)'; circ(c, x - R0 * 0.3, fyy - R0 * 0.35, R0 * 0.3); }
+    // a garland painted between them
+    c.strokeStyle = 'rgba(79,143,58,.55)'; c.lineWidth = u * 0.006; c.beginPath(); for (let x = 0; x <= RW; x += u * 0.02) { const y = fyy + R0 + u * 0.035 + Math.sin(x / (u * 0.06)) * u * 0.008; if (x) c.lineTo(x, y); else c.moveTo(x, y); } c.stroke(); }
+  // the dado: dark carved panelling round the foot of the walls
+  { const dT = fy - u * 0.16; g = c.createLinearGradient(0, dT, 0, fy); g.addColorStop(0, '#7a4e26'); g.addColorStop(1, '#5a381b'); c.fillStyle = g; c.fillRect(0, dT, RW, fy - dT);
+    c.fillStyle = '#9b6b3c'; c.fillRect(0, dT, RW, u * 0.014); c.fillStyle = 'rgba(255,230,180,.25)'; c.fillRect(0, dT, RW, u * 0.004);
+    for (let x = u * 0.04; x < RW; x += u * 0.22) { c.strokeStyle = 'rgba(40,22,8,.5)'; c.lineWidth = u * 0.004; c.strokeRect(x, dT + u * 0.03, u * 0.18, fy - dT - u * 0.05); c.strokeStyle = 'rgba(255,220,160,.15)'; c.strokeRect(x + u * 0.006, dT + u * 0.036, u * 0.168, fy - dT - u * 0.062);
+      c.fillStyle = 'rgba(232,184,74,.5)'; const mx = x + u * 0.09, my = dT + u * 0.085; poly(c, [[mx, my - u * 0.022], [mx + u * 0.022, my], [mx, my + u * 0.022], [mx - u * 0.022, my]]); } }
   // ---- tall arched windows with the real day outside, and light slanting in across the floor
   const arch = (x, y, ww, hh) => { c.beginPath(); c.moveTo(x - ww / 2, y + hh); c.lineTo(x - ww / 2, y + ww / 2); c.arc(x, y + ww / 2, ww / 2, Math.PI, 0); c.lineTo(x + ww / 2, y + hh); c.closePath(); };
   for (const [fx, sd] of [[CH.winL, 0], [CH.winR, 1]]) { const x = fx * RW, ww = u * 0.17, wt = h * 0.24, wh = u * 0.52;
@@ -8261,6 +8311,9 @@ function drawChurch(t) {
   c.fillStyle = 'rgba(60,40,20,.25)'; c.fillRect(0, fy - h * 0.004, RW, h * 0.008);
   c.fillStyle = '#9e2a2a'; poly(c, [[cx - u * 0.14, fy], [cx + u * 0.14, fy], [cx + u * 0.3, h], [cx - u * 0.3, h]]);
   c.strokeStyle = '#e8b84a'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(cx - u * 0.12, fy); c.lineTo(cx - u * 0.26, h); c.moveTo(cx + u * 0.12, fy); c.lineTo(cx + u * 0.26, h); c.stroke();
+  for (let i = 0; i < 9; i++) { const q = (i + 0.5) / 9, y = fy + (h - fy) * q, hw = u * (0.14 + q * 0.16), ds = u * (0.012 + q * 0.012);   // the woven border, larger as it comes toward you
+    for (const sx of [-1, 1]) { const x = cx + sx * (hw - ds * 2.2); c.fillStyle = i % 2 ? '#e8b84a' : '#2d2d2d'; poly(c, [[x, y - ds], [x + ds, y], [x, y + ds], [x - ds, y]]); }
+    c.fillStyle = 'rgba(232,184,74,.35)'; const d2 = ds * 1.4; poly(c, [[cx, y - d2], [cx + d2 * 1.6, y], [cx, y + d2], [cx - d2 * 1.6, y]]); }
   // ---- the door in, at the far left, and the bell rope hanging by it
   { const dx = CH.door * RW, dw = u * 0.2, top = fy - u * 0.4;
     c.fillStyle = '#5a381b'; arch(dx, top - u * 0.025, dw + u * 0.05, fy - top + u * 0.025); c.fill();
@@ -8301,6 +8354,17 @@ function drawChurch(t) {
       c.fillStyle = '#f2cc66'; circ(c, lx, dT + u * 0.07, u * 0.045); c.fillStyle = '#1f3f7a'; circ(c, lx, dT + u * 0.075, u * 0.032); c.fillStyle = '#ffe9a6'; circ(c, lx, dT + u * 0.06, u * 0.015); }
     c.strokeStyle = '#e0b44a'; c.lineWidth = u * 0.01; arch(cx, dT, dW, fy - dT); c.stroke();
     hit(cx - dW / 2, dT, dW, fy - dT, word('tserkva'), cx); }
+  // ---- лампадки: red glass oil lamps hanging on fine chains before the big icons, each with a small flame
+  { const IW = u * 1.5, x0 = cx - IW / 2, t1 = fy - u * 0.52, dW = u * 0.34, sideW = (IW - dW) / 2, lw = sideW / 2, ly = t1 - u * 0.02;
+    [x0 + lw * 0.5, x0 + lw * 1.5, cx + dW / 2 + lw * 0.5, cx + dW / 2 + lw * 1.5].forEach((lx, i) => {
+      const sw = Math.sin(t * 0.8 + i * 1.3) * u * 0.004;
+      c.strokeStyle = 'rgba(200,154,50,.8)'; c.lineWidth = Math.max(1, u * 0.002); c.beginPath(); c.moveTo(lx, 0); c.lineTo(lx + sw, ly - u * 0.05); c.stroke();
+      c.beginPath(); c.moveTo(lx + sw, ly - u * 0.05); c.lineTo(lx + sw - u * 0.018, ly - u * 0.02); c.moveTo(lx + sw, ly - u * 0.05); c.lineTo(lx + sw + u * 0.018, ly - u * 0.02); c.stroke();
+      const gl = c.createRadialGradient(lx + sw, ly, 0, lx + sw, ly, u * 0.09); gl.addColorStop(0, 'rgba(255,90,60,.35)'); gl.addColorStop(1, 'rgba(255,90,60,0)'); c.fillStyle = gl; c.fillRect(lx + sw - u * 0.09, ly - u * 0.09, u * 0.18, u * 0.18);
+      c.fillStyle = '#c99a32'; c.fillRect(lx + sw - u * 0.02, ly - u * 0.022, u * 0.04, u * 0.006);
+      c.fillStyle = 'rgba(190,30,40,.85)'; c.beginPath(); c.moveTo(lx + sw - u * 0.018, ly - u * 0.016); c.quadraticCurveTo(lx + sw - u * 0.02, ly + u * 0.02, lx + sw, ly + u * 0.024); c.quadraticCurveTo(lx + sw + u * 0.02, ly + u * 0.02, lx + sw + u * 0.018, ly - u * 0.016); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255,200,180,.5)'; ell(c, lx + sw - u * 0.008, ly - u * 0.002, u * 0.004, u * 0.01);
+      chFlame(c, lx + sw, ly - u * 0.018, u * 0.009, t, i + 20); }); }
   // ---- the candle stands, each a brass bowl of sand on a tall foot, with the candles you've lit burning in it
   for (const [fx, i] of [[CH.standL, 0], [CH.standR, 1]]) { const x = fx * RW, top = fy - u * 0.2, n = 3 + CHURCH.lit[i];
     c.fillStyle = '#a87a22'; c.fillRect(x - u * 0.012, top, u * 0.024, fy - top); ell(c, x, fy, u * 0.07, u * 0.014); c.fillStyle = '#c99a32'; ell(c, x, top, u * 0.11, u * 0.025); c.fillStyle = '#e8c35e'; ell(c, x, top - u * 0.004, u * 0.1, u * 0.02);
