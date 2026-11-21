@@ -10629,15 +10629,15 @@ function devPinDraw(bad) {
 function devMenu() {
   const sec = (title, items) => `<div style="font-weight:900;margin:12px 0 6px;color:#4a2c1a">${title}</div><div style="display:flex;flex-wrap:wrap;gap:6px">${items.map(([a, v, l]) => `<button class="b ghost" style="padding:8px 11px;font-size:14px;margin:0" data-a="${a}" data-v="${v}">${l}</button>`).join('')}</div>`;
   const ic = id => (W[id].ic[0] === '@' ? '' : W[id].ic + ' ');
-  openSheet(`<div class="card" style="text-align:left"><h3><span>🛠️ Developer</span><small>${SEASON_IC[season()]} ${W[season()].uk}${seasonForce ? ' (set here)' : ''} · ${['day', 'evening', 'night'][S.clock.t >= 0.86 ? 2 : S.clock.t >= 0.78 ? 1 : 0]}</small></h3>
+  openSheet(`<div class="card" style="text-align:left"><h3><span>🛠️ Developer</span><small>${SEASON_IC[season()]} ${W[season()].en}${seasonForce ? ' (set here)' : ''} · ${['day', 'evening', 'night'][S.clock.t >= 0.86 ? 2 : S.clock.t >= 0.78 ? 1 : 0]}</small></h3>
     ${sec('Players', [['devPlayers', '', '👥 Who has played']])}
     ${sec('Mini games', [['devGame', 'bohdan', '🐝 Bees'], ['devGame', 'andriiko', '🐕 Fetch'], ['devGame', 'taras', '🎣 Fishing'], ['devGame', 'bohdan_w', '❄️ Winter hive'], ['devGame', 'andriiko_w', '⛄ Snowman'], ['devGame', 'andriiko_s', '❄️ Snowball fight'], ['devGame', 'taras_w', '🧊 Ice fishing'], ['devGame', 'chop', '🪓 Chopping wood']])}
-    ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].uk]))}
-    ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].uk + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
-    ${sec('Festivals', D.festivals.map(f => ['devFest', f.id, SEASON_IC[SEASONS[FEST_OF.indexOf(f.id)]] + ' ' + W[f.id].uk]))}
-    ${sec('Weather', [['devWx', 'sun', '☀️ ' + W.sontse.uk], ['devWx', 'cloud', '☁️ ' + W.khmara.uk], ['devWx', 'rain', '🌧️ ' + W.doshch.uk], ['devWx', 'storm', '⛈️ ' + W.hroza.uk], ['devWx', 'fog', '🌫️ ' + W.tuman.uk], ['devWx', 'rainbow', '🌈 ' + W.veselka.uk], ['devWx', 'snow', '❄️ ' + W.snih.uk]].map(([a2, v, l]) => [a2, v, l + (S.wx === v ? ' ✓' : '')]))}
+    ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].en]))}
+    ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].en + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
+    ${sec('Festivals', D.festivals.map(f => ['devFest', f.id, SEASON_IC[SEASONS[FEST_OF.indexOf(f.id)]] + ' ' + W[f.id].en]))}
+    ${sec('Weather', [['devWx', 'sun', '☀️ ' + W.sontse.en], ['devWx', 'cloud', '☁️ ' + W.khmara.en], ['devWx', 'rain', '🌧️ ' + W.doshch.en], ['devWx', 'storm', '⛈️ ' + W.hroza.en], ['devWx', 'fog', '🌫️ ' + W.tuman.en], ['devWx', 'rainbow', '🌈 ' + W.veselka.en], ['devWx', 'snow', '❄️ ' + W.snih.en]].map(([a2, v, l]) => [a2, v, l + (S.wx === v ? ' ✓' : '')]))}
     ${sec('Day and night', [['devTime', 'morning', '🌅 Morning'], ['devTime', 'evening', '🌇 Evening'], ['devTime', 'night', '🌙 Night'], ['devTime', 'bed', '🛏️ Bedtime scene']])}
-    <div class="row" style="margin-top:14px">${btn('close', '', lab('close'), 'ghost')}</div>
+    <div class="row" style="margin-top:14px">${btn('close', '', 'Close', 'ghost')}</div>
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
 }
 // ------------------------------------------------------------------ who has played (seen in the developer menu)
@@ -10649,7 +10649,7 @@ const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(8)), b => (b 
 let playDev = '', playId = '', playSec = 0, playSeen = 0, playTimer = null;
 try { playDev = localStorage.getItem('kd-device') || ''; if (!/^[a-z0-9]{8,24}$/.test(playDev)) { playDev = rid(); localStorage.setItem('kd-device', playDev); } } catch (e) { playDev = rid(); }
 function playBeat() {
-  if (!playId) return;
+  if (!playId || /^(localhost|127.0.0.1)$/.test(location.hostname)) return;   // (a copy of the game run on this computer for testing is never counted)
   if (!document.hidden && playSeen) playSec += Math.min(90, (Date.now() - playSeen) / 1000);
   playSeen = document.hidden ? 0 : Date.now();
   try { fetch(PLAY_URL, { method: 'POST', keepalive: true, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ d: playDev, s: playId, sec: Math.round(playSec), dev: !!devOn, day: (S.clock && S.clock.day) || 1, words: Object.keys(S.words || {}).length, v: window.APP_VERSION || '' }) }).catch(() => {}); } catch (e) {}
@@ -10669,14 +10669,19 @@ async function playersSheet() {
   const label = d => (d.id === playDev || d.d === playDev ? ' <b style="color:#2e7d32">(this device)</b>' : '') + (d.dev ? ' 🛠️' : '');
   const icon = ua => /Android|iPhone/.test(ua || '') ? '📱' : '💻';
   const others = j.devices.filter(d => !d.dev && d.id !== playDev);
-  const devs = j.devices.map((d, i) => `<div style="padding:8px 0;border-top:1px solid #eadfcd;font-size:15px"><b>${icon(d.ua)} Player ${i + 1}</b>${label(d)}<br><span style="color:#6b5646">${d.ua || '?'} · ${d.plays} play${d.plays === 1 ? '' : 's'} · ${durTxt(d.totalSec)} in all · last seen ${agoTxt(d.last)} · game day ${d.day || 1}, ${d.words || 0} words</span></div>`).join('');
   const names = Object.fromEntries(j.devices.map((d, i) => [d.id, 'Player ' + (i + 1)]));
-  const plays = j.plays.slice(0, 40).map(p => `<div style="padding:6px 0;border-top:1px solid #f0e7d8;font-size:14px">${whenTxt(p.start)} · <b>${names[p.d] || 'Player ?'}</b>${p.dev ? ' 🛠️' : ''} · ${durTxt(p.sec)}${Date.now() - (p.last || 0) < 150000 ? ' · <b style="color:#2e7d32">playing now</b>' : ''}</div>`).join('');
+  const devRow = d => `<div style="padding:8px 0;border-top:1px solid #eadfcd;font-size:15px"><b>${icon(d.ua)} ${names[d.id]}</b>${label(d)}<br><span style="color:#6b5646">${d.ua || '?'} · ${d.plays} play${d.plays === 1 ? '' : 's'} · ${durTxt(d.totalSec)} in all · last seen ${agoTxt(d.last)} · game day ${d.day || 1}, ${d.words || 0} words</span></div>`;
+  const playRow = p => `<div style="padding:6px 0;border-top:1px solid #f0e7d8;font-size:14px">${whenTxt(p.start)} · <b>${names[p.d] || 'Player ?'}</b>${p.dev ? ' 🛠️' : ''} · ${durTxt(p.sec)}${Date.now() - (p.last || 0) < 150000 ? ' · <b style="color:#2e7d32">playing now</b>' : ''}</div>`;
+  // grouped by kind of device: Android first, then anything else, and Windows (mostly testing) folded away
+  const kind = ua => /^Android/.test(ua || '') ? 'android' : /^Windows/.test(ua || '') ? 'windows' : 'other', uaOf = Object.fromEntries(j.devices.map(d => [d.id, d.ua]));
+  const group = (k, title, open) => { const ds = j.devices.filter(d => kind(d.ua) === k); if (!ds.length) return ''; const ps = j.plays.filter(p => kind(p.ua || uaOf[p.d]) === k).slice(0, 30);
+    const inner = ds.map(devRow).join('') + (ps.length ? '<div style="font-weight:900;margin:10px 0 4px;color:#4a2c1a">Recent plays</div>' + ps.map(playRow).join('') : '');
+    return `<details${open ? ' open' : ''} style="margin:8px 0"><summary style="font-weight:900;font-size:16px;color:#4a2c1a;cursor:pointer;padding:6px 0">${title} (${ds.length})</summary>${inner}</details>`; };
+  const body = group('android', '📱 Android', true) + group('other', '📱 Other devices', true) + group('windows', '💻 Windows', false);
   openSheet(`<div class="card" style="text-align:left"><h3><span>👥 Who has played</span><small>${others.length} other device${others.length === 1 ? '' : 's'}</small></h3>
     <div style="font-size:14px;color:#8a7566;margin-bottom:4px">Each device counts as one player. 🛠️ = developer mode was on. Counting started with v276.</div>
-    <div style="max-height:56vh;overflow-y:auto">${devs || '<div style="font-size:15px">No plays yet.</div>'}
-    <div style="font-weight:900;margin:14px 0 4px;color:#4a2c1a">Recent plays</div>${plays}</div>
-    <div class="row" style="margin-top:12px">${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+    <div style="max-height:56vh;overflow-y:auto">${body || '<div style="font-size:15px">No plays yet.</div>'}</div>
+    <div class="row" style="margin-top:12px">${btn('close', '', 'Close', 'ghost')}</div></div>`);
 }
 // Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
 function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill' || mode === 'church' || mode === 'school' || mode === 'cafe') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
@@ -11133,18 +11138,18 @@ const A = {
   devMenu() { if (devOn) devMenu(); },
   devGame(v) { closeSheet(); if (v === 'chop') return setTimeout(chopStart, 150); setTimeout(() => mgStart(v.replace(/_[ws]$/, ''), v), 150); },
   devCook(v) { const R = D.recipes.find(r => r.id === v); closeSheet(); setTimeout(() => cookScene(R, true), 150); },
-  devSeason(v) { seasonForce = v === 'real' ? null : v; homeList = null; closeSheet(); setGuide(); toast(`${SEASON_IC[season()]} ${W[season()].uk}${v === 'real' ? ' · the real season' : ''}`); },
+  devSeason(v) { seasonForce = v === 'real' ? null : v; homeList = null; closeSheet(); setGuide(); toast(`${SEASON_IC[season()]} ${W[season()].en}${v === 'real' ? ' · the real season' : ''}`); },
   devFest(v) { seasonForce = SEASONS[FEST_OF.indexOf(v)]; closeSheet(); devToWorld(); setTimeout(() => { startFest(); if (fest) fest.dev = true; }, 150); },
   devWx(v) {   // the weather now (rain turns to snow in winter, and snow to cloud outside it, as usual)
     closeSheet(); devToWorld(); S.clock.ev = S.clock.ev || {};
-    if (v === 'rainbow') { S.wx = 'sun'; S.rainbowDay = S.clock.day; S.clock.t = Math.min(Math.max(S.clock.t, 0.63), 0.7); learn('veselka'); say('w_veselka'); save(); return toast('🌈 ' + W.veselka.uk); }
+    if (v === 'rainbow') { S.wx = 'sun'; S.rainbowDay = S.clock.day; S.clock.t = Math.min(Math.max(S.clock.t, 0.63), 0.7); learn('veselka'); say('w_veselka'); save(); return toast('🌈 ' + W.veselka.en); }
     S.wx = v; delete S.clock.ev.rained; delete S.clock.ev.rainbow; delete S.clock.ev.storm; if (v === 'fog') S.clock.t = Math.min(S.clock.t, 0.32); if (wet(v)) S.clock.t = Math.min(S.clock.t, 0.5); save(); learn(WX[v].w);
     toast(`${WX[v].ic} ${W[WX[v].w].uk}${(v === 'rain' && winter()) ? ' · in winter it falls as snow' : (v === 'snow' && !winter()) ? ' · snow only falls in winter' : ''}`, 2600);
   },
   devTime(v) {
     closeSheet();
     if (v === 'bed') { S.clock.t = 0.9; return fadeThen(() => { enterHomeNow(); if (bed) bed.dev = true; }); }
-    devToWorld(); S.clock.t = { morning: 0.3, evening: 0.79, night: 0.88 }[v]; S.clock.ev = {}; S.clock.nightT = 0; save(); toast({ morning: '🌅 ' + W.ranok.uk, evening: '🌇 ' + W.vechir.uk, night: '🌙 ' + W.nich.uk }[v]);
+    devToWorld(); S.clock.t = { morning: 0.3, evening: 0.79, night: 0.88 }[v]; S.clock.ev = {}; S.clock.nightT = 0; save(); toast({ morning: '🌅 ' + W.ranok.en, evening: '🌇 ' + W.vechir.en, night: '🌙 ' + W.nich.en }[v]);
   },
   boardGive() { boardGive(); },
   festGo() { closeSheet(); startFest(); },
@@ -11173,7 +11178,7 @@ const A = {
   },
   hear2(v) { say('w_' + v, 'p_bud_laska'); },
   hearItem(v) { learn(v); say('w_' + v); },
-  hearWord(v) { say('w_' + v); toast(`${W[v].uk} — ${W[v].en}`); },
+  hearWord(v) { say('w_' + v); toast(`${W[v].en} — ${W[v].en}`); },
   peek() { if (cur.hideEn) cur.peeked = true; $('#en').innerHTML = `<div class="en">${W[cur.id].en}</div>`; for (const el of document.querySelectorAll('#sheet .xl')) el.classList.remove('xl'); },
   peekLine() { $('#en').innerHTML = `<div class="en">${cur.en}</div>`; for (const el of document.querySelectorAll('#sheet .cen')) el.style.display = ''; },
   act(v) { const a = acts[+v]; if (a) a.fn(); },
@@ -11181,7 +11186,7 @@ const A = {
   choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg !== d) return; if (c.fn) { closeSheet(); c.fn(); } else if (c.then) dialog(d.npc, [...d.steps.slice(0, d.i + 1), ...c.then], d.i + 1); else dialog(d.npc, d.steps, d.i + 1); }, 1500); },
   plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0)) return; S.seeds[v]--; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); closeSheet(); say('w_' + v); blip(600); tutEvent('plant'); save(); },
   water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
-  harvest() { const p = S.plots[cur.plot], c = p.c; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].uk}`); tutEvent('harvest'); wordCard(c); save(); },
+  harvest() { const p = S.plots[cur.plot], c = p.c; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].en}`); tutEvent('harvest'); wordCard(c); save(); },
   tab(v) { shopTab = v; shopSel = null; shop(); },
   pick(v) { shopSel = owned(v) ? null : v; learn(v); shop(); say('w_' + v); if (owned(v)) toast(`✓ ${D.ui.have[0]}${stage() < 3 ? ' · ' + D.ui.have[1] : ''}`); },
   buy(v) {
@@ -11192,13 +11197,13 @@ const A = {
     if (!devOn) S.coins -= price;   // in developer mode everything is free (the real coins stay as they were)
     if (shopTab === 'seeds') { S.seeds[v] = (S.seeds[v] || 0) + 1; learn('nasinnia'); }
     else if (shopTab === 'veg') give(v);
-    else if (shopTab === 'clothes') { S.wardrobe[v] = 1; setTimeout(() => toast(`👗 ${W[v].uk} → ${W.shafa.uk}${stage() < 3 ? ' · in your wardrobe at home' : ''}`, 2600), 300); }
+    else if (shopTab === 'clothes') { S.wardrobe[v] = 1; setTimeout(() => toast(`👗 ${W[v].en} → ${W.shafa.uk}${stage() < 3 ? ' · in your wardrobe at home' : ''}`, 2600), 300); }
     else if (shopTab === 'home' || shopTab === 'cats') S.home[v] = (S.home[v] || 0) + 1;
     else if (shopTab === 'tools') { S.gear[v] = 1; farmEnts(); }
     else if (shopTab === 'farm') { S.farm = S.farm || {}; S.farm[v] = farmN(v) + 1; farmEnts(); }
     else give(v);
     hud(); blip(880, 0.1); say('n_' + price, 'p_diakuiu');
-    toast(shopTab === 'seeds' ? `−${price} ₴  🌱 ${W.nasinnia.uk}: ${W[v].uk}${stage() < 3 ? ' · seeds to plant in your garden' : ''}` : `−${price} ₴  ${W[v].uk}${stage() < 3 && (shopTab === 'farm' || v === 'maslobiika' || v === 'zhorna') ? ' · now by your cottage' : ''}`); tutEvent('buy'); save(); shop();
+    toast(shopTab === 'seeds' ? `−${price} ₴  🌱 ${W.nasinnia.uk}: ${W[v].en}${stage() < 3 ? ' · seeds to plant in your garden' : ''}` : `−${price} ₴  ${W[v].en}${stage() < 3 && (shopTab === 'farm' || v === 'maslobiika' || v === 'zhorna') ? ' · now by your cottage' : ''}`); tutEvent('buy'); save(); shop();
   },
   sell(v) { if (!(S.bag[v] > 0)) return; S.bag[v]--; S.coins += sellPrice(v); hud(); blip(820); say('w_' + v); save(); shop(); },
   hand(v) {
@@ -11208,7 +11213,7 @@ const A = {
       if (h.n >= 4) { shopTab = 'food'; say('v_oksana_thanks'); setTimeout(shop, 1600); } else { say('p_diakuiu'); setTimeout(() => { if (help === h) helpRound(h.n + 1); }, 1100); }
     } else {
       // No scolding: she just says what that one is, and you try again.
-      h.tries++; useWord(h.target, false); toast(`${PH.ni.uk} ${W[v].uk}.`); say('p_ni', 'w_' + v);
+      h.tries++; useWord(h.target, false); toast(`${PH.ni.uk} ${W[v].en}.`); say('p_ni', 'w_' + v);
     }
   },
   decorate() { decorSheet(); },
