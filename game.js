@@ -2637,6 +2637,9 @@ const VIS_SPOTS = {
   cafe: [[18.5, 36.75]], lake: [[26.6, 23.7], [31.8, 23.9], [25.6, 21.4]], fountain: [[16.9, 19.0], [21.1, 19.0], [19.0, 16.4]],
   market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1], [20.9, 11.5], [22.6, 11.5]],   // (the last two: round the back of the stall) church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
 };
+// each visitor's own place at the market (an index into VIS_SPOTS.market): Lesia and Halyna round the back of the stall
+const MARKET_SPOT = { myron: 0, yaroslava: 1, ostap: 2, zakhar: 3, lesia: 4, halyna: 5 };
+const marketSpot = id => VIS_SPOTS.market[MARKET_SPOT[id] != null ? MARKET_SPOT[id] : 0];
 const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];
 const CAFE_SPOTS = [...CAFE_SEATS, 'counter', 'st0', 'st1', 'st2'];   // the chairs, the counter, and standing room (st0-st2) on a rainy day
 const cafeFreeSeat = () => { const used = new Set(ents.filter(v => v.inside === 'cafe').map(v => v.seat)); return CAFE_SPOTS.find(k => !used.has(k)) || 'st2'; };
@@ -2672,7 +2675,7 @@ function visGo(e, act) {
   if (act === 'bench') { const free = VIS_BENCHES.map((b, i) => i).filter(i => !visEnts().some(v => v !== e && (v.bench === i || v.benchTo === i))); const i = free[Math.floor(Math.random() * free.length)]; if (i == null) act = e.va = 'market'; else { e.benchTo = i; to = VIS_BENCHES[i].walk; } }
   if (act === 'stroll') { const tiles = []; for (let y = 6; y < 31; y++) for (let x = 2; x < 38; x++) if (isRoad(x, y)) tiles.push([x + 0.5, y + 0.5]); to = tiles[Math.floor(Math.random() * tiles.length)]; }
   else if (act === 'leave') to = STATION_DOOR;
-  else if (!to) { const L = VIS_SPOTS[act]; to = act === 'market' ? L[VIS_IDS.indexOf(e.npc) % L.length] : L[Math.floor(Math.random() * L.length)]; }
+  else if (!to) { const L = VIS_SPOTS[act]; to = act === 'market' ? marketSpot(e.npc) : L[Math.floor(Math.random() * L.length)]; }
   e.goal = to; e.vp = visRoute(e.x, e.y, to[0], to[1]);
   if (!e.vp.length) e.vp = [{ x: to[0], y: to[1] }];
 }
@@ -2734,7 +2737,7 @@ function visitorsStep(dt) {
       if (visQueue >= VIS_IDS.length) { C.ev.visIn = 1; visQueue = 0; myMaybeStart(); }
     } else if ((C.t >= 0.45 || visForce) && !TRAIN.on) {
       C.ev.visIn = 1; myMaybeStart();
-      for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; e.slot = visSlot(); const act = visPlan(e); if (act === 'bench') { visGo(e, 'bench'); if (e.benchTo != null) { e.vp = []; e.va = 'bench'; visArrive(e); continue; } } const L = VIS_SPOTS[e.va === 'bench' ? 'market' : act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act === 'bench' ? 'market' : act; e.vp = []; visArrive(e); }
+      for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; e.slot = visSlot(); const act = visPlan(e); if (act === 'bench') { visGo(e, 'bench'); if (e.benchTo != null) { e.vp = []; e.va = 'bench'; visArrive(e); continue; } } const L = VIS_SPOTS[e.va === 'bench' ? 'market' : act] || [[18.5, 18]], pt = (act === 'market' || act === 'bench') ? marketSpot(id) : L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act === 'bench' ? 'market' : act; e.vp = []; visArrive(e); }
     }
   }
   for (const e of visEnts()) {
@@ -7926,7 +7929,11 @@ function churchTap(sx, py) {
 // bright inharmonic partials above, each dying away at its own rate (the high ones fast, the hum for many
 // seconds). Every partial is a pair of slightly detuned tones, so the note warbles slowly as real bells do,
 // and the clapper's strike is a short metallic clang. It all rings into a long echo, like a tower over a valley.
-let bellVerb = null, bellComp = null, bellIR = null;
+let bellVerb = null, bellComp = null, bellIR = null, bellLim = null;
+// One limiter that every strike goes through AFTER its volume: overlapping strokes (noon's three, the rope's two)
+// and their long echoes add up, and without it the sum clipped and crackled more with each stroke. It only acts
+// on peaks near full scale, so the volume set for each strike still decides how loud it is.
+function bellLimiter() { if (bellLim) return bellLim; bellLim = actx.createDynamicsCompressor(); bellLim.threshold.value = -8; bellLim.knee.value = 2; bellLim.ratio.value = 20; bellLim.attack.value = 0.002; bellLim.release.value = 0.3; const trim = actx.createGain(); trim.gain.value = 0.9; bellLim.connect(trim); trim.connect(actx.destination); return bellLim; }
 function bellBus() { if (bellComp) return bellComp; bellComp = actx.createDynamicsCompressor(); bellComp.threshold.value = -18; bellComp.knee.value = 8; bellComp.ratio.value = 4; bellComp.attack.value = 0.003; bellComp.release.value = 0.4; const mk = actx.createGain(); mk.gain.value = 2.6; bellComp.connect(mk); mk.connect(actx.destination); return bellComp; }
 function bellReverb() {
   if (bellVerb) return bellVerb;
@@ -7947,7 +7954,7 @@ function churchBell(vol = 1, f0 = 110, len = 1) {
     const t0 = actx.currentTime + 0.01, out = actx.createGain(), comp = actx.createDynamicsCompressor(), post = actx.createGain();
     comp.threshold.value = -18; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.4; post.gain.value = 2.6 * vol;
     bellReverb(); const cv2 = actx.createConvolver(); cv2.buffer = bellIR; const wet = actx.createGain(); wet.gain.value = 0.6;
-    out.connect(comp); out.connect(cv2); cv2.connect(wet); wet.connect(comp); comp.connect(post); post.connect(actx.destination);
+    out.connect(comp); out.connect(cv2); cv2.connect(wet); wet.connect(comp); comp.connect(post); post.connect(bellLimiter());
     setTimeout(() => { try { post.disconnect(); cv2.disconnect(); } catch (e) {} }, (22 * len + 7) * 1000);
     //  ratio to the hum, loudness, how long it rings (s): the hum carries on longest; the overtones fade sooner
     for (const [r, amp, d0, det] of [[1, 0.85, 22, 0.25], [2.0, 0.42, 13, 0.6], [2.4, 0.3, 9, 0.7], [3.0, 0.14, 6, 0.8], [4.0, 0.26, 7, 1.0], [5.05, 0.09, 3, 1.2], [5.4, 0.07, 2.4, 1.3]]) for (const sd of [-1, 1]) {
@@ -10702,6 +10709,26 @@ function frame(ms) {
 }
 
 // ------------------------------------------------------------------ taps
+// A mask of each picture, in its drawing units (100 = the thing's height; bottom centre at 0,0), at half a pixel
+// per unit: x from -160 to 160, y from -260 to 60. Built the first time something with that picture is tapped.
+const HITMASK = {};
+function hitMask(ic) {
+  if (ic in HITMASK) return HITMASK[ic];
+  let m = null;
+  try { const cvm = document.createElement('canvas'); cvm.width = 160; cvm.height = 160; const g = cvm.getContext('2d'); g.scale(0.5, 0.5); g.translate(160, 260); drawIcon(g, ic, 0, 0, 100, { t: 0, v: 0, fruit: true, sway: 0 }); m = g.getImageData(0, 0, 160, 160).data; } catch (er) { m = null; }
+  return (HITMASK[ic] = m);
+}
+const MASK_SKIP = new Set(['pond', 'plot', 'npc', 'animal', 'crawl', 'fly']);
+function onPicture(e, wx, wy) {   // true/false, or null when the thing has no mask to test
+  if (e.an || e.vis || MASK_SKIP.has(e.kind) || e.swoop || e.lean || !e.ic || e.w === 'ryba' || e.w === 'metelyk') return null;
+  const m = hitMask(e.ic); if (!m) return null;
+  const k = 100 / e.s, ux = (wx - e.x) * k * (e.flipX ? -1 : 1), uy = (wy - e.y + (e.lift || 0)) * k, tol = Math.max(6, 30 / e.s);   // tol: about a fingertip (a third of a tile), and more for little things
+  for (const [ax, ay] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7], [0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]]) {
+    const px = Math.round((ux + ax * tol + 160) * 0.5), py = Math.round((uy + ay * tol + 260) * 0.5);
+    if (px >= 0 && px < 160 && py >= 0 && py < 160 && m[(py * 160 + px) * 4 + 3] > 40) return true;
+  }
+  return false;
+}
 function hitEnt(wx, wy) {
   let best = null, bd = 1e9;
   const onTrail = trailDist(wx, wy) < 0.42;   // the forest path: a tap there means walk
@@ -10714,7 +10741,7 @@ function hitEnt(wx, wy) {
     else { if (e.s > 3 && wy > e.y - 0.25) continue;
       if (e.hitLow && wy < e.y - e.hitLow) continue;   // a low thing in front of a house (Grandma's fence): only its own bottom strip, so the house above gets the tap   // big buildings: the ground just in front of one is for walking on
       const dx = Math.abs(wx - cx) / (s * (e.hitW || (e.s > 3 ? 0.4 : 0.5))),   // hitW: a narrower box for tall thin things (the stork pole)
-        dy = Math.abs(wy - cy) / (s * 0.55); if (dx > 1 || dy > 1) continue; d = Math.hypot(dx, dy) + (e.s > 2 ? 1 : 0); }
+        dy = Math.abs(wy - cy) / (s * 0.55); if (dx > 1 || dy > 1) continue; if (onPicture(e, wx, wy) === false) continue; d = Math.hypot(dx, dy) + (e.s > 2 ? 1 : 0); }
     if (d < bd) { bd = d; best = e; }
   }
   return best;
