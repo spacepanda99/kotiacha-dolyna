@@ -1,18 +1,21 @@
 {
-  "name": "Котяча Долина · Kotiacha Dolyna",
-  "short_name": "Котяча Долина",
-  "description": "Cat Valley: a cozy Ukrainian village for learning Ukrainian by wandering and tapping.",
-  "lang": "uk",
+  "name": "Vickie's Valley",
+  "short_name": "Vickie's Valley",
+  "description": "Vickie's Valley (Долина Вікі): a cozy Ukrainian village for learning Ukrainian by wandering and tapping.",
+  "lang": "en",
   "id": "/kotiacha-dolyna/",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
-  "display_override": ["fullscreen", "standalone"],
+  "display_override": [
+    "fullscreen",
+    "standalone"
+  ],
   "background_color": "#8fcf6a",
   "theme_color": "#8fcf6a",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icons/icon-192.png?v=2", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png?v=2", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png?v=2", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
