@@ -2287,6 +2287,20 @@ const MY_WHY = {
 };
 const MY_ASK = { who: 'Who did you see early this morning?', where: 'Where were you this morning?', with: 'Did you notice anything odd?' };
 
+// Saying hello when there's no mystery on: their recorded greeting, and a few things to say back.
+const VIS_WHY = {
+  myron: "Forty years I rode the rails, young lady. Now I ride them for fun, and get off wherever the coffee smells best.",
+  yaroslava: "I came for the quiet. Kyiv is very loud, and poems are shy creatures. They only come out where it's peaceful.",
+  ostap: "I'm walking from the mountains to the sea! Well, I'm taking the train for the boring bits. This bit isn't boring at all!",
+  lesia: "The light here! Have you seen the light here? Golden in the morning, pink at night. I could paint it forever.",
+  zakhar: "Heard there's a carp in your lake as big as a dog. Came to meet him.",
+  halyna: "Oh, I come for the news, sonechko! A village this size, something's always happening. And the cake at the café, of course.",
+};
+function visHello(id) {
+  const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'];
+  n0.met = true; save(); say('v_' + id + '_' + (first ? 'intro' : 'again'));
+  myDialog(id, L.en, [{ label: first ? 'Nice to meet you too!' : 'Good to see you too!', fn: () => myDialog(id, ['Lovely!', 'Wonderful.', 'Ha, that it is!'][Math.floor(Math.random() * 3)], [{ label: 'Goodbye.', fn: closeSheet }]) }, { label: 'What brings you to Dolyna?', fn: () => myDialog(id, VIS_WHY[id], [{ label: 'Goodbye.', fn: closeSheet }]) }, { label: 'Goodbye.', fn: closeSheet }]);
+}
 function myNewCase() {
   const who = myPick(MY_WHO), where = myPick(Object.keys(MY_WHERE)), what = myPick(Object.keys(MY_WITH));
   const cards = [...MY_WHO.filter(x => x !== who).map(v => ({ k: 'who', v })), ...Object.keys(MY_WHERE).filter(x => x !== where).map(v => ({ k: 'where', v })), ...Object.keys(MY_WITH).filter(x => x !== what).map(v => ({ k: 'with', v }))];
@@ -2303,7 +2317,6 @@ function myNewCase() {
 function myMaybeStart() {
   if (S.mystery && !S.mystery.solved) return;
   if (S.mystery && S.mystery.solved && (S.clock.day || 1) - S.mystery.solvedDay < 3) return;
-  if ((S.clock.day || 1) < 2) return;   // not on the very first day
   S.mystery = myNewCase(); save();
   setTimeout(() => { if (mode === 'world') toast('🔔 The visitors are whispering about something this morning...', 3600); }, 4000);
 }
@@ -5992,7 +6005,9 @@ function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R
 let talkNpc = null;   // the neighbour you're talking to (they turn to face you while a card is open)
 function talk(npc) {
   if (npc.id === 'petro') return petroTalk();
+  if (npc.visitor && !myOpen()) myMaybeStart();   // no case open (and none solved lately): this starts one
   if (npc.visitor && myOpen()) return myTalk(npc.id);
+  if (npc.visitor) return visHello(npc.id);
   if (npc.visitor) { const n0 = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 }); const st = line(npc, n0.met ? 'again' : 'intro'); n0.met = true; save(); return dialog(npc, [st]); }
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
