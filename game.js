@@ -1969,7 +1969,7 @@ function add(e) {
   for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) add({ w: 'pshenytsia', x: 32.6 + k * 0.72 + (r % 2) * 0.3, y: 2.9 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 33.8 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
-  add({ w: 'prapor', ic: '@praportop', x: 19.0, y: 18.17, s: 2.3, lift: 0.01 });   // the flag flies from the top of the fountain
+  // (the flag now flies from the station's clock tower, not the fountain)
   add({ w: 'koloda', k: 'koloda', x: 4.75, y: 12.75, s: 1.0, solid: true });   // the chopping block: split firewood
   add({ w: 'doshka', k: 'board', x: 23.6, y: 17.5, s: 1.35, solid: true });   // the notice board: what the next festival needs
   add({ w: 'lastivka', x: 12.6, y: 6.9, s: 0.7, kind: 'fly', cx: 12.6, cy: 6.9, ph: 1.3, swoop: true });
@@ -3319,7 +3319,7 @@ function interact(e) {
   if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
-  if (e.w === 'vokzal') return wordCard('vokzal', { note: '🚂 ' + xl('Dolyna station. The train comes every morning, at midday, in the evening and at night, from the east to the west.') });
+  if (e.w === 'vokzal') { learn('prapor'); return wordCard('vokzal', { note: '🚂 ' + xl('Dolyna station. The train comes every morning, at midday, in the evening and at night, from the east to the west.') + '<br>🇺🇦 <b>' + W.prapor.uk + '</b>' + xl(' · the flag flies from the clock tower') + ' <button class="subt" data-a="hear" data-v="w_prapor">🔊</button>' }); }
   if (e.w === 'kavarnia') return wordCard('kavarnia', { note: '☕ ' + xl('Solomiia\'s café. Go in for a coffee, a cake and a warm welcome.'), acts: [{ k: 'enter', fn: enterCafe }] });
   if (e.w === 'shkola') return wordCard('shkola', { note: '🏫 ' + xl('The village school. Go in and have a look round the classroom.'), acts: [{ k: 'enter', fn: enterSchool }] });
   if (e.w === 'tserkva') return wordCard('tserkva', { note: '⛪ ' + xl('The village church. Go in: it is quiet and beautiful inside.'), acts: [{ k: 'enter', fn: enterChurch }] });
