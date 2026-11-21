@@ -714,14 +714,54 @@ const DRAW = {
       c.fillStyle = '#d98446'; ell(c, i * 20 - 2, -72, 3, 7);
     }
   },
-  well(c) {
+  well(c, o) {
+    // a: seconds into drawing water (-1 when nobody is). 0-0.9 the bucket drops, 0.9-1.3 it fills, 1.3-3.3 it's
+    // wound up, 3.3-4.3 it's tipped into the can.
+    const a = o && o.fx != null ? o.fx : -1, ease = q => q * q * (3 - 2 * q);
+    let L = 8, ang = 0, tilt = 0, full = false;
+    if (a >= 0) {
+      if (a < 0.9) { const q = ease(a / 0.9); L = 8 + q * 32; ang = -q * 9; }
+      else if (a < 1.3) { L = 40; ang = -9; full = true; }
+      else if (a < 3.3) { const q = ease((a - 1.3) / 2); L = 40 - q * 32; ang = -9 + q * 24; full = true; }
+      else { L = 8; ang = 15; full = a < 3.9; tilt = Math.min(1, (a - 3.3) / 0.3) * (a < 4.0 ? 1 : Math.max(0, 1 - (a - 4.0) / 0.3)); }
+    }
+    // posts and roof
     c.fillStyle = '#8a5a2b'; c.fillRect(-27, -82, 6, 48); c.fillRect(21, -82, 6, 48);
-    c.fillStyle = '#c0503a'; poly(c, [[-38, -76], [0, -100], [38, -76]]);
-    c.strokeStyle = '#6b4a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, -76); c.lineTo(0, -56); c.stroke();
-    c.fillStyle = '#7a8a99'; rr(c, -7, -58, 14, 14, 2);
+    c.fillStyle = '#6b4422'; c.fillRect(-27, -82, 2, 48); c.fillRect(21, -82, 2, 48);
+    c.fillStyle = '#c0503a'; poly(c, [[-38, -76], [0, -100], [38, -76]]); c.fillStyle = '#a33f2c'; poly(c, [[0, -100], [38, -76], [30, -76]]);
+    c.fillStyle = 'rgba(255,255,255,.18)'; poly(c, [[-38, -76], [0, -100], [-4, -96], [-32, -77]]);
+    // the well's mouth: dark water, rippling once the bucket goes in
+    c.fillStyle = '#2f5f8a'; ell(c, 0, -38, 26, 5); c.fillStyle = '#4a90d9'; ell(c, 0, -38.5, 22, 3.8);
+    if (a > 0.85 && a < 2.2) { const q = (a - 0.85) / 1.35; c.strokeStyle = 'rgba(255,255,255,' + (0.8 * (1 - q)) + ')'; c.lineWidth = 1.2; for (const k of [0.5, 1]) { c.beginPath(); c.ellipse(0, -38.5, 22 * q * k, 3.8 * q * k, 0, 0, 7); c.stroke(); } }
+    // the roller, with the rope wound on it (its stripes turn with the crank)
+    c.fillStyle = '#9b6b3c'; rr(c, -21, -65, 42, 9, 4); c.fillStyle = '#b9824a'; c.fillRect(-21, -64, 42, 2);
+    c.strokeStyle = '#c8b27a'; c.lineWidth = 1.3; for (let i = 0; i < 6; i++) { const x = -15 + ((i * 6 + ang * 1.9) % 30 + 30) % 30; c.beginPath(); c.moveTo(x, -65); c.lineTo(x + 3, -56); c.stroke(); }
+    // the crank on the right post: an iron arm and a wooden grip, going round
+    { const cx = 27, cy = -60.5, ax = cx + 6 + Math.cos(ang) * 0, hx = cx + 6 + Math.cos(ang) * 13, hy = cy + Math.sin(ang) * 13;
+      c.fillStyle = '#4a4a4a'; c.fillRect(cx, cy - 1.2, 6, 2.4); c.strokeStyle = '#3a3a3a'; c.lineWidth = 2.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(ax, cy); c.lineTo(hx, hy); c.stroke();
+      c.fillStyle = '#7a4e26'; rr(c, hx - 1.8, hy - 1.8, 7, 3.6, 1.6); }
+    // the rope and the bucket (behind the front wall when it's down the shaft)
+    c.save(); c.beginPath(); c.rect(-60, -120, 120, 118); c.clip(); c.translate(0, -56);   // (clipped: down the shaft it never shows below the well)
+    c.strokeStyle = '#a8905a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(tilt * 10, L - 2); c.stroke();
+    c.translate(tilt * 12, L); c.rotate(tilt * 1.05);
+    const sw = a >= 0 && a < 3.3 ? Math.sin(a * 5) * 0.06 : 0; c.rotate(sw);
+    c.fillStyle = '#6b7a88'; poly(c, [[-8, 0], [8, 0], [6, 14], [-6, 14]]); c.fillStyle = '#8a9aa8'; c.fillRect(-8, 2, 16, 2); c.fillRect(-7, 9, 14, 2);
+    c.strokeStyle = '#4a5560'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, 0, 8, Math.PI, 0); c.stroke();
+    if (full) { c.fillStyle = '#5aa8e8'; ell(c, 0, 0.6, 7.4, 1.8); c.fillStyle = 'rgba(255,255,255,.6)'; ell(c, -2.5, 0.3, 2, 0.6); }
+    c.restore();
+    // drips off the full bucket as it comes up (only above the rim)
+    if (a > 1.4 && a < 3.4) for (let i = 0; i < 3; i++) { const q = ((a * 1.6 + i / 3) % 1), dy = -56 + L + 14 + q * 18; if (dy < -38) { c.fillStyle = 'rgba(90,168,232,' + (1 - q) + ')'; ell(c, -4 + i * 4, dy, 1, 1.6); } }
+    // the front of the well: stones over the bottom of the shaft
     c.fillStyle = '#b9b4ad'; rr(c, -30, -38, 60, 38, 6);
     c.fillStyle = '#9d9891'; for (let i = 0; i < 4; i++) { rr(c, -26 + i * 14, -32, 10, 7, 2); rr(c, -20 + i * 14, -20, 10, 7, 2); }
-    c.fillStyle = '#4a90d9'; ell(c, 0, -38, 26, 5);
+    c.fillStyle = '#cfcac2'; rr(c, -30, -40, 60, 4, 2);
+    // pouring: the stream arcs from the tipped bucket down into the watering can on the ground
+    if (a >= 3.3) {
+      const cx = 38, cy = 0;
+      c.fillStyle = '#3f7fb8'; rr(c, cx - 7, cy - 13, 14, 13, 3); c.fillStyle = '#5a98d0'; c.fillRect(cx - 7, cy - 11, 14, 2); c.strokeStyle = '#3f7fb8'; c.lineWidth = 2; c.beginPath(); c.arc(cx, cy - 13, 5, Math.PI, 0); c.stroke(); c.beginPath(); c.moveTo(cx - 6, cy - 9); c.lineTo(cx - 14, cy - 17); c.stroke();   // the watering can
+      if (tilt > 0.6) { c.strokeStyle = 'rgba(90,168,232,.85)'; c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(17, -46); c.quadraticCurveTo(34, -40, cx, cy - 12); c.stroke();
+        for (let i = 0; i < 4; i++) { const q = ((a * 3 + i / 4) % 1); c.fillStyle = 'rgba(160,210,255,.8)'; circ(c, cx + Math.cos(i * 1.7) * 4 * q, cy - 13 - Math.sin(q * Math.PI) * 5, 1.1); } }
+    }
   },
   // Trees and bushes: a trunk, then a crown in three tones that leans a little in the wind (o.sway).
   tree(c, o) {
@@ -3910,7 +3950,30 @@ function talkSpot(e) {
   for (const side of [pref, -pref]) { const x = e.x + side * 1.05; if (free(x, e.y)) return { x, y: e.y }; }
   return null;
 }
+// Drawing water: she walks to the path just right of the well, turns to face it, and winds up a bucketful.
+const WELL_SPOT = { x: 2.5, y: 14.95 };
+let WELLFX = null;   // { phase: 'walk' | 'draw', t0, add }
+function wellStart(add) { WELLFX = { phase: 'walk', add, t0: nowT }; walkTo(WELL_SPOT.x, WELL_SPOT.y, null); if (!P.path.length && Math.hypot(P.x - WELL_SPOT.x, P.y - WELL_SPOT.y) > 0.04) P.path = [{ x: WELL_SPOT.x, y: WELL_SPOT.y }]; }   // (a step over even when she's already beside it)
+function wellStep() {
+  const F = WELLFX; if (!F || mode !== 'world') { if (F && mode !== 'world') WELLFX = null; return; }
+  if (F.phase === 'walk') {
+    if (P.path.length && nowT - F.t0 < 12) return;
+    F.phase = 'draw'; F.t0 = nowT; P.lookAt = Math.PI * 1.5; P.face = -1; F.sfx = {};
+    return;
+  }
+  const a = nowT - F.t0, once = (k, fn) => { if (!F.sfx[k]) { F.sfx[k] = 1; try { fn(); } catch (e) {} } };
+  P.lookAt = Math.PI * 1.5;
+  once('drop', () => sfxTone(520, 260, 0.8, 0.03, 'triangle'));   // the rope running out
+  if (a > 0.9) once('splash', () => { sfxHit(700, 0.35, 0.12, 'lowpass', 0.8); sfxHit(2200, 0.2, 0.05, 'bandpass', 2); });
+  for (let i = 0; i < 6; i++) if (a > 1.35 + i * 0.33) once('creak' + i, () => sfxHit(380 + (i % 2) * 60, 0.12, 0.05, 'bandpass', 6));   // the crank creaking round
+  if (a > 3.55) once('pour', () => { sfxHit(900, 0.55, 0.07, 'lowpass', 0.7); setTimeout(() => sfxHit(1300, 0.3, 0.04, 'lowpass', 0.7), 200); });
+  if (a > 4.35) {
+    const have = S.bag.voda || 0, add = Math.min(F.add, WATER_MAX - have); WELLFX = null; P.lookAt = null;
+    S.bag.voda = have + add; learn('voda'); hud(); bumpWater(); save(); toast(`💧 +${add} ${W.voda.uk}  (${S.bag.voda} / ${WATER_MAX})`); say('w_voda'); blip(700, 0.12);
+  }
+}
 function walkTo(wx, wy, ent) {
+  if (WELLFX && WELLFX.phase === 'draw') return;   // busy at the well
   if (ent && ent.kind === 'npc') {
     const sp = talkSpot(ent);
     if (sp) {
@@ -4229,10 +4292,11 @@ function interact(e) {
   if (e.w === 'tserkva') return wordCard('tserkva', { note: '⛪ ' + xl('The village church. Go in: it is quiet and beautiful inside.'), acts: [{ k: 'enter', fn: enterChurch }] });
   if (e.w === 'mlyn') return wordCard('mlyn', { note: '⚙️ ' + xl('A working windmill: go in and grind wheat into flour.'), acts: [{ k: 'enter', fn: enterMill }] });
   if (e.kind === 'home') return wordCard('khata', { owner: '🏠 ' + PH.moia_khata.uk, note: xl('This is your cottage.'), clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
+  if (e.w === 'krynytsia' && WELLFX) return;
   if (e.w === 'krynytsia') {
     const have = S.bag.voda || 0;
     return wordCard('krynytsia', { note: `💧 ${have} / ${WATER_MAX}${xl((have < WATER_MAX ? ' · Fill your can here.' : ' · Your can is full.'))}`, acts: have < WATER_MAX ? [{ k: 'fill', fn: () => {
-      const add = Math.min(WELL_GIVES, WATER_MAX - have); S.bag.voda = have + add; learn('voda'); hud(); bumpWater(); save(); closeSheet(); toast(`💧 +${add} ${W.voda.uk}  (${S.bag.voda} / ${WATER_MAX})`); say('w_voda'); blip(700, 0.12);
+      closeSheet(); wellStart(Math.min(WELL_GIVES, WATER_MAX - have));
     } }] : [] });
   }
   if (e.k === 'my_churn') return churnCard();
@@ -9321,7 +9385,7 @@ function update(dt, t, rdt = dt) {
     if (d <= step) { P.x = n.x; P.y = n.y; P.path.shift(); step -= d; P.step += d; if (!P.path.length) { S.x = P.x; S.y = P.y; save(); arrive(); } }
     else { P.x += dx / d * step; P.y += dy / d * step; P.step += step; step = 0; }
   }
-  if (mode === 'world') { peopleApart(dt); forestSounds(t); }
+  if (mode === 'world') { peopleApart(dt); forestSounds(t); wellStep(); }
   if (P.moving && P.step - P.dust > 0.55) { P.dust = P.step; fxDust(P.rx, P.ry); }
   { const far = Math.hypot(P.x - P.rx, P.y - P.ry) > 2.5, k = far ? 1 : 1 - Math.exp(-rdt * 20);
     P.rx += (P.x - P.rx) * k; P.ry += (P.y - P.ry) * k;
@@ -9555,6 +9619,7 @@ function drawWorld(t) {
     else if (e.lean) { c.save(); c.translate(x, y); c.rotate(e.lean); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }   // propped against something
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
+    else if (e.w === 'krynytsia') drawIcon(c, e.ic, x, y, s, { t, fx: WELLFX && WELLFX.phase === 'draw' ? t - WELLFX.t0 : null });
     else drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 0.9, t, s / 220);
   }
