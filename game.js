@@ -262,30 +262,88 @@ const KHATA_LOOK = {
   bohdan: { wall: '#f6e3b4', band: '#8a5a2b', band2: '#6b4422', roof: ['#9a4a2e', '#b45c3a', '#7a3a22'], shingle: 1, frame: '#8a5a2b', glass: '#ffe9a8', door: '#6b4422', skep: 1, box: ['#f2c230', '#ffffff', '#f2c230'] },
   taras:  { wall: '#dcebf5', band: '#2f5f8a', band2: '#24496b', roof: ['#8e9aa0', '#a9b4b8', '#6f7a80'], thatch: 1, frame: '#ffffff', glass: '#bfe6fb', door: '#2f5f8a', net: 1, box: ['#5aa9e6', '#ffffff', '#5aa9e6'] },
 };
+// A Ukrainian хата: whitewashed walls on a clay plinth (призьба), a hipped roof of layered thatch (or wooden
+// shingles) with a rolled ridge and ragged eaves, carved window frames (наличники) with little curtains and
+// flower boxes, a plank door on a stone step, and a brick chimney. It is drawn once per look into its own
+// canvas and then copied, since it has a lot of strokes and four cottages show at once.
+const KHATA_CACHE = {};
 function khataArt(c, P) {
-  c.fillStyle = '#b5553f'; c.fillRect(21, -86, 12, 30); c.fillStyle = '#8f3f2d'; c.fillRect(19, -89, 16, 5);   // chimney
-  c.fillStyle = P.wall; rr(c, -40, -52, 80, 52, 4);
-  c.fillStyle = 'rgba(120,96,60,.16)'; c.fillRect(-40, -50, 80, 7);   // shade under the eaves
-  c.fillStyle = P.band; c.fillRect(-40, -8, 80, 8); c.fillStyle = P.band2; c.fillRect(-40, -2.5, 80, 2.5);
+  const K = 5, W0 = -62, H0 = -122, CW = 124, CH = 132;   // the picture's box in drawing units, and pixels per unit
+  const key = P.wall + P.roof[0];
+  let cv = KHATA_CACHE[key];
+  if (!cv) { cv = document.createElement('canvas'); cv.width = CW * K; cv.height = CH * K; const g = cv.getContext('2d'); g.scale(K, K); g.translate(-W0, -H0); khataPaint(g, P); KHATA_CACHE[key] = cv; }
+  c.drawImage(cv, W0, H0, CW, CH);
+}
+function khataPaint(c, P) {
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.fillStyle = 'rgba(40,60,30,.2)'; ell(c, 3, 1, 54, 6.5);   // the shadow on the ground
+  // the walls: whitewash, a little shade toward the right corner and under the eaves, a few soft patches
+  c.fillStyle = P.wall; rr(c, -40, -62, 80, 62, 3);
+  let g = c.createLinearGradient(-40, 0, 40, 0); g.addColorStop(0, 'rgba(255,255,255,.22)'); g.addColorStop(0.55, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(110,90,60,.16)'); c.fillStyle = g; c.fillRect(-40, -62, 80, 62);
+  c.fillStyle = 'rgba(120,96,60,.07)'; for (let k = 0; k < 9; k++) ell(c, -34 + ((k * 37) % 68), -46 + ((k * 23) % 34), 5 + (k % 3) * 2, 2 + (k % 2));
+  g = c.createLinearGradient(0, -58, 0, -48); g.addColorStop(0, 'rgba(90,70,45,.32)'); g.addColorStop(1, 'rgba(90,70,45,0)'); c.fillStyle = g; c.fillRect(-40, -58, 80, 10);
   if (P.painted) {   // a painted garland of red flowers and green leaves along the wall (like her stove)
-    for (let x = -34; x <= 34; x += 11) { c.fillStyle = '#4f8f3a'; ell(c, x - 3, -48, 3, 1.3); ell(c, x + 3, -48, 3, 1.3); c.fillStyle = (x / 11) % 2 ? '#d43a3a' : '#3d7cc2'; circ(c, x, -48.5, 2.2); }
+    for (let x = -34; x <= 34; x += 11) { c.fillStyle = '#4f8f3a'; ell(c, x - 3, -54, 3, 1.3); ell(c, x + 3, -54, 3, 1.3); c.fillStyle = (x / 11) % 2 ? '#d43a3a' : '#3d7cc2'; circ(c, x, -54.5, 2.2); }
   }
-  c.fillStyle = P.roof[0]; poly(c, [[-50, -48], [0, -98], [50, -48]]);
-  c.fillStyle = P.roof[1]; poly(c, [[-50, -48], [0, -98], [-8, -90], [-40, -48]]);
-  c.fillStyle = P.roof[2]; poly(c, [[-50, -48], [50, -48], [47, -44], [-47, -44]]);
-  c.strokeStyle = P.roof[2]; c.lineWidth = 2;
-  if (P.shingle) { c.save(); c.beginPath(); c.moveTo(-50, -48); c.lineTo(0, -98); c.lineTo(50, -48); c.closePath(); c.clip(); for (let y = -92; y < -48; y += 7) { c.beginPath(); c.moveTo(-50, y); c.lineTo(50, y); c.stroke(); for (let x = -50 + ((y / 7) % 2 ? 4 : 0); x < 50; x += 9) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 7); c.stroke(); } } c.restore(); }   // wooden shingles
-  else for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 6, -92 + Math.abs(i) * 6); c.lineTo(i * 14, -50); c.stroke(); }   // thatch
-  c.fillStyle = P.door; rr(c, -9, -36, 18, 36, 3);
-  c.fillStyle = '#f2c230'; circ(c, 5, -18, 1.8);
+  // the plinth: a clay ledge round the foot of the walls, painted, with its top catching the light
+  c.fillStyle = P.band2; rr(c, -43, -10, 86, 10, 2); c.fillStyle = P.band; rr(c, -43, -10, 86, 7, 2);
+  c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(-42, -10, 84, 1.4); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-43, -1.5, 86, 1.5);
+  // the door: a frame, boards, a cross-brace, an iron latch, a stone step
+  c.fillStyle = 'rgba(70,45,25,.85)'; rr(c, -11.5, -38.5, 23, 38.5, 3);
+  c.fillStyle = P.door; rr(c, -9, -36, 18, 36, 2.5);
+  c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 0.8; for (const x of [-4.5, 0, 4.5]) { c.beginPath(); c.moveTo(x, -35); c.lineTo(x, -1); c.stroke(); }
+  c.strokeStyle = 'rgba(0,0,0,.16)'; c.lineWidth = 2; c.beginPath(); c.moveTo(-8, -9); c.lineTo(8, -27); c.stroke();
+  c.fillStyle = 'rgba(255,255,255,.14)'; c.fillRect(-8, -35, 2.5, 34);
+  c.fillStyle = '#3a3a3a'; rr(c, 4, -20, 4, 2.2, 1); c.fillStyle = '#f2c230'; circ(c, 6, -17.5, 1.5);
+  c.fillStyle = '#b9b2a4'; rr(c, -14, -2, 28, 4, 2); c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(-13, -2, 26, 1);
+  // the windows
   for (const x of [-33, 17]) {
-    if (P.shutters) { c.fillStyle = P.shutters; c.fillRect(x - 7, -42, 5, 20); c.fillRect(x + 18, -42, 5, 20); c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(x - 6, -40, 3, 1.5); c.fillRect(x + 19, -40, 3, 1.5); }
-    c.fillStyle = P.frame; rr(c, x - 2, -42, 20, 20, 3);
-    c.fillStyle = P.glass; rr(c, x, -40, 16, 16, 2);
-    c.fillStyle = P.frame; c.fillRect(x + 7, -40, 2, 16); c.fillRect(x, -33, 16, 2);
-    c.fillStyle = P.box[0]; circ(c, x + 3, -21, 2.5); circ(c, x + 13, -21, 2.5);
-    c.fillStyle = P.box[1]; circ(c, x + 8, -21, 2.5);
+    if (P.shutters) { c.fillStyle = P.shutters; rr(c, x - 9, -43, 6, 22, 1); rr(c, x + 19, -43, 6, 22, 1); c.fillStyle = 'rgba(255,255,255,.4)'; for (const sx of [x - 8, x + 20]) for (let y = -40; y < -24; y += 4) c.fillRect(sx, y, 4, 1.2); }
+    c.fillStyle = P.frame; poly(c, [[x - 4, -43], [x + 8, -50], [x + 20, -43]]); rr(c, x - 3, -44, 22, 22, 2);   // carved frame with a little peak
+    c.fillStyle = 'rgba(255,255,255,.35)'; poly(c, [[x - 1, -44.5], [x + 8, -48.5], [x + 17, -44.5]]);
+    g = c.createLinearGradient(0, -41, 0, -25); g.addColorStop(0, '#ffffff'); g.addColorStop(0.25, P.glass); g.addColorStop(1, P.glass); c.fillStyle = g; rr(c, x, -41, 16, 16, 1.5);
+    c.fillStyle = 'rgba(40,60,80,.18)'; c.fillRect(x, -33, 16, 8);
+    c.fillStyle = '#ffffff'; poly(c, [[x, -41], [x + 5, -41], [x, -31]]); poly(c, [[x + 16, -41], [x + 11, -41], [x + 16, -31]]);   // little white curtains, tied back
+    c.fillStyle = '#d43a3a'; c.fillRect(x, -41, 5, 1); c.fillRect(x + 11, -41, 5, 1);
+    c.fillStyle = 'rgba(255,255,255,.5)'; poly(c, [[x + 7, -41], [x + 10, -41], [x + 4, -25], [x + 1, -25]]);   // a glint on the glass
+    c.fillStyle = P.frame; c.fillRect(x + 7, -41, 2, 16); c.fillRect(x, -34, 16, 2);
+    c.fillStyle = 'rgba(70,45,25,.75)'; rr(c, x - 4, -24.5, 24, 3, 1);   // the sill
+    c.fillStyle = '#7a5230'; rr(c, x - 1, -21.5, 18, 4.5, 1);   // and a flower box under it
+    c.fillStyle = '#4f8f3a'; for (let k = 0; k < 5; k++) ell(c, x + 1 + k * 3.5, -22.5, 2.4, 1.6);
+    for (let k = 0; k < 3; k++) { c.fillStyle = P.box[k]; circ(c, x + 3 + k * 5, -23.5 - (k % 2), 2.3); c.fillStyle = 'rgba(255,240,150,.9)'; circ(c, x + 3 + k * 5, -23.5 - (k % 2), 0.8); }
   }
+  // the roof: hipped, the front face between two sloping ends, overhanging the walls
+  const RF = [[-56, -55], [-22, -109], [22, -109], [56, -55]];
+  c.fillStyle = P.roof[0]; poly(c, RF);
+  c.fillStyle = P.roof[1]; poly(c, [[-56, -55], [-22, -109], [-36, -56]]);   // the lit end
+  c.fillStyle = 'rgba(0,0,0,.14)'; poly(c, [[56, -55], [22, -109], [36, -56]]);   // the shaded end
+  c.save(); c.beginPath(); c.moveTo(RF[0][0], RF[0][1]); for (const p of RF.slice(1)) c.lineTo(p[0], p[1]); c.closePath(); c.clip();
+  if (P.shingle) {   // wooden shingles, row on row, each a little rounded, offset by half a shingle
+    for (let y = -106, row = 0; y < -54; y += 6, row++) { const w = 22 + (y + 109) / 54 * 34;
+      c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-w - 2, y + 4.6, w * 2 + 4, 1.4);
+      for (let x = -w + (row % 2 ? 3.5 : 0); x < w; x += 7) { c.fillStyle = row % 3 === 1 ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.06)'; rr(c, x, y, 6.4, 6, 1.6); c.strokeStyle = 'rgba(60,25,15,.35)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x + 6.7, y); c.lineTo(x + 6.7, y + 6); c.stroke(); } }
+  } else {   // thatch: rows of straw bundles, each row's ragged lower edge overlapping the one below
+    const hsh = n => { const v = Math.sin(n * 12.9898) * 43758.5453; return v - Math.floor(v); };
+    for (let y = -105, row = 0; y < -53; y += 6.5, row++) { const w = 23 + (y + 109) / 54 * 34, wob = x => Math.sin(x * 0.45 + row * 2.1) * 1.1 + Math.sin(x * 1.3 + row) * 0.5;
+      c.fillStyle = 'rgba(70,45,15,.2)'; c.beginPath(); c.moveTo(-w - 2, y + 5); for (let x = -w - 2; x <= w + 2; x += 2) c.lineTo(x, y + 6.2 + wob(x)); c.lineTo(w + 2, y + 9); c.lineTo(-w - 2, y + 9); c.closePath(); c.fill();   // the shadow under each row's ragged edge
+      for (let x = -w; x < w; x += 1.6) { const h = hsh(x * 3.1 + row * 7.7), l = 4.5 + h * 3.5 + wob(x), lean = (x / w) * 1.8 + (h - 0.5) * 1.4;
+        c.strokeStyle = h < 0.33 ? P.roof[2] : h < 0.8 ? P.roof[1] : 'rgba(255,244,200,.55)'; c.globalAlpha = h < 0.33 ? 0.6 : 0.75; c.lineWidth = 0.8 + h * 0.5;
+        c.beginPath(); c.moveTo(x, y - 0.5); c.lineTo(x + lean, y + l); c.stroke(); }
+      c.globalAlpha = 1;
+    }
+  }
+  c.restore();
+  // the eaves: a thick, slightly uneven lip all along the front
+  c.fillStyle = P.roof[2]; c.beginPath(); c.moveTo(-57, -56); c.lineTo(57, -56); for (let x = 57; x >= -57; x -= 2.5) c.lineTo(x, -52.5 + Math.abs((x * 3.7) % 2.2) + Math.sin(x * 0.7) * 0.8); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(-55, -56, 110, 1);
+  // the ridge: a rolled cap of straw (or a board), tied at intervals
+  c.fillStyle = P.roof[2]; rr(c, -25, -112, 50, 6, 3); c.fillStyle = 'rgba(255,255,255,.22)'; rr(c, -23, -111.5, 46, 2, 1);
+  c.strokeStyle = 'rgba(60,35,15,.45)'; c.lineWidth = 1; for (let x = -18; x <= 18; x += 9) { c.beginPath(); c.moveTo(x, -112); c.lineTo(x, -106); c.stroke(); }
+  // the chimney, through the roof: bricks with mortar lines and a cap
+  c.fillStyle = '#b5553f'; c.fillRect(21, -102, 12, 16); c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(29, -102, 4, 16);
+  c.strokeStyle = 'rgba(80,35,25,.45)'; c.lineWidth = 0.6; for (let y = -99, k = 0; y < -86; y += 3.4, k++) { c.beginPath(); c.moveTo(21, y); c.lineTo(33, y); c.stroke(); for (let x = 21 + (k % 2 ? 2 : 5); x < 33; x += 6) { c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 3.4); c.stroke(); } }
+  c.fillStyle = '#8f3f2d'; c.fillRect(19, -105, 16, 4.5); c.fillStyle = 'rgba(255,255,255,.2)'; c.fillRect(19, -105, 16, 1.2);
+  c.fillStyle = P.roof[2]; ell(c, 27, -86, 8, 2.2);   // where it meets the roof
   if (P.skep) {   // a straw bee skep on a stand by the door, and a bee or two
     c.fillStyle = '#6b4422'; c.fillRect(-27, -8, 2, 8); c.fillRect(-17, -8, 2, 8);
     c.fillStyle = '#e0b04a'; c.beginPath(); c.ellipse(-21, -9, 9, 13, 0, Math.PI, 0); c.fill(); c.strokeStyle = '#b98a2a'; c.lineWidth = 1.2; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-30 + i * 0.8, -11 - i * 3); c.lineTo(-12 - i * 0.8, -11 - i * 3); c.stroke(); }
@@ -2350,7 +2408,7 @@ function add(e) {
   // Grandma Olia's corner.
   rect(26, 8, 29, 10);   // (moved 3 tiles right, off the market stall)
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5.5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
-  rect(28, 26, 33, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 31.5, y: 30, s: 4.5 });  // the family cottage, bottom right, below the pond: Taras, Oksana and Andriiko live here, so it's bigger
+  rect(28, 25, 34, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 31.5, y: 30, s: 5.4 });  // the family cottage, bottom right, below the pond: Taras, Oksana and Andriiko live here, so it's bigger
   add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28.5, y: 11, s: 3.7 });
   add({ w: 'kurka', x: 25.4, y: 11.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens
   add({ w: 'kurka', x: 26.2, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
@@ -9684,7 +9742,7 @@ function drawWorld(t) {
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
     else if (e.w === 'krynytsia') drawIcon(c, e.ic, x, y, s, { t, fx: WELLFX && WELLFX.phase === 'draw' ? t - WELLFX.t0 : null });
     else drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
-    if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 0.9, t, s / 220);
+    if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 1.0, t, s / 220);
   }
   // those behind the market stall: their heads and shoulders show above the counter, through the gap
   for (const e of list) if (e.vis && e.behind) { c.save(); c.beginPath(); c.rect(-2000, -2000, 9000, 12.3 * T + 2000); c.clip(); drawVisitor(c, e.x * T, e.y * T, e, t); c.restore(); }
