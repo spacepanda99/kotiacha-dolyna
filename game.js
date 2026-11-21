@@ -2389,6 +2389,8 @@ const VIS_SPOTS = {
   market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1]], church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
 };
 const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];
+const CAFE_SPOTS = [...CAFE_SEATS, 'counter', 'st0', 'st1', 'st2'];   // the chairs, the counter, and standing room (st0-st2) on a rainy day
+const cafeFreeSeat = () => { const used = new Set(ents.filter(v => v.inside === 'cafe').map(v => v.seat)); return CAFE_SPOTS.find(k => !used.has(k)) || 'st2'; };
 const VIS_SLOT = 0.1;     // one stop of their day, in day-clock units (about 100 seconds; it was 70, which kept them walking); the day runs from the morning train to the evening one
 const VIS_LEAD = 0.025;   // whoever is due in the café next sets off this much early, so they arrive as the others leave
 const visSlot = (ahead = 0) => Math.max(0, Math.floor((S.clock.t + ahead - 0.3) / VIS_SLOT));
@@ -2446,8 +2448,7 @@ function visArrive(e) {
   e.vwalk = 0;
   if (e.va === 'leave') { const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1); return; }   // on the train home
   if (e.va === 'cafe') {   // in through the door, to a free chair (or to the counter for a chat with Solomiia)
-    const used = new Set(visEnts().filter(v => v.inside === 'cafe').map(v => v.seat));
-    e.inside = 'cafe'; e.asleep = true; e.seat = CAFE_SEATS.find(k => !used.has(k)) || 'counter'; e.vt = 55 + Math.random() * 55; return;
+    e.inside = 'cafe'; e.asleep = true; e.seat = cafeFreeSeat(); e.vt = 55 + Math.random() * 55; return;
   }
   if (e.va === 'bench' && e.benchTo != null) { const B = VIS_BENCHES[e.benchTo]; e.bench = e.benchTo; e.benchTo = null; e.x = B.at[0]; e.y = B.at[1]; e.sit = B; e.vface = B.face; e.vt = 30 + Math.random() * 30; return; }   // sit down
   e.vt = 22 + Math.random() * 22; e.vface = Math.random() < 0.5 ? 1 : -1;
@@ -2491,8 +2492,9 @@ function visitorsStep(dt) {
     if (late && e.va !== 'leave') { if (e.inside) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.75; } e.pet = null; visGo(e, 'leave'); }
     e.petCd -= dt;
     if (e.inside) { e.vt -= dt;
-      if (visSlot() > e.slot) { e.slot = visSlot(); e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPlan(e)); }   // on to the next stop of their day
+      if (visSlot() > e.slot) { e.slot = visSlot(); if (!wet(S.wx)) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPlan(e)); } }   // on to the next stop of their day (not out into the rain)
       continue; }
+    if (wet(S.wx) && !late && !e.inside && e.va !== 'cafe' && e.va !== 'leave') { e.pet = null; visGo(e, 'cafe'); }   // rain: everyone into the café
     // petting a cat
     if (e.pet) {
       e.pet.t -= dt; const ct = e.pet.cat;
@@ -2544,7 +2546,7 @@ function drawVisitor(c, x, y, e, t) {
   if (e.npc === 'zakhar' && e.va === 'lake') { const tip = [x + 34 * e.vface, y - 58], bob = Math.sin(t * 2) * 1.5; c.strokeStyle = '#6b4422'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 8 * e.vface, y - 34); c.lineTo(tip[0], tip[1]); c.stroke(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(tip[0], tip[1]); c.lineTo(tip[0] + 6 * e.vface, y - 14 + bob); c.stroke(); c.fillStyle = '#e2392f'; circ(c, tip[0] + 6 * e.vface, y - 14 + bob, 2); }   // fishing
 }
 // In the café: each visitor inside sits at a chair, half turned to their table, with a cup in front of them.
-function cafeVisitorAt(key) { return visEnts().find(v => v.inside === 'cafe' && v.seat === key); }
+function cafeVisitorAt(key) { return ents.find(v => v.inside === 'cafe' && v.seat === key); }
 function drawSeated(c, e, chx, seatY, sg, sc, t) {
   const L = NPC[e.npc].look;
   c.save(); c.beginPath(); c.rect(chx - 60 * sc, seatY - 120 * sc, 120 * sc, 120 * sc + 3 * sc); c.clip();
@@ -2722,8 +2724,9 @@ function myTalk(id) {
   // every conversation opens with their spoken hello: their name the first time, nice to see you again after
   const M = S.mystery, n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hello = [L.en, L.uk];
   n0.met = true; say('v_' + id + '_' + (first ? 'intro' : 'again'));
-  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, myCat(hello, '<br><br>', MY_GOSSIP[id], Object.keys(M.met).length === 1 ? myCat('<div class="hint" style="margin-top:8px">', MY_T.hint, '</div>') : ''), [{ label: MY_T.tell, fn: () => myMenu(id) }, { label: MY_T.bye, fn: closeSheet }]); }
-  save(); myMenu(id, hello);
+  const rs = rainSay(id), wetHi = rs ? [rs[0] + '<br><br>', rs[1] + '<br><br>'] : ['', ''];
+  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, myCat(wetHi, hello, '<br><br>', MY_GOSSIP[id], Object.keys(M.met).length === 1 ? myCat('<div class="hint" style="margin-top:8px">', MY_T.hint, '</div>') : ''), [{ label: MY_T.tell, fn: () => myMenu(id) }, { label: MY_T.bye, fn: closeSheet }]); }
+  save(); myMenu(id, myCat(wetHi, hello));
 }
 function myMenu(id, said) {
   const M = S.mystery, hand = M.hands[id], v = MY_VOICE[id], ch = [];
@@ -2761,7 +2764,7 @@ function myMark(key) { const M = S.mystery; if (!M) return; const n = M.notes[ke
 function petroTalk() {
   const M = S.mystery, id = 'petro';
   // his spoken hello first: who he is the first time, how are you after that
-  const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hi = [L.en + '<br><br>', L.uk + '<br><br>'];
+  const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], rs = rainSay(id), hi = [(rs ? rs[0] + '<br><br>' : '') + L.en + '<br><br>', (rs ? rs[1] + '<br><br>' : '') + L.uk + '<br><br>'];
   n0.met = true; save(); say('v_petro_' + (first ? 'intro' : 'again'));
   if (!M || !M.started) return myDialog(id, myCat(hi, myPick(MY_T.quiet)), [{ label: MY_T.goodday, fn: closeSheet }]);
   if (M.solved) return myDialog(id, myCat(hi, MY_T.solved), [{ label: MY_T.thanksO, fn: closeSheet }]);
@@ -2793,8 +2796,8 @@ const VIS_WHY = {
 function visHello(id) {
   const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'];
   n0.met = true; save(); say('v_' + id + '_' + (first ? 'intro' : 'again'));
-  const bye = { label: MY_T.bye, fn: closeSheet };
-  myDialog(id, [L.en, L.uk], [{ label: first ? ['Nice to meet you too!', 'Мені теж приємно!'] : ['Good to see you too!', 'І я рада вас бачити!'], fn: () => myDialog(id, myPick([['Lovely!', 'Чудово!'], ['Wonderful.', 'Прекрасно.'], ['Ha, that it is!', 'Ха, так і є!']]), [bye]) }, { label: ['What brings you to Dolyna?', 'Що привело вас до Долини?'], fn: () => myDialog(id, VIS_WHY[id], [bye]) }, bye]);
+  const bye = { label: MY_T.bye, fn: closeSheet }, rs = rainSay(id);
+  myDialog(id, rs ? [rs[0] + '<br><br>' + L.en, rs[1] + '<br><br>' + L.uk] : [L.en, L.uk], [{ label: first ? ['Nice to meet you too!', 'Мені теж приємно!'] : ['Good to see you too!', 'І я рада вас бачити!'], fn: () => myDialog(id, myPick([['Lovely!', 'Чудово!'], ['Wonderful.', 'Прекрасно.'], ['Ha, that it is!', 'Ха, так і є!']]), [bye]) }, { label: ['What brings you to Dolyna?', 'Що привело вас до Долини?'], fn: () => myDialog(id, VIS_WHY[id], [bye]) }, bye]);
 }
 // ------------------------------------------------------------------ the railway
 // The line runs east to west along the top of the valley. A little steam train (a green locomotive with red
@@ -3552,24 +3555,34 @@ function villageNight(dt) {
     if (was < 0.86 && stallQ >= 0.86) stallSfx('board');
     if (was < 1 && stallQ >= 1 && mode === 'world' && Math.hypot(P.x - STALL.x, P.y - STALL.y) < 7) toast('🔒 ' + 'Зачинено' + (stage() < 3 ? ' · Oksana has closed the market for the night' : ''), 2800);
   }
-  if (!nightNow()) {
-    if (villageNightT) { villageNightT = 0; for (const e of ents) if (e.x0 !== undefined) { e.x = e.x0; e.y = e.y0; e.asleep = false; e.route2 = null; e.x0 = undefined; } }
+  const rainy = wet(S.wx) && !nightNow();
+  const destOf = who => nightNow() ? (NPC_HOME[who] ? 'home' : null) : rainy ? (who === 'bohdan' || who === 'andriiko' ? 'home' : who === 'taras' || who === 'petro' ? 'cafe' : null) : null;
+  const backOut = e => { e.x = e.x0; e.y = e.y0; e.asleep = false; e.route2 = null; e.x0 = undefined; e.gone = null; e.inside = null; e.seat = null; };
+  const arrive = e => { e.asleep = true; if (e.gone === 'cafe') { e.inside = 'cafe'; e.seat = cafeFreeSeat(); } };
+  if (!nightNow() && !rainy) {
+    if (villageNightT) { villageNightT = 0; for (const e of ents) if (e.x0 !== undefined && !e.vis) backOut(e); }
     return;
   }
   villageNightT += dt;
   for (const e of ents) {
+    if (e.vis) continue;
     const who = e.kind === 'npc' ? e.npc : e.fetch ? 'andriiko' : null;
-    if (!who || !NPC_HOME[who] || e.asleep) continue;
+    if (!who) continue;
+    const dest = destOf(who);
+    if (!dest) { if (e.x0 !== undefined) backOut(e); continue; }
+    if (e.gone && e.gone !== dest) { if (e.inside) { e.inside = null; e.seat = null; e.x = 18.5; e.y = 36.8; } e.asleep = false; e.route2 = null; e.gone = null; }   // out of the café when night comes
+    if (e.asleep) continue;
     if (!e.route2) {
-      if (villageNightT < HOME_DELAY[who] + (e.fetch ? 0.7 : 0)) continue;
-      const H = ents.find(q => q.k === NPC_HOME[who]); if (!H) continue;
-      e.x0 = e.x; e.y0 = e.y; e.route2 = findPath(H.x, H.y + 0.5, null, e); e.homeGo = 0;
-      if (!e.route2.length) { e.asleep = true; continue; }
+      if (villageNightT < (HOME_DELAY[who] || 2) + (e.fetch ? 0.7 : 0)) continue;
+      const H = dest === 'cafe' ? { x: 18.5, y: 36.25 } : ents.find(q => q.k === NPC_HOME[who]); if (!H) continue;
+      if (e.x0 === undefined) { e.x0 = e.x; e.y0 = e.y; }
+      e.gone = dest; e.route2 = findPath(H.x, H.y + 0.5, null, e); e.homeGo = 0;
+      if (!e.route2.length) { arrive(e); continue; }
     }
     const n = e.route2[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = (e.fetch ? 1.9 : 1.6) * dt;
     if (Math.abs(dx) > 0.02) { e.wface = dx > 0 ? 1 : -1; if (e.fetch) { e.face = e.fs = dx > 0 ? -1 : 1; } }
     if (e.fetch) { e.wk = 1; e.walk = true; e.step = (e.step || 0) + sp; e.vel = 1; }
-    if (d <= sp) { e.x = n.x; e.y = n.y; e.route2.shift(); if (!e.route2.length) e.asleep = true; }
+    if (d <= sp) { e.x = n.x; e.y = n.y; e.route2.shift(); if (!e.route2.length) arrive(e); }
     else { e.x += dx / d * sp; e.y += dy / d * sp; }
     e.homeGo += sp;
   }
@@ -4121,6 +4134,7 @@ function interact(e) {
   if (e.w === 'ryba' || e.kind === 'pond') return fishCard(e);
   if (e.cat) return catSheet(e);
   talkNpc = e.kind === 'npc' ? e.npc : e.kind === 'shop' ? 'oksana' : null;
+  if (e.kind === 'npc' && e.route2 && !nightNow()) return toast('🌧️ ' + W.doshch.uk + '!' + (stage() < 3 ? (e.gone === 'cafe' ? ' · Off to the café, out of the rain.' : ' · Off home, out of the rain.') : ''), 2400);
   if (e.kind === 'npc' && e.route2) return toast('🌙 ' + PH.dobranich.uk + '!' + (stage() < 3 ? ' · Everyone is heading home for the night.' : ''), 2400);
   if (e.kind === 'npc') return talk(NPC[e.npc]);
   if (e.kind === 'plot') return plotSheet(e.i);
@@ -4290,7 +4304,7 @@ function dialog(npc, steps, i = 0) {
     ${st.hint ? `<div class="hint">${st.hint}</div>` : ''}${choices}
     <div class="row">${btn('hear', st.clip, '🔊', 'round blue')}${st.choices ? '' : btn('next', '', lab('next'))}</div>`);
   cur = { en: st.en };
-  say(st.clip);
+  if (st.clip) say(st.clip);
 }
 const line = (npc, key) => ({ uk: npc.lines[key].uk, en: npc.lines[key].en, clip: `v_${npc.id}_${key}` });
 const mine = id => ({ uk: PH[id].uk, en: PH[id].en, clip: 'p_' + id, me: true });
@@ -6425,6 +6439,23 @@ async function spAttempt() {
 function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R.needs.length ? 'summary' : 'ready'; sp.last = null; sp.tries = 0; sp.showUk = sp.showTr = false; spRender(); }
 
 let talkNpc = null;   // the neighbour you're talking to (they turn to face you while a card is open)
+// What each of them says about the rain, first thing, on a rainy day: [English, Ukrainian].
+const RAIN_SAY = {
+  myron: ["Ha! What a downpour! Even the trains would want a roof today.", "Ха! Оце злива! Сьогодні навіть потяги хотіли б під дах."],
+  yaroslava: ["Listen to the rain on the window, my dear. It writes better poems than I do.", "Послухай, як дощ стукає у вікно, люба. Він пише вірші краще за мене."],
+  ostap: ["Rain! I got soaked to the bone running here, and I loved every drop!", "Дощ! Я змок до нитки, поки сюди біг, і мені це сподобалося!"],
+  lesia: ["All the colours outside have gone grey. I'll paint the raindrops instead.", "Надворі всі кольори посіріли. Тоді намалюю краплі дощу."],
+  zakhar: ["Rain. Good for the fish. Bad for fishermen.", "Дощ. Рибі добре. Рибалкам погано."],
+  halyna: ["Oh, sonechko, this rain! The whole village is squeezed in here, and I can hear all the news at once!", "Ой, сонечко, оцей дощ! Усе село сюди набилося, і я чую всі новини одразу!"],
+  taras: ["No fishing in rain like this. A hot tea will do me instead.", "У такий дощ не порибалиш. Краще гарячого чаю."],
+  petro: ["Even a policeman comes in out of the rain, citizen.", "Навіть поліцейський ховається від дощу, громадянко."],
+  oksana: ["Rain or shine, the market stays open! I've got my awning.", "Дощ чи сонце, а ринок працює! У мене є навіс."],
+  solomiia: ["What weather! The whole village has come in to dry off.", "Ну й погода! Усе село прийшло сюди обсохнути."],
+  olia: ["Look at that rain, dear! Good for the garden. Stay in and warm up.", "Глянь, який дощ, дитино! Городу на користь. Посидь, погрійся."],
+  bohdan: ["Rain! The bees are all tucked up in their hives, and so am I.", "Дощ! Бджоли поховалися у вулики, і я теж."],
+  andriiko: ["It's raining! Mama says no playing outside today.", "Дощ іде! Мама каже, що сьогодні гуляти не можна."],
+};
+const rainSay = id => wet(S.wx) && !nightNow() && RAIN_SAY[id] ? RAIN_SAY[id] : null;
 function talk(npc) {
   if (npc.id === 'petro') return petroTalk();
   if (npc.visitor && !myOpen()) myMaybeStart();   // no case open (and none solved lately): this starts one
@@ -6433,6 +6464,7 @@ function talk(npc) {
   if (npc.visitor) { const n0 = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 }); const st = line(npc, n0.met ? 'again' : 'intro'); n0.met = true; save(); return dialog(npc, [st]); }
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
+  { const rs = rainSay(npc.id); if (rs) steps.unshift({ en: rs[0], uk: rs[1] }); }   // (text only: no recording)
   if (!n.met) { steps.push(line(npc, 'intro')); n.met = true; }
   if (n.mad) return dialog(npc, [line(npc, 'angry')]);
   if (npc.id !== 'olia') {
@@ -7933,6 +7965,7 @@ function drawCafe(t) {
     for (const sh of seatHits) hit(...sh);
   };
   const order = [{ y: fy + h * 0.045, f: () => { const v = cafeVisitorAt('counter'); if (!v) return; const vx = (CF.counter - 0.115) * RW, vy = fy + h * 0.045, sc3 = inScale(vy) * 0.95; person(c, vx, vy, NPC[v.npc].look, t, false, sc3, undefined, { side: 0.5 }); hit(vx - u * 0.07, vy - u * 0.32, u * 0.14, u * 0.32, () => talk(NPC[v.npc]), vx); } },   // chatting with Solomiia at the counter
+    ...[['st0', 0.41], ['st1', 0.63], ['st2', 0.19]].map(([key, fx]) => ({ y: fy + h * 0.14, f: () => { const v = cafeVisitorAt(key); if (!v) return; const vx = fx * RW, vy = fy + h * 0.14, sc3 = inScale(vy) * 0.95; person(c, vx, vy, NPC[v.npc].look, t + fx * 9, false, sc3, undefined, { side: key === 'st1' ? -0.5 : 0.5 }); hit(vx - u * 0.07, vy - u * 0.32, u * 0.14, u * 0.32, () => talk(NPC[v.npc]), vx); } })),   // standing about, dripping, on a rainy day
     { y: fy + h * 0.1, f: () => table(CF.tableA, false) }, { y: fy + h * 0.1, f: () => table(CF.tableC, false, true) }, { y: fy + h * 0.1, f: () => table(CF.tableB, true) }, { y: IN.y, f: () => inDraw(c, t) }];
   order.sort((p, q) => p.y - q.y).forEach(o => o.f());
   c.restore();
