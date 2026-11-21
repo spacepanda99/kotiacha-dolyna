@@ -3240,6 +3240,16 @@ function paintGround() {
   // the market square: the same sandy ground as the path and the town square (no paving of its own)
   { const rp = seeded(41), px0 = 19.0, px1 = 24.4, py0 = 11.0, py1 = 15.6;
     c.fillStyle = '#e6d29d'; rr(c, px0 * T, py0 * T, (px1 - px0) * T, (py1 - py0) * T, T * 0.7);   // round-cornered, like the roads
+    // its bottom edge sits half a tile below the main road's, so where it meets the road on either side it made a
+    // little step: sweep each one into the road with a curve instead
+    { const RB = 14.5 + 0.5 + 6 / T;   // the main road's bottom edge
+      c.beginPath(); c.moveTo((px1 - 1.1) * T, py1 * T); c.bezierCurveTo((px1 - 0.2) * T, py1 * T, (px1 + 0.05) * T, RB * T, (px1 + 0.9) * T, RB * T); c.lineTo((px1 + 0.9) * T, (RB - 0.12) * T); c.lineTo((px1 - 1.1) * T, (RB - 0.12) * T); c.closePath(); c.fill();   // the east end
+      const LX = 18.5 + 0.5 + 6 / T;   // the village road's east edge, on the west side
+      c.beginPath(); c.moveTo((LX - 0.1) * T, py1 * T); c.lineTo((LX + 0.7) * T, py1 * T); c.quadraticCurveTo(LX * T, py1 * T, LX * T, (py1 + 0.7) * T); c.lineTo((LX - 0.1) * T, (py1 + 0.7) * T); c.closePath(); c.fill();   // the west end
+      // and the inside corners where its sides meet the grass beside a road: its east side and the main road's top
+      // edge, and its top edge and the village road's east edge (sand toward -x and +y, grass toward +x and -y)
+      const inCorner = (cx, cy, R) => { c.beginPath(); c.moveTo((cx + R) * T, cy * T); c.lineTo(cx * T, cy * T); c.lineTo(cx * T, (cy - R) * T); c.arc((cx + R) * T, (cy - R) * T, R * T, Math.PI, Math.PI / 2, true); c.closePath(); c.fill(); };
+      inCorner(px1, 14.5 - 0.5 - 6 / T, 0.62); inCorner(LX, py0, 0.62); }
     for (let i = 0; i < 260; i++) { const x = (px0 + rp() * (px1 - px0)) * T, y = (py0 + rp() * (py1 - py0)) * T; c.fillStyle = rp() < 0.5 ? 'rgba(255,255,255,.45)' : 'rgba(190,160,100,.35)'; ell(c, x, y, 2 + rp() * 4, 1.2 + rp() * 2); }
   }
   { const sx = STALL.x * T, sy = (STALL.y - 0.25) * T, R = T * 3.1, gr = c.createRadialGradient(sx, sy, 0, sx, sy, R); gr.addColorStop(0, '#e6d29d'); gr.addColorStop(0.5, 'rgba(222,200,146,.85)'); gr.addColorStop(0.8, 'rgba(200,178,120,.3)'); gr.addColorStop(1, 'rgba(200,178,120,0)');
