@@ -170,6 +170,14 @@ window.DATA = {
     { id: "chashka", uk: "чашка", tr: "CHASH-ka", en: "cup", ic: "☕", acc: "чашку" },
     { id: "kvity", uk: "квіти", tr: "KVI-ty", en: "flowers", ic: "💐" },
     { id: "polytsia", uk: "полиця", tr: "po-LY-tsia", en: "shelf", ic: "@shelf", acc: "полицю" },
+    // --- at the school
+    { id: "shkola", uk: "школа", tr: "SHKO-la", en: "school", ic: "@shkola", acc: "школу", fact: { uk: "У селі школа часто була в одній великій хаті.", en: "In many villages the whole school was one big room, with every age learning together." } },
+    { id: "parta", uk: "парта", tr: "PAR-ta", en: "school desk", ic: "🪑", acc: "парту" },
+    { id: "kreida", uk: "крейда", tr: "KREI-da", en: "chalk", ic: "🖍️", acc: "крейду" },
+    { id: "hlobus", uk: "глобус", tr: "HLO-bus", en: "globe", ic: "🌍" },
+    { id: "dzvonyk", uk: "дзвоник", tr: "DZVO-nyk", en: "bell (a small one)", ic: "🔔" },
+    { id: "abetka", uk: "абетка", tr: "a-BET-ka", en: "alphabet", ic: "🔤", acc: "абетку" },
+    { id: "zoshyt", uk: "зошит", tr: "ZO-shyt", en: "exercise book", ic: "📓" },
     // --- Ukrainian culture
     { id: "pysanka", uk: "писанка", tr: "py-SAN-ka", en: "painted Easter egg", ic: "@pysanka", acc: "писанку", fact: { uk: "Писанки малюють воском і фарбами на Великдень.", en: "Pysanky are eggs painted with wax and dyes at Easter. Every pattern has a meaning." } },
     { id: "kalyna", uk: "калина", tr: "ka-LY-na", en: "viburnum (red berries)", ic: "@kalyna", acc: "калину", fact: { uk: "Калина — символ України. Про неї співають у піснях.", en: "Kalyna, the red viburnum, is a symbol of Ukraine. It appears in songs and embroidery." } },

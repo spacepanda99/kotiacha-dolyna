@@ -8,7 +8,7 @@ const NPC = Object.fromEntries(D.npcs.map(n => [n.id, n]));
 const PH = Object.fromEntries(D.phrases.map(p => [p.id, p]));
 const $ = s => document.querySelector(s);
 const cv = $('#c'), ctx = cv.getContext('2d');
-const T = 64, MW = 36, MH = 32;   // (28 rows until the neighbours' cottages along the bottom road were added)
+const T = 64, MW = 42, MH = 32;   // (36 wide until the school was added at the east end of the main road)   // (28 rows until the neighbours' cottages along the bottom road were added)
 // Spaced review: how long until a word at each level is "due" again.
 const IV = [0, 60e3, 300e3, 1800e3, 4 * 3600e3, 86400e3];
 const now = () => Date.now();
@@ -471,6 +471,50 @@ const DRAW = {
     c.fillStyle = 'rgba(255,255,255,.5)'; c.fillRect(12.8, -75.6, 1.4, 9);
     c.fillStyle = '#2e2c2a'; c.fillRect(16, -76.4, 1, 11.9); c.fillRect(11.5, -76.4, 0.9, 11.9); c.fillRect(20.6, -76.4, 0.9, 11.9);   // frame
     c.fillStyle = '#efe6d2'; c.fillRect(15.3, -69, 2.4, 4.5); c.fillStyle = '#c9a868'; c.fillRect(16.3, -70.5, 0.5, 1.6);   // the candle inside
+  },
+  // The village school: a long whitewashed building on a stone footing, a green tin roof with a little bell
+  // turret on the ridge, a porch with two carved posts, steps up to a double door, «ШКОЛА» over it, four blue
+  // windows with flower boxes, and a chimney. 100 units = its width; ground at 0; the door is at x = 0.
+  shkola(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 1, 60, 5);
+    c.fillStyle = '#8d8a84'; c.fillRect(-55, -7, 110, 7); c.fillStyle = '#a19e97'; for (let x = -52; x < 54; x += 9) rr(c, x, -6.4, 7.5, 5.6, 1.5);   // stone footing
+    const wg = c.createLinearGradient(0, -56, 0, -7); wg.addColorStop(0, '#f4efe4'); wg.addColorStop(1, '#fffdf7'); c.fillStyle = wg; c.fillRect(-54, -56, 108, 49);   // whitewashed walls
+    c.fillStyle = 'rgba(120,96,60,.14)'; c.fillRect(-54, -55, 108, 6);   // shade under the eaves
+    c.fillStyle = '#3d7cc2'; c.fillRect(-54, -12, 108, 5); c.fillStyle = '#2f5f9e'; c.fillRect(-54, -8.5, 108, 1.5);   // a blue band along the foot
+    // the roof: a hipped tin roof, its seams running down
+    c.fillStyle = '#3f8a6e'; poly(c, [[-62, -54], [-38, -86], [38, -86], [62, -54]]);
+    c.fillStyle = '#4fa384'; poly(c, [[-62, -54], [-38, -86], [-30, -86], [-50, -54]]);
+    c.strokeStyle = 'rgba(30,70,55,.45)'; c.lineWidth = 0.9; for (let i = -6; i <= 6; i++) { const xt = i * 6.2, xb = i * 9.8; c.beginPath(); c.moveTo(Math.max(-38, Math.min(38, xt)), -86); c.lineTo(xb, -54); c.stroke(); }
+    c.fillStyle = '#2f6b55'; c.fillRect(-63, -55.5, 126, 3);   // the eaves
+    c.fillStyle = '#2a5c49'; c.fillRect(-39, -87.5, 78, 2.5);   // the ridge
+    // chimney
+    c.fillStyle = '#b5553f'; c.fillRect(26, -100, 9, 18); c.fillStyle = '#8f3f2d'; c.fillRect(24.5, -102, 12, 3.5);
+    // the bell turret on the ridge: a little white box with an arch, the bell inside, a peaked roof
+    c.fillStyle = '#fffdf7'; c.fillRect(-7, -103, 14, 16); c.strokeStyle = '#d8cfbf'; c.lineWidth = 0.8; c.strokeRect(-7, -103, 14, 16);
+    c.fillStyle = '#5a4630'; c.beginPath(); c.moveTo(-4, -88); c.lineTo(-4, -96); c.arc(0, -96, 4, Math.PI, 0); c.lineTo(4, -88); c.closePath(); c.fill();
+    c.fillStyle = '#d9a63a'; c.beginPath(); c.moveTo(-2.6, -90.5); c.quadraticCurveTo(-2.6, -97, 0, -97); c.quadraticCurveTo(2.6, -97, 2.6, -90.5); c.closePath(); c.fill(); c.fillStyle = '#f2cc66'; circ(c, -0.8, -94.5, 0.8);
+    c.fillStyle = '#3f8a6e'; poly(c, [[-9, -103], [0, -112], [9, -103]]); c.fillStyle = '#2a5c49'; c.fillRect(-9.5, -103.8, 19, 1.6);
+    c.strokeStyle = '#c9a23a'; c.lineWidth = 1; c.beginPath(); c.moveTo(0, -112); c.lineTo(0, -117); c.moveTo(-2, -115); c.lineTo(2, -115); c.stroke();   // a little finial
+    // windows, two each side of the porch, with flower boxes
+    for (const x of [-46, -30, 18, 34]) {
+      c.fillStyle = '#2f5f9e'; rr(c, x - 1.5, -46, 15, 22, 2);
+      c.fillStyle = '#bfe3f7'; rr(c, x, -44.5, 12, 19, 1.5); c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(x + 1, -43.5, 2, 8);
+      c.fillStyle = '#2f5f9e'; c.fillRect(x + 5.2, -44.5, 1.6, 19); c.fillRect(x, -36, 12, 1.6);
+      c.fillStyle = '#8a5a2b'; c.fillRect(x - 1.5, -24.5, 15, 3.5);
+      for (let k = 0; k < 4; k++) { c.fillStyle = ['#d43a3a', '#f2c230', '#e86fa0', '#d43a3a'][k]; circ(c, x + 1.5 + k * 3.4, -25.5, 1.9); }
+      c.fillStyle = '#4f8f3a'; for (let k = 0; k < 3; k++) ell(c, x + 3.2 + k * 3.4, -24.8, 1.4, 0.8);
+    }
+    // the porch: two carved posts, a little gable roof, the sign, steps, the double door
+    c.fillStyle = '#6b4422'; c.fillRect(-12, -40, 24, 33);   // door frame
+    c.fillStyle = '#3f8a3a'; c.fillRect(-10, -38, 9.5, 31); c.fillRect(0.5, -38, 9.5, 31);   // the double door
+    c.strokeStyle = 'rgba(0,0,0,.22)'; c.lineWidth = 0.8; for (const dx of [-10, 0.5]) { c.strokeRect(dx + 1.8, -35.5, 6, 11); c.strokeRect(dx + 1.8, -21, 6, 11); }
+    c.fillStyle = '#f2c230'; circ(c, -2, -22, 1.1); circ(c, 2, -22, 1.1);
+    c.fillStyle = '#9b6b3c'; c.fillRect(-17, -6, 34, 3); c.fillRect(-14, -3, 28, 3);   // steps
+    for (const x of [-15, 15]) { c.fillStyle = '#8a5a2b'; c.fillRect(x - 1.6, -46, 3.2, 40); c.fillStyle = '#c99463'; for (const yy of [-42, -30, -18]) ell(c, x, yy, 2.4, 1.2); }   // carved posts
+    c.fillStyle = '#3f8a6e'; poly(c, [[-21, -45], [0, -58], [21, -45]]); c.fillStyle = '#2f6b55'; c.fillRect(-21.5, -46, 43, 2.2);
+    c.fillStyle = '#fffdf7'; poly(c, [[-15, -46.5], [0, -55.5], [15, -46.5]]);
+    c.fillStyle = '#d43a3a'; circ(c, 0, -50, 2); c.fillStyle = '#f2c230'; circ(c, 0, -50, 0.9);   // a painted flower in the gable
+    c.fillStyle = '#5a381b'; rr(c, -14, -44.8, 28, 7, 1.5); c.fillStyle = '#fff8ea'; c.font = '800 5.6px "Cozy", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ШКОЛА', 0, -41.2);
   },
   khata(c) { khataArt(c, KHATA_LOOK.mine); },
   khata_olia(c) { khataArt(c, KHATA_LOOK.olia); },
@@ -1683,7 +1727,7 @@ const pondWob = a => 1 + 0.11 * Math.sin(2 * a + 0.8) + 0.07 * Math.sin(3 * a + 
 const inPond = (x, y, g = 0) => { const dx = (x - POND.x) / POND.rx, dy = (y - POND.y) / POND.ry; return Math.hypot(dx, dy) < pondWob(Math.atan2(dy, dx)) * (1 + g / 3.1); };
 // The stream: it comes in from the east edge of the valley, winds down under a little plank bridge and drops
 // over a mossy rock ledge into the pond in a waterfall. Points are tiles; it widens a little toward the fall.
-const STREAM = [[36.8, 15.7], [35.6, 16.1], [34.7, 17.0], [34.0, 17.75], [33.35, 18.25]];
+const STREAM = [[42.8, 15.45], [40.6, 15.5], [38.6, 15.62], [36.8, 15.7], [35.6, 16.1], [34.7, 17.0], [34.0, 17.75], [33.35, 18.25]];
 const FALL = { x: 33.1, y: 18.5, bx: 32.75, by: 19.8 };   // the lip of the ledge, and where the water lands in the pond
 const BRIDGE = { x: 34.6, y: 17.1, a: -0.85 };             // across the stream, for the way down to the wheat strip
 function streamPath(c) { c.beginPath(); c.moveTo(STREAM[0][0] * T, STREAM[0][1] * T); for (let i = 1; i < STREAM.length - 1; i++) { const [x0, y0] = STREAM[i], [x1, y1] = STREAM[i + 1]; c.quadraticCurveTo(x0 * T, y0 * T, (x0 + x1) / 2 * T, (y0 + y1) / 2 * T); } const L = STREAM[STREAM.length - 1]; c.lineTo(L[0] * T, L[1] * T); }
@@ -1693,7 +1737,7 @@ function pondPath(c, grow, stroke) {
   for (let i = 0; i <= 72; i++) { const a = i / 72 * Math.PI * 2, w = pondWob(a); const px = (POND.x + Math.cos(a) * (POND.rx * w + grow)) * T, py = (POND.y + Math.sin(a) * (POND.ry * w + grow)) * T; i ? c.lineTo(px, py) : c.moveTo(px, py); }
   c.closePath(); if (stroke) c.stroke(); else c.fill();
 }
-const isRoad = (x, y) => (y === 14 && x >= 2 && x <= 34) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
+const isRoad = (x, y) => (y === 14 && x >= 2 && x <= 38) || (y === 6 && x >= 11 && x <= 30) ||   // the back path: windmill, the top of the village road, church
    (x === 18 && y >= 6 && y <= 30) || (y === 30 && x >= 5 && x <= 31) ||   // the village road runs on down to the bottom road, past Mr. Bohdan's and Taras's cottages
     (x === 7 && y >= 11 && y <= 13) || (x === 28 && y >= 11 && y <= 13) || (x === 11 && y === 5) || (x >= 16 && x <= 21 && y >= 15 && y <= 19);
 
@@ -1752,10 +1796,11 @@ function add(e) {
   // Street lamps: one behind each bench in the square, one by the road between her cottage and the market,
   // one between the market and Grandma Olia's, one each side of the crossroads on the back road (towards the
   // windmill and towards the church), one on each half of the bottom road, and one halfway down the road from the square to it. (Tapping one says «лампа».)
-  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [35.35, 13.85, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
+  for (const [lx, ly, fl] of [[15.95, 17.7], [22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
-  add({ w: 'lavka', ic: '@benchside', x: 35.1, y: 14.55, s: 1.25, solid: true, flipX: true });   // at the east end of the main road, looking back along it
+  add({ w: 'lavka', ic: '@benchside', x: 35.15, y: 13.4, s: 1.25, solid: true });   // beside the school, facing its porch
+  rect(36, 11, 40, 13); add({ w: 'shkola', ic: '@shkola', k: 'school', x: 38.5, y: 14.0, s: 4.0 });   // the village school, at the east end of the main road, its door over the road's end
   // Pond.
   add({ w: 'stavok', k: 'pond', x: POND.x, y: POND.y + 0.2, s: 1, kind: 'pond', flat: true });
   for (const [x, y] of streamPts(0.1)) { const tx = Math.floor(x), ty = Math.floor(y); if (Math.hypot(x - BRIDGE.x, y - BRIDGE.y) > 0.75) block(tx, ty); }   // the stream: wade-proof, but the bridge is open
@@ -1821,7 +1866,7 @@ function add(e) {
 const ground = document.createElement('canvas');
 const seeded = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
 // Doorsteps where a road ends (door x, the house's front edge y): her cottage, Grandma Olia's, the windmill, and the two cottages on the bottom road.
-const ROAD_DOORS = [[7.5, 11], [28.5, 11], [11.5, 5], [5.5, 30], [31.5, 30]];
+const ROAD_DOORS = [[7.5, 11], [28.5, 11], [11.5, 5], [5.5, 30], [31.5, 30], [38.5, 14]];
 function paintGround() {
   ground.width = MW * T; ground.height = MH * T;
   const c = ground.getContext('2d'), GW = ground.width, GH = ground.height, r = seeded(7);
@@ -3011,6 +3056,7 @@ function interact(e) {
   if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
+  if (e.w === 'shkola') return wordCard('shkola', { note: '🏫 ' + xl('The village school. Go in and have a look round the classroom.'), acts: [{ k: 'enter', fn: enterSchool }] });
   if (e.w === 'tserkva') return wordCard('tserkva', { note: '⛪ ' + xl('The village church. Go in: it is quiet and beautiful inside.'), acts: [{ k: 'enter', fn: enterChurch }] });
   if (e.w === 'mlyn') return wordCard('mlyn', { note: '⚙️ ' + xl('A working windmill: go in and grind wheat into flour.'), acts: [{ k: 'enter', fn: enterMill }] });
   if (e.kind === 'home') return wordCard('khata', { owner: '🏠 ' + PH.moia_khata.uk, note: xl('This is your cottage.'), clips: ['p_moia_khata'], acts: [{ k: 'enter', fn: enterHome }] });
@@ -5496,7 +5542,7 @@ const DECOR = {
 };
 const WIN_X = 0.3;                                    // the window, across the room
 const roomU = () => Math.min(cv.width, cv.height * 0.72);
-const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : mode === 'church' ? 3.0 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
+const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : mode === 'church' ? 3.0 : mode === 'school' ? 2.9 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 // Your cottage and Grandma's have a strip of room left of x = 0, with the door out, so the view can pan to -roomPL().
 const roomPL = () => mode === 'home' || mode === 'olia' ? roomU() * 0.5 : 0;
@@ -5954,7 +6000,7 @@ function drawHome(t) {
 // there; tap something and she walks over to it first, then it opens. The view follows her as she goes, and
 // you can still drag to look around. Further down the floor is nearer, so she's a little bigger there.
 const IN = { x: 0, y: 0, tx: 0, ty: 0, wk: 0, step: 0, face: 1, dir: 'front', then: null, follow: false, lt: 0 };
-const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : mode === 'church' ? [h * 0.72, h * 0.9] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
+const inBand = () => { const h = cv.height; return mode === 'olia' ? [h * 0.8, h * 0.925] : mode === 'mill' ? [h * 0.835, h * 0.925] : mode === 'church' || mode === 'school' ? [h * 0.72, h * 0.9] : [h * 0.645, h * 0.8]; };   // (your cottage: kept above the Decorate / Wardrobe buttons)
 const inScale = y => { const [a, b] = inBand(); return roomU() * 0.0043 * (0.93 + 0.14 * (Math.max(a, Math.min(b, y)) - a) / Math.max(1, b - a)); };   // up a ladder she's as far back as the back wall
 function inStart(fx) { const [a, b] = inBand(); IN.x = IN.tx = fx * roomW(); IN.y = IN.ty = b - (b - a) * 0.35; IN.wk = 0; IN.then = null; IN.face = 1; IN.dir = 'front'; IN.follow = false; IN.path = null; IN.climb = false; IN.wait = 0; IN.pose = null; }
 // A scripted walk off the floor (up the mill's ladder and along the landing): points {x, y, climb, fn, wait, pose}
@@ -6639,6 +6685,141 @@ function drawChurch(t) {
   // dust motes turning in the window light
   if (day > 0.3) { c.fillStyle = `rgba(255,248,225,${0.5 * wxL})`; for (let i = 0; i < 26; i++) { const q = (t * 0.015 + i * 0.037) % 1; circ(c, ((i * 0.37 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
   { const lights = [[CH.standL * RW - roomX, fy - u * 0.26, u * 0.55], [CH.standR * RW - roomX, fy - u * 0.26, u * 0.55], [CH.cx * RW - roomX, h * 0.19 + u * 0.12, u * 0.8], [CH.lect * RW - roomX, fy - u * 0.32, u * 0.3]];
+    paintSky(c, w, h, t, lights, false); }
+}
+
+// ------------------------------------------------------------------ inside the village school
+// One classroom: the blackboard with the alphabet chalked on it, the teacher's desk with a globe and a hand
+// bell, rows of pupils' desks with exercise books, an alphabet poster, a tiled stove by the door, windows on
+// the real day outside. Tap anything to hear its name; ring the bell. (Lessons come later.)
+const SX = { door: 0.06, stove: 0.16, poster: 0.27, desk: 0.36, board: 0.52, win1: 0.73, win2: 0.89, rowA: [0.45, 0.63, 0.81], rowB: [0.54, 0.72, 0.9] };
+let schoolHits = [];
+function enterSchool() { closeSheet(); fadeThen(enterSchoolNow); }
+function enterSchoolNow() {
+  mode = 'school'; learn('shkola');
+  $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
+  roomX = SX.board * roomW() - cv.width / 2; clampPan(); tour = null; blip(520);
+  inStart(SX.board - 0.1);
+  if (!S.schoolSeen) { S.schoolSeen = 1; save(); setTimeout(() => { if (mode === 'school') toast('🏫 ' + W.shkola.uk + xlT(' · The classroom. Swipe to look round, and tap things to hear their names. Ring the bell on the desk!'), 5200); }, 700); }
+}
+function schoolTap(sx, py) {
+  const px = sx + roomX;
+  for (let i = schoolHits.length - 1; i >= 0; i--) { const r = schoolHits[i]; if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) { blip(700, 0.05); return inGo(r.gx, r.gy, r.fn); } }
+  if (py > cv.height * 0.68) { blip(560, 0.05); inWalkTo(px, py); }
+}
+function schoolBell() {   // the teacher's brass hand bell: a bright, quick ring
+  try { for (let i = 0; i < 6; i++) setTimeout(() => { sfxTone(1568, 1500, 0.35, 0.08); sfxTone(2350, 2300, 0.25, 0.04); }, i * 110); } catch (e) {}
+  SCHOOL.bellT = nowT;
+}
+const SCHOOL = { bellT: -9 };
+function drawSchool(t) {
+  const w = cv.width, h = cv.height, c = ctx, u = roomU(), RW = roomW(), fy = h * 0.66, L = skyLight(S.clock.t), day = 1 - L.dark;
+  const wxL = S.wx === 'sun' ? 1 : S.wx === 'cloud' ? 0.6 : 0.35;
+  clampPan(); inStep(t);
+  schoolHits = [];
+  const hit = (x, y, ww, hh, fn, gx) => schoolHits.push({ x, y, w: ww, h: hh, fn, gx: gx ?? x + ww / 2, gy: fy });
+  const word = (id, o) => () => wordCard(id, o);
+  let g;
+  c.save(); c.translate(-roomX, 0);
+  // ---- walls: whitewash above, a painted green wainscot below with a red stripe, a cross-stitch frieze up top
+  g = c.createLinearGradient(0, 0, 0, fy); g.addColorStop(0, '#f3ecdc'); g.addColorStop(1, '#fbf6ea'); c.fillStyle = g; c.fillRect(0, 0, RW, fy);
+  const wy = fy - h * 0.14; c.fillStyle = '#8fbf9a'; c.fillRect(0, wy, RW, fy - wy); c.fillStyle = 'rgba(0,0,0,.07)'; for (let x = 0; x < RW; x += u * 0.07) c.fillRect(x, wy, 1.5, fy - wy);
+  c.fillStyle = '#c0392b'; c.fillRect(0, wy - u * 0.012, RW, u * 0.012); c.fillStyle = '#6b8f74'; c.fillRect(0, fy - u * 0.02, RW, u * 0.02);
+  { const by = h * 0.035, st = Math.max(2, u * 0.009); c.fillStyle = 'rgba(250,244,230,.9)'; c.fillRect(0, by - st * 4, RW, st * 8);
+    for (let x0 = 0; x0 < RW; x0 += st * 9) for (let dy = -2; dy <= 2; dy++) for (let dx = -(2 - Math.abs(dy)); dx <= 2 - Math.abs(dy); dx++) { c.fillStyle = Math.abs(dx) + Math.abs(dy) === 2 ? '#b8262d' : Math.abs(dx) + Math.abs(dy) === 0 ? '#2a1d1a' : '#d8424a'; c.fillRect(x0 + dx * st, by + dy * st, st * 0.9, st * 0.9); } }
+  // ceiling beams
+  c.fillStyle = '#8a5a2b'; c.fillRect(0, 0, RW, h * 0.012); for (let x = u * 0.3; x < RW; x += u * 0.9) { c.fillStyle = 'rgba(80,50,20,.12)'; c.fillRect(x, h * 0.06, u * 0.03, wy - h * 0.06); }
+  // ---- the floor: wide boards
+  g = c.createLinearGradient(0, fy, 0, h); g.addColorStop(0, '#b88a5a'); g.addColorStop(1, '#9c7046'); c.fillStyle = g; c.fillRect(0, fy, RW, h - fy);
+  c.strokeStyle = 'rgba(70,40,15,.22)'; c.lineWidth = 1; for (let i = 1; i < 7; i++) { const y = fy + (h - fy) * (i / 7) ** 1.3; c.beginPath(); c.moveTo(0, y); c.lineTo(RW, y); c.stroke(); }
+  // ---- the windows, with the real day outside, and light falling in
+  for (const fx of [SX.win1, SX.win2]) { const x = fx * RW, ww = u * 0.26, wh = h * 0.22, wt = h * 0.18;
+    c.fillStyle = '#5d8fc4'; rr(c, x - ww / 2 - u * 0.016, wt - u * 0.016, ww + u * 0.032, wh + u * 0.032, u * 0.01);
+    c.save(); c.beginPath(); c.rect(x - ww / 2, wt, ww, wh); c.clip(); windowView(c, x - ww / 2, wt, ww, wh, t, 3, fx > 0.8 ? 2 : 1); c.restore();
+    c.fillStyle = '#5d8fc4'; c.fillRect(x - u * 0.007, wt, u * 0.014, wh); c.fillRect(x - ww / 2, wt + wh * 0.45, ww, u * 0.012);
+    c.fillStyle = '#e9dcc0'; c.fillRect(x - ww / 2 - u * 0.03, wt + wh + u * 0.012, ww + u * 0.06, u * 0.02);   // sill
+    drawIcon(c, '🪴', x + ww * 0.3, wt + wh + u * 0.02, u * 0.07);
+    if (day > 0.2) { c.fillStyle = 'rgba(255,246,210,' + (0.16 * day * wxL) + ')'; poly(c, [[x - ww / 2, wt], [x + ww / 2, wt], [x + ww * 0.1, h], [x - ww * 1.1, h]]); } }
+  // ---- the alphabet poster (абетка): letters with little pictures
+  { const x = SX.poster * RW, y = h * 0.19, pw = u * 0.32, ph = h * 0.26;
+    c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(x - pw / 2 + 3, y + 4, pw, ph); c.fillStyle = '#fffbea'; c.fillRect(x - pw / 2, y, pw, ph); c.strokeStyle = '#d43a3a'; c.lineWidth = 2; c.strokeRect(x - pw / 2 + 3, y + 3, pw - 6, ph - 6);
+    c.fillStyle = '#c0392b'; c.font = cozyFont(Math.round(u * 0.032)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('АБЕТКА', x, y + ph * 0.1);
+    const L2 = [['А', '🍉'], ['Б', '🍌'], ['В', '🐺'], ['Г', '🦆'], ['Д', '🏠'], ['Е', '🦝'], ['Ж', '🐸'], ['З', '⭐'], ['І', '🦃']];
+    L2.forEach(([ch, ic], i) => { const cx = x - pw * 0.33 + (i % 3) * pw * 0.33, cy = y + ph * 0.28 + Math.floor(i / 3) * ph * 0.24; c.fillStyle = ['#2f5f9e', '#3f8a3a', '#c0392b'][i % 3]; c.font = '900 ' + Math.round(u * 0.04) + 'px system-ui'; c.fillText(ch, cx - u * 0.025, cy); drawIcon(c, ic, cx + u * 0.03, cy + u * 0.018, u * 0.04); });
+    hit(x - pw / 2, y, pw, ph, word('abetka', { note: '🔤 ' + xl('The Ukrainian alphabet has 33 letters.') }), x); }
+  // ---- the tiled stove by the door
+  { const x = SX.stove * RW, sw = u * 0.2, top = fy - h * 0.34;
+    c.fillStyle = '#efe6d6'; rr(c, x - sw / 2, top, sw, fy - top, u * 0.01);
+    c.strokeStyle = 'rgba(60,110,160,.5)'; c.lineWidth = 1; for (let yy = top; yy < fy; yy += u * 0.04) { c.beginPath(); c.moveTo(x - sw / 2, yy); c.lineTo(x + sw / 2, yy); c.stroke(); }
+    for (let xx = x - sw / 2; xx < x + sw / 2; xx += u * 0.04) { c.beginPath(); c.moveTo(xx, top); c.lineTo(xx, fy); c.stroke(); }
+    c.fillStyle = '#3d7cc2'; for (let yy = top + u * 0.02; yy < fy - u * 0.02; yy += u * 0.08) for (let xx = x - sw / 2 + u * 0.02; xx < x + sw / 2; xx += u * 0.08) { c.save(); c.translate(xx, yy); c.rotate(Math.PI / 4); c.fillRect(-u * 0.006, -u * 0.006, u * 0.012, u * 0.012); c.restore(); }
+    c.fillStyle = '#3a3634'; rr(c, x - u * 0.04, fy - h * 0.1, u * 0.08, h * 0.07, u * 0.01); if (L.dark > 0.3 || winter()) { c.fillStyle = 'rgba(255,150,60,' + (0.6 + 0.2 * Math.sin(t * 7)) + ')'; rr(c, x - u * 0.03, fy - h * 0.085, u * 0.06, h * 0.05, u * 0.008); }
+    hit(x - sw / 2, top, sw, fy - top, word('pich'), x); }
+  // ---- the door out
+  { const x = SX.door * RW, dw = u * 0.16, dt2 = fy - h * 0.3;
+    c.fillStyle = '#6b4422'; rr(c, x - dw / 2 - u * 0.012, dt2 - u * 0.012, dw + u * 0.024, fy - dt2 + u * 0.012, u * 0.01);
+    c.fillStyle = '#3f8a3a'; c.fillRect(x - dw / 2, dt2, dw, fy - dt2); c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 1.2; c.strokeRect(x - dw / 2 + u * 0.02, dt2 + u * 0.03, dw - u * 0.04, (fy - dt2) * 0.4); c.strokeRect(x - dw / 2 + u * 0.02, dt2 + (fy - dt2) * 0.52, dw - u * 0.04, (fy - dt2) * 0.4);
+    c.fillStyle = '#f2c230'; circ(c, x + dw * 0.32, dt2 + (fy - dt2) * 0.52, u * 0.01);
+    hit(x - dw / 2, dt2, dw, fy - dt2, () => exitHome(), x); }
+  // ---- the blackboard, with the alphabet and a word chalked on it; chalk and a duster on its ledge
+  { const x = SX.board * RW, bw = u * 0.62, bh = h * 0.21, top = h * 0.19;
+    c.fillStyle = '#6b4422'; rr(c, x - bw / 2 - u * 0.02, top - u * 0.02, bw + u * 0.04, bh + u * 0.04, u * 0.01);
+    g = c.createLinearGradient(0, top, 0, top + bh); g.addColorStop(0, '#2f4a3a'); g.addColorStop(1, '#263d30'); c.fillStyle = g; c.fillRect(x - bw / 2, top, bw, bh);
+    c.fillStyle = 'rgba(255,255,255,.05)'; for (let i = 0; i < 6; i++) ell(c, x - bw * 0.3 + i * bw * 0.12, top + bh * (0.3 + (i % 2) * 0.35), bw * 0.08, bh * 0.08);   // old smudges
+    c.fillStyle = 'rgba(245,245,235,.92)'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = '700 ' + Math.round(u * 0.04) + 'px "Cozy", system-ui'; c.fillText('А а   Б б   В в   Г г   Ґ ґ', x, top + bh * 0.28);
+    c.font = '700 ' + Math.round(u * 0.034) + 'px "Cozy", system-ui'; c.fillText('Д д   Е е   Є є   Ж ж   З з', x, top + bh * 0.52);
+    c.font = 'italic 700 ' + Math.round(u * 0.036) + 'px "Cozy", system-ui'; c.fillStyle = 'rgba(255,236,150,.95)'; c.fillText('Добрий день, діти!', x, top + bh * 0.8);
+    c.fillStyle = '#8a5a2b'; c.fillRect(x - bw / 2, top + bh + u * 0.012, bw, u * 0.018);   // the ledge
+    c.fillStyle = '#fbfbf2'; rr(c, x + bw * 0.22, top + bh + u * 0.003, u * 0.05, u * 0.012, u * 0.004); rr(c, x + bw * 0.3, top + bh + u * 0.004, u * 0.03, u * 0.011, u * 0.004);   // chalk
+    c.fillStyle = '#a0522d'; rr(c, x - bw * 0.36, top + bh - u * 0.008, u * 0.07, u * 0.024, u * 0.006); c.fillStyle = '#e8dcc6'; c.fillRect(x - bw * 0.36, top + bh + u * 0.008, u * 0.07, u * 0.008);   // the duster
+    hit(x - bw / 2, top, bw, bh, word('doshka', { note: '🧑‍🏫 ' + xl('In class, «дошка» is the blackboard: the same word as the notice board in the village.') }), x);
+    hit(x + bw * 0.2, top + bh - u * 0.02, u * 0.12, u * 0.05, word('kreida'), x + bw * 0.25); }
+  // ---- the teacher's desk: books, a globe, the hand bell
+  { const x = SX.desk * RW, dw = u * 0.36, dtop = fy - h * 0.12;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, x, fy + h * 0.01, dw * 0.55, h * 0.015);
+    c.fillStyle = '#7a4e26'; c.fillRect(x - dw / 2 + u * 0.02, dtop, u * 0.03, fy - dtop); c.fillRect(x + dw / 2 - u * 0.05, dtop, u * 0.03, fy - dtop);
+    c.fillStyle = '#9b6b3c'; c.fillRect(x - dw / 2, dtop - u * 0.025, dw, u * 0.03); c.fillStyle = '#8a5a2b'; c.fillRect(x - dw / 2 + u * 0.03, dtop + u * 0.005, dw - u * 0.06, h * 0.05);
+    // the globe
+    const gx = x - dw * 0.28, gy = dtop - u * 0.1, gr = u * 0.055;
+    c.strokeStyle = '#a88a3a'; c.lineWidth = u * 0.005; c.beginPath(); c.ellipse(gx, gy, gr * 0.28, gr * 1.14, 0.35, Math.PI * 0.5, Math.PI * 1.5); c.stroke(); c.fillStyle = '#8a6a2a'; c.fillRect(gx - u * 0.004, gy + gr, u * 0.008, u * 0.05); ell(c, gx, dtop - u * 0.028, u * 0.035, u * 0.01);
+    c.fillStyle = '#4a90d0'; circ(c, gx, gy, gr); c.save(); c.beginPath(); c.arc(gx, gy, gr, 0, 7); c.clip(); c.fillStyle = '#6fbf5a'; const sp = (t * 0.15) % 1; for (const [ox, oy, rx, ry] of [[-0.3, -0.2, 0.35, 0.25], [0.4, 0.1, 0.3, 0.35], [-0.1, 0.45, 0.2, 0.15]]) for (const k of [0, 2]) ell(c, gx + (((ox + sp * 2 + k) % 2) - 1) * gr * 1.6, gy + oy * gr, rx * gr, ry * gr); c.restore();
+    c.fillStyle = 'rgba(255,255,255,.35)'; circ(c, gx - gr * 0.35, gy - gr * 0.35, gr * 0.25);
+    hit(gx - gr * 1.3, gy - gr * 1.3, gr * 2.6, gr * 2.6 + u * 0.06, word('hlobus'), gx);
+    // books
+    for (let i = 0; i < 3; i++) { c.fillStyle = ['#c0392b', '#2f5f9e', '#3f8a3a'][i]; c.fillRect(x - u * 0.02, dtop - u * 0.03 - (i + 1) * u * 0.017, u * 0.1 - i * u * 0.008, u * 0.016); c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(x + u * 0.07 - i * u * 0.008, dtop - u * 0.028 - (i + 1) * u * 0.017, u * 0.006, u * 0.012); }
+    hit(x - u * 0.03, dtop - u * 0.1, u * 0.12, u * 0.08, word('knyha'), x);
+    // the hand bell: it shakes when rung
+    const bx = x + dw * 0.32, by = dtop - u * 0.028, ring = Math.max(0, 1 - (t - SCHOOL.bellT) / 0.7), rot = ring ? Math.sin((t - SCHOOL.bellT) * 40) * 0.45 * ring : 0;
+    c.save(); c.translate(bx, by); c.rotate(rot);
+    c.fillStyle = '#6b4422'; rr(c, -u * 0.008, -u * 0.09, u * 0.016, u * 0.05, u * 0.006); c.fillStyle = '#8a5a2b'; circ(c, 0, -u * 0.092, u * 0.011);
+    c.fillStyle = '#d9a63a'; c.beginPath(); c.moveTo(-u * 0.022, -u * 0.045); c.quadraticCurveTo(-u * 0.026, -u * 0.012, -u * 0.036, 0); c.lineTo(u * 0.036, 0); c.quadraticCurveTo(u * 0.026, -u * 0.012, u * 0.022, -u * 0.045); c.closePath(); c.fill();
+    c.fillStyle = '#f2cc66'; ell(c, -u * 0.01, -u * 0.025, u * 0.005, u * 0.014); c.restore();
+    if (ring) { c.strokeStyle = 'rgba(255,220,120,' + ring + ')'; c.lineWidth = 2; for (const k of [1, 2]) { c.beginPath(); c.arc(bx, by - u * 0.03, u * 0.04 * k * (1.4 - ring * 0.4), -0.9, -0.1); c.stroke(); c.beginPath(); c.arc(bx, by - u * 0.03, u * 0.04 * k * (1.4 - ring * 0.4), Math.PI + 0.1, Math.PI + 0.9); c.stroke(); } }
+    hit(bx - u * 0.05, by - u * 0.11, u * 0.1, u * 0.12, () => { schoolBell(); wordCard('dzvonyk'); }, bx); }
+  // ---- the pupils' desks: two rows (the back row higher up and a little smaller), each with a bench, an
+  //      inkwell and an exercise book open on it
+  const parta = (fx, row) => {
+    const sc = row ? 0.85 : 1, x = fx * RW, base = row ? fy + h * 0.01 : fy + h * 0.12, dw = u * 0.3 * sc, top = base - h * 0.14 * sc;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, x, base + h * 0.006, dw * 0.55, h * 0.012);
+    c.fillStyle = '#6b4422'; c.fillRect(x - dw * 0.42, top, u * 0.014 * sc, base - top); c.fillRect(x + dw * 0.42 - u * 0.014 * sc, top, u * 0.014 * sc, base - top);   // legs
+    c.fillStyle = '#7a4e26'; c.fillRect(x - dw * 0.45, base - h * 0.035 * sc, dw * 0.9, h * 0.012 * sc);   // the bench rail
+    c.fillStyle = '#5a8a5e'; poly(c, [[x - dw / 2, top], [x + dw / 2, top], [x + dw / 2 - u * 0.01, top + h * 0.035 * sc], [x - dw / 2 + u * 0.01, top + h * 0.035 * sc]]);   // sloping green desk top
+    c.fillStyle = '#486f4b'; c.fillRect(x - dw / 2, top - u * 0.008 * sc, dw, u * 0.01 * sc);
+    c.fillStyle = '#fffdf5'; poly(c, [[x - dw * 0.3, top + u * 0.004], [x + dw * 0.05, top + u * 0.004], [x + dw * 0.04, top + h * 0.028 * sc], [x - dw * 0.31, top + h * 0.028 * sc]]);   // the open exercise book
+    c.strokeStyle = 'rgba(60,110,200,.5)'; c.lineWidth = 0.8; for (let i = 1; i < 4; i++) { const yy = top + u * 0.004 + i * h * 0.006 * sc; c.beginPath(); c.moveTo(x - dw * 0.28, yy); c.lineTo(x + dw * 0.03, yy); c.stroke(); }
+    c.fillStyle = '#1d2a4a'; circ(c, x + dw * 0.3, top + h * 0.012 * sc, u * 0.01 * sc);   // inkwell
+    hit(x - dw / 2, top - u * 0.01, dw * 0.5, h * 0.05, word('zoshyt'), x - dw * 0.1);
+    hit(x - dw / 2, top - u * 0.01, dw, base - top + u * 0.02, word('parta'), x);
+  };
+  for (const fx of SX.rowB) parta(fx, 1);
+  // ---- her (between the rows), then the front row of desks in front of her
+  inDraw(c, t);
+  for (const fx of SX.rowA) parta(fx, 0);
+  c.restore();
+  // dust in the window light
+  if (day > 0.3) { c.fillStyle = 'rgba(255,248,225,' + (0.45 * wxL) + ')'; for (let i = 0; i < 18; i++) { const q = (t * 0.015 + i * 0.05) % 1; circ(c, ((i * 0.41 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
+  { const lights = [[SX.stove * RW - roomX, fy - h * 0.06, u * 0.5], [SX.board * RW - roomX, h * 0.06, u * 0.9], [SX.win1 * RW - roomX, h * 0.06, u * 0.6]];
     paintSky(c, w, h, t, lights, false); }
 }
 
@@ -8125,7 +8306,7 @@ function devMenu() {
     <div style="text-align:center;margin-top:6px"><button class="subt" data-a="devOff">🔒 Turn off developer mode</button></div></div>`);
 }
 // Leave the cottage or Grandma's for the village first, when a dev jump needs the world.
-function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill' || mode === 'church') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
+function devToWorld() { if (mode === 'home' || mode === 'olia' || mode === 'mill' || mode === 'church' || mode === 'school') { oliaTip = 0; tour = null; mode = 'world'; $('#homebar').style.display = 'none'; } }
 
 // ------------------------------------------------------------------ the title screen, drawn
 const tcv = $('#tc'), tctx = tcv.getContext('2d');
@@ -8377,6 +8558,7 @@ function frame(ms) {
   else if (mode === 'olia') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawOlia(t); }
   else if (mode === 'mill') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawMill(t); }
   else if (mode === 'church') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawChurch(t); }
+  else if (mode === 'school') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawSchool(t); }
   else if (mode === 'fest') { ctx.setTransform(1, 0, 0, 1, 0, 0); drawFest(t); }
   else { update(running && !sheetOpen() ? dt : 0, t, dt); fxUpdate(dt); drawWorld(t); }
   requestAnimationFrame(frame);
@@ -8430,6 +8612,7 @@ cv.addEventListener('pointerup', ev => {
   if (mode === 'olia') return oliaTap(px, py);
   if (mode === 'mill') return millTap(px, py);
   if (mode === 'church') return churchTap(px, py);
+  if (mode === 'school') return schoolTap(px, py);
   if (mode === 'fest') return;   // the festival takes its taps on pointerdown, for the beat
   const wx = (camX + px / zoom) / T, wy = (camY + py / zoom) / T;
   const e = hitEnt(wx, wy);
