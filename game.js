@@ -2992,7 +2992,23 @@ const MY_WHY = {
   zakhar: ["Wanted to see if it'd scare the big carp out of the reeds. It didn't. Sorry.", "Хотів подивитися, чи вижене він великого коропа з очерету. Не вигнав. Вибачте."],
   halyna: ["I was going to tie it with ribbons and flowers and surprise the whole village! Oh, sonechko, you've spoiled my surprise. But well done!", "Я хотіла прикрасити його стрічками й квітами та здивувати все село! Ой, сонечко, ти зіпсувала мені сюрприз. Але молодець!"],
 };
-const MY_ASK = { where: ["Where were you yesterday evening?", "Де ви були вчора ввечері?"], who: ["Who did you see yesterday evening?", "Кого ви бачили вчора ввечері?"], with: ["Did you notice anything odd?", "Ви помітили щось дивне?"] };
+// What Vicky can say, each in several wordings: a button never says the same thing twice running (the same
+// question, asked a different way each time). myV(key) gives the next wording for that button.
+const MY_VAR = {
+  ask_where: [["Where were you yesterday evening?", "Де ви були вчора ввечері?"], ["And yesterday evening, where did you go?", "А куди ви ходили вчора ввечері?"], ["What were you doing last night?", "Що ви робили вчора ввечері?"], ["Tell me where you spent the evening.", "Розкажіть, де ви провели вечір."], ["Were you out last night? Where?", "Ви вчора ввечері кудись ходили? Куди?"]],
+  ask_who: [["Who did you see yesterday evening?", "Кого ви бачили вчора ввечері?"], ["Did you run into anyone last night?", "Ви когось зустріли вчора ввечері?"], ["Was anyone else about yesterday evening?", "Чи був ще хтось поруч учора ввечері?"], ["Who else was out last night?", "Хто ще гуляв учора ввечері?"], ["Did you see somebody yesterday? Who?", "Ви вчора когось бачили? Кого?"]],
+  ask_with: [["Did you notice anything odd?", "Ви помітили щось дивне?"], ["Was anything out of place?", "Щось було не на своєму місці?"], ["Did anything strike you as strange?", "Вам щось здалося дивним?"], ["Was there anything unusual yesterday?", "Чи було вчора щось незвичне?"], ["Did you see anything suspicious?", "Ви не бачили нічого підозрілого?"]],
+  more: [["Anything else at all?", "Ще щось?"], ["Is there anything you haven't told me?", "Може, ви ще щось не розповіли?"], ["Think hard: anything more?", "Подумайте добре: щось іще?"], ["Did you notice anything else?", "Ви ще щось помітили?"]],
+  theory: [["I have a theory...", "У мене є здогадка..."], ["Can I tell you what I think?", "Можна, я скажу, що думаю?"], ["I think I know what happened...", "Здається, я знаю, що сталося..."], ["Listen to my idea...", "Послухайте мою думку..."]],
+  bye: [["Goodbye.", "До побачення."], ["Thank you, goodbye!", "Дякую, до побачення!"], ["See you later.", "До зустрічі."], ["I must be going.", "Мені вже час іти."]],
+  tell: [["Tell me more...", "Розкажіть більше..."], ["Really? What happened?", "Справді? А що сталося?"], ["Oh no! Go on...", "Ой! Розповідайте далі..."]],
+  thanks: [["Thank you.", "Дякую."], ["Thanks, that helps.", "Дякую, це допомагає."], ["I see, thank you.", "Зрозуміло, дякую."]],
+  isee: [["I see.", "Зрозуміло."], ["Interesting...", "Цікаво..."], ["Hmm, all right.", "Гм, гаразд."], ["Oh, I see.", "А, ясно."]],
+  never: [["(Never mind.)", "(Неважливо.)"], ["(Let's talk about something else.)", "(Поговорімо про інше.)"], ["(Oh, forget it.)", "(Ой, забудьте.)"]],
+};
+const MY_N = {};
+const myV = key => { const L = MY_VAR[key]; MY_N[key] = ((MY_N[key] == null ? Math.floor(Math.random() * L.length) - 1 : MY_N[key]) + 1) % L.length; return L[MY_N[key]]; };
+const MY_ASK = { where: MY_VAR.ask_where[0], who: MY_VAR.ask_who[0], with: MY_VAR.ask_with[0] };   // (the first wordings, for anything that wants a fixed one)
 const MY_T = {
   more: ["Anything else at all?", "Ще щось?"], theory: ["I have a theory...", "У мене є здогадка..."], bye: ["Goodbye.", "До побачення."], tell: ["Tell me more...", "Розкажіть більше..."],
   menu: [["What would you like to know?", "Що ти хочеш знати?"], ["Ask away, detective.", "Питай, детективко."], ["Go on, then.", "Ну, питай."]],
@@ -3048,28 +3064,28 @@ function myTalk(id) {
   const M = S.mystery, n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hello = [L.en, L.uk];
   n0.met = true; say('v_' + id + '_' + (first ? 'intro' : 'again'));
   const rs = rainSay(id), wetHi = rs ? [rs[0] + '<br><br>', rs[1] + '<br><br>'] : ['', ''];
-  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, myCat(wetHi, hello, '<br><br>', MY_GOSSIP[id], Object.keys(M.met).length === 1 ? myCat('<div class="hint" style="margin-top:8px">', MY_T.hint, '</div>') : ''), [{ label: MY_T.tell, fn: () => myMenu(id) }, { label: MY_T.bye, fn: closeSheet }]); }
+  if (!M.met[id]) { M.met[id] = 1; M.started = 1; save(); myBtnShow(); return myDialog(id, myCat(wetHi, hello, '<br><br>', MY_GOSSIP[id], Object.keys(M.met).length === 1 ? myCat('<div class="hint" style="margin-top:8px">', MY_T.hint, '</div>') : ''), [{ label: myV('tell'), fn: () => myMenu(id) }, { label: myV('bye'), fn: closeSheet }]); }
   save(); myMenu(id, myCat(wetHi, hello));
 }
 function myMenu(id, said) {
   const M = S.mystery, hand = M.hands[id], v = MY_VOICE[id], ch = [];
-  for (const k of ['where', 'who', 'with']) { const c = hand.find(c => c.k === k && !c.said); if (c) ch.push({ label: MY_ASK[k], fn: () => { c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save(); myMenu(id, myCat(myPick(v.open), ' ', c.line)); } }); }
+  for (const k of ['where', 'who', 'with']) { const c = hand.find(c => c.k === k && !c.said); if (c) ch.push({ label: myV('ask_' + k), fn: () => { c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save(); myMenu(id, myCat(myPick(v.open), ' ', c.line)); } }); }
   const tr = M.traces[id];
-  if (hand.every(c => c.said) && tr && !tr.said) ch.push({ label: MY_T.more, fn: () => { tr.said = true; M.heard.push({ id, txt: tr.txt, trace: 1 }); save(); myMenu(id, myCat(myPick(v.open), ' ', tr.txt)); } });
-  ch.push({ label: MY_T.theory, fn: () => mySuggest(id) });
-  ch.push({ label: MY_T.bye, fn: closeSheet });
+  if (hand.every(c => c.said) && tr && !tr.said) ch.push({ label: myV('more'), fn: () => { tr.said = true; M.heard.push({ id, txt: tr.txt, trace: 1 }); save(); myMenu(id, myCat(myPick(v.open), ' ', tr.txt)); } });
+  ch.push({ label: myV('theory'), fn: () => mySuggest(id) });
+  ch.push({ label: myV('bye'), fn: closeSheet });
   const left = hand.some(c => !c.said) || (tr && !tr.said);
   myDialog(id, said || (left ? myPick(MY_T.menu) : v.none), ch);
 }
 function mySuggest(id, pick = {}) {
-  if (!pick.who) return myDialog(id, MY_T.whoQ, MY_WHO.map(x => ({ label: myName(x), fn: () => mySuggest(id, { who: x }) })).concat([{ label: MY_T.never, fn: () => myMenu(id) }]));
+  if (!pick.who) return myDialog(id, MY_T.whoQ, MY_WHO.map(x => ({ label: myName(x), fn: () => mySuggest(id, { who: x }) })).concat([{ label: myV('never'), fn: () => myMenu(id) }]));
   if (!pick.where) return myDialog(id, MY_T.whereQ, Object.keys(MY_WHERE).map(x => ({ label: [cap(MY_WHERE[x][0]), cap(MY_WHERE[x][1])], fn: () => mySuggest(id, Object.assign(pick, { where: x })) })));
   if (!pick.what) return myDialog(id, MY_T.withQ, Object.keys(MY_WITH).map(x => ({ label: [cap(MY_WITH[x][0]), cap(MY_WITH[x][1])], fn: () => mySuggest(id, Object.assign(pick, { what: x })) })));
   const M = S.mystery, hand = M.hands[id], hits = hand.filter(c => (c.k === 'who' && c.v === pick.who) || (c.k === 'where' && c.v === pick.where) || (c.k === 'with' && c.v === pick.what));
-  if (!hits.length) return myDialog(id, myCat(myTheory(pick), MY_VOICE[id].hmm), [{ label: MY_T.thanks, fn: () => myMenu(id) }]);
+  if (!hits.length) return myDialog(id, myCat(myTheory(pick), MY_VOICE[id].hmm), [{ label: myV('thanks'), fn: () => myMenu(id) }]);
   const c = hits.find(c => !c.said) || hits[0]; c.said = true; myNote(c, id); M.heard.push({ id, txt: c.line }); save();
   const nm = myCard(c);
-  myDialog(id, myCat(myTheory(pick), [MY_T.notIt[0].replace('%s', nm[0]), MY_T.notIt[1].replace('%s', nm[1])], ' ', c.line), [{ label: MY_T.isee, fn: () => myMenu(id) }]);
+  myDialog(id, myCat(myTheory(pick), [MY_T.notIt[0].replace('%s', nm[0]), MY_T.notIt[1].replace('%s', nm[1])], ' ', c.line), [{ label: myV('isee'), fn: () => myMenu(id) }]);
 }
 function myNotebook() {
   const M = S.mystery; if (!M) return toast('🔍 No mystery right now.', 2000);
@@ -3119,7 +3135,7 @@ const VIS_WHY = {
 function visHello(id) {
   const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'];
   n0.met = true; save(); say('v_' + id + '_' + (first ? 'intro' : 'again'));
-  const bye = { label: MY_T.bye, fn: closeSheet }, rs = rainSay(id);
+  const bye = { label: myV('bye'), fn: closeSheet }, rs = rainSay(id);
   myDialog(id, rs ? [rs[0] + '<br><br>' + L.en, rs[1] + '<br><br>' + L.uk] : [L.en, L.uk], [{ label: first ? ['Nice to meet you too!', 'Мені теж приємно!'] : ['Good to see you too!', 'І я рада вас бачити!'], fn: () => myDialog(id, myPick([['Lovely!', 'Чудово!'], ['Wonderful.', 'Прекрасно.'], ['Ha, that it is!', 'Ха, так і є!']]), [bye]) }, { label: ['What brings you to Dolyna?', 'Що привело вас до Долини?'], fn: () => myDialog(id, VIS_WHY[id], [bye]) }, bye]);
 }
 // ------------------------------------------------------------------ the railway
@@ -8034,38 +8050,52 @@ function bellReverb() {
 // well before the low hum does. Each sounds as a slightly detuned pair, so the note swells and shimmers slowly,
 // and a soft metallic tap marks the strike. The overtones also let a phone's small speaker carry the note.
 // The strikes still ringing, so a new one can take over from them (see below).
+// The bell is rendered ONCE per pitch, offline, into a finished sound (the same partials, strike and echo as
+// before) and scaled so its loudest moment is half of full scale; each stroke just plays that sound. Building
+// it live on the phone, through compressors and a limiter, distorted however the levels were set, and the
+// music on top of a loud bell could push the phone's own mixer past full scale. Now nothing in the chain can
+// distort it, and the music dips well down while it rings.
+const BELL_BUF = {}, BELL_PEAK = 0.5, bellGain = v => v / 0.45;   // a volume of 0.45 (the rope) plays it at its full half-scale peak
+function bellRender(f0) {
+  if (BELL_BUF[f0]) return BELL_BUF[f0];
+  const sr = 44100, oc = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(1, sr * 24, sr), t0 = 0.01, out = oc.createGain();
+  out.connect(oc.destination);
+  // the echo of a tower over a valley: a decaying noise tail, normalised by the convolver, mixed in under the bell
+  const len = sr * 5, ir = oc.createBuffer(1, len, sr), d0 = ir.getChannelData(0); for (let k = 0; k < len; k++) d0[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / len, 2.6) * (k < sr * 0.02 ? k / (sr * 0.02) : 1);
+  const cv = oc.createConvolver(); cv.buffer = ir; const wet = oc.createGain(); wet.gain.value = 0.35; out.connect(cv); cv.connect(wet); wet.connect(oc.destination);
+  //  ratio to the hum, loudness, how long it rings (s): the hum carries on longest; the overtones fade sooner
+  for (const [r, amp, d, det] of [[1, 0.85, 22, 0.25], [2.0, 0.42, 13, 0.6], [2.4, 0.3, 9, 0.7], [3.0, 0.14, 6, 0.8], [4.0, 0.26, 7, 1.0], [5.05, 0.09, 3, 1.2], [5.4, 0.07, 2.4, 1.3]]) for (const sd of [-1, 1]) {
+    const o = oc.createOscillator(), g = oc.createGain(); o.type = 'sine'; o.frequency.value = f0 * r + sd * det * 0.5;
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(amp * 0.5, t0 + 0.006); g.gain.exponentialRampToValueAtTime(amp * 0.3, t0 + Math.min(1.5, d * 0.1)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+    o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.05);
+  }
+  // the strike: a short soft metallic tap
+  const n = sr * 0.05, buf = oc.createBuffer(1, n, sr), dd = buf.getChannelData(0); for (let k = 0; k < n; k++) dd[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / n, 4);
+  const src = oc.createBufferSource(), bp = oc.createBiquadFilter(), sg = oc.createGain(); src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 3; sg.gain.value = 0.18;
+  src.connect(bp); bp.connect(sg); sg.connect(out); src.start(t0);
+  return (BELL_BUF[f0] = oc.startRendering().then(b => { const d = b.getChannelData(0); let pk = 0; for (let k = 0; k < d.length; k++) { const v = Math.abs(d[k]); if (v > pk) pk = v; } const m = pk > 0 ? BELL_PEAK / pk : 1; for (let k = 0; k < d.length; k++) d[k] *= m; return b; }));
+}
+// The strokes still ringing, so a new one can take over from them: they fall back to a third of where they were
+// (without that, noon's three strokes piled up to three full bells at once by the third).
 let BELL_RINGING = [];
 function churchBell(vol = 1, f0 = 110, len = 1, delay = 0) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
-    // Each strike has its own compressor and its volume comes AFTER it. (It used to share one compressor with a fixed
-    // boost behind it, which squashed any volume change to a couple of dB, so a "softer" bell sounded just as loud.)
-    const t0 = actx.currentTime + 0.01 + delay, out = actx.createGain(), comp = actx.createDynamicsCompressor(), post = actx.createGain();
-    comp.threshold.value = -18; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.4; post.gain.value = BELL_MAKEUP * vol;
-    // A new stroke takes over from the ones still ringing: they fall back to a third of where they were. Without
-    // this, noon's three strokes (4 s apart, each ringing about 20 s) piled up to three full bells at once by the
-    // third, and squashing all that through the limiter is what made it sound distorted.
-    BELL_RINGING = BELL_RINGING.filter(p => p.end > t0);
-    for (const p of BELL_RINGING) { p.k *= 0.33; p.post.gain.setTargetAtTime(BELL_MAKEUP * p.vol * p.k, t0, 0.35); }
-    BELL_RINGING.push({ post, vol, k: 1, end: t0 + 22 * len });
-    bellReverb(); const cv2 = actx.createConvolver(); cv2.buffer = bellIR; const wet = actx.createGain(); wet.gain.value = 0.6;
-    out.connect(comp); out.connect(cv2); cv2.connect(wet); wet.connect(comp); comp.connect(post); post.connect(bellLimiter());
-    setTimeout(() => { try { post.disconnect(); cv2.disconnect(); } catch (e) {} }, (22 * len + 7 + delay) * 1000);
-    //  ratio to the hum, loudness, how long it rings (s): the hum carries on longest; the overtones fade sooner
-    for (const [r, amp, d0, det] of [[1, 0.85, 22, 0.25], [2.0, 0.42, 13, 0.6], [2.4, 0.3, 9, 0.7], [3.0, 0.14, 6, 0.8], [4.0, 0.26, 7, 1.0], [5.05, 0.09, 3, 1.2], [5.4, 0.07, 2.4, 1.3]]) for (const sd of [-1, 1]) {
-      const o = actx.createOscillator(), g = actx.createGain(), d = d0 * len; o.type = 'sine'; o.frequency.value = f0 * r + sd * det * 0.5;
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(amp * 0.5, t0 + 0.006); g.gain.exponentialRampToValueAtTime(amp * 0.3, t0 + Math.min(1.5, d * 0.1)); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
-      o.connect(g); g.connect(out); o.start(t0); o.stop(t0 + d + 0.05);
-    }
-    // the strike: a short soft metallic tap
-    const n = actx.sampleRate * 0.05, buf = actx.createBuffer(1, n, actx.sampleRate), dd = buf.getChannelData(0); for (let i = 0; i < n; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 4);
-    const src = actx.createBufferSource(), bp = actx.createBiquadFilter(), sg = actx.createGain(); src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 3; sg.gain.value = 0.18;
-    src.connect(bp); bp.connect(sg); sg.connect(out); src.start(t0);
+    const want = actx.currentTime + 0.01 + delay;
+    bellRender(f0).then(buf => {
+      const t0 = Math.max(actx.currentTime + 0.01, want), src = actx.createBufferSource(), g = actx.createGain();
+      src.buffer = buf; g.gain.value = bellGain(vol);
+      BELL_RINGING = BELL_RINGING.filter(p => p.end > t0);
+      for (const p of BELL_RINGING) { p.k *= 0.33; p.g.gain.setTargetAtTime(bellGain(p.vol) * p.k, t0, 0.35); }
+      BELL_RINGING.push({ g, vol, k: 1, end: t0 + buf.duration });
+      src.connect(g); g.connect(actx.destination); src.start(t0);
+      src.onended = () => { try { g.disconnect(); } catch (e) {} };
+    }).catch(() => {});
   } catch (e) {}
 }
 // Pulling the rope: the one bell, rung twice.
 function churchPeal(vol = 0.45) { churchBell(vol); churchBell(vol, 110, 1, 3.5); }
-function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.75; setTimeout(() => { duck = 1; }, 10000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
+function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.4; setTimeout(() => { duck = 1; }, 10000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
 // The only thing to do at the altar: put a few coins in the box. It counts what you've given, and that's all.
 function donateCard() {
   const st = stage(), have = S.coins || 0, given = S.churchGiven || 0;
@@ -9371,7 +9401,7 @@ function dayTick(dt) {
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
     const d = Math.hypot(P.x - 30.5, P.y - 6), vol = Math.max(0.12, 0.35 - d * 0.012);   // heard all over the village, softer the farther from the church
-    duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer
+    duck = 0.4; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer
     for (let i = 0; i < 3; i++) churchBell(vol, 147, 1, 0.3 + i * 4);   // pitched a fourth above the big bell's 110 Hz   // three slow strokes of the big bell (this line had slipped into the comment above, so noon was silent)
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
   if (was < 0.78 && C.t >= 0.78 && !C.ev.eve) { C.ev.eve = 1; learn('vechir'); say('w_vechir'); toast(`🌇 ${W.vechir.uk}${stage() < 3 ? ' · evening' : ''}`, 2600); }
@@ -10961,7 +10991,7 @@ const A = {
       const inApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
       if (req && !inApp && !(document.fullscreenElement || document.webkitFullscreenElement)) { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); }
     } catch (e) {}
-    $('#start').style.display = 'none'; running = true; playStart(); hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
+    $('#start').style.display = 'none'; running = true; playStart(); setTimeout(() => { try { bellRender(110); bellRender(147); } catch (e) {} }, 4000); hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
     if (S.refunded && !S.refundTold) { S.refundTold = 1; save(); setTimeout(() => toast(`🛏️ Меблі вже в хаті! +${S.refunded} ₴`), 1500); } },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
