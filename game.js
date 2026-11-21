@@ -779,12 +779,27 @@ const DRAW = {
     // crates on the ground in front
     const crate = (x, col) => { c.fillStyle = '#b5824e'; c.fillRect(x - 9, -9, 18, 9); c.strokeStyle = '#8a5a2b'; c.lineWidth = 0.8; c.strokeRect(x - 9, -9, 18, 9); c.beginPath(); c.moveTo(x - 9, -4.5); c.lineTo(x + 9, -4.5); c.stroke(); c.fillStyle = col; for (let i = 0; i < 4; i++) circ(c, x - 6 + i * 4, -10, 2.4); };
     crate(-33, '#c9a05a'); crate(33, '#e2392f');
-    if (nightNow()) {   // closed: a sacking cloth over the produce and the crates, and a board hung up saying so
-      c.fillStyle = '#b89a68'; c.beginPath(); c.moveTo(-49, -57); c.quadraticCurveTo(0, -61, 49, -57); c.lineTo(50, -30); c.quadraticCurveTo(25, -26, 0, -30); c.quadraticCurveTo(-25, -26, -50, -30); c.closePath(); c.fill();
-      c.strokeStyle = 'rgba(90,60,30,.35)'; c.lineWidth = 0.8; for (let x = -40; x < 48; x += 10) { c.beginPath(); c.moveTo(x, -58); c.quadraticCurveTo(x + 2, -44, x, -29); c.stroke(); }
-      c.fillStyle = '#a5875a'; for (const x of [-33, 33]) rr(c, x - 10, -11, 20, 11, 2);
-      c.strokeStyle = '#5a381b'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-14, -74); c.lineTo(-10, -66); c.moveTo(14, -74); c.lineTo(10, -66); c.stroke();
-      c.fillStyle = '#6b4422'; rr(c, -18, -67, 36, 11, 2); c.fillStyle = '#fffaf0'; c.font = '700 6.5px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ЗАЧИНЕНО', 0, -61.3);
+    if (nightNow() && stallQ > 0) {   // closed (or closing): a sacking cloth over the produce and the crates, and a board hung up saying so
+      const q = stallQ, sm = v => v * v * (3 - 2 * v), seg = (a, b) => sm(Math.max(0, Math.min(1, (q - a) / (b - a))));
+      // the cloth, pulled across from the left; its leading edge ripples while it moves
+      const f = seg(0.02, 0.55), edge = -50 + 100 * f, wav = f < 1 ? Math.sin(q * 40) * 1.5 : 0;
+      if (f > 0) {
+        c.save(); c.beginPath(); c.rect(-52, -66, edge + 52 + 2, 40); c.clip();
+        c.fillStyle = '#b89a68'; c.beginPath(); c.moveTo(-49, -57); c.quadraticCurveTo(0, -61, 49, -57); c.lineTo(50, -30); c.quadraticCurveTo(25, -26, 0, -30); c.quadraticCurveTo(-25, -26, -50, -30); c.closePath(); c.fill();
+        c.strokeStyle = 'rgba(90,60,30,.35)'; c.lineWidth = 0.8; for (let x = -40; x < 48; x += 10) { c.beginPath(); c.moveTo(x, -58); c.quadraticCurveTo(x + 2, -44, x, -29); c.stroke(); }
+        c.restore();
+        if (f < 1) { c.fillStyle = '#a5875a'; c.beginPath(); c.moveTo(edge, -59); c.quadraticCurveTo(edge + 3 + wav, -44, edge, -29); c.lineTo(edge - 3, -29); c.quadraticCurveTo(edge + wav * 0.5, -44, edge - 3, -59); c.closePath(); c.fill(); }   // the gathered edge she's pulling
+      }
+      // the covers dropped onto the crates
+      const cv = seg(0.55, 0.7); if (cv > 0) { c.globalAlpha = cv; c.fillStyle = '#a5875a'; for (const x of [-33, 33]) rr(c, x - 10, -11 - (1 - cv) * 7, 20, 11, 2); c.globalAlpha = 1; }
+      // the board drops onto its ropes and swings to a stop
+      const bd = seg(0.72, 0.86); if (bd > 0) {
+        const sw = q < 1 ? Math.sin((q - 0.72) * 34) * Math.max(0, 1 - (q - 0.72) / 0.28) * 0.32 : 0, dy = (1 - bd) * -16;
+        c.save(); c.translate(0, -74 + dy); c.rotate(sw);
+        c.strokeStyle = '#5a381b'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(-14, 0); c.lineTo(-10, 8); c.moveTo(14, 0); c.lineTo(10, 8); c.stroke();
+        c.fillStyle = '#6b4422'; rr(c, -18, 7, 36, 11, 2); c.fillStyle = '#fffaf0'; c.font = '700 6.5px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ЗАЧИНЕНО', 0, 12.7);
+        c.restore();
+      }
     }
   },
   plot(c) {
@@ -2106,6 +2121,14 @@ function oksPose(t) {   // arm angles, hand and bristle positions in her own (un
 function oksanaStep(e, dt, t) {
   const O = OKS; if (O.home === null) O.home = e.x;
   const ease = (v, goal, r) => v + (goal - v) * (1 - Math.exp(-dt * r));
+  if (nightNow() && stallQ < 1 && !e.route2) {   // closing up: follow the cloth along the stall, then come back to the middle
+    const span = 2.1 * 0.8, goal = stallQ < 0.55 ? STALL.x - span + 2 * span * Math.min(1, stallQ / 0.55) : STALL.x, d = goal - e.x;
+    const step = Math.sign(d) * Math.min(Math.abs(d), 1.4 * dt);
+    if (Math.abs(d) > 0.02) O.dir = d > 0 ? 1 : -1;
+    e.x += step; O.walk = ease(O.walk, Math.abs(d) > 0.05 ? 1 : 0, 6); O.legs += O.walk * dt * 7; O.w = 0; O.prev = 0;
+    for (const q of O.dust) { q.age += dt; q.x += q.vx * dt; q.y += q.vy * dt; } O.dust = O.dust.filter(q => q.age < q.life);
+    return;
+  }
   if (sheetOpen()) { O.walk = ease(O.walk, 0, 6); }
   else if (O.pause > 0) { O.pause -= dt; O.walk = ease(O.walk, 0, 5); }
   else {
@@ -2387,10 +2410,30 @@ function rainbowA() {
 }
 function nightNow() { return !!(S.clock && S.clock.t >= 0.86); }
 const NPC_HOME = { oksana: 'tarasHome', taras: 'tarasHome', andriiko: 'tarasHome', bohdan: 'bohdanHome' };
-const HOME_DELAY = { oksana: 1.5, bohdan: 3, taras: 4.5, andriiko: 6 };
+const HOME_DELAY = { oksana: 7, bohdan: 3, taras: 4.5, andriiko: 6 };   // (Oksana closes up the stall first)
+const STALL_CLOSE_S = 5.6;   // how long closing the stall takes
+let stallQ = 0;              // 0 open .. 1 closed for the night
 const NIGHT_GONE = new Set(['metelyk', 'bdzhola', 'lastivka']);
 let villageNightT = 0;
+// The sounds of closing the stall: a cloth being dragged, crate covers dropping, the board knocking onto its hooks.
+function stallSfx(k) {
+  if (mode !== 'world' || Math.hypot(P.x - STALL.x, P.y - STALL.y) > 9) return;
+  try {
+    if (k === 'cloth') { sfxHit(2400, 0.9, 0.05, 'bandpass', 0.7); }
+    else if (k === 'crate') { sfxTone(160, 90, 0.12, 0.12); setTimeout(() => sfxTone(150, 85, 0.12, 0.1), 140); }
+    else { sfxTone(420, 300, 0.08, 0.12); setTimeout(() => sfxTone(380, 280, 0.1, 0.08), 160); }
+  } catch (e) {}
+}
 function villageNight(dt) {
+  if (!nightNow()) stallQ = 0;
+  else {
+    if (!villageNightT && S.clock.t > 0.875) stallQ = 1;   // night was already well on when we got here: it's closed
+    const was = stallQ; stallQ = Math.min(1, stallQ + dt / STALL_CLOSE_S);
+    if (was < 0.06 && stallQ >= 0.06) stallSfx('cloth');
+    if (was < 0.56 && stallQ >= 0.56) stallSfx('crate');
+    if (was < 0.86 && stallQ >= 0.86) stallSfx('board');
+    if (was < 1 && stallQ >= 1 && mode === 'world' && Math.hypot(P.x - STALL.x, P.y - STALL.y) < 7) toast('🔒 ' + 'Зачинено' + (stage() < 3 ? ' · Oksana has closed the market for the night' : ''), 2800);
+  }
   if (!nightNow()) {
     if (villageNightT) { villageNightT = 0; for (const e of ents) if (e.x0 !== undefined) { e.x = e.x0; e.y = e.y0; e.asleep = false; e.route2 = null; e.x0 = undefined; } }
     return;
