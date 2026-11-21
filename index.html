@@ -29,6 +29,10 @@
   .hi { pointer-events:auto; background:none; border:0; padding:2px 5px; margin:0; font-weight:900; font-size:25px; line-height:1; color:#3b2a1e; display:flex; align-items:center; gap:3px; font-family:inherit;
     filter:drop-shadow(1.6px 0 0 #cfcac1) drop-shadow(-1.6px 0 0 #cfcac1) drop-shadow(0 1.6px 0 #cfcac1) drop-shadow(0 -1.6px 0 #cfcac1) drop-shadow(0 3px 3px rgba(40,25,10,.3));   /* a soft grey outline (white was too stark) */ transition:transform .09s ease-out; }
   .hi.btn { font-size:31px; cursor:pointer; }
+  #coins, #hearts { position:relative; font-size:46px; padding:0 2px; }
+  #coins b, #hearts b { position:absolute; left:50%; top:60%; transform:translate(-50%,-50%); font-size:17px; font-weight:900; color:#fff; letter-spacing:-.5px; text-shadow:0 0 2px rgba(60,30,10,.9), 0 1px 2px rgba(60,30,10,.8), 0 0 4px rgba(60,30,10,.6); pointer-events:none; }
+  #hearts b { top:50%; text-shadow:0 0 2px rgba(120,10,30,.95), 0 1px 2px rgba(120,10,30,.8), 0 0 4px rgba(120,10,30,.6); }
+  #coins b.mid, #hearts b.mid { font-size:14px; } #coins b.long, #hearts b.long { font-size:11.5px; }
   .hi.btn:active { transform:scale(.9); }
   .hi.quitx { color:#d9302a; font-size:30px; -webkit-text-stroke:1.5px #d9302a; padding:2px 6px; }
   .hi.corner { position:fixed; z-index:5; bottom:calc(14px + env(safe-area-inset-bottom)); font-size:46px; padding:4px; }
@@ -39,7 +43,7 @@
   @media (min-width: 430px) and (max-width: 640px) { body:has(#homebar[style*="flex"] > #decorBtn:not([style*="none"])) .corner { bottom:calc(84px + env(safe-area-inset-bottom)); } }   /* in the cottage, where its three buttons fit on one row that would reach the corners: above them (on a phone the out button has a row of its own, and the corners sit either side of it) */
   .pill.bump { animation:bump .5s cubic-bezier(.3,1.6,.5,1); }
   @keyframes bump { 35% { transform:scale(1.28); } }
-  @media (max-width: 420px) { .pill { padding:6px 8px; font-size:15px; } .pill.btn { padding:6px 6px; font-size:17px; } #hud { gap:4px; } .hi { font-size:23px; } .hi.btn { font-size:28px; } .hi.corner { font-size:42px; } }   /* room for the detective notebook and the ✕ on one row */
+  @media (max-width: 420px) { .pill { padding:6px 8px; font-size:15px; } .pill.btn { padding:6px 6px; font-size:17px; } #hud { gap:4px; } .hi { font-size:23px; } .hi.btn { font-size:28px; } #coins, #hearts { font-size:44px; } .hi.corner { font-size:42px; } }   /* room for the detective notebook and the ✕ on one row */
   #quit { color:var(--soft); font-weight:800; }   /* in the top bar, far right */
   #quit:active { transform:translateY(1px); }
   #guide { position:fixed; top:calc(58px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(94vw, 560px); background:rgba(255,248,234,.95); border-radius:16px; padding:6px 12px; box-shadow:0 3px 0 rgba(60,40,20,.18); z-index:5; text-align:center; display:flex; gap:10px; align-items:center; }
@@ -305,12 +309,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v262</div>
+  <div class="ver">v263</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '262';</script>
-<script src="data.js?v=262"></script>
-<script src="game.js?v=262"></script>
+<script>window.APP_VERSION = '263';</script>
+<script src="data.js?v=263"></script>
+<script src="game.js?v=263"></script>
 </body>
 </html>

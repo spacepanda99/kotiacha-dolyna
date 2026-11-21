@@ -6582,8 +6582,8 @@ function setGuide() {
 function hud() {
   for (const [id, txt] of [['#coins', devOn ? '💰 ∞' : `💰 ${S.coins}`], ['#hearts', `❤️ ${S.hearts}`], ['#water', `💧 ${S.bag.voda || 0}`]]) {
     myBtnShow();
-    const el = $(id); if (!el || el.textContent === txt) continue;   // (the water counter was taken off the top bar)
-    const first = !el.dataset.set; el.dataset.set = 1; el.textContent = txt;
+    const el = $(id); if (!el || el.dataset.txt === txt) continue;   // (the water counter was taken off the top bar)
+    const first = !el.dataset.set; el.dataset.set = 1; el.dataset.txt = txt; const [ic, n] = txt.split(' '); el.innerHTML = '<span class="ic">' + ic + '</span><b class="' + (n.length > 3 ? 'long' : n.length > 2 ? 'mid' : '') + '">' + n + '</b>';   // the number sits inside the icon
     if (!first) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }   // the counter hops when it changes
   }
 }
