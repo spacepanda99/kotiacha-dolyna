@@ -2286,7 +2286,7 @@ function forestDepth(x, y) {
   if (y < 17.4) return x - 40.8;
   return x - ((y > 31.5 ? 34.8 : 36.4) + w);
 }
-const TRAIL_SPUR = [[34.5, 15.25], [34.5, 15.7], [34.55, 16.5], [34.6, 17.1]];   // the little path from the main road down to the bridge
+const TRAIL_SPUR = [[34.6, 17.1], [33.5, 15.9], [32.3, 14.5]];   // straight on across the bridge, at the same slant the path came in at, up to the road   // the little path from the main road down to the bridge
 function trailDist(x, y) { let best = 1e9; for (const L of [TRAIL, TRAIL_SPUR]) for (let i = 0; i < L.length - 1; i++) { const [ax, ay] = L[i], [bx, by] = L[i + 1], dx = bx - ax, dy = by - ay, q = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); best = Math.min(best, Math.hypot(x - ax - q * dx, y - ay - q * dy)); } return best; }
 function streamPath(c) { c.beginPath(); c.moveTo(STREAM[0][0] * T, STREAM[0][1] * T); for (let i = 1; i < STREAM.length - 1; i++) { const [x0, y0] = STREAM[i], [x1, y1] = STREAM[i + 1]; c.quadraticCurveTo(x0 * T, y0 * T, (x0 + x1) / 2 * T, (y0 + y1) / 2 * T); } const L = STREAM[STREAM.length - 1]; c.lineTo(L[0] * T, L[1] * T); }
 function streamPts(step = 0.15) { const out = []; for (let i = 0; i < STREAM.length - 1; i++) { const [x0, y0] = STREAM[i], [x1, y1] = STREAM[i + 1], n = Math.ceil(Math.hypot(x1 - x0, y1 - y0) / step); for (let j = 0; j < n; j++) out.push([x0 + (x1 - x0) * j / n, y0 + (y1 - y0) * j / n, Math.atan2(y1 - y0, x1 - x0), i]); } return out; }
@@ -2305,7 +2305,7 @@ const STALL = { x: 21.6, y: 12.95 };   // where the market stall stands (its fro
 // On a road or path as it's drawn (a little wider than its tiles), or in the soft patch where a road ends.
 const ROAD_ENDS = []; for (let y = 0; y < 40; y++) for (let x = 0; x < 40; x++) if (isRoad(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([a, b]) => isRoad(x + a, y + b)).length === 1) ROAD_ENDS.push([x + 0.5, y + 0.5]);
 const onRoadish = (x, y) => { if (y < 2.45) return true; if (Math.hypot(x - STALL.x, (y - STALL.y + 0.25) / 0.42) < 2.8) return true; for (const dx of [-0.35, 0, 0.35]) for (const dy of [-0.35, 0, 0.35]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return ROAD_ENDS.some(([ex, ey]) => Math.hypot(x - ex, (y - ey) / 0.78) < 1.45); };
-const GROWS = new Set(['kvitka', 'hryb', 'malva', 'chornobryvtsi', 'mak', 'soniashnyk', 'pshenytsia']);
+const GROWS = new Set(['kvitka', 'hryb', 'bilyhryb', 'malva', 'chornobryvtsi', 'mak', 'soniashnyk', 'pshenytsia']);
 const nearRoad = (x, y, m) => { for (const dx of [-m, 0, m]) for (const dy of [-m, 0, m]) if (isRoad(Math.floor(x + dx), Math.floor(y + dy))) return true; return false; };
 const ANIMAL_OF = { zhaba: 'frog', kurka: 'hen', piven: 'rooster', svynia: 'pig', kachka: 'duck', korova: 'cow', kin: 'horse', koza: 'goat', sobaka: 'dog' };
 const ASIZE = { frog: 0.62, horse: 1.9, cow: 1.5, goat: 1.05, pig: 0.9, dog: 0.85, cat: 0.65, hen: 0.6, rooster: 0.72, duck: 0.55 };
@@ -2402,7 +2402,7 @@ function add(e) {
   for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
   for (const [x, y] of [[2.5, 6.9], [15.7, 10.4], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [7.5, 3.9], [0.9, 17.6]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
-  for (const [x, y] of [[15.5, 9.9], [16.8, 8.7], [3.5, 13.5], [33.5, 15.9], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
+  for (const [x, y] of [[15.5, 9.9], [16.8, 8.7], [3.5, 13.5], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
   for (const [x, y] of [[16.5, 8.1], [32.5, 10.5], [10.5, 17.9]]) add({ w: 'kamin', x, y, s: 0.8, solid: true });
   for (const [x, y] of [[16.3, 8.7], [4.5, 6.5], [22.5, 4.5], [27.5, 6.6], [16.5, 11.6], [9.5, 16.6], [24.5, 16.5], [31.5, 16.4], [12.5, 21.5], [20.5, 22.5]]) add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true });
   for (const [x, y] of [[3.4, 7.5], [15.3, 7.4], [26.4, 5.4], [13.3, 26.3], [32.8, 26.3]]) add({ w: 'hryb', x, y, s: 0.7, give: 'hryb', cd: 120, hide: true });
@@ -2431,7 +2431,7 @@ function add(e) {
     // things to gather
     for (const [x, y] of [[41.2, 26.1], [44.3, 28.9], [41.5, 29.0], [45.6, 36.3], [38.2, 23.2]]) if (free(x, y)) add({ w: 'chornytsi', ic: '@chornytsi', x, y, s: 1.0, give: 'chornytsi', cd: 150, hide: true, only: ['lito'] });
     for (const [x, y] of [[38.6, 20.6], [40.9, 23.9], [40.6, 31.4], [43.0, 34.6]]) if (free(x, y)) add({ w: 'sunytsi', ic: '@sunytsi', x, y, s: 0.8, give: 'sunytsi', cd: 150, hide: true, only: ['vesna', 'lito'] });
-    for (const [x, y] of [[39.8, 21.7], [44.7, 26.4], [42.3, 33.0], [43.3, 36.7], [41.0, 27.9], [46.1, 9.4], [39.6, 30.0]]) if (free(x, y)) { const a0 = add({ w: 'hryb', x, y, s: 0.72, give: 'hryb', cd: 120, hide: true }); for (const [dx, dy, ss] of [[0.27, 0.1, 0.58], [-0.21, 0.15, 0.5]]) if (free(x + dx, y + dy)) add({ w: 'hryb', x: x + dx, y: y + dy, s: ss, give: 'hryb', cd: 120, hide: true, quiet: true, clumpOf: a0 }); }   // mushrooms grow in little clumps of three
+    for (const [x, y] of [[39.8, 21.7], [44.7, 26.4], [42.3, 33.0], [43.3, 36.7], [41.0, 27.9], [46.1, 9.4], [39.6, 30.0]]) if (free(x, y)) { const a0 = add({ w: 'bilyhryb', x, y, s: 0.72, give: 'bilyhryb', yield: 2, cd: 120, hide: true }); for (const [dx, dy, ss] of [[0.27, 0.1, 0.58], [-0.21, 0.15, 0.5]]) if (free(x + dx, y + dy)) add({ w: 'bilyhryb', x: x + dx, y: y + dy, s: ss, give: 'bilyhryb', yield: 2, cd: 120, hide: true, quiet: true, clumpOf: a0 }); }   // mushrooms grow in little clumps of three
     near('yalyna', 4, e => { const x = e.x + 0.55, y = e.y + 0.3; if (free(x, y)) add({ w: 'shyshka', ic: '@shyshka', x, y, s: 0.6, give: 'shyshka', cd: 120, hide: true }); });
     near('dub', 3, e => { const x = e.x - 0.6, y = e.y + 0.32; if (free(x, y)) add({ w: 'zholud', ic: '@zholud', x, y, s: 0.6, give: 'zholud', cd: 120, hide: true, only: ['osin'] }); });
     // a woodpecker drumming on a birch by the path, in the daytime
@@ -2506,7 +2506,7 @@ const CAFE_CROWD = 2;   // how many of them are in the café at a time (the rest
 const VIS_BENCHES = [{ walk: [16.9, 18.6], at: [16.45, 17.92], face: 1 }, { walk: [21.1, 18.6], at: [21.55, 17.92], face: -1 }, { walk: [35.6, 14.2], at: [35.15, 13.42], face: 1 }];
 const VIS_SPOTS = {
   cafe: [[18.5, 36.75]], lake: [[26.6, 23.7], [31.8, 23.9], [25.6, 21.4]], fountain: [[16.9, 19.0], [21.1, 19.0], [19.0, 16.4]],
-  market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1]], church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
+  market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1], [20.9, 11.5], [22.6, 11.5]],   // (the last two: round the back of the stall) church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
 };
 const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];
 const CAFE_SPOTS = [...CAFE_SEATS, 'counter', 'st0', 'st1', 'st2'];   // the chairs, the counter, and standing room (st0-st2) on a rainy day
@@ -2617,8 +2617,13 @@ function visitorsStep(dt) {
     if (wet(S.wx) && !late && !e.inside && e.va !== 'cafe' && e.va !== 'leave') { e.pet = null; visGo(e, 'cafe'); }   // rain: everyone into the café
     // petting a cat
     if (e.pet) {
-      e.pet.t -= dt; const ct = e.pet.cat;
+      e.pet.t -= dt; const ct = e.pet.cat, el = 3.4 - e.pet.t, ss = q => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
       if (ct) { ct.st = 'idle'; ct.vel = 0; if (ct.tw < 1) ct.tw = 1; e.vface = ct.x > e.x ? 1 : -1; }
+      // stop (0.3 s), then a small step in beside the cat (0.3-0.9 s), so the reach is never a long one
+      if (ct && el > 0.3 && el < 1.0) { const tx = ct.x - e.vface * 0.5; e.x += (tx - e.x) * Math.min(1, dt * 4); }
+      // bend at the waist in, straighten up again at the end
+      const bIn = ss((el - 0.9) / 0.4), bOut = e.pet.t > 0.5 ? 1 : ss((e.pet.t - 0.1) / 0.4);
+      e.pet.bend = Math.min(bIn, bOut);
       if (!e.pet.heart && e.pet.t < 2.2) { e.pet.heart = 1; if (ct) fxHearts(ct.x, ct.y - 0.5); const d = Math.hypot(P.x - e.x, P.y - e.y); if (d < 6 && mode === 'world') try { sfxHit(140, 0.9, 0.05 * (1 - d / 6), 'lowpass', 1); } catch (er) {} }
       if (e.pet.t <= 0) { e.pet = null; e.petCd = 25 + Math.random() * 20; }
       continue;
@@ -2628,6 +2633,7 @@ function visitorsStep(dt) {
       if (ct) { e.pet = { cat: ct, t: 3.4 }; e.vwalk = 0; ct.st = 'idle'; ct.act = 'look'; ct.tw = 4; continue; }
     }
     // walking the path, or passing the time where they are
+    e.behind = e.va === 'market' && e.y < 12.2;
     if (e.vp && e.vp.length) {
       const n = e.vp[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = 1.7 * dt;
       e.vwalk = Math.min(1, e.vwalk + dt * 4); if (Math.abs(dx) > 0.02) e.vface = dx > 0 ? 1 : -1;
@@ -2642,11 +2648,16 @@ function visitorsStep(dt) {
 // own: Lesia's sketchbook, Zakhar's rod at the lake), or crouched beside a cat, stroking it.
 function drawVisitor(c, x, y, e, t) {
   const L = NPC[e.npc].look;
-  if (e.pet) {   // crouched low beside the cat, one hand stroking along its back, hearts rising from the cat
-    const ct = e.pet.cat, cx = ct ? ct.x * T : x + e.vface * 22, cy = ct ? ct.y * T : y, st = Math.sin(t * 4.5);
-    c.save(); c.translate(x, y); c.scale(e.vface, 0.72); personSide(c, 0, 0, Object.assign({}, L, { armAng: [0.5, 0.5] }), t, 0, 1); c.restore();
-    const shX = x + e.vface * 6, shY = y - 34, hx = cx - e.vface * 4 + st * 6 * e.vface, hy = cy - 17 + Math.abs(st) * -1.5;
-    c.strokeStyle = L.vest || L.shirt; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(shX, shY); c.quadraticCurveTo((shX + hx) / 2, shY - 2, hx, hy); c.stroke();
+  if (e.pet) {   // bent at the waist beside the cat: the body leans in and shortens, the arm reaches down to the cat's back
+    const ct = e.pet.cat, cx = ct ? ct.x * T : x + e.vface * 22, cy = ct ? ct.y * T : y, st = Math.sin(t * 4.5), b = e.pet.bend || 0;
+    const dir = cx > x ? 1 : -1, lean = b * 0.55, sy = 1 - b * 0.22;   // the upper body tips forward, and the figure is a little lower
+    c.save(); c.translate(x, y); c.scale(e.vface, sy); c.translate(0, 0); c.rotate(-dir * e.vface * lean * 0.35);
+    personSide(c, 0, 0, Object.assign({}, L, { armAng: [0.5, 0.5] }), t, 0, 1);
+    c.restore();
+    // shoulder and hand: the arm length is fixed, the hand reaches toward the cat's back and stays within that reach
+    const shX = x + e.vface * 5, shY = y - 30 * sy - b * 6, armL = 24, rx = cx - shX, ry = (cy - 16) - shY, rd = Math.hypot(rx, ry) || 1, k2 = Math.min(1, armL / rd);
+    const hx = shX + rx * k2 + st * 1.2 * b, hy = shY + ry * k2 - Math.abs(st) * b * 1.5;
+    c.strokeStyle = L.vest || L.shirt; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(shX, shY); c.lineTo(hx, hy); c.stroke();
     c.fillStyle = L.skin; circ(c, hx, hy, 3.3);
     for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1; c.globalAlpha = Math.sin(q * Math.PI); c.fillStyle = ['#e2392f', '#ff7aa8', '#e2392f'][i]; c.font = '700 ' + (10 + i * 2) + 'px system-ui'; c.textAlign = 'center'; c.fillText('♥', cx + (i - 1) * 8 + Math.sin(t * 2 + i) * 3, cy - 30 - q * 26); c.globalAlpha = 1; }
     return;
@@ -3081,6 +3092,11 @@ function paintGround() {
   road(T + 26, 'rgba(98,150,70,.15)');
   road(T + 12, '#d4bb82');
   road(T + 4, '#ecd9a6');
+  // the market square: the same sandy ground as the path and the town square (no paving of its own)
+  { const rp = seeded(41), px0 = 19.0, px1 = 24.4, py0 = 11.0, py1 = 15.6;
+    c.fillStyle = '#e6d29d'; c.fillRect(px0 * T, py0 * T, (px1 - px0) * T, (py1 - py0) * T);
+    for (let i = 0; i < 260; i++) { const x = (px0 + rp() * (px1 - px0)) * T, y = (py0 + rp() * (py1 - py0)) * T; c.fillStyle = rp() < 0.5 ? 'rgba(255,255,255,.45)' : 'rgba(190,160,100,.35)'; ell(c, x, y, 2 + rp() * 4, 1.2 + rp() * 2); }
+  }
   { const sx = STALL.x * T, sy = (STALL.y - 0.25) * T, R = T * 3.1, gr = c.createRadialGradient(sx, sy, 0, sx, sy, R); gr.addColorStop(0, '#e6d29d'); gr.addColorStop(0.5, 'rgba(222,200,146,.85)'); gr.addColorStop(0.8, 'rgba(200,178,120,.3)'); gr.addColorStop(1, 'rgba(200,178,120,0)');
     c.save(); c.translate(sx, sy); c.scale(1, 0.42); c.translate(-sx, -sy); c.fillStyle = gr; c.fillRect(sx - R, sy - R, R * 2, R * 2); c.restore();   // the ground worn bare round the market stall
     for (let i = 0; i < 26; i++) { const a = r() * 7, dd = r() * R * 0.85; c.fillStyle = r() < 0.5 ? 'rgba(205,181,126,.85)' : 'rgba(250,240,208,.75)'; ell(c, sx + Math.cos(a) * dd, sy + Math.sin(a) * dd * 0.4, 2 + r() * 3, 1.4 + r() * 1.8); } }
@@ -3116,6 +3132,7 @@ function paintGround() {
   // the forest path and the little one up to the road, over the road edges but under the stream bank
   { const trail = FOREST_TRAIL, rf = seeded(29);
     trail(T * 0.95, 'rgba(60,100,40,.16)'); trail(T * 0.6, '#b39463'); trail(T * 0.42, '#c9ad7a');
+    { const jx = 32.3 * T, jy = 14.5 * T, jr = T * 0.9, gj = c.createRadialGradient(jx, jy, 0, jx, jy, jr); gj.addColorStop(0, 'rgba(222,200,146,.85)'); gj.addColorStop(0.6, 'rgba(222,200,146,.4)'); gj.addColorStop(1, 'rgba(222,200,146,0)'); c.fillStyle = gj; c.fillRect(jx - jr, jy - jr, jr * 2, jr * 2); }   // the soft corner where it meets the road
     { const cx = 31.5 * T, cy = 30.3 * T, R = T * 1.45, gr = c.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, '#ecd9a6'); gr.addColorStop(0.45, 'rgba(230,210,157,.92)'); gr.addColorStop(0.75, 'rgba(212,187,130,.45)'); gr.addColorStop(1, 'rgba(212,187,130,0)'); c.save(); c.translate(cx, cy); c.scale(1, 0.78); c.translate(-cx, -cy); c.fillStyle = gr; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.restore(); }   // where the path reaches the blue cottage: it fades into the worn doorstep
     for (let i = 0; i < 160; i++) { const k = rf() * (TRAIL.length - 1), j = Math.floor(k), f = k - j, [ax, ay] = TRAIL[j], [bx, by] = TRAIL[j + 1]; c.fillStyle = rf() < 0.5 ? 'rgba(140,110,62,.5)' : 'rgba(226,206,160,.55)'; ell(c, (ax + (bx - ax) * f + (rf() - 0.5) * 0.4) * T, (ay + (by - ay) * f + (rf() - 0.5) * 0.4) * T, 1.5 + rf() * 2.5, 1 + rf() * 1.4); }
   }
@@ -3170,7 +3187,7 @@ function seasonGround() { const s = season(); if (s !== 'zyma') groundW = null; 
   if (s === 'zyma') return groundW || (groundW = tintGround('screen', 'rgb(176,186,210)', 'rgba(248,251,255,.55)')); if (s === 'osin') return groundA || (groundA = tintGround('multiply', 'rgb(255,218,156)', null)); return ground; }
 // Winter: the pond freezes over, and the flowers, wheat, butterflies, bees, frogs and ducks are gone (the
 // stork and the swallows have flown south).
-const WINTER_GONE = new Set(['kvitka', 'soniashnyk', 'mak', 'pshenytsia', 'hryb', 'malva', 'chornobryvtsi', 'metelyk', 'bdzhola', 'ryba', 'zhaba', 'kachka', 'lastivka']);
+const WINTER_GONE = new Set(['kvitka', 'soniashnyk', 'mak', 'pshenytsia', 'hryb', 'bilyhryb', 'malva', 'chornobryvtsi', 'metelyk', 'bdzhola', 'ryba', 'zhaba', 'kachka', 'lastivka']);
 // Some things only appear in some seasons: e.only lists them (the hedgehog's winter leaf pile, the bird feeder).
 const hrsNow = ([a, b]) => { const t = S.clock.t; return a < b ? t >= a && t < b : t >= a || t < b; };
 const goneNow = e => e.asleep || (e.hrs && !hrsNow(e.hrs)) || (NIGHT_GONE.has(e.w) && nightNow()) || (e.only && !e.only.includes(season())) || (winter() && (WINTER_GONE.has(e.w) || e.water));
@@ -4059,10 +4076,13 @@ const sheetOpen = () => sheet.classList.contains('show');
 {
   let y0 = null, x0 = 0, dy = 0, t0 = 0, drag = false;
   const clear = () => { sheet.style.transition = ''; sheet.style.transform = ''; veil.style.transition = ''; veil.style.opacity = ''; };
+  // (capture phase: the drawing pads stop their touches from bubbling, so a swipe that starts on a pad still reaches this.
+  //  On a pad, only a swipe from the top of the card counts, so stirring or drawing never closes it by accident.)
   sheet.addEventListener('touchstart', ev => {
-    y0 = null; if (ev.touches.length !== 1 || sheet.scrollTop > 0 || sp) return;
+    y0 = null; if (ev.touches.length !== 1 || sheet.scrollTop > 0) return;
+    if (ev.target && ev.target.tagName === 'CANVAS' && ev.touches[0].clientY - sheet.getBoundingClientRect().top > 90) return;
     y0 = ev.touches[0].clientY; x0 = ev.touches[0].clientX; dy = 0; t0 = Date.now(); drag = false;
-  }, { passive: true });
+  }, { passive: true, capture: true });
   sheet.addEventListener('touchmove', ev => {
     if (y0 === null) return;
     const d = ev.touches[0].clientY - y0, dx = ev.touches[0].clientX - x0;
@@ -4072,7 +4092,7 @@ const sheetOpen = () => sheet.classList.contains('show');
     }
     ev.preventDefault();
     dy = Math.max(0, d); sheet.style.transform = `translate(-50%, ${dy}px)`; veil.style.opacity = String(Math.max(0.15, 1 - dy / 350));
-  }, { passive: false });
+  }, { passive: false, capture: true });
   const end = () => {
     if (y0 === null) return; y0 = null; if (!drag) return; drag = false;
     const fast = dy / Math.max(1, Date.now() - t0) > 0.35;   // px per ms
@@ -4085,7 +4105,7 @@ const sheetOpen = () => sheet.classList.contains('show');
       setTimeout(clear, 230);
     }
   };
-  sheet.addEventListener('touchend', end); sheet.addEventListener('touchcancel', end);
+  sheet.addEventListener('touchend', end, { capture: true }); sheet.addEventListener('touchcancel', end, { capture: true });
 }
 let toastT = 0;
 function toast(msg, ms = 1900) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms); }
@@ -4196,8 +4216,8 @@ function take(e) {
   if (e.owner && !e.stealOk) return caught(e);
   e.stealOk = false;
   S.cd[e.k] = now() + e.cd * 1000;
-  give(e.give); blip(880); fxBurst(e.x, e.y - e.s * 0.45, W[e.give].ic);
-  toast(`+1 ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
+  give(e.give, e.yield || 1); blip(880); fxBurst(e.x, e.y - e.s * 0.45, W[e.give].ic);
+  toast(`+${e.yield || 1} ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
   // Grandma calls out from her cottage that you're welcome to her eggs and milk.
   if (e.give !== e.w) wordCard(e.give, e.olias ? { note: `👵 <b>«${NPC.olia.lines.share.uk}»</b>${xl(`<br>${NPC.olia.lines.share.en}`)}`, clips: ['v_olia_share'] } : {}); else closeSheet();
 }
@@ -6807,6 +6827,7 @@ const roomU = () => Math.min(cv.width, cv.height * 0.72);
 const roomW = () => Math.max(cv.width, roomU() * (mode === 'mill' ? 2.75 : mode === 'church' ? 3.0 : mode === 'school' ? 2.9 : mode === 'cafe' ? 3.1 : 3.4));   // the mill is a snug tower: just room for the machine // a phone in portrait sees under half the room at once
 const panMax = () => Math.max(0, roomW() - cv.width);
 // Your cottage and Grandma's have a strip of room left of x = 0, with the door out, so the view can pan to -roomPL().
+const SHOW_COUNTS = false;   // the little 0/1 counts over the ingredients in Grandma's room (off: they were a distraction)
 const roomPL = () => mode === 'home' || mode === 'olia' ? roomU() * 0.5 : 0;
 const clampPan = () => { roomX = Math.max(-roomPL(), Math.min(panMax(), roomX)); };
 // The door out (like the mill's): open to the day, light falling in across the floor. Returns its tap box.
@@ -8182,9 +8203,9 @@ function drawSchool(t) {
     c.fillStyle = '#d43a3a'; rr(c, x - pw * 0.3, y + ph * 0.86, pw * 0.6, ph * 0.12, ph * 0.04); c.fillStyle = '#fffbea'; c.font = cozyFont(Math.round(u * 0.022)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🎮 Гра · Play', x, y + ph * 0.92);
     hit(x - pw / 2, y, pw, ph, () => sfStart(), x); }   // the alphabet poster opens Spot the fake
   // ---- the door out
-  { const x = SX.door * RW, dw = u * 0.16, dt2 = fy - h * 0.3;
+  { const x = SX.door * RW, dw = u * 0.26, dt2 = fy - h * 0.3;   // (double doors, like the ones outside)
     c.fillStyle = '#6b4422'; rr(c, x - dw / 2 - u * 0.012, dt2 - u * 0.012, dw + u * 0.024, fy - dt2 + u * 0.012, u * 0.01);
-    c.fillStyle = '#3f8a3a'; c.fillRect(x - dw / 2, dt2, dw, fy - dt2); c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 1.2; c.strokeRect(x - dw / 2 + u * 0.02, dt2 + u * 0.03, dw - u * 0.04, (fy - dt2) * 0.4); c.strokeRect(x - dw / 2 + u * 0.02, dt2 + (fy - dt2) * 0.52, dw - u * 0.04, (fy - dt2) * 0.4);
+    c.fillStyle = '#3f8a3a'; c.fillRect(x - dw / 2, dt2, dw / 2 - 1, fy - dt2); c.fillRect(x + 1, dt2, dw / 2 - 1, fy - dt2); c.fillStyle = '#2c6a28'; c.fillRect(x - 1.5, dt2, 3, fy - dt2); c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 1.2; c.strokeRect(x - dw / 2 + u * 0.02, dt2 + u * 0.03, dw - u * 0.04, (fy - dt2) * 0.4); c.strokeRect(x - dw / 2 + u * 0.02, dt2 + (fy - dt2) * 0.52, dw - u * 0.04, (fy - dt2) * 0.4);
     c.fillStyle = '#f2c230'; circ(c, x + dw * 0.32, dt2 + (fy - dt2) * 0.52, u * 0.01);
     hit(x - dw / 2, dt2, dw, fy - dt2, () => exitHome(), x); }
   // ---- the blackboard, with the alphabet and a word chalked on it; chalk and a duster on its ledge
@@ -8696,7 +8717,7 @@ function drawOlia(t) {
   }
   clampPan(); inStep(t);
   if (oliaTip === 1 && sheetOpen()) oliaTip = 2;
-  else if (oliaTip === 2 && !sheetOpen() && !sp) { oliaTip = 0; S.oliaTip = 1; save(); if (panMax() > 10) { tour = { t0: t, mid: roomX }; oliaWave = { seen: {}, pass: 0 }; } toast('👀 Роздивись бабину хату!' + (stage() < 3 ? ' · Explore Grandma’s room: tap things to hear their names.' : ''), 5000); }
+  else if (oliaTip === 2 && !sheetOpen() && !sp) { oliaTip = 0; S.oliaTip = 1; save(); if (false) toast('👀 Роздивись бабину хату!' + (stage() < 3 ? ' · Explore Grandma’s room: tap things to hear their names.' : ''), 5000); }
   oliaHits = [];
   const hit = (x, y, ww, hh, fn) => oliaHits.push({ x, y, w: ww, h: hh, fn });
   const word = (id, o) => Object.assign(() => { if (W[id]) wordCard(id, o); }, { wid: id });   // wid: for the name labels
@@ -8830,10 +8851,10 @@ function drawOlia(t) {
     c.fillStyle = 'rgba(60,40,20,.14)'; ell(c, x, top, is * 0.36, is * 0.06);
     c.globalAlpha = have ? 1 : 0.34; drawIcon(c, W[id].ic, x, top + 1, is); c.globalAlpha = 1;
     const pw = Math.min(u * 0.074, gap * 0.86), ph = u * 0.04, py = ctop + u * 0.012;
-    c.font = `800 ${Math.round(u * 0.03)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    if (SHOW_COUNTS) { c.font = `800 ${Math.round(u * 0.03)}px system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = 'rgba(60,40,20,.2)'; rr(c, x - pw / 2, py + 2, pw, ph, ph / 2);
     c.fillStyle = full ? '#3f8a3a' : '#fff8ea'; rr(c, x - pw / 2, py, pw, ph, ph / 2);
-    c.fillStyle = full ? '#fff' : '#4a2c1a'; c.fillText(full ? '✓' : `${have}/${NEED}`, x, py + ph / 2 + 1);
+    c.fillStyle = full ? '#fff' : '#4a2c1a'; c.fillText(full ? '✓' : `${have}/${NEED}`, x, py + ph / 2 + 1); }   // the 0/1 counts: off (SHOW_COUNTS)
     hit(x - gap / 2, top - is, gap, is + ph + u * 0.04, word(id, { note: `🥣 <b>${have} / ${NEED}</b>${full ? '' : `<br><small>${(S.seeds[id] || 0) > 0 ? '🌱 ' + D.ui.plantit[0] : sourceHint(id)}</small>`}` }));
   });
 
@@ -9015,7 +9036,7 @@ addEventListener('resize', resize); resize();
 // dt: game time (0 while a card is open). rdt: real time, for the camera and the smoothing.
 const WX = { snow: { w: 'snih', ic: '❄️' }, sun: { w: 'sontse', ic: '☀️' }, cloud: { w: 'khmara', ic: '☁️' }, rain: { w: 'doshch', ic: '🌧️' }, storm: { w: 'hroza', ic: '⛈️' }, fog: { w: 'tuman', ic: '🌫️' } };
 const wet = wx => wx === 'rain' || wx === 'storm';   // rain or a thunderstorm: either waters the garden
-const DAY_RATE = 0.6 / 600;   // morning to night in about ten minutes of play
+const DAY_RATE = 0.6 / 750;   // morning to night in about twelve and a half minutes of play (a quarter longer than it was)
 let clockSave = 0;
 // ------------------------------------------------------------------ night sounds
 // Out of doors after dusk: crickets (цвіркуни) chirp on summer and autumn nights, frogs croak by the pond in spring
@@ -9077,7 +9098,7 @@ function dayTick(dt) {
   C.ev = C.ev || {};
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
-    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 0.55;   // the noon bell rings out through the whole village (a little softer than full)
+    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 0.4;   // the noon bell rings out through the whole village (a little softer than full)
     duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer
     for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol, 147), 300 + i * 4000);   // pitched a fourth above the big bell's 110 Hz   // three slow strokes of the big bell (this line had slipped into the comment above, so noon was silent)
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
@@ -9569,6 +9590,7 @@ function drawWorld(t) {
       c.save(); c.translate(x, y - mid * 4); c.scale((view === 3 ? -1 : 1) * (1 - mid * 0.4), 1);
       if (view === 1 || view === 3) personSide(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
       c.restore(); continue; }
+    if (e.vis && e.behind) continue;   // round the back of the market stall: drawn after the stall, above its counter
     if (e.vis) { drawVisitor(c, x, y, e, t); continue; }
     if (e.kind === 'npc' && e.route2) { const L = Object.assign({}, NPC[e.npc].look, { armR: undefined, armL: undefined }); c.save(); c.translate(x, y); c.scale(e.wface || 1, 1); personSide(c, 0, 0, L, t, 1, 1, e.homeGo * 3.7); c.restore(); continue; }
     if (e.kind === 'npc') {
@@ -9623,6 +9645,8 @@ function drawWorld(t) {
     else drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 0.9, t, s / 220);
   }
+  // those behind the market stall: their heads and shoulders show above the counter, through the gap
+  for (const e of list) if (e.vis && e.behind) { c.save(); c.beginPath(); c.rect(-2000, -2000, 9000, 12.3 * T + 2000); c.clip(); drawVisitor(c, e.x * T, e.y * T, e, t); c.restore(); }
   // The watering can goes on top of everything, so the player never hides it.
   fetchDraw(c);
   fxDraw(c);

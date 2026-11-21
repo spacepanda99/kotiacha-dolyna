@@ -55,7 +55,8 @@
   #guide .eye { flex:none; width:34px; height:34px; border-radius:50%; background:#f1e6d2; font-size:17px; padding:0; display:flex; align-items:center; justify-content:center; }
   #guide .eye.on { background:var(--sky); }
 
-  #homebar { position:fixed; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:5; display:none; justify-content:center; gap:10px; flex-wrap:wrap; padding:0 12px; }
+  #homebar { position:fixed; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:5; display:none; justify-content:center; gap:10px; flex-wrap:wrap; padding:0 12px; pointer-events:none; }
+  #homebar > * { pointer-events:auto; }
 
   #start .tdev { position:absolute; top:calc(10px + env(safe-area-inset-top)); left:calc(10px + env(safe-area-inset-left)); width:46px; height:46px; border-radius:50%; background:rgba(255,248,234,.75); border:0; font-size:21px; z-index:2; }
   #devpin { position:fixed; inset:0; z-index:60; background:rgba(40,30,20,.55); display:none; align-items:center; justify-content:center; }
@@ -310,12 +311,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v272</div>
+  <div class="ver">v273</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '272';</script>
-<script src="data.js?v=272"></script>
-<script src="game.js?v=272"></script>
+<script>window.APP_VERSION = '273';</script>
+<script src="data.js?v=273"></script>
+<script src="game.js?v=273"></script>
 </body>
 </html>
