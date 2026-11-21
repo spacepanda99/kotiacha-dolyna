@@ -2335,7 +2335,7 @@ const VIS_SPOTS = {
   market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1]], church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
 };
 const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];
-const VIS_SLOT = 0.07;    // one stop of their day, in day-clock units (about 70 seconds); the day runs from the morning train to the evening one
+const VIS_SLOT = 0.1;     // one stop of their day, in day-clock units (about 100 seconds; it was 70, which kept them walking); the day runs from the morning train to the evening one
 const VIS_LEAD = 0.025;   // whoever is due in the café next sets off this much early, so they arrive as the others leave
 const visSlot = (ahead = 0) => Math.max(0, Math.floor((S.clock.t + ahead - 0.3) / VIS_SLOT));
 function visPlan(e, k = visSlot()) {   // what this visitor is doing in slot k
@@ -2398,16 +2398,37 @@ function visArrive(e) {
   if (e.va === 'bench' && e.benchTo != null) { const B = VIS_BENCHES[e.benchTo]; e.bench = e.benchTo; e.benchTo = null; e.x = B.at[0]; e.y = B.at[1]; e.sit = B; e.vface = B.face; e.vt = 30 + Math.random() * 30; return; }   // sit down
   e.vt = 22 + Math.random() * 22; e.vface = Math.random() < 0.5 ? 1 : -1;
 }
+// Where each visitor is and what they're doing goes into the save, so closing the game and coming back finds them
+// just as they were (in the café, on a bench, at the market, or on their way somewhere).
+function visSnap() {
+  if (typeof ents === 'undefined' || !S.clock) return;
+  S.vis = { day: S.clock.day, list: ents.filter(e => e.vis && e.va !== 'leave').map(e => ({ id: e.npc, x: +e.x.toFixed(2), y: +e.y.toFixed(2), va: e.va, slot: e.slot, inside: e.inside || null, seat: e.seat || null, bench: e.bench ?? null, benchTo: e.benchTo ?? null, goal: e.vp && e.vp.length ? e.goal : null, vface: e.vface })) };
+}
+function visRestore() {
+  const V = S.vis; if (!V || V.day !== S.clock.day || !V.list || !V.list.length) return false;
+  for (const r of V.list) { const e = visSpawn(r.id, r.x, r.y); if (!e) continue;
+    Object.assign(e, { va: r.va, slot: r.slot, inside: r.inside, seat: r.seat, bench: r.bench, benchTo: r.benchTo, vface: r.vface || 1 });
+    if (e.inside) e.asleep = true;
+    if (e.bench != null) { const B = VIS_BENCHES[e.bench]; e.sit = B; e.x = B.at[0]; e.y = B.at[1]; e.vface = B.face; }
+    if (r.goal) { e.goal = r.goal; e.vp = visRoute(e.x, e.y, r.goal[0], r.goal[1]); } }
+  return true;
+}
+let visBack = false, visForce = false, visSnapT = 0;
+addEventListener('pagehide', () => { try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
+document.addEventListener('visibilitychange', () => { if (document.hidden) try { visSnap(); localStorage.setItem(SAVE, JSON.stringify(S)); } catch (e) {} });
 function visitorsStep(dt) {
   const C = S.clock; if (!C) return;
   const late = C.t >= 0.66 || nightNow();
+  // back in the game after closing it: put everyone back where they were (or, from an older save, at their stops)
+  if (!visBack) { visBack = true; if (C.ev.visIn && !late && !visEnts().length && !visRestore()) { C.ev.visIn = 0; visForce = true; } }
+  if ((visSnapT -= dt) <= 0) { visSnapT = 5; visSnap(); save(); }
   // arriving: off the morning train while it waits at the station; or, if the day's already on, already about
   if (!C.ev.visIn && !late) {
     if (TRAIN.on && TRAIN.phase === 'wait' && C.ev.mtrain === true) {
       const n = Math.min(VIS_IDS.length, Math.floor((TRAIN.wait - 1) / 0.9) + 1);
       for (let i = visQueue; i < n && i < VIS_IDS.length; i++) { const e = visSpawn(VIS_IDS[i], STATION_DOOR[0] + (i % 2 ? 0.3 : -0.3), STATION_DOOR[1]); if (e) { e.slot = visSlot(); visGo(e, visPlan(e)); } visQueue = i + 1; }
       if (visQueue >= VIS_IDS.length) { C.ev.visIn = 1; visQueue = 0; myMaybeStart(); }
-    } else if (C.t >= 0.45 && !TRAIN.on) {
+    } else if ((C.t >= 0.45 || visForce) && !TRAIN.on) {
       C.ev.visIn = 1; myMaybeStart();
       for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; e.slot = visSlot(); const act = visPlan(e); if (act === 'bench') { visGo(e, 'bench'); if (e.benchTo != null) { e.vp = []; e.va = 'bench'; visArrive(e); continue; } } const L = VIS_SPOTS[e.va === 'bench' ? 'market' : act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act === 'bench' ? 'market' : act; e.vp = []; visArrive(e); }
     }
@@ -8841,10 +8862,11 @@ function peopleApart(dt) {
   const round = (o, path, mx, my, b) => { const ax = b.x - o.x, ay = b.y - o.y, d = Math.hypot(ax, ay), ahead = ax * mx + ay * my, lat = Math.abs(ax * my - ay * mx);
     const bp = b === P ? (P.path.length ? P.path[0] : null) : (b.vp && b.vp[0]); if (bp) { const bx = bp.x - b.x, by = bp.y - b.y, bd = Math.hypot(bx, by) || 1; if ((bx * mx + by * my) / bd > 0.3) return; }   // they're walking the same way: just follow
     if (o.detour === b) { if (ahead < -0.2 || d > 1.6) o.detour = null; return; }
+    if (path.length && path[0].dt) return;   // already stepping round someone: finish that first (stacking detours had them walking in circles)
     if (d < 1.1 && ahead > 0.05 && lat < PEOPLE_GAP && path.length) { const side = (ax * my - ay * mx) > 0 ? -1 : 1;
       for (const sd of [side, -side]) { const wx = b.x - my * sd * 0.8, wy = b.y + mx * sd * 0.8, ux = wx + mx * 0.85, uy = wy + my * 0.85; if (free(wx, wy) && free(ux, uy)) {
         while (path.length && Math.hypot(path[0].x - b.x, path[0].y - b.y) < PEOPLE_GAP + 0.25) path.shift();   // path points too close to them
-        path.unshift({ x: wx, y: wy }, { x: ux, y: uy }); o.detour = b; return; } } } };   // beside them, then on past them
+        path.unshift({ x: wx, y: wy, dt: 1 }, { x: ux, y: uy, dt: 1 }); o.detour = b; return; } } } };   // beside them, then on past them
   if (P.path.length) {
     const end = P.path[P.path.length - 1];
     if (Math.hypot(end.x - P.x, end.y - P.y) < 1.2 && people.some(o => o !== P.goal && Math.hypot(o.x - end.x, o.y - end.y) < PEOPLE_GAP)) P.path = [{ x: P.x, y: P.y }];   // someone's standing there: stop short
