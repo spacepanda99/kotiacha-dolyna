@@ -646,9 +646,20 @@ const DRAW = {
       c.lineCap = 'round'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(cx2, cy2); c.lineTo(cx2 + Math.cos(ha) * R * 0.5, cy2 + Math.sin(ha) * R * 0.5); c.stroke(); c.lineWidth = 0.7; c.beginPath(); c.moveTo(cx2, cy2); c.lineTo(cx2 + Math.cos(ma) * R * 0.78, cy2 + Math.sin(ma) * R * 0.78); c.stroke(); c.fillStyle = '#d43a3a'; circ(c, cx2, cy2, 0.8); }
     c.fillStyle = green; poly(c, [[-12, -93], [0, -112], [12, -93]]); c.fillStyle = greenL; poly(c, [[-12, -93], [0, -112], [-4, -93]]);
     c.fillStyle = '#d9a63a'; circ(c, 0, -112.5, 1.4);
-    c.strokeStyle = '#3a3634'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(0, -113); c.lineTo(0, -126); c.stroke();
-    { const fw = Math.sin(t * 3) * 1.2; c.fillStyle = '#2c6ed5'; c.beginPath(); c.moveTo(0, -126); c.quadraticCurveTo(5, -126.5 + fw, 10, -126); c.lineTo(10, -122.5); c.quadraticCurveTo(5, -123 + fw, 0, -122.5); c.closePath(); c.fill();
-      c.fillStyle = '#f2c230'; c.beginPath(); c.moveTo(0, -122.5); c.quadraticCurveTo(5, -123 + fw, 10, -122.5); c.lineTo(10, -119); c.quadraticCurveTo(5, -119.5 + fw, 0, -119); c.closePath(); c.fill(); }
+    // two flags on poles angled out from the upper corners of the middle, waving
+    for (const sg of [-1, 1]) {
+      const bx = sg * 21, by = -57, ang = sg < 0 ? -2.36 : -0.79, L = 17, tx = bx + Math.cos(ang) * L, ty = by + Math.sin(ang) * L;
+      c.fillStyle = '#2e2c2a'; c.fillRect(bx - 2, by - 2, 4, 4);   // the bracket on the wall
+      c.strokeStyle = '#3a3634'; c.lineWidth = 1.3; c.lineCap = 'round'; c.beginPath(); c.moveTo(bx, by); c.lineTo(tx, ty); c.stroke();
+      c.fillStyle = '#d9a63a'; circ(c, tx, ty, 1.4);
+      // the flag hangs from the pole near its tip, rippling (blue over yellow)
+      const fx = bx + Math.cos(ang) * L * 0.92, fy = by + Math.sin(ang) * L * 0.92, fl = 12 * sg, fh = 8;
+      c.save(); c.translate(fx, fy);
+      const wv = q => Math.sin(t * 3.2 + q * 3 + sg) * 1.6 * q;
+      c.fillStyle = '#2c6ed5'; c.beginPath(); c.moveTo(0, 0); for (let i = 0; i <= 6; i++) { const q = i / 6; c.lineTo(fl * q, wv(q) + q * 3); } for (let i = 6; i >= 0; i--) { const q = i / 6; c.lineTo(fl * q, fh / 2 + wv(q) + q * 3); } c.closePath(); c.fill();
+      c.fillStyle = '#f2c230'; c.beginPath(); c.moveTo(0, fh / 2); for (let i = 0; i <= 6; i++) { const q = i / 6; c.lineTo(fl * q, fh / 2 + wv(q) + q * 3); } for (let i = 6; i >= 0; i--) { const q = i / 6; c.lineTo(fl * q, fh + wv(q) + q * 3); } c.closePath(); c.fill();
+      c.restore();
+    }
   },
   // A telegraph pole beside the line, with its cross-arm and glass insulators.
   stovp(c) {
@@ -2116,6 +2127,7 @@ function visitorsStep(dt) {
     if (e.vp && e.vp.length) {
       const n = e.vp[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = 1.25 * dt;
       e.vwalk = Math.min(1, e.vwalk + dt * 4); if (Math.abs(dx) > 0.02) e.vface = dx > 0 ? 1 : -1;
+      { const ax = Math.abs(dx), ay = Math.abs(dy); if (!e.vview || e.vview === 'side' ? ay > ax * 1.4 : ax > ay * 1.4) e.vview = ay > ax ? (dy > 0 ? 'front' : 'back') : 'side'; else if (e.vview !== 'side') e.vview = dy > 0 ? 'front' : 'back'; }   // which way they're walking: towards you, away, or across
       if (d <= sp) { e.x = n.x; e.y = n.y; e.vp.shift(); if (!e.vp.length) visArrive(e); } else { e.x += dx / d * sp; e.y += dy / d * sp; }
       e.vstep += sp;
     } else { e.vwalk = Math.max(0, e.vwalk - dt * 4); e.vt -= dt; if (e.vt <= 0 && e.va !== 'leave') visGo(e, visPick(e)); }
@@ -2134,7 +2146,10 @@ function drawVisitor(c, x, y, e, t) {
     for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1; c.globalAlpha = Math.sin(q * Math.PI); c.fillStyle = ['#e2392f', '#ff7aa8', '#e2392f'][i]; c.font = '700 ' + (10 + i * 2) + 'px system-ui'; c.textAlign = 'center'; c.fillText('♥', cx + (i - 1) * 8 + Math.sin(t * 2 + i) * 3, cy - 30 - q * 26); c.globalAlpha = 1; }
     return;
   }
-  if (e.vp && e.vp.length && e.vwalk > 0.05) { c.save(); c.translate(x, y); c.scale(e.vface, 1); personSide(c, 0, 0, Object.assign({}, L, { armR: undefined, armL: undefined }), t, e.vwalk, 1, e.vstep * 3.7); c.restore(); return; }
+  if (e.vp && e.vp.length && e.vwalk > 0.05) {
+    const Lw = Object.assign({}, L, { armR: undefined, armL: undefined });
+    if (e.vview === 'front' || e.vview === 'back') { person(c, x, y, Lw, t, e.vwalk, 1, e.vstep * 3.7, { back: e.vview === 'back' ? 1 : 0 }); return; }   // walking down the road towards you, or up it away from you
+    c.save(); c.translate(x, y); c.scale(e.vface, 1); personSide(c, 0, 0, Lw, t, e.vwalk, 1, e.vstep * 3.7); c.restore(); return; }
   person(c, x, y, L, t + e.x * 3, false, 1);
   if (e.npc === 'lesia' && (e.va === 'fountain' || e.va === 'lake')) { c.fillStyle = '#fffdf5'; rr(c, x - 9, y - 40, 14, 11, 1.5); c.strokeStyle = '#8a5a2b'; c.lineWidth = 1; c.strokeRect(x - 9, y - 40, 14, 11); c.fillStyle = ['#e86fa0', '#2f6fb0', '#f2c230'][Math.floor(t * 0.5) % 3]; circ(c, x - 4, y - 35, 2); c.strokeStyle = '#3b2f2a'; c.beginPath(); c.moveTo(x + 6, y - 42); c.lineTo(x + 9, y - 30); c.stroke(); }   // sketching
   if (e.npc === 'zakhar' && e.va === 'lake') { const tip = [x + 34 * e.vface, y - 58], bob = Math.sin(t * 2) * 1.5; c.strokeStyle = '#6b4422'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 8 * e.vface, y - 34); c.lineTo(tip[0], tip[1]); c.stroke(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(tip[0], tip[1]); c.lineTo(tip[0] + 6 * e.vface, y - 14 + bob); c.stroke(); c.fillStyle = '#e2392f'; circ(c, tip[0] + 6 * e.vface, y - 14 + bob, 2); }   // fishing
@@ -8139,14 +8154,7 @@ function skyEvents(c, w, h, t, L) {
     const a = rainbowA() * (1 - L.dark), cx = w * 0.62, cy = h * 0.62, R0 = Math.max(w, h) * 0.62;
     if (a > 0) { c.save(); c.globalAlpha = a * 0.42; c.lineWidth = R0 * 0.028; ['#ff3b30', '#ff9500', '#ffcc00', '#34c759', '#30b0ff', '#5856d6', '#af52de'].forEach((col, i) => { c.strokeStyle = col; c.beginPath(); c.arc(cx, cy, R0 - i * R0 * 0.027, Math.PI * 1.05, Math.PI * 1.95); c.stroke(); }); c.restore(); }
   }
-  if (season() === 'osin' && L.dark < 0.5 && !wet(wx)) {
-    const per = 38, q = (t % per) / 14;
-    if (q < 1) { if (!Cl.ev.cranes) { Cl.ev.cranes = 1; learn('zhuravel'); say('p_zhuravli_letiat'); toast(`🕊️ ${PH.zhuravli_letiat.uk}${stage() < 3 ? ' · ' + PH.zhuravli_letiat.en : ''}`, 3400); }
-      const lx = w * (1.15 - q * 1.35), ly = h * 0.34, sp = w * 0.045;   // (low enough to fly below the top bar and the goal panel)
-      for (let i = 0; i < 11; i++) { const row = i === 0 ? 0 : Math.ceil(i / 2), side = i === 0 ? 0 : i % 2 ? -1 : 1, x = lx + row * sp, y = ly + side * row * sp * 0.55, fl = Math.sin(t * 6 + i) * sp * 0.25;
-        c.strokeStyle = 'rgba(60,60,70,.75)'; c.lineWidth = Math.max(1.5, w / 260); c.beginPath(); c.moveTo(x - sp * 0.35, y - fl); c.quadraticCurveTo(x - sp * 0.1, y - sp * 0.1, x, y); c.quadraticCurveTo(x + sp * 0.1, y - sp * 0.1, x + sp * 0.35, y - fl); c.moveTo(x, y); c.lineTo(x - sp * 0.3, y + sp * 0.02); c.stroke(); }
-    }
-  }
+  // (the autumn cranes flying south were taken out at the user's request)
 }
 const RAIN = (() => { const r = seeded(77), a = []; for (let i = 0; i < 260; i++) { const layer = i < 120 ? 0 : i < 210 ? 1 : 2; a.push({ x: r(), y: r(), sp: [0.55, 0.85, 1.25][layer] * (0.8 + r() * 0.4), len: [0.022, 0.036, 0.06][layer] * (0.7 + r() * 0.6), a: [0.4, 0.55, 0.75][layer] * (0.65 + r() * 0.45), lw: [0.9, 1.3, 2][layer], layer, ph: r() * 9 }); } return a; })();
 const SPLASH = (() => { const r = seeded(91), a = []; for (let i = 0; i < 40; i++) a.push({ x: r(), y: 0.15 + r() * 0.85, ph: r(), sp: 1.4 + r() * 1.2 }); return a; })();
@@ -8239,6 +8247,34 @@ function drawPrints(c, t) {
     c.restore();
   }
 }
+// People don't walk through each other: Vicky, the villagers and the visitors keep a little room between them,
+// and anyone walking bends round a person standing in their way (Vicky doesn't bump the person she's going to
+// talk to; if someone is standing right where she's heading, she stops just short of them).
+const PEOPLE_GAP = 0.62;
+function peopleApart(dt) {
+  if (dt <= 0) return;
+  const people = ents.filter(e => e.kind === 'npc' && !e.asleep && !e.inside && !e.route2 && !goneNow(e));
+  const free = (x, y) => x > 0.5 && x < MW - 0.5 && y > 1 && y < MH - 0.5 && !solid[Math.floor(y)][Math.floor(x)];
+  const nudge = (o, dx, dy) => { if (free(o.x + dx, o.y + dy)) { o.x += dx; o.y += dy; } else if (free(o.x + dx, o.y)) o.x += dx; else if (free(o.x, o.y + dy)) o.y += dy; };
+  const sep = (a, b, share) => { let dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy); if (d >= PEOPLE_GAP) return; if (d < 0.001) { dx = 0.3; dy = 0.05; d = Math.hypot(dx, dy); } const m = (PEOPLE_GAP - d) * share; nudge(a, dx / d * m, dy / d * m); };
+  // someone standing in the way: step out to a point beside them first, then carry on
+  const round = (o, path, mx, my, b) => { const ax = b.x - o.x, ay = b.y - o.y, d = Math.hypot(ax, ay), ahead = ax * mx + ay * my, lat = Math.abs(ax * my - ay * mx);
+    if (o.detour === b) { if (ahead < -0.2 || d > 1.6) o.detour = null; return; }
+    if (d < 1.1 && ahead > 0.05 && lat < PEOPLE_GAP && path.length) { const side = (ax * my - ay * mx) > 0 ? -1 : 1;
+      for (const sd of [side, -side]) { const wx = b.x - my * sd * 0.8, wy = b.y + mx * sd * 0.8, ux = wx + mx * 0.85, uy = wy + my * 0.85; if (free(wx, wy) && free(ux, uy)) {
+        while (path.length && Math.hypot(path[0].x - b.x, path[0].y - b.y) < PEOPLE_GAP + 0.25) path.shift();   // path points too close to them
+        path.unshift({ x: wx, y: wy }, { x: ux, y: uy }); o.detour = b; return; } } } };   // beside them, then on past them
+  if (P.path.length) {
+    const end = P.path[P.path.length - 1];
+    if (Math.hypot(end.x - P.x, end.y - P.y) < 1.2 && people.some(o => o !== P.goal && Math.hypot(o.x - end.x, o.y - end.y) < PEOPLE_GAP)) P.path = [{ x: P.x, y: P.y }];   // someone's standing there: stop short
+    for (const o of people) { if (o === P.goal) continue; round(P, P.path, P.mdx || 0, P.mdy || 0, o); sep(P, o, 1); }
+  }
+  for (const v of people) if (v.vis && !v.pet) {
+    const n = v.vp && v.vp[0], md = n ? Math.hypot(n.x - v.x, n.y - v.y) || 1 : 1, mx = n ? (n.x - v.x) / md : 0, my = n ? (n.y - v.y) / md : 0;
+    for (const o of people) { if (o === v) continue; if (n) round(v, v.vp, mx, my, o); sep(v, o, o.vis ? 0.5 : 1); }
+    if (n) round(v, v.vp, mx, my, P); sep(v, P, 1);
+  }
+}
 function update(dt, t, rdt = dt) {
   if (dt > 0) dayTick(dt);
   stepPrints();
@@ -8258,6 +8294,7 @@ function update(dt, t, rdt = dt) {
     if (d <= step) { P.x = n.x; P.y = n.y; P.path.shift(); step -= d; P.step += d; if (!P.path.length) { S.x = P.x; S.y = P.y; save(); arrive(); } }
     else { P.x += dx / d * step; P.y += dy / d * step; P.step += step; step = 0; }
   }
+  if (mode === 'world') peopleApart(dt);
   if (P.moving && P.step - P.dust > 0.55) { P.dust = P.step; fxDust(P.rx, P.ry); }
   { const far = Math.hypot(P.x - P.rx, P.y - P.ry) > 2.5, k = far ? 1 : 1 - Math.exp(-rdt * 20);
     P.rx += (P.x - P.rx) * k; P.ry += (P.y - P.ry) * k;
