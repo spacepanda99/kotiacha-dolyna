@@ -5469,12 +5469,12 @@ function setGuide() {
 }
 function hud() {
   for (const [id, txt] of [['#coins', devOn ? '💰 ∞' : `💰 ${S.coins}`], ['#hearts', `❤️ ${S.hearts}`], ['#water', `💧 ${S.bag.voda || 0}`]]) {
-    const el = $(id); if (el.textContent === txt) continue;
+    const el = $(id); if (!el || el.textContent === txt) continue;   // (the water counter was taken off the top bar)
     const first = !el.dataset.set; el.dataset.set = 1; el.textContent = txt;
     if (!first) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }   // the counter hops when it changes
   }
 }
-function bumpWater() { const w = $('#water'); w.classList.remove('bump'); void w.offsetWidth; w.classList.add('bump'); }
+function bumpWater() { const w = $('#water'); if (!w) return; w.classList.remove('bump'); void w.offsetWidth; w.classList.add('bump'); }
 
 // ------------------------------------------------------------------ bag and word book
 function bagSheet() {
@@ -6906,7 +6906,7 @@ function abRender() {
     row.innerHTML = btn('abAgain', '', 'Ще раз<small>Again</small>', 'blue') + btn('close', '', lab('close'), 'ghost'); return;
   }
   if (ab.phase === 'move') {
-    L(S0.uk, S0.en + '<br><small>Use the beads to work it out, then tap Готово.</small>');
+    L(S0.uk, S0.en + '<br><small>Move the beads to show the answer, then tap Готово.</small>');
     row.innerHTML = btn('abHear', '', '🔊', 'round blue') + btn('abDone', '', '✓ Готово<small>Done</small>') + btn('close', '', lab('close'), 'ghost'); return;
   }
   if (ab.phase === 'answer') {
@@ -6921,8 +6921,10 @@ function abRender() {
 function abDone() {
   if (!ab || ab.phase !== 'move') return; const P0 = ab.list[ab.i];
   if (abTotal() !== P0.n) { ab.miss++; ab.shake = nowT; blip(220, 0.12); say('p_shche_raz'); toast('🧮 ' + PH.shche_raz.uk + ' · Not quite. Listen again and try once more.', 2600); return; }
-  const n = P0.n, set = new Set([n]); while (set.size < 3) { const d = n + [-2, -1, 1, 2, 3][Math.floor(Math.random() * 5)]; if (d >= 0 && d <= 20) set.add(d); }
-  ab.choices = [...set].sort(() => Math.random() - 0.5); ab.phase = 'answer'; abRender();
+  // the beads are the answer: right count, straight to well done (no separate picking step)
+  if (!ab.miss) { ab.perfect++; ab.coins++; S.coins += 1; hud(); }
+  learn(numId(P0.n)); ab.phase = 'right'; ab.tick = nowT; blip(990, 0.1); setTimeout(() => blip(1320, 0.12), 110);
+  stopSay(); say('p_pravylno', 'w_' + numId(P0.n)); save(); abRender();
 }
 function abPick(v) {
   if (!ab || ab.phase !== 'answer') return; const P0 = ab.list[ab.i];
