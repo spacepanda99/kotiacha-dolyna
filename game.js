@@ -6760,12 +6760,12 @@ function drawSchool(t) {
     c.fillStyle = 'rgba(255,255,255,.05)'; for (let i = 0; i < 6; i++) ell(c, x - bw * 0.3 + i * bw * 0.12, top + bh * (0.3 + (i % 2) * 0.35), bw * 0.08, bh * 0.08);   // old smudges
     c.fillStyle = 'rgba(245,245,235,.92)'; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = '700 ' + Math.round(u * 0.04) + 'px "Cozy", system-ui'; c.fillText('А а   Б б   В в   Г г   Ґ ґ', x, top + bh * 0.28);
-    c.font = '700 ' + Math.round(u * 0.034) + 'px "Cozy", system-ui'; c.fillText('Д д   Е е   Є є   Ж ж   З з', x, top + bh * 0.52);
+    c.font = '700 ' + Math.round(u * 0.05) + 'px "Cozy", system-ui'; { const d0 = S.clock.day || 1, A = 1 + (d0 * 7) % 5, B = 1 + (d0 * 3) % 4; c.fillText(A + ' + ' + B + ' = ?', x, top + bh * 0.54); }   // today's sum
     c.font = 'italic 700 ' + Math.round(u * 0.036) + 'px "Cozy", system-ui'; c.fillStyle = 'rgba(255,236,150,.95)'; c.fillText('Добрий день, діти!', x, top + bh * 0.8);
     c.fillStyle = '#8a5a2b'; c.fillRect(x - bw / 2, top + bh + u * 0.012, bw, u * 0.018);   // the ledge
     c.fillStyle = '#fbfbf2'; rr(c, x + bw * 0.22, top + bh + u * 0.003, u * 0.05, u * 0.012, u * 0.004); rr(c, x + bw * 0.3, top + bh + u * 0.004, u * 0.03, u * 0.011, u * 0.004);   // chalk
     c.fillStyle = '#a0522d'; rr(c, x - bw * 0.36, top + bh - u * 0.008, u * 0.07, u * 0.024, u * 0.006); c.fillStyle = '#e8dcc6'; c.fillRect(x - bw * 0.36, top + bh + u * 0.008, u * 0.07, u * 0.008);   // the duster
-    hit(x - bw / 2, top, bw, bh, word('doshka', { note: '🧑‍🏫 ' + xl('In class, «дошка» is the blackboard: the same word as the notice board in the village.') }), x);
+    hit(x - bw / 2, top, bw, bh, () => abStart(), x);   // the blackboard opens the abacus lesson
     hit(x + bw * 0.2, top + bh - u * 0.02, u * 0.12, u * 0.05, word('kreida'), x + bw * 0.25); }
   // ---- the teacher's desk: books, a globe, the hand bell
   { const x = SX.desk * RW, dw = u * 0.36, dtop = fy - h * 0.12;
@@ -6775,7 +6775,7 @@ function drawSchool(t) {
     // the globe
     const gx = x - dw * 0.28, gy = dtop - u * 0.1, gr = u * 0.055;
     c.strokeStyle = '#a88a3a'; c.lineWidth = u * 0.005; c.beginPath(); c.ellipse(gx, gy, gr * 0.28, gr * 1.14, 0.35, Math.PI * 0.5, Math.PI * 1.5); c.stroke(); c.fillStyle = '#8a6a2a'; c.fillRect(gx - u * 0.004, gy + gr, u * 0.008, u * 0.05); ell(c, gx, dtop - u * 0.028, u * 0.035, u * 0.01);
-    c.fillStyle = '#4a90d0'; circ(c, gx, gy, gr); c.save(); c.beginPath(); c.arc(gx, gy, gr, 0, 7); c.clip(); c.fillStyle = '#6fbf5a'; const sp = (t * 0.15) % 1; for (const [ox, oy, rx, ry] of [[-0.3, -0.2, 0.35, 0.25], [0.4, 0.1, 0.3, 0.35], [-0.1, 0.45, 0.2, 0.15]]) for (const k of [0, 2]) ell(c, gx + (((ox + sp * 2 + k) % 2) - 1) * gr * 1.6, gy + oy * gr, rx * gr, ry * gr); c.restore();
+    c.fillStyle = '#4a90d0'; circ(c, gx, gy, gr); c.save(); c.beginPath(); c.arc(gx, gy, gr, 0, 7); c.clip(); c.fillStyle = '#6fbf5a'; const sp = 0.2; for (const [ox, oy, rx, ry] of [[-0.3, -0.2, 0.35, 0.25], [0.4, 0.1, 0.3, 0.35], [-0.1, 0.45, 0.2, 0.15]]) for (const k of [0, 2]) ell(c, gx + (((ox + sp * 2 + k) % 2) - 1) * gr * 1.6, gy + oy * gr, rx * gr, ry * gr); c.restore();
     c.fillStyle = 'rgba(255,255,255,.35)'; circ(c, gx - gr * 0.35, gy - gr * 0.35, gr * 0.25);
     hit(gx - gr * 1.3, gy - gr * 1.3, gr * 2.6, gr * 2.6 + u * 0.06, word('hlobus'), gx);
     // books
@@ -6813,6 +6813,170 @@ function drawSchool(t) {
   if (day > 0.3) { c.fillStyle = 'rgba(255,248,225,' + (0.45 * wxL) + ')'; for (let i = 0; i < 18; i++) { const q = (t * 0.015 + i * 0.05) % 1; circ(c, ((i * 0.41 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
   { const lights = [[SX.board * RW - roomX, h * 0.06, u * 0.9], [SX.win1 * RW - roomX, h * 0.06, u * 0.6]];
     paintSky(c, w, h, t, lights, false); }
+}
+
+// ------------------------------------------------------------------ the abacus lesson (рахівниця)
+// Six problems a lesson: two "count" (push as many beads across as there are apples), two "add" (some beads are
+// already across; add more), two "take away" (slide some back). Tap a bead to move it (and the ones beside it),
+// or swipe along a row. Every bead clacks and the new total is said aloud. Then pick the answer from three chalk
+// numbers, and if you like, say it. At the end a report card, marked out of 12 the way Ukrainian schools do.
+// Each good lesson moves up a level: within 10, then bigger numbers, then within 20 on both rows.
+let ab = null;
+const numId = n => 'num' + n;
+function abProblems(lvl) {
+  const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1)), big = lvl >= 3, out = [];
+  out.push({ k: 'count', n: R(2, big ? 11 : lvl >= 2 ? 8 : 5) }, { k: 'count', n: R(big ? 12 : 4, big ? 18 : lvl >= 2 ? 10 : 7) });
+  for (let i = 0; i < 2; i++) { const a = R(1, big ? 12 : lvl >= 2 ? 6 : 4), b = R(1, Math.max(1, Math.min((big ? 20 : 10) - a, big ? 8 : lvl >= 2 ? 4 : 3))); out.push({ k: 'add', a, b, n: a + b }); }
+  for (let i = 0; i < 2; i++) { const a = R(big ? 9 : lvl >= 2 ? 5 : 3, big ? 20 : 10), b = R(1, Math.max(1, Math.min(a - 1, big ? 9 : lvl >= 2 ? 4 : 2))); out.push({ k: 'sub', a, b, n: a - b }); }
+  return out;
+}
+const abTotal = () => ab.rows[0] + ab.rows[1];
+const abSet = n => { ab.rows = [Math.min(10, n), Math.max(0, n - 10)]; };
+function abStart() {
+  S.school = S.school || { lvl: 1, lessons: 0, best: 0 };
+  learn('rakhivnytsia');
+  ab = { lvl: S.school.lvl, list: abProblems(S.school.lvl), i: 0, perfect: 0, coins: 0, rows: [0, 0], disp: [[], []], phase: 'move', miss: 0, shake: -9, tick: -9, sayT: 0, choices: [], k: 1 };
+  for (let r = 0; r < 2; r++) for (let i = 0; i < 10; i++) ab.disp[r][i] = null;
+  openSheet(`<div class="card gamecard abcard"><div class="tag" id="abTag"></div>
+    <div class="word" id="abLine" style="font-size:26px"></div><div class="en" id="abEn"></div>
+    <canvas id="abPad" class="cookpad" style="width:100%;display:block;height:250px;touch-action:none"></canvas>
+    <div class="row" id="abRow"></div></div>`, () => { ab = null; });
+  const pad = $('#abPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = ab;
+  fitPad(pad, 250); pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); ab.k = dpr;
+  for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
+  const at = e => { const r = pad.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height]; };
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); if (ab !== me || ab.phase !== 'move') return; try { pad.setPointerCapture(e.pointerId); } catch (er) {} const [x, y] = at(e); ab.down = { x, y }; abTouch(x, y, 0, true); });
+  pad.addEventListener('pointermove', e => { if (ab !== me || !ab.down || ab.phase !== 'move') return; const [x, y] = at(e), dx = x - ab.down.x; if (Math.abs(dx) > 0.004) { abTouch(x, y, dx, false); ab.down.x = x; } });
+  for (const ev of ['pointerup', 'pointercancel']) pad.addEventListener(ev, () => { if (ab === me) ab.down = null; });
+  abSetup(); requestAnimationFrame(() => abFrame(me));
+}
+// Where the rows are, in pad fractions, and which rows can be used this problem.
+const AB = { L: 0.09, R: 0.91, rowY: [0.6, 0.82] };
+const abRowsOn = () => { const P0 = ab.list[ab.i]; return P0 && (P0.n > 10 || (P0.a || 0) > 10 || ab.lvl >= 3) ? 2 : 1; };
+function abBeadX(r, i) { const w = (AB.R - AB.L), br = w / 24, on = i >= 10 - ab.rows[r]; return on ? AB.R - br - (9 - i) * br * 2 : AB.L + br + i * br * 2; }
+function abTouch(x, y, dx, tap) {
+  const rows = abRowsOn(), br = (AB.R - AB.L) / 24, pad = $('#abPad'), asp = pad ? pad.width / pad.height : 1.5;
+  let r = -1; for (let k = 0; k < rows; k++) if (Math.abs(y - AB.rowY[k]) < 0.1) r = k; if (r < 0) return;
+  let best = -1, bd = 9; for (let i = 0; i < 10; i++) { const bx = ab.disp[r][i] ?? abBeadX(r, i), d = Math.abs(bx - x); if (d < bd) { bd = d; best = i; } }
+  if (best < 0 || bd > br * 1.6) return;
+  const on = best >= 10 - ab.rows[r], was = ab.rows[r];
+  if (tap) ab.rows[r] = on ? 9 - best : 10 - best;
+  else if (dx > 0 && !on) ab.rows[r] = 10 - best;   // swiping right pushes beads across
+  else if (dx < 0 && on) ab.rows[r] = 9 - best;     // swiping left pulls them back
+  if (ab.rows[r] !== was) abMoved(Math.abs(ab.rows[r] - was));
+}
+function abMoved(n) {
+  for (let i = 0; i < Math.min(4, n); i++) setTimeout(() => sfxHit(1300 + Math.random() * 300, 0.035, 0.22, 'bandpass', 4), i * 45);   // wooden clacks
+  clearTimeout(ab.sayT); const me = ab; ab.sayT = setTimeout(() => { if (ab === me) say('w_' + numId(abTotal())); }, 170);   // the new total, said aloud
+  abRender();
+}
+function abSetup() {
+  const P0 = ab.list[ab.i]; ab.phase = 'move'; ab.miss = 0; ab.choices = [];
+  if (P0.k === 'count') abSet(0); else abSet(P0.a);
+  ab.given = P0.k === 'add' ? P0.a : 0;
+  say(P0.k === 'count' ? 'w_porakhui' : P0.k === 'add' ? 'w_dodai' : 'w_vidnymy');
+  abRender();
+}
+function abRender() {
+  if (!ab || !$('#abTag')) return;
+  const P0 = ab.list[ab.i], en = stage() < 3, row = $('#abRow');
+  $('#abTag').innerHTML = '🧮 ' + W.rakhivnytsia.uk + (en ? ' · Abacus' : '') + ' · ' + Math.min(ab.i + 1, 6) + '/6';
+  const L = (uk, e) => { $('#abLine').innerHTML = uk; $('#abEn').innerHTML = en ? e : ''; };
+  if (ab.phase === 'report') {
+    const g = Math.max(1, Math.round(12 * ab.perfect / 6));
+    L('📜 Оцінка: <b>' + g + '</b> / 12', 'Your mark: ' + g + ' out of 12 · +' + ab.coins + ' 💰<br><small>In Ukrainian schools, marks go from 1 to 12.</small>');
+    row.innerHTML = btn('abAgain', '', 'Ще раз<small>Again</small>', 'blue') + btn('close', '', lab('close'), 'ghost'); return;
+  }
+  if (ab.phase === 'move') {
+    if (P0.k === 'count') L(W.porakhui.uk, 'Count the apples: push ' + P0.n + ' beads across.');
+    else if (P0.k === 'add') L(W.dodai.uk + ' ' + P0.b + '!', P0.a + ' beads are across. Add ' + P0.b + ' more.');
+    else L(W.vidnymy.uk + ' ' + P0.b + '!', 'Take ' + P0.b + ' away: slide them back.');
+    row.innerHTML = btn('hear', P0.k === 'count' ? 'w_porakhui' : P0.k === 'add' ? 'w_dodai' : 'w_vidnymy', '🔊', 'round blue') + btn('abDone', '', '✓ Готово<small>Done</small>') + btn('close', '', lab('close'), 'ghost'); return;
+  }
+  if (ab.phase === 'answer') {
+    L(PH.skilky_bude.uk, 'How many is it? Tap the number.');
+    row.innerHTML = ab.choices.map(n => '<button class="b abnum" data-a="abPick" data-v="' + n + '">' + n + '<small>' + W[numId(n)].uk + '</small></button>').join(''); return;
+  }
+  if (ab.phase === 'right') {
+    L(PH.pravylno.uk + ' ' + W[numId(P0.n)].uk + '!', 'Right! It is ' + P0.n + '.' + (ab.saidStars ? ' ' + ab.saidStars : ''));
+    row.innerHTML = btn('abSay', '', '🎤 ' + W[numId(P0.n)].uk + '<small>Say it</small>', 'green prb') + btn('abNext', '', (ab.i >= 5 ? 'Оцінка' : 'Далі') + '<small>' + (ab.i >= 5 ? 'Your mark' : 'Next') + '</small>');
+  }
+}
+function abDone() {
+  if (!ab || ab.phase !== 'move') return; const P0 = ab.list[ab.i];
+  if (abTotal() !== P0.n) { ab.miss++; ab.shake = nowT; blip(220, 0.12); say('p_shche_raz'); toast('🧮 ' + PH.shche_raz.uk + (stage() < 3 ? ' · Count again: ' + (P0.k === 'sub' ? P0.a + ' take away ' + P0.b : P0.k === 'add' ? P0.a + ' and ' + P0.b + ' more' : P0.n + ' beads') : ''), 2600); return; }
+  const n = P0.n, set = new Set([n]); while (set.size < 3) { const d = n + [-2, -1, 1, 2, 3][Math.floor(Math.random() * 5)]; if (d >= 0 && d <= 20) set.add(d); }
+  ab.choices = [...set].sort(() => Math.random() - 0.5); ab.phase = 'answer'; ab.saidStars = ''; say('p_skilky_bude'); abRender();
+}
+function abPick(v) {
+  if (!ab || ab.phase !== 'answer') return; const P0 = ab.list[ab.i];
+  if (+v !== P0.n) { ab.miss++; ab.shake = nowT; blip(220, 0.12); say('w_' + numId(+v)); const b = document.querySelector('#abRow [data-v="' + v + '"]'); if (b) { b.disabled = true; b.style.opacity = '.35'; } return; }
+  if (!ab.miss) { ab.perfect++; ab.coins++; S.coins += 1; hud(); }
+  learn(numId(P0.n)); ab.phase = 'right'; ab.tick = nowT; blip(990, 0.1); setTimeout(() => blip(1320, 0.12), 110);
+  say('p_pravylno', 'w_' + numId(P0.n)); save(); abRender();
+}
+function abNext() { if (!ab) return; if (ab.i >= 5) { abFinish(); return; } ab.i++; abSetup(); }
+function abFinish() {
+  const g = Math.max(1, Math.round(12 * ab.perfect / 6)); S.school.lessons++; S.school.best = Math.max(S.school.best || 0, g);
+  if (g >= 9) S.school.lvl = Math.min(3, (S.school.lvl || 1) + 1);
+  if (g >= 10) { S.coins += 3; ab.coins += 3; hud(); }
+  save(); ab.phase = 'report'; ab.tick = nowT; say(g >= 10 ? 'p_molodets' : 'p_chudovo'); abRender();
+}
+async function abSay() {
+  if (!ab || ab.phase !== 'right' || ab.busy) return; if (!micOk()) return micHelp(MIC.lastReason && MIC.lastReason !== 'site' ? MIC.lastReason : 'chrome');
+  const me = ab, id = numId(ab.list[ab.i].n); ab.busy = true; ab.saidStars = '🎤…'; abRender();
+  try { const rec = await recordOnce({ stop: false }, () => {}); if (ab !== me) return; if (rec.quiet) { ab.saidStars = '🤫 I didn’t hear anything.'; }
+    else { ab.saidStars = '⏳'; abRender(); const out = await scoreWord(id, rec.wav); if (ab !== me) return; if (out.limit) ab.saidStars = '🌙 ' + (out.message || ''); else { const n = starsFor(out.score); S.say = S.say || {}; S.say[id] = Math.max(S.say[id] || 0, out.score); save(); ab.saidStars = '<span style="color:#e0a01c">' + starStr(n) + '</span> ' + n + '/10'; } } }
+  catch (e) { if (ab === me) ab.saidStars = 'The microphone didn’t start.'; }
+  if (ab === me) { ab.busy = false; abRender(); }
+}
+function abFrame(me) {
+  const pad = $('#abPad'); if (!pad || ab !== me || !sheetOpen()) return;
+  const c = pad.getContext('2d'), w = pad.width, h = pad.height, k = ab.k, t = nowT, P0 = ab.list[ab.i], rows = abRowsOn();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  // the wall behind and a desk top
+  let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#f3ecdc'); g.addColorStop(0.42, '#efe5cf'); g.addColorStop(0.42, '#9b6b3c'); g.addColorStop(1, '#84582f'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  // the little slate at the top with the problem chalked on it
+  { const sx = w * 0.06, sy = h * 0.04, sw = w * 0.88, sh = h * 0.34;
+    c.fillStyle = '#6b4422'; rr(c, sx - 4 * k, sy - 4 * k, sw + 8 * k, sh + 8 * k, 8 * k); c.fillStyle = '#2f4a3a'; rr(c, sx, sy, sw, sh, 6 * k);
+    c.fillStyle = 'rgba(245,245,235,.95)'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    const sh0 = ab.shake > t - 0.4 ? Math.sin((t - ab.shake) * 60) * 5 * k * (1 - (t - ab.shake) / 0.4) : 0;
+    if (ab.phase === 'report') { const g2 = Math.max(1, Math.round(12 * ab.perfect / 6)); c.font = '900 ' + Math.round(54 * k) + 'px "Cozy", system-ui'; c.fillStyle = g2 >= 10 ? '#ffe78a' : '#f5f5eb'; c.fillText(g2 + ' / 12', w / 2, sy + sh * 0.5); }
+    else if (P0.k === 'count') {
+      const n = P0.n, per = n > 10 ? 9 : n, cw = Math.min(sw * 0.9 / per, sh * 0.42);
+      for (let i = 0; i < n; i++) { const rI = Math.floor(i / per), cI = i % per, inRow = Math.min(per, n - rI * per); drawIcon(c, '🍎', w / 2 - (inRow - 1) * cw / 2 + cI * cw + sh0, sy + sh * (n > per ? 0.32 + rI * 0.4 : 0.55) + cw * 0.35, cw * 0.85); }
+    } else {
+      const done = ab.phase === 'right', op = P0.k === 'add' ? '+' : '−';
+      c.font = '700 ' + Math.round(46 * k) + 'px "Cozy", system-ui'; c.fillText(P0.a + ' ' + op + ' ' + P0.b + ' = ', w / 2 - 22 * k + sh0, sy + sh * 0.52);
+      c.fillStyle = done ? '#ffe78a' : 'rgba(245,245,235,.95)'; c.fillText(done ? String(P0.n) : '?', w / 2 + c.measureText(P0.a + ' ' + op + ' ' + P0.b + ' = ').width / 2 - 8 * k + sh0, sy + sh * 0.52);
+    }
+    if (ab.tick > t - 1.2 && ab.phase !== 'move') { const q = Math.min(1, (t - ab.tick) / 0.35); c.strokeStyle = '#8ee08a'; c.lineWidth = 5 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx + sw * 0.86, sy + sh * 0.55); c.lineTo(sx + sw * 0.86 + 10 * k * Math.min(1, q * 2), sy + sh * 0.55 + 10 * k * Math.min(1, q * 2)); if (q > 0.5) c.lineTo(sx + sw * 0.86 + 10 * k + 22 * k * (q - 0.5) * 2, sy + sh * 0.55 + 10 * k - 28 * k * (q - 0.5) * 2); c.stroke(); }   // a chalk tick
+  }
+  // the abacus: a wooden frame on two feet, two wires, ten beads each (five red, five cream)
+  { const L = AB.L * w, R = AB.R * w, top = h * 0.45, bot = h * 0.95, br = (R - L) / 24;
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, w / 2, bot + 2 * k, (R - L) * 0.55, 6 * k);
+    c.fillStyle = '#8a5a2b'; c.fillRect(L - 10 * k, top, 10 * k, bot - top); c.fillRect(R, top, 10 * k, bot - top); c.fillRect(L - 10 * k, top, R - L + 20 * k, 7 * k); c.fillRect(L - 10 * k, bot - 7 * k, R - L + 20 * k, 7 * k);
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(L - 10 * k, top, R - L + 20 * k, 2 * k);
+    for (let r = 0; r < 2; r++) {
+      const y = AB.rowY[r] * h, act = r < rows;
+      c.strokeStyle = act ? '#6b6b70' : 'rgba(107,107,112,.4)'; c.lineWidth = 2.5 * k; c.beginPath(); c.moveTo(L, y); c.lineTo(R, y); c.stroke();
+      for (let i = 0; i < 10; i++) {
+        const tx = abBeadX(r, i) * w; let x = ab.disp[r][i] == null ? tx : ab.disp[r][i] * w; x += (tx - x) * Math.min(1, 0.35); ab.disp[r][i] = x / w;
+        const on = i >= 10 - ab.rows[r], red = i < 5;
+        c.globalAlpha = act ? 1 : 0.35;
+        const gb = c.createRadialGradient(x - br * 0.3, y - br * 0.35, br * 0.1, x, y, br * 1.05); gb.addColorStop(0, red ? '#f06a55' : '#fff7e4'); gb.addColorStop(1, red ? '#a52a1e' : '#d8c49a');
+        c.fillStyle = gb; c.beginPath(); c.ellipse(x, y, br * 0.98, br * 1.12, 0, 0, 7); c.fill();
+        c.strokeStyle = 'rgba(60,30,15,.35)'; c.lineWidth = 1 * k; c.stroke();
+        if (act && on && ab.given && i >= 10 - (r ? Math.max(0, ab.given - 10) : Math.min(10, ab.given))) { c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, x, y - br * 0.55, br * 0.16); }   // a chalk dot on the beads that were already across
+        c.globalAlpha = 1;
+      }
+      // the running count for this row, on the frame's right
+      if (act) { c.fillStyle = '#fff8ea'; c.font = '800 ' + Math.round(13 * k) + 'px system-ui'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(String(ab.rows[r]), R + 13 * k, y); }
+    }
+    // the total, big, beside the frame
+    if (ab.phase === 'move') { c.fillStyle = 'rgba(255,231,138,.95)'; c.font = '800 ' + Math.round(17 * k) + 'px "Cozy", system-ui'; c.textAlign = 'right'; c.textBaseline = 'top'; c.fillText('Σ ' + abTotal(), w * 0.92, h * 0.06); }   // the running total, in the slate's corner
+  }
+  requestAnimationFrame(() => abFrame(me));
 }
 
 // ------------------------------------------------------------------ inside Grandma Olia's cottage
@@ -8753,6 +8917,7 @@ const A = {
   exitHome,
   enterHome,
   hear(v) { say(v); },
+  abDone() { abDone(); }, abPick(v) { abPick(v); }, abNext() { abNext(); }, abSay() { abSay(); }, abAgain() { closeSheet(); setTimeout(abStart, 200); },
   prac(v) { pracAttempt(v); },
   subs() {
     const on = !subsOnNow(); try { localStorage.setItem('kd-subs', (on ? 'on' : 'off') + '@' + subsBand()); } catch (e) {}
