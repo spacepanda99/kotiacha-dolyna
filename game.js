@@ -206,7 +206,7 @@ addEventListener('load', () => { musicBtn(); startMusic(); });
 // Each interior has its own theme (music/room-<mode>.mp3, made with tools/music.mjs). Going in or out fades the
 // music down, swaps the track and fades back up; the village theme picks up where it left off. A room whose file
 // is missing (not made yet) just keeps the village theme.
-const ROOM_TUNES = { home: 'room-home2', olia: 'room-olia', mill: 'room-mill', church: 'room-church' };
+const ROOM_TUNES = { home: 'room-home2', olia: 'room-olia', mill: 'room-mill', church: 'room-church', school: 'room-school' };
 const tuneBad = {};
 let curTune = 'theme', themePos = 0, seekTo = 0;
 // The market has its own tune while its card is open (it's a card over the village, not a room).
@@ -6816,29 +6816,50 @@ function drawSchool(t) {
 }
 
 // ------------------------------------------------------------------ the abacus lesson (рахівниця)
-// Six problems a lesson: two "count" (push as many beads across as there are apples), two "add" (some beads are
-// already across; add more), two "take away" (slide some back). Tap a bead to move it (and the ones beside it),
-// or swipe along a row. Every bead clacks and the new total is said aloud. Then pick the answer from three chalk
-// numbers, and if you like, say it. At the end a report card, marked out of 12 the way Ukrainian schools do.
-// Each good lesson moves up a level: within 10, then bigger numbers, then within 20 on both rows.
+// A language lesson that uses an abacus. Each problem is a short Ukrainian sentence (with pictures, an English
+// subtitle and a speaker to hear it): "Скільки груш?", "Три яблука і дві груші. Скільки разом?", "Було сім вишень.
+// Котик з'їв дві. Скільки залишилось?". It never says how many beads to move: you work that out. Every bead that
+// slides says the new number aloud. Then you choose the answer from three number words (hear it, and say it).
+// Six problems a lesson, then a report card marked out of 12, the Ukrainian school scale.
 let ab = null;
 const numId = n => 'num' + n;
+// The fruit and the forms Ukrainian uses with numbers: one (1, 21...), a few (2-4) and many (5+, 11-14).
+const AB_NOUNS = {
+  yabluko: { g: 'n', one: 'яблуко', few: 'яблука', many: 'яблук', en: ['apple', 'apples'], clip: ['w_yabluko', 'p_pl_yabluka', 'p_gen_yabluk'], q: 'p_skilky_yabluk' },
+  hrusha: { g: 'f', one: 'груша', few: 'груші', many: 'груш', en: ['pear', 'pears'], clip: ['w_hrusha', 'p_pl_hrushi', 'p_gen_hrush'], q: 'p_skilky_hrush' },
+  vyshnia: { g: 'f', one: 'вишня', few: 'вишні', many: 'вишень', en: ['cherry', 'cherries'], clip: ['w_vyshnia', 'p_pl_vyshni', 'p_gen_vyshen'], q: 'p_skilky_vyshen' },
+};
+const abForm = n => { const m10 = n % 10, m100 = n % 100; return m10 === 1 && m100 !== 11 ? 0 : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 1 : 2; };
+const abNum = (n, g, acc) => n === 1 ? (g === 'n' ? 'одне' : acc ? 'одну' : 'одна') : n === 2 && g === 'f' ? 'дві' : W[numId(n)].uk;   // acc: as the object ("з'їв одну")
+const abNumClip = (n, g, acc) => n === 1 ? (g === 'n' ? 'p_num_n1' : acc ? 'p_num_f1a' : 'p_num_f1') : n === 2 && g === 'f' ? 'p_num_f2' : 'w_' + numId(n);
+const abEnNum = n => W[numId(n)].en.replace(/ \(\d+\)$/, '');
+const abEn = (N, n) => abEnNum(n) + ' ' + N.en[n === 1 ? 0 : 1];
 function abProblems(lvl) {
-  const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1)), big = lvl >= 3, out = [];
-  out.push({ k: 'count', n: R(2, big ? 11 : lvl >= 2 ? 8 : 5) }, { k: 'count', n: R(big ? 12 : 4, big ? 18 : lvl >= 2 ? 10 : 7) });
-  for (let i = 0; i < 2; i++) { const a = R(1, big ? 12 : lvl >= 2 ? 6 : 4), b = R(1, Math.max(1, Math.min((big ? 20 : 10) - a, big ? 8 : lvl >= 2 ? 4 : 3))); out.push({ k: 'add', a, b, n: a + b }); }
-  for (let i = 0; i < 2; i++) { const a = R(big ? 9 : lvl >= 2 ? 5 : 3, big ? 20 : 10), b = R(1, Math.max(1, Math.min(a - 1, big ? 9 : lvl >= 2 ? 4 : 2))); out.push({ k: 'sub', a, b, n: a - b }); }
+  const R = (x, y) => x + Math.floor(Math.random() * (y - x + 1)), big = lvl >= 3, keys = Object.keys(AB_NOUNS), pick = () => keys[Math.floor(Math.random() * keys.length)], out = [];
+  for (let i = 0; i < 2; i++) out.push({ k: 'count', w: pick(), n: R(i ? (big ? 11 : 5) : 2, i ? (big ? 16 : lvl >= 2 ? 10 : 8) : (big ? 10 : 5)) });
+  for (let i = 0; i < 2; i++) { const w1 = pick(); let w2 = pick(); while (w2 === w1) w2 = pick(); const x = R(1, big ? 9 : lvl >= 2 ? 6 : 4), y = R(1, Math.max(1, Math.min((big ? 20 : 10) - x, big ? 8 : lvl >= 2 ? 4 : 3))); out.push({ k: 'add', w: w1, w2, a: x, b: y, n: x + y }); }
+  for (let i = 0; i < 2; i++) { const x = R(big ? 9 : lvl >= 2 ? 5 : 3, big ? 18 : 10), y = R(1, Math.max(1, Math.min(x - 1, big ? 8 : lvl >= 2 ? 4 : 2))); out.push({ k: 'sub', w: pick(), a: x, b: y, n: x - y }); }
   return out;
+}
+// The problem's sentence in Ukrainian, its English subtitle, and the clips that say it.
+function abSentence(P0) {
+  const N = AB_NOUNS[P0.w], f = n => [N.one, N.few, N.many][abForm(n)], fc = n => N.clip[abForm(n)];
+  if (P0.k === 'count') return { uk: 'Скільки ' + N.many + '?', en: 'How many ' + N.en[1] + '?', clips: [N.q] };
+  if (P0.k === 'add') { const M = AB_NOUNS[P0.w2], f2 = n => [M.one, M.few, M.many][abForm(n)];
+    return { uk: cap(abNum(P0.a, N.g)) + ' ' + f(P0.a) + ' і ' + abNum(P0.b, M.g) + ' ' + f2(P0.b) + '. Скільки разом?', en: cap(abEn(N, P0.a)) + ' and ' + abEn(M, P0.b) + '. How many altogether?',
+      clips: [abNumClip(P0.a, N.g), fc(P0.a), 'p_i', abNumClip(P0.b, M.g), M.clip[abForm(P0.b)], 'p_skilky_razom'] }; }
+  return { uk: 'Було ' + abNum(P0.a, N.g) + ' ' + f(P0.a) + '. Котик з\'їв ' + abNum(P0.b, N.g, true) + '. Скільки залишилось?', en: 'There were ' + abEn(N, P0.a) + '. The kitty ate ' + abEnNum(P0.b) + '. How many are left?',
+    clips: ['p_bulo', abNumClip(P0.a, N.g), fc(P0.a), 'p_kotyk_ziv', abNumClip(P0.b, N.g, true), 'p_skilky_zalyshylos'] };
 }
 const abTotal = () => ab.rows[0] + ab.rows[1];
 const abSet = n => { ab.rows = [Math.min(10, n), Math.max(0, n - 10)]; };
 function abStart() {
   S.school = S.school || { lvl: 1, lessons: 0, best: 0 };
   learn('rakhivnytsia');
-  ab = { lvl: S.school.lvl, list: abProblems(S.school.lvl), i: 0, perfect: 0, coins: 0, rows: [0, 0], disp: [[], []], phase: 'move', miss: 0, shake: -9, tick: -9, sayT: 0, choices: [], k: 1 };
+  ab = { lvl: S.school.lvl, list: abProblems(S.school.lvl), i: 0, perfect: 0, coins: 0, rows: [0, 0], disp: [[], []], phase: 'move', miss: 0, shake: -9, tick: -9, choices: [], k: 1 };
   for (let r = 0; r < 2; r++) for (let i = 0; i < 10; i++) ab.disp[r][i] = null;
   openSheet(`<div class="card gamecard abcard"><div class="tag" id="abTag"></div>
-    <div class="word" id="abLine" style="font-size:26px"></div><div class="en" id="abEn"></div>
+    <div class="word" id="abLine" style="font-size:21px;line-height:1.25"></div><div class="en" id="abEn" style="font-size:15px"></div>
     <canvas id="abPad" class="cookpad" style="width:100%;display:block;height:250px;touch-action:none"></canvas>
     <div class="row" id="abRow"></div></div>`, () => { ab = null; });
   const pad = $('#abPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = ab;
@@ -6850,67 +6871,62 @@ function abStart() {
   for (const ev of ['pointerup', 'pointercancel']) pad.addEventListener(ev, () => { if (ab === me) ab.down = null; });
   abSetup(); requestAnimationFrame(() => abFrame(me));
 }
-// Where the rows are, in pad fractions, and which rows can be used this problem.
-const AB = { L: 0.09, R: 0.91, rowY: [0.6, 0.82] };
+const AB = { L: 0.09, R: 0.91, rowY: [0.62, 0.84] };
 const abRowsOn = () => { const P0 = ab.list[ab.i]; return P0 && (P0.n > 10 || (P0.a || 0) > 10 || ab.lvl >= 3) ? 2 : 1; };
 function abBeadX(r, i) { const w = (AB.R - AB.L), br = w / 24, on = i >= 10 - ab.rows[r]; return on ? AB.R - br - (9 - i) * br * 2 : AB.L + br + i * br * 2; }
 function abTouch(x, y, dx, tap) {
-  const rows = abRowsOn(), br = (AB.R - AB.L) / 24, pad = $('#abPad'), asp = pad ? pad.width / pad.height : 1.5;
+  const rows = abRowsOn(), br = (AB.R - AB.L) / 24;
   let r = -1; for (let k = 0; k < rows; k++) if (Math.abs(y - AB.rowY[k]) < 0.1) r = k; if (r < 0) return;
   let best = -1, bd = 9; for (let i = 0; i < 10; i++) { const bx = ab.disp[r][i] ?? abBeadX(r, i), d = Math.abs(bx - x); if (d < bd) { bd = d; best = i; } }
   if (best < 0 || bd > br * 1.6) return;
   const on = best >= 10 - ab.rows[r], was = ab.rows[r];
   if (tap) ab.rows[r] = on ? 9 - best : 10 - best;
-  else if (dx > 0 && !on) ab.rows[r] = 10 - best;   // swiping right pushes beads across
-  else if (dx < 0 && on) ab.rows[r] = 9 - best;     // swiping left pulls them back
+  else if (dx > 0 && !on) ab.rows[r] = 10 - best;
+  else if (dx < 0 && on) ab.rows[r] = 9 - best;
   if (ab.rows[r] !== was) abMoved(Math.abs(ab.rows[r] - was));
 }
+// Every slide clacks and says the new number (straight away, each time).
 function abMoved(n) {
-  for (let i = 0; i < Math.min(4, n); i++) setTimeout(() => sfxHit(1300 + Math.random() * 300, 0.035, 0.22, 'bandpass', 4), i * 45);   // wooden clacks
-  clearTimeout(ab.sayT); const me = ab; ab.sayT = setTimeout(() => { if (ab === me) say('w_' + numId(abTotal())); }, 170);   // the new total, said aloud
-  abRender();
+  for (let i = 0; i < Math.min(4, n); i++) setTimeout(() => sfxHit(1300 + Math.random() * 300, 0.035, 0.22, 'bandpass', 4), i * 45);
+  stopSay(); say('w_' + numId(abTotal()));
 }
 function abSetup() {
-  const P0 = ab.list[ab.i]; ab.phase = 'move'; ab.miss = 0; ab.choices = [];
-  if (P0.k === 'count') abSet(0); else abSet(P0.a);
-  ab.given = P0.k === 'add' ? P0.a : 0;
-  say(P0.k === 'count' ? 'w_porakhui' : P0.k === 'add' ? 'w_dodai' : 'w_vidnymy');
-  abRender();
+  const P0 = ab.list[ab.i]; ab.phase = 'move'; ab.miss = 0; ab.choices = []; ab.said = '';
+  if (P0.k === 'sub') abSet(P0.a); else abSet(0);   // take-away problems start with the beads already across
+  ab.sent = abSentence(P0); say(...ab.sent.clips); abRender();
 }
 function abRender() {
   if (!ab || !$('#abTag')) return;
-  const P0 = ab.list[ab.i], en = stage() < 3, row = $('#abRow');
-  $('#abTag').innerHTML = '🧮 ' + W.rakhivnytsia.uk + (en ? ' · Abacus' : '') + ' · ' + Math.min(ab.i + 1, 6) + '/6';
-  const L = (uk, e) => { $('#abLine').innerHTML = uk; $('#abEn').innerHTML = en ? e : ''; };
+  const P0 = ab.list[ab.i], row = $('#abRow'), S0 = ab.sent;
+  $('#abTag').innerHTML = '🧮 ' + W.rakhivnytsia.uk + ' · Abacus · ' + Math.min(ab.i + 1, 6) + '/6';
+  const L = (uk, e) => { $('#abLine').innerHTML = uk; $('#abEn').innerHTML = e; };   // the English subtitle always shows in lessons
   if (ab.phase === 'report') {
     const g = Math.max(1, Math.round(12 * ab.perfect / 6));
     L('📜 Оцінка: <b>' + g + '</b> / 12', 'Your mark: ' + g + ' out of 12 · +' + ab.coins + ' 💰<br><small>In Ukrainian schools, marks go from 1 to 12.</small>');
     row.innerHTML = btn('abAgain', '', 'Ще раз<small>Again</small>', 'blue') + btn('close', '', lab('close'), 'ghost'); return;
   }
   if (ab.phase === 'move') {
-    if (P0.k === 'count') L(W.porakhui.uk, 'Count the apples: push ' + P0.n + ' beads across.');
-    else if (P0.k === 'add') L(W.dodai.uk + ' ' + P0.b + '!', P0.a + ' beads are across. Add ' + P0.b + ' more.');
-    else L(W.vidnymy.uk + ' ' + P0.b + '!', 'Take ' + P0.b + ' away: slide them back.');
-    row.innerHTML = btn('hear', P0.k === 'count' ? 'w_porakhui' : P0.k === 'add' ? 'w_dodai' : 'w_vidnymy', '🔊', 'round blue') + btn('abDone', '', '✓ Готово<small>Done</small>') + btn('close', '', lab('close'), 'ghost'); return;
+    L(S0.uk, S0.en + '<br><small>Use the beads to work it out, then tap Готово.</small>');
+    row.innerHTML = btn('abHear', '', '🔊', 'round blue') + btn('abDone', '', '✓ Готово<small>Done</small>') + btn('close', '', lab('close'), 'ghost'); return;
   }
   if (ab.phase === 'answer') {
-    L(PH.skilky_bude.uk, 'How many is it? Tap the number.');
-    row.innerHTML = ab.choices.map(n => '<button class="b abnum" data-a="abPick" data-v="' + n + '">' + n + '<small>' + W[numId(n)].uk + '</small></button>').join(''); return;
+    L(S0.uk, S0.en + '<br><small>Tap the number word.</small>');
+    row.innerHTML = ab.choices.map(n => '<button class="b abnum" data-a="abPick" data-v="' + n + '">' + W[numId(n)].uk + '<small>' + n + '</small></button>').join('') + btn('abHear', '', '🔊', 'round blue'); return;
   }
   if (ab.phase === 'right') {
-    L(PH.pravylno.uk + ' ' + W[numId(P0.n)].uk + '!', 'Right! It is ' + P0.n + '.' + (ab.saidStars ? ' ' + ab.saidStars : ''));
-    row.innerHTML = btn('abSay', '', '🎤 ' + W[numId(P0.n)].uk + '<small>Say it</small>', 'green prb') + btn('abNext', '', (ab.i >= 5 ? 'Оцінка' : 'Далі') + '<small>' + (ab.i >= 5 ? 'Your mark' : 'Next') + '</small>');
+    L(PH.pravylno.uk + ' ' + cap(W[numId(P0.n)].uk) + '!', 'Correct! ' + cap(abEnNum(P0.n)) + '.' + (ab.said ? '<br>' + ab.said : '<br><small>Tap 🔊 to hear it, then 🎤 to say it.</small>'));
+    row.innerHTML = btn('abHearN', '', '🔊', 'round blue') + btn('abSay', '', '🎤 ' + W[numId(P0.n)].uk + '<small>Say it</small>', 'green prb') + btn('abNext', '', (ab.i >= 5 ? 'Оцінка' : 'Далі') + '<small>' + (ab.i >= 5 ? 'Your mark' : 'Next') + '</small>');
   }
 }
 function abDone() {
   if (!ab || ab.phase !== 'move') return; const P0 = ab.list[ab.i];
-  if (abTotal() !== P0.n) { ab.miss++; ab.shake = nowT; blip(220, 0.12); say('p_shche_raz'); toast('🧮 ' + PH.shche_raz.uk + (stage() < 3 ? ' · Count again: ' + (P0.k === 'sub' ? P0.a + ' take away ' + P0.b : P0.k === 'add' ? P0.a + ' and ' + P0.b + ' more' : P0.n + ' beads') : ''), 2600); return; }
+  if (abTotal() !== P0.n) { ab.miss++; ab.shake = nowT; blip(220, 0.12); say('p_shche_raz'); toast('🧮 ' + PH.shche_raz.uk + ' · Not quite. Listen again and try once more.', 2600); return; }
   const n = P0.n, set = new Set([n]); while (set.size < 3) { const d = n + [-2, -1, 1, 2, 3][Math.floor(Math.random() * 5)]; if (d >= 0 && d <= 20) set.add(d); }
-  ab.choices = [...set].sort(() => Math.random() - 0.5); ab.phase = 'answer'; ab.saidStars = ''; say('p_skilky_bude'); abRender();
+  ab.choices = [...set].sort(() => Math.random() - 0.5); ab.phase = 'answer'; abRender();
 }
 function abPick(v) {
   if (!ab || ab.phase !== 'answer') return; const P0 = ab.list[ab.i];
-  if (+v !== P0.n) { ab.miss++; ab.shake = nowT; blip(220, 0.12); say('w_' + numId(+v)); const b = document.querySelector('#abRow [data-v="' + v + '"]'); if (b) { b.disabled = true; b.style.opacity = '.35'; } return; }
+  if (+v !== P0.n) { ab.miss++; ab.shake = nowT; blip(220, 0.12); say('w_' + numId(+v)); const bt = document.querySelector('#abRow [data-v="' + v + '"]'); if (bt) { bt.disabled = true; bt.style.opacity = '.35'; } return; }
   if (!ab.miss) { ab.perfect++; ab.coins++; S.coins += 1; hud(); }
   learn(numId(P0.n)); ab.phase = 'right'; ab.tick = nowT; blip(990, 0.1); setTimeout(() => blip(1320, 0.12), 110);
   say('p_pravylno', 'w_' + numId(P0.n)); save(); abRender();
@@ -6924,36 +6940,35 @@ function abFinish() {
 }
 async function abSay() {
   if (!ab || ab.phase !== 'right' || ab.busy) return; if (!micOk()) return micHelp(MIC.lastReason && MIC.lastReason !== 'site' ? MIC.lastReason : 'chrome');
-  const me = ab, id = numId(ab.list[ab.i].n); ab.busy = true; ab.saidStars = '🎤…'; abRender();
-  try { const rec = await recordOnce({ stop: false }, () => {}); if (ab !== me) return; if (rec.quiet) { ab.saidStars = '🤫 I didn’t hear anything.'; }
-    else { ab.saidStars = '⏳'; abRender(); const out = await scoreWord(id, rec.wav); if (ab !== me) return; if (out.limit) ab.saidStars = '🌙 ' + (out.message || ''); else { const n = starsFor(out.score); S.say = S.say || {}; S.say[id] = Math.max(S.say[id] || 0, out.score); save(); ab.saidStars = '<span style="color:#e0a01c">' + starStr(n) + '</span> ' + n + '/10'; } } }
-  catch (e) { if (ab === me) ab.saidStars = 'The microphone didn’t start.'; }
+  const me = ab, id = numId(ab.list[ab.i].n); ab.busy = true; stopSay(); ab.said = '🎤 Say it now…'; abRender();
+  try { const rec = await recordOnce({ stop: false }, () => {}); if (ab !== me) return; if (rec.quiet) { ab.said = '🤫 I didn’t hear anything. Tap 🎤 and say it out loud.'; }
+    else { ab.said = '⏳ Listening…'; abRender(); const out = await scoreWord(id, rec.wav); if (ab !== me) return; if (out.limit) ab.said = '🌙 ' + (out.message || ''); else { const n = starsFor(out.score); S.say = S.say || {}; S.say[id] = Math.max(S.say[id] || 0, out.score); save(); ab.said = '<span style="color:#e0a01c">' + starStr(n) + '</span> <b>' + n + '/10</b> ' + (out.tip || ''); } } }
+  catch (e) { if (ab === me) ab.said = 'The microphone didn’t start.'; }
   if (ab === me) { ab.busy = false; abRender(); }
 }
 function abFrame(me) {
   const pad = $('#abPad'); if (!pad || ab !== me || !sheetOpen()) return;
   const c = pad.getContext('2d'), w = pad.width, h = pad.height, k = ab.k, t = nowT, P0 = ab.list[ab.i], rows = abRowsOn();
   c.setTransform(1, 0, 0, 1, 0, 0);
-  // the wall behind and a desk top
-  let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#f3ecdc'); g.addColorStop(0.42, '#efe5cf'); g.addColorStop(0.42, '#9b6b3c'); g.addColorStop(1, '#84582f'); c.fillStyle = g; c.fillRect(0, 0, w, h);
-  // the little slate at the top with the problem chalked on it
-  { const sx = w * 0.06, sy = h * 0.04, sw = w * 0.88, sh = h * 0.34;
+  let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#f3ecdc'); g.addColorStop(0.44, '#efe5cf'); g.addColorStop(0.44, '#9b6b3c'); g.addColorStop(1, '#84582f'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  // the slate: the problem in pictures (never the answer)
+  { const sx = w * 0.05, sy = h * 0.04, sw = w * 0.9, sh = h * 0.36;
     c.fillStyle = '#6b4422'; rr(c, sx - 4 * k, sy - 4 * k, sw + 8 * k, sh + 8 * k, 8 * k); c.fillStyle = '#2f4a3a'; rr(c, sx, sy, sw, sh, 6 * k);
-    c.fillStyle = 'rgba(245,245,235,.95)'; c.textAlign = 'center'; c.textBaseline = 'middle';
     const sh0 = ab.shake > t - 0.4 ? Math.sin((t - ab.shake) * 60) * 5 * k * (1 - (t - ab.shake) / 0.4) : 0;
-    if (ab.phase === 'report') { const g2 = Math.max(1, Math.round(12 * ab.perfect / 6)); c.font = '900 ' + Math.round(54 * k) + 'px "Cozy", system-ui'; c.fillStyle = g2 >= 10 ? '#ffe78a' : '#f5f5eb'; c.fillText(g2 + ' / 12', w / 2, sy + sh * 0.5); }
-    else if (P0.k === 'count') {
-      const n = P0.n, per = n > 10 ? 9 : n, cw = Math.min(sw * 0.9 / per, sh * 0.42);
-      for (let i = 0; i < n; i++) { const rI = Math.floor(i / per), cI = i % per, inRow = Math.min(per, n - rI * per); drawIcon(c, '🍎', w / 2 - (inRow - 1) * cw / 2 + cI * cw + sh0, sy + sh * (n > per ? 0.32 + rI * 0.4 : 0.55) + cw * 0.35, cw * 0.85); }
-    } else {
-      const done = ab.phase === 'right', op = P0.k === 'add' ? '+' : '−';
-      c.font = '700 ' + Math.round(46 * k) + 'px "Cozy", system-ui'; c.fillText(P0.a + ' ' + op + ' ' + P0.b + ' = ', w / 2 - 22 * k + sh0, sy + sh * 0.52);
-      c.fillStyle = done ? '#ffe78a' : 'rgba(245,245,235,.95)'; c.fillText(done ? String(P0.n) : '?', w / 2 + c.measureText(P0.a + ' ' + op + ' ' + P0.b + ' = ').width / 2 - 8 * k + sh0, sy + sh * 0.52);
-    }
-    if (ab.tick > t - 1.2 && ab.phase !== 'move') { const q = Math.min(1, (t - ab.tick) / 0.35); c.strokeStyle = '#8ee08a'; c.lineWidth = 5 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx + sw * 0.86, sy + sh * 0.55); c.lineTo(sx + sw * 0.86 + 10 * k * Math.min(1, q * 2), sy + sh * 0.55 + 10 * k * Math.min(1, q * 2)); if (q > 0.5) c.lineTo(sx + sw * 0.86 + 10 * k + 22 * k * (q - 0.5) * 2, sy + sh * 0.55 + 10 * k - 28 * k * (q - 0.5) * 2); c.stroke(); }   // a chalk tick
+    const group = (ic, n, x0, x1, fade) => {   // n pictures packed into [x0, x1], in up to two rows
+      const per = n > 8 ? Math.ceil(n / 2) : n, rws = Math.ceil(n / per), cw = Math.min((x1 - x0) / per, sh * (rws > 1 ? 0.4 : 0.6));
+      for (let i = 0; i < n; i++) { const rI = Math.floor(i / per), cI = i % per, inRow = Math.min(per, n - rI * per), cx = (x0 + x1) / 2 - (inRow - 1) * cw / 2 + cI * cw + sh0, cy = sy + sh * (rws > 1 ? 0.3 + rI * 0.42 : 0.52) + cw * 0.3;
+        c.globalAlpha = fade && fade(i) ? 0.28 : 1; drawIcon(c, ic, cx, cy, cw * 0.86); c.globalAlpha = 1;
+        if (fade && fade(i)) { c.strokeStyle = 'rgba(245,245,235,.8)'; c.lineWidth = 2 * k; c.beginPath(); c.moveTo(cx - cw * 0.3, cy - cw * 0.6); c.lineTo(cx + cw * 0.3, cy); c.stroke(); } }
+    };
+    if (ab.phase === 'report') { const g2 = Math.max(1, Math.round(12 * ab.perfect / 6)); c.font = '900 ' + Math.round(54 * k) + 'px "Cozy", system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = g2 >= 10 ? '#ffe78a' : '#f5f5eb'; c.fillText(g2 + ' / 12', w / 2, sy + sh * 0.5); }
+    else if (P0.k === 'count') group(W[P0.w].ic, P0.n, sx + sw * 0.05, sx + sw * 0.95);
+    else if (P0.k === 'add') { group(W[P0.w].ic, P0.a, sx + sw * 0.04, sx + sw * 0.46); group(W[P0.w2].ic, P0.b, sx + sw * 0.54, sx + sw * 0.96); c.fillStyle = 'rgba(245,245,235,.9)'; c.font = '800 ' + Math.round(20 * k) + 'px "Cozy", system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('і', sx + sw * 0.5, sy + sh * 0.5); }
+    else { group(W[P0.w].ic, P0.a, sx + sw * 0.04, sx + sw * 0.8, i => i >= P0.a - P0.b); drawIcon(c, '🐱', sx + sw * 0.9, sy + sh * 0.72, sh * 0.42); }   // the ones the kitty ate are faded and crossed out
+    if (ab.phase === 'right') { const q = Math.min(1, (t - ab.tick) / 0.35); c.strokeStyle = '#8ee08a'; c.lineWidth = 5 * k; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx + sw * 0.86, sy + sh * 0.2); c.lineTo(sx + sw * 0.86 + 9 * k * Math.min(1, q * 2), sy + sh * 0.2 + 9 * k * Math.min(1, q * 2)); if (q > 0.5) c.lineTo(sx + sw * 0.86 + 9 * k + 20 * k * (q - 0.5) * 2, sy + sh * 0.2 + 9 * k - 25 * k * (q - 0.5) * 2); c.stroke(); }
   }
-  // the abacus: a wooden frame on two feet, two wires, ten beads each (five red, five cream)
-  { const L = AB.L * w, R = AB.R * w, top = h * 0.45, bot = h * 0.95, br = (R - L) / 24;
+  // the abacus
+  { const L = AB.L * w, R = AB.R * w, top = h * 0.48, bot = h * 0.96, br = (R - L) / 24;
     c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, w / 2, bot + 2 * k, (R - L) * 0.55, 6 * k);
     c.fillStyle = '#8a5a2b'; c.fillRect(L - 10 * k, top, 10 * k, bot - top); c.fillRect(R, top, 10 * k, bot - top); c.fillRect(L - 10 * k, top, R - L + 20 * k, 7 * k); c.fillRect(L - 10 * k, bot - 7 * k, R - L + 20 * k, 7 * k);
     c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(L - 10 * k, top, R - L + 20 * k, 2 * k);
@@ -6961,20 +6976,12 @@ function abFrame(me) {
       const y = AB.rowY[r] * h, act = r < rows;
       c.strokeStyle = act ? '#6b6b70' : 'rgba(107,107,112,.4)'; c.lineWidth = 2.5 * k; c.beginPath(); c.moveTo(L, y); c.lineTo(R, y); c.stroke();
       for (let i = 0; i < 10; i++) {
-        const tx = abBeadX(r, i) * w; let x = ab.disp[r][i] == null ? tx : ab.disp[r][i] * w; x += (tx - x) * Math.min(1, 0.35); ab.disp[r][i] = x / w;
-        const on = i >= 10 - ab.rows[r], red = i < 5;
-        c.globalAlpha = act ? 1 : 0.35;
+        const tx = abBeadX(r, i) * w; let x = ab.disp[r][i] == null ? tx : ab.disp[r][i] * w; x += (tx - x) * 0.35; ab.disp[r][i] = x / w;
+        const red = i < 5; c.globalAlpha = act ? 1 : 0.35;
         const gb = c.createRadialGradient(x - br * 0.3, y - br * 0.35, br * 0.1, x, y, br * 1.05); gb.addColorStop(0, red ? '#f06a55' : '#fff7e4'); gb.addColorStop(1, red ? '#a52a1e' : '#d8c49a');
-        c.fillStyle = gb; c.beginPath(); c.ellipse(x, y, br * 0.98, br * 1.12, 0, 0, 7); c.fill();
-        c.strokeStyle = 'rgba(60,30,15,.35)'; c.lineWidth = 1 * k; c.stroke();
-        if (act && on && ab.given && i >= 10 - (r ? Math.max(0, ab.given - 10) : Math.min(10, ab.given))) { c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, x, y - br * 0.55, br * 0.16); }   // a chalk dot on the beads that were already across
-        c.globalAlpha = 1;
+        c.fillStyle = gb; c.beginPath(); c.ellipse(x, y, br * 0.98, br * 1.12, 0, 0, 7); c.fill(); c.strokeStyle = 'rgba(60,30,15,.35)'; c.lineWidth = 1 * k; c.stroke(); c.globalAlpha = 1;
       }
-      // the running count for this row, on the frame's right
-      if (act) { c.fillStyle = '#fff8ea'; c.font = '800 ' + Math.round(13 * k) + 'px system-ui'; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(String(ab.rows[r]), R + 13 * k, y); }
     }
-    // the total, big, beside the frame
-    if (ab.phase === 'move') { c.fillStyle = 'rgba(255,231,138,.95)'; c.font = '800 ' + Math.round(17 * k) + 'px "Cozy", system-ui'; c.textAlign = 'right'; c.textBaseline = 'top'; c.fillText('Σ ' + abTotal(), w * 0.92, h * 0.06); }   // the running total, in the slate's corner
   }
   requestAnimationFrame(() => abFrame(me));
 }
@@ -8917,7 +8924,7 @@ const A = {
   exitHome,
   enterHome,
   hear(v) { say(v); },
-  abDone() { abDone(); }, abPick(v) { abPick(v); }, abNext() { abNext(); }, abSay() { abSay(); }, abAgain() { closeSheet(); setTimeout(abStart, 200); },
+  abDone() { abDone(); }, abPick(v) { abPick(v); }, abNext() { abNext(); }, abSay() { abSay(); }, abHear() { if (ab && ab.sent) { stopSay(); say(...ab.sent.clips); } }, abHearN() { if (ab) { stopSay(); say('w_' + numId(ab.list[ab.i].n)); } }, abAgain() { closeSheet(); setTimeout(abStart, 200); },
   prac(v) { pracAttempt(v); },
   subs() {
     const on = !subsOnNow(); try { localStorage.setItem('kd-subs', (on ? 'on' : 'off') + '@' + subsBand()); } catch (e) {}
