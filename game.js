@@ -6804,10 +6804,10 @@ function drawSchool(t) {
     hit(x - dw / 2, top - u * 0.01, dw * 0.5, h * 0.05, word('zoshyt'), x - dw * 0.1);
     hit(x - dw / 2, top - u * 0.01, dw, base - top + u * 0.02, word('parta'), x);
   };
-  for (const fx of SX.rowB) parta(fx, 1);
-  // ---- her (between the rows), then the front row of desks in front of her
-  inDraw(c, t);
-  for (const fx of SX.rowA) parta(fx, 0);
+  // ---- the desks and Vicky, back to front: a desk is drawn in front of her only when she stands behind it
+  const deskBase = row => row ? fy + h * 0.01 : fy + h * 0.12;
+  const order = [...SX.rowB.map(fx => ({ y: deskBase(1), f: () => parta(fx, 1) })), ...SX.rowA.map(fx => ({ y: deskBase(0), f: () => parta(fx, 0) })), { y: IN.y, f: () => inDraw(c, t) }];
+  order.sort((p, q) => p.y - q.y).forEach(o => o.f());
   c.restore();
   // dust in the window light
   if (day > 0.3) { c.fillStyle = 'rgba(255,248,225,' + (0.45 * wxL) + ')'; for (let i = 0; i < 18; i++) { const q = (t * 0.015 + i * 0.05) % 1; circ(c, ((i * 0.41 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
