@@ -555,6 +555,66 @@ window.DATA = {
         thanks: { uk: "Дякую! Смачного!", en: "Thank you! Enjoy!" }
       },
       wants: []
+    },
+    {
+      id: "myron", name: "Пан Мирон", nameEn: "Mr. Myron", voice: "charon", visitor: true,
+      style: "A jolly, booming retired Ukrainian train conductor in his sixties. Hearty, old-fashioned and warm, a little theatrical, with a big laugh in his voice. Speaks Ukrainian clearly.",
+      look: {skin: "#f1c8a4", shirt: "#ffffff", trim: "#1f3a6b", skirt: "#1f3a6b", hair: "#e8e8e8", hat: "cap", hatCol: "#1f3a6b", vest: "#1f3a6b", vestTrim: "#d9a63a", mustache: "#dedede"},
+      lines: {
+        intro: { uk: "Добрий день! Мене звати Мирон. Приємно познайомитися!", en: "Good day! My name is Myron. Nice to meet you!" },
+        again: { uk: "Добрий день! Радий тебе знову бачити!", en: "Good day! Glad to see you again!" }
+      },
+      wants: []
+    },
+    {
+      id: "yaroslava", name: "Пані Ярослава", nameEn: "Mrs. Yaroslava", voice: "vindemiatrix", visitor: true,
+      style: "An elegant, soft-spoken elderly Ukrainian poet and retired literature teacher from Kyiv. Calm, dreamy and precise; speaks slowly and beautifully, like reading a poem aloud.",
+      look: {skin: "#f3d1b8", shirt: "#f7f0fa", trim: "#6b3d8a", skirt: "#5b3a7a", dress: true, hair: "#c8c8cc", hat: "beret", hatCol: "#7a3b8f", glasses: true, beads: true},
+      lines: {
+        intro: { uk: "Доброго дня! Мене звати Ярослава. Дуже приємно познайомитися.", en: "Good day! My name is Yaroslava. Very nice to meet you." },
+        again: { uk: "О, добрий день! Рада тебе знову бачити.", en: "Oh, good day! Lovely to see you again." }
+      },
+      wants: []
+    },
+    {
+      id: "ostap", name: "Остап", nameEn: "Ostap", voice: "fenrir", visitor: true,
+      style: "An energetic, cheerful young Hutsul man from the Carpathian mountains. Fast, bright and enthusiastic; he laughs easily and everything is an adventure.",
+      look: {skin: "#e9bd94", shirt: "#ffffff", trim: "#c0392b", skirt: "#2e2a28", hair: "#3a2416", hat: "hutsul", hatCol: "#1d1b1a", vest: "#b8322c", vestTrim: "#2e9e5b", beard: "#3a2416"},
+      lines: {
+        intro: { uk: "Привіт! Мене звати Остап! Дуже приємно познайомитися!", en: "Hi! My name is Ostap! Really nice to meet you!" },
+        again: { uk: "Гей, привіт! Радий тебе знову бачити!", en: "Hey, hi! Great to see you again!" }
+      },
+      wants: []
+    },
+    {
+      id: "lesia", name: "Леся", nameEn: "Lesia", voice: "leda", visitor: true,
+      style: "A bubbly, dreamy young Ukrainian painter in her twenties. Light, playful and curious, a little giggly, always noticing colours.",
+      look: {skin: "#f7d6c0", shirt: "#ffffff", trim: "#2f6fb0", skirt: "#f2c230", dress: true, hair: "#c8642a", long: true, band: "#2f6fb0", apron: "#ece4d2", apronTrim: "#e86fa0"},
+      lines: {
+        intro: { uk: "Привіт! Мене звати Леся. Приємно познайомитися!", en: "Hi! My name is Lesia. Nice to meet you!" },
+        again: { uk: "Привіт-привіт! Рада тебе знову бачити!", en: "Hi, hi! So glad to see you again!" }
+      },
+      wants: []
+    },
+    {
+      id: "zakhar", name: "Пан Захар", nameEn: "Mr. Zakhar", voice: "algenib", visitor: true,
+      style: "A gruff, slow-speaking Ukrainian fisherman in his fifties with a deep, gravelly voice. Few words, dry humour, warm underneath.",
+      look: {skin: "#e3b48c", shirt: "#d8d0bc", trim: "#5a4630", skirt: "#4a4f3a", hair: "#9a9a9a", hat: "flatcap", hatCol: "#6b5a40", vest: "#6b7a4a", vestTrim: "#4a5530", beard: "#b8b8b8"},
+      lines: {
+        intro: { uk: "Добрий день. Мене звати Захар. Приємно познайомитись.", en: "Good day. My name is Zakhar. Nice to meet you." },
+        again: { uk: "А, це ти. Радий тебе знову бачити.", en: "Ah, it's you. Good to see you again." }
+      },
+      wants: []
+    },
+    {
+      id: "halyna", name: "Пані Галина", nameEn: "Mrs. Halyna", voice: "autonoe", visitor: true,
+      style: "A bustling, chatty, theatrical Ukrainian woman in her fifties who loves village news. Quick, warm and expressive, always a little excited.",
+      look: {skin: "#f0c8a6", shirt: "#ffffff", trim: "#c0392b", skirt: "#2e7d4f", dress: true, hair: "#5a3a22", hat: "scarf", hatCol: "#d43a3a", beads: true, vest: "#2e9e5b", vestTrim: "#f2c230"},
+      lines: {
+        intro: { uk: "Ой, добрий день! Мене звати Галина! Як приємно познайомитися!", en: "Oh, good day! My name is Halyna! How lovely to meet you!" },
+        again: { uk: "Ой, привіт, сонечко! Рада тебе знову бачити!", en: "Oh, hello, sunshine! So glad to see you again!" }
+      },
+      wants: []
     }
   ],
 

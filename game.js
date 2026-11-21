@@ -1715,6 +1715,11 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   c.fillStyle = '#3b2f2a'; if (blink) { c.fillRect(-7, -62.6 + bob, 4, 1.3); c.fillRect(3, -62.6 + bob, 4, 1.3); } else { circ(c, -5, -62 + bob, 1.8); circ(c, 5, -62 + bob, 1.8); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, -4.4, -62.7 + bob, 0.6); circ(c, 5.6, -62.7 + bob, 0.6); c.fillStyle = '#3b2f2a'; }
   c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.6; c.beginPath(); c.arc(0, -58 + bob, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
   c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, -9, -58 + bob, 2.8 * (1 - side * 0.6)); circ(c, 9, -58 + bob, 2.8);
+  if (back < 0.5) {
+    if (L.beard) { c.fillStyle = L.beard; c.beginPath(); c.moveTo(-12, -60 + bob); c.quadraticCurveTo(-12, -46 + bob, 0, -45 + bob); c.quadraticCurveTo(12, -46 + bob, 12, -60 + bob); c.quadraticCurveTo(6, -54 + bob, 0, -55 + bob); c.quadraticCurveTo(-6, -54 + bob, -12, -60 + bob); c.fill(); }
+    if (L.mustache || L.beard) { c.fillStyle = L.mustache || L.beard; c.beginPath(); c.moveTo(0, -59 + bob); c.quadraticCurveTo(-5, -61 + bob, -8, -56.5 + bob); c.quadraticCurveTo(-4, -57.5 + bob, 0, -57 + bob); c.quadraticCurveTo(4, -57.5 + bob, 8, -56.5 + bob); c.quadraticCurveTo(5, -61 + bob, 0, -59 + bob); c.fill(); }
+    if (L.glasses) { c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.1; c.beginPath(); c.arc(-5, -62 + bob, 3.6, 0, 7); c.moveTo(8.6, -62 + bob); c.arc(5, -62 + bob, 3.6, 0, 7); c.moveTo(-1.4, -62.5 + bob); c.quadraticCurveTo(0, -63.6 + bob, 1.4, -62.5 + bob); c.stroke(); c.fillStyle = 'rgba(255,255,255,.35)'; circ(c, -6, -63.2 + bob, 1); circ(c, 4, -63.2 + bob, 1); }
+  }
   c.restore();
   if (side > 0.05) { c.fillStyle = L.hair; c.globalAlpha = Math.min(1, side * 1.2); c.beginPath(); c.arc(0, -63 + bob, 14.4, Math.PI * 0.55, Math.PI * 1.05); c.lineTo(-4, -70 + bob); c.closePath(); c.fill(); c.globalAlpha = 1; }   // hair over the far side of her head
   if (back > 0.01) {   // from behind: hair covers her head, and her shirt has no buttons
@@ -1734,6 +1739,20 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   } else if (L.hat === 'straw') {
     c.fillStyle = L.hatCol; ell(c, 0, -73 + bob, 22, 6); rr(c, -11, -86 + bob, 22, 14, 6);
     c.fillStyle = '#8a5a2b'; c.fillRect(-11, -76 + bob, 22, 2.5);
+  } else if (L.hat === 'cap') {   // a railwayman's peaked cap with a gold badge
+    c.fillStyle = L.hatCol; rr(c, -14, -84 + bob, 28, 10, 4); ell(c, 0, -76 + bob, 15.5, 3.5);
+    c.fillStyle = '#1d1d24'; if (back < 0.5) ell(c, 0, -72.5 + bob, 13, 2.6);
+    c.fillStyle = '#d9a63a'; c.fillRect(-14, -77.5 + bob, 28, 1.4); if (back < 0.5) { circ(c, 0, -80 + bob, 2.2); c.fillStyle = '#f2cc66'; circ(c, -0.5, -80.6 + bob, 0.8); }
+  } else if (L.hat === 'beret') {   // a soft beret, tipped to one side, with a stalk on top
+    c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(3, -75 + bob, 17, 7.5, 0.12, 0, Math.PI * 2); c.fill(); c.fillRect(-12, -76 + bob, 24, 3);
+    c.fillStyle = 'rgba(0,0,0,.15)'; c.fillRect(-12, -73.5 + bob, 24, 1.2); c.fillStyle = L.hatCol; c.fillRect(2, -84 + bob, 2, 3);
+  } else if (L.hat === 'hutsul') {   // a Hutsul felt hat: flat-topped, narrow brim, a red band and a feather
+    c.fillStyle = L.hatCol; ell(c, 0, -74 + bob, 19, 4.2); rr(c, -11.5, -88 + bob, 23, 14, 3);
+    c.fillStyle = '#c0392b'; c.fillRect(-11.5, -78.5 + bob, 23, 2.8); c.fillStyle = '#f2c230'; for (let i = -2; i <= 2; i++) circ(c, i * 4.4, -77 + bob, 0.9);
+    c.strokeStyle = '#6b4422'; c.lineWidth = 1; c.beginPath(); c.moveTo(9, -79 + bob); c.quadraticCurveTo(17, -92 + bob, 13, -101 + bob); c.stroke(); c.fillStyle = '#e8e2d2'; c.save(); c.translate(14, -93 + bob); c.rotate(-0.4); ell(c, 0, 0, 2.4, 7.5); c.restore();
+  } else if (L.hat === 'flatcap') {   // a fisherman's flat cap
+    c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(1, -75 + bob, 16.5, 7, 0, Math.PI, 0); c.fill(); if (back < 0.5) { c.beginPath(); c.ellipse(1, -73 + bob, 15, 3.4, 0, 0, Math.PI); c.fill(); }
+    c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-15, -75.5 + bob, 32, 1.2); circ(c, 1, -81.5 + bob, 1.3);
   } else if (L.hat === 'hood') {
     c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(0, -62 + bob, 18.5, 19.5, 0, 0, Math.PI * 2);
     if (back < 0.5) { c.ellipse(0, -60 + bob, 12, 13.5, 0, 0, Math.PI * 2); c.fill('evenodd'); if (L.hoodFur) { c.strokeStyle = L.fur || '#fff'; c.lineWidth = 4; c.beginPath(); c.ellipse(0, -60 + bob, 13.5, 15, 0, 0, Math.PI * 2); c.stroke(); } }
@@ -1833,6 +1852,13 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   if (L.long) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.lineCap = 'butt'; c.beginPath(); c.arc(0, hy, 14.2, Math.PI * 1.08, Math.PI * 1.72); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10.5, hy - 9.5, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -7, hy - 12.5, 2.6); }
   c.fillStyle = '#3b2f2a'; if (blink) c.fillRect(6.5, hy + 0.6, 4, 1.3); else { ell(c, 8.5, hy + 1, 1.7, 2.1); c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, 9.1, hy + 0.2, 0.6); }
   c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, 7, hy + 6, 2.6);
+  if (L.beard) { c.fillStyle = L.beard; c.beginPath(); c.moveTo(1, hy + 3); c.quadraticCurveTo(2, hy + 15, 10, hy + 16); c.quadraticCurveTo(15, hy + 12, 14, hy + 6); c.quadraticCurveTo(9, hy + 8, 1, hy + 3); c.fill(); }
+  if (L.mustache || L.beard) { c.fillStyle = L.mustache || L.beard; ell(c, 12, hy + 5.8, 3.6, 1.6); }
+  if (L.glasses) { c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.1; c.beginPath(); c.arc(9, hy + 0.8, 3.3, 0, 7); c.moveTo(5.7, hy + 0.5); c.lineTo(-3, hy - 1.5); c.stroke(); }
+  if (L.hat === 'cap') { c.fillStyle = L.hatCol; rr(c, -12, hy - 21, 25, 10, 4); c.fillStyle = '#1d1d24'; poly(c, [[9, hy - 11.5], [21, hy - 10], [13, hy - 13]]); c.fillStyle = '#d9a63a'; c.fillRect(-12, hy - 14, 25, 1.4); circ(c, 9, hy - 17, 1.8); }
+  else if (L.hat === 'beret') { c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(1, hy - 12, 17, 6.5, -0.15, 0, Math.PI * 2); c.fill(); c.fillRect(-1, hy - 21, 2, 3); }
+  else if (L.hat === 'hutsul') { c.fillStyle = L.hatCol; ell(c, 2, hy - 11, 18, 3.8); rr(c, -9, hy - 25, 21, 14, 3); c.fillStyle = '#c0392b'; c.fillRect(-9, hy - 15.5, 21, 2.8); c.strokeStyle = '#6b4422'; c.lineWidth = 1; c.beginPath(); c.moveTo(-6, hy - 16); c.quadraticCurveTo(-14, hy - 28, -11, hy - 38); c.stroke(); c.fillStyle = '#e8e2d2'; c.save(); c.translate(-12, hy - 31); c.rotate(0.4); ell(c, 0, 0, 2.4, 7.5); c.restore(); }
+  else if (L.hat === 'flatcap') { c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(1, hy - 11, 15, 6.5, 0, Math.PI, 0); c.fill(); poly(c, [[8, hy - 12], [20, hy - 9.5], [12, hy - 9]]); }
   if (L.hat === 'scarf') {   // over the top and back of the head, tied under the chin at the back
     c.fillStyle = L.hatCol; c.beginPath(); c.arc(0, hy - 0.5, 15.8, Math.PI * 0.55, Math.PI * 1.9); c.lineTo(5, hy - 6); c.quadraticCurveTo(1, hy + 6, 3, hy + 14); c.closePath(); c.fill();
     poly(c, [[-3, hy + 11], [-13, hy + 22], [-6, hy + 22]]);
@@ -2006,6 +2032,120 @@ function add(e) {
     if (e.an) e.s = ASIZE[e.an];
   }
 })();
+
+// ------------------------------------------------------------------ visitors off the morning train
+// Six grown-ups come in on the morning train, step out of the station one by one and head down the village road.
+// Each has favourite places (the café most of all, where they sit at its tables; also the lake, the fountain, the
+// market, the church, the school, the mill, or just a stroll). Whenever one passes close to a cat they stop, crouch
+// and stroke it. In the late afternoon they walk back to the station for the evening train. Tap one to say hello.
+const VIS_IDS = ['myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna'];
+const VIS_FAV = {
+  myron: { cafe: 5, station: 2, fountain: 2, market: 2 },
+  yaroslava: { cafe: 6, church: 2, fountain: 2, school: 1 },
+  ostap: { cafe: 3, lake: 3, mill: 2, stroll: 3 },
+  lesia: { cafe: 4, fountain: 3, lake: 2, market: 1 },
+  zakhar: { cafe: 4, lake: 5, stroll: 1 },
+  halyna: { cafe: 5, market: 3, church: 1, fountain: 1 },
+};
+const VIS_SPOTS = {
+  cafe: [[18.5, 36.75]], lake: [[26.6, 23.7], [31.8, 23.9], [25.6, 21.4]], fountain: [[16.9, 19.0], [21.1, 19.0], [19.0, 16.4]],
+  market: [[20.6, 14.6], [22.8, 14.6]], church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
+};
+const CAFE_SEATS = ['A-1', 'A1', 'C-1', 'C1', 'B-1'];   // the café's chairs (the other one by the window is the cat's)
+const STATION_DOOR = [18.5, 5.6];
+let visQueue = 0;
+const visEnts = () => ents.filter(e => e.vis);
+function visSpawn(id, x, y) {
+  if (ents.some(e => e.vis && e.npc === id)) return null;
+  const e = { w: 'khata', ic: '@khata', k: 'v_' + id, x, y, kind: 'npc', npc: id, s: 1.3, vis: true, vp: [], va: '', vt: 0, vface: 1, vwalk: 0, vstep: 0, petCd: 2 + Math.random() * 5 };
+  ents.push(e); return e;
+}
+function visPick(e) {
+  const fav = VIS_FAV[e.npc], keys = Object.keys(fav).filter(k => k !== e.va || k === 'cafe' && Math.random() < 0.3), tot = keys.reduce((a, k) => a + fav[k], 0);
+  let r = Math.random() * tot; for (const k of keys) { r -= fav[k]; if (r <= 0) return k; } return keys[0];
+}
+function visGo(e, act) {
+  e.va = act; e.vt = 0; e.inside = null; e.asleep = false; e.seat = null;
+  let to;
+  if (act === 'stroll') { const tiles = []; for (let y = 6; y < 31; y++) for (let x = 2; x < 38; x++) if (isRoad(x, y)) tiles.push([x + 0.5, y + 0.5]); to = tiles[Math.floor(Math.random() * tiles.length)]; }
+  else if (act === 'leave') to = STATION_DOOR;
+  else { const L = VIS_SPOTS[act]; to = L[Math.floor(Math.random() * L.length)]; }
+  e.goal = to; e.vp = findPath(to[0], to[1], null, e);
+  if (!e.vp.length) e.vp = [{ x: to[0], y: to[1] }];
+}
+function visArrive(e) {
+  e.vwalk = 0;
+  if (e.va === 'leave') { const i = ents.indexOf(e); if (i >= 0) ents.splice(i, 1); return; }   // on the train home
+  if (e.va === 'cafe') {   // in through the door, to a free chair (or to the counter for a chat with Solomiia)
+    const used = new Set(visEnts().filter(v => v.inside === 'cafe').map(v => v.seat));
+    e.inside = 'cafe'; e.asleep = true; e.seat = CAFE_SEATS.find(k => !used.has(k)) || 'counter'; e.vt = 55 + Math.random() * 55; return;
+  }
+  e.vt = 20 + Math.random() * 22; e.vface = Math.random() < 0.5 ? 1 : -1;
+}
+function visitorsStep(dt) {
+  const C = S.clock; if (!C) return;
+  const late = C.t >= 0.66 || nightNow();
+  // arriving: off the morning train while it waits at the station; or, if the day's already on, already about
+  if (!C.ev.visIn && !late) {
+    if (TRAIN.on && TRAIN.phase === 'wait' && C.ev.mtrain === true) {
+      const n = Math.min(VIS_IDS.length, Math.floor((TRAIN.wait - 1) / 0.9) + 1);
+      for (let i = visQueue; i < n && i < VIS_IDS.length; i++) { const e = visSpawn(VIS_IDS[i], STATION_DOOR[0] + (i % 2 ? 0.3 : -0.3), STATION_DOOR[1]); if (e) visGo(e, i % 3 === 0 ? 'stroll' : visPick(e)); visQueue = i + 1; }
+      if (visQueue >= VIS_IDS.length) { C.ev.visIn = 1; visQueue = 0; }
+    } else if (C.t >= 0.45 && !TRAIN.on) {
+      C.ev.visIn = 1;
+      for (const id of VIS_IDS) { const e = visSpawn(id, 18.5, 30.5); if (!e) continue; const act = visPick(e), L = VIS_SPOTS[act] || [[18.5, 18]], pt = L[Math.floor(Math.random() * L.length)]; e.x = pt[0]; e.y = pt[1]; e.va = act; e.vp = []; visArrive(e); }
+    }
+  }
+  for (const e of visEnts()) {
+    if (late && e.va !== 'leave') { if (e.inside) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.75; } e.pet = null; visGo(e, 'leave'); }
+    e.petCd -= dt;
+    if (e.inside) { e.vt -= dt; if (e.vt <= 0) { e.inside = null; e.asleep = false; e.x = 18.5; e.y = 36.8; visGo(e, visPick(e)); } continue; }
+    // petting a cat
+    if (e.pet) {
+      e.pet.t -= dt; const ct = e.pet.cat;
+      if (ct) { ct.st = 'idle'; ct.vel = 0; if (ct.tw < 1) ct.tw = 1; e.vface = ct.x > e.x ? 1 : -1; }
+      if (!e.pet.heart && e.pet.t < 2.2) { e.pet.heart = 1; if (ct) fxHearts(ct.x, ct.y - 0.5); const d = Math.hypot(P.x - e.x, P.y - e.y); if (d < 6 && mode === 'world') try { sfxHit(140, 0.9, 0.05 * (1 - d / 6), 'lowpass', 1); } catch (er) {} }
+      if (e.pet.t <= 0) { e.pet = null; e.petCd = 25 + Math.random() * 20; }
+      continue;
+    }
+    if (e.petCd <= 0 && e.va !== 'leave') {
+      const ct = ents.find(q => q.an === 'cat' && !q.asleep && !goneNow(q) && Math.hypot(q.x - e.x, q.y - e.y) < 1.15);
+      if (ct) { e.pet = { cat: ct, t: 3.4 }; e.vwalk = 0; ct.st = 'idle'; ct.act = 'look'; ct.tw = 4; continue; }
+    }
+    // walking the path, or passing the time where they are
+    if (e.vp && e.vp.length) {
+      const n = e.vp[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = 1.25 * dt;
+      e.vwalk = Math.min(1, e.vwalk + dt * 4); if (Math.abs(dx) > 0.02) e.vface = dx > 0 ? 1 : -1;
+      if (d <= sp) { e.x = n.x; e.y = n.y; e.vp.shift(); if (!e.vp.length) visArrive(e); } else { e.x += dx / d * sp; e.y += dy / d * sp; }
+      e.vstep += sp;
+    } else { e.vwalk = Math.max(0, e.vwalk - dt * 4); e.vt -= dt; if (e.vt <= 0 && e.va !== 'leave') visGo(e, visPick(e)); }
+  }
+}
+// Drawing one in the village: walking (side on), standing about (facing out, with a little something of their
+// own: Lesia's sketchbook, Zakhar's rod at the lake), or crouched beside a cat, stroking it.
+function drawVisitor(c, x, y, e, t) {
+  const L = NPC[e.npc].look;
+  if (e.pet) {   // crouched low beside the cat, one hand stroking along its back, hearts rising from the cat
+    const ct = e.pet.cat, cx = ct ? ct.x * T : x + e.vface * 22, cy = ct ? ct.y * T : y, st = Math.sin(t * 4.5);
+    c.save(); c.translate(x, y); c.scale(e.vface, 0.72); personSide(c, 0, 0, Object.assign({}, L, { armAng: [0.5, 0.5] }), t, 0, 1); c.restore();
+    const shX = x + e.vface * 6, shY = y - 34, hx = cx - e.vface * 4 + st * 6 * e.vface, hy = cy - 17 + Math.abs(st) * -1.5;
+    c.strokeStyle = L.vest || L.shirt; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(shX, shY); c.quadraticCurveTo((shX + hx) / 2, shY - 2, hx, hy); c.stroke();
+    c.fillStyle = L.skin; circ(c, hx, hy, 3.3);
+    for (let i = 0; i < 3; i++) { const q = (t * 0.6 + i / 3) % 1; c.globalAlpha = Math.sin(q * Math.PI); c.fillStyle = ['#e2392f', '#ff7aa8', '#e2392f'][i]; c.font = '700 ' + (10 + i * 2) + 'px system-ui'; c.textAlign = 'center'; c.fillText('♥', cx + (i - 1) * 8 + Math.sin(t * 2 + i) * 3, cy - 30 - q * 26); c.globalAlpha = 1; }
+    return;
+  }
+  if (e.vp && e.vp.length && e.vwalk > 0.05) { c.save(); c.translate(x, y); c.scale(e.vface, 1); personSide(c, 0, 0, Object.assign({}, L, { armR: undefined, armL: undefined }), t, e.vwalk, 1, e.vstep * 3.7); c.restore(); return; }
+  person(c, x, y, L, t + e.x * 3, false, 1);
+  if (e.npc === 'lesia' && (e.va === 'fountain' || e.va === 'lake')) { c.fillStyle = '#fffdf5'; rr(c, x - 9, y - 40, 14, 11, 1.5); c.strokeStyle = '#8a5a2b'; c.lineWidth = 1; c.strokeRect(x - 9, y - 40, 14, 11); c.fillStyle = ['#e86fa0', '#2f6fb0', '#f2c230'][Math.floor(t * 0.5) % 3]; circ(c, x - 4, y - 35, 2); c.strokeStyle = '#3b2f2a'; c.beginPath(); c.moveTo(x + 6, y - 42); c.lineTo(x + 9, y - 30); c.stroke(); }   // sketching
+  if (e.npc === 'zakhar' && e.va === 'lake') { const tip = [x + 34 * e.vface, y - 58], bob = Math.sin(t * 2) * 1.5; c.strokeStyle = '#6b4422'; c.lineWidth = 2; c.beginPath(); c.moveTo(x + 8 * e.vface, y - 34); c.lineTo(tip[0], tip[1]); c.stroke(); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(tip[0], tip[1]); c.lineTo(tip[0] + 6 * e.vface, y - 14 + bob); c.stroke(); c.fillStyle = '#e2392f'; circ(c, tip[0] + 6 * e.vface, y - 14 + bob, 2); }   // fishing
+}
+// In the café: each visitor inside sits at a chair, half turned to their table, with a cup in front of them.
+function cafeVisitorAt(key) { return visEnts().find(v => v.inside === 'cafe' && v.seat === key); }
+function drawSeated(c, e, chx, seatY, sg, sc, t) {
+  const L = NPC[e.npc].look;
+  c.save(); c.beginPath(); c.rect(chx - 60 * sc, seatY - 120 * sc, 120 * sc, 120 * sc + 3 * sc); c.clip();
+  c.translate(chx, seatY + 16 * sc); c.scale(-sg, 1); person(c, 0, 0, Object.assign({}, L, { armR: 1.1, armL: 0.2 }), t + chx, false, sc, undefined, { side: 0.55 }); c.restore();
+}
 
 // ------------------------------------------------------------------ the railway
 // The line runs east to west along the top of the valley. A little steam train (a green locomotive with red
@@ -5617,6 +5757,7 @@ function spAdvance() { if (!sp) return; sp.run++; sp.i++; sp.view = sp.i >= sp.R
 
 let talkNpc = null;   // the neighbour you're talking to (they turn to face you while a card is open)
 function talk(npc) {
+  if (npc.visitor) { const n0 = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 }); const st = line(npc, n0.met ? 'again' : 'intro'); n0.met = true; save(); return dialog(npc, [st]); }
   const n = S.npc[npc.id] || (S.npc[npc.id] = { met: false, q: null, k: 0 });
   const steps = [line(npc, 'greet')];
   if (!n.met) { steps.push(line(npc, 'intro')); n.met = true; }
@@ -7096,11 +7237,13 @@ function drawCafe(t) {
   const table = (fx, cat, third) => {   // (third: the extra table between the counter and the window; your order goes on the first one)
     const x = fx * RW, base = fy + h * 0.1, tw = u * 0.28, top = base - h * 0.1;
     c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, base + h * 0.008, tw * 0.6, h * 0.016);
+    const seatHits = [];
     for (const sg of [-1, 1]) { const chx = x + sg * tw * 0.62; c.fillStyle = '#7a4e26'; c.fillRect(chx - u * 0.035, base - h * 0.055, u * 0.07, u * 0.014); c.fillRect(chx - u * 0.03, base - h * 0.055, u * 0.008, h * 0.055); c.fillRect(chx + u * 0.022, base - h * 0.055, u * 0.008, h * 0.055); c.fillRect(chx + sg * u * 0.03 - u * 0.004, base - h * 0.13, u * 0.008, h * 0.08);
       if (cat && sg > 0) { const br = 1 + Math.sin(t * 1.4) * 0.04, cx2 = chx, cy2 = base - h * 0.06; c.fillStyle = '#f0a24c'; ell(c, cx2, cy2 - u * 0.02, u * 0.045 * br, u * 0.026 * br); circ(c, cx2 - u * 0.035, cy2 - u * 0.03, u * 0.018); c.fillStyle = '#c26f22'; c.strokeStyle = '#c26f22'; c.lineWidth = u * 0.008; c.beginPath(); c.arc(cx2 + u * 0.01, cy2 - u * 0.012, u * 0.04, 0.2, 1.8); c.stroke(); poly(c, [[cx2 - u * 0.048, cy2 - u * 0.04], [cx2 - u * 0.043, cy2 - u * 0.058], [cx2 - u * 0.034, cy2 - u * 0.044]]); poly(c, [[cx2 - u * 0.03, cy2 - u * 0.045], [cx2 - u * 0.022, cy2 - u * 0.06], [cx2 - u * 0.02, cy2 - u * 0.042]]);
         c.strokeStyle = '#4a2c1a'; c.lineWidth = 1; c.beginPath(); c.arc(cx2 - u * 0.04, cy2 - u * 0.03, u * 0.004, 0, Math.PI); c.stroke();
         { const q = (t * 0.4) % 1; c.globalAlpha = Math.sin(q * Math.PI); c.fillStyle = '#4a2c1a'; c.font = '700 ' + Math.round(u * 0.025) + 'px system-ui'; c.textAlign = 'center'; c.fillText('z', cx2 - u * 0.02 + q * u * 0.03, cy2 - u * 0.07 - q * u * 0.05); c.globalAlpha = 1; }
-        hit(cx2 - u * 0.06, cy2 - u * 0.08, u * 0.12, u * 0.08, () => { CAFE.purrT = nowT; purr('Рудик'); }, cx2); } }   // a sleepy ginger cat: pet it for a purr
+        hit(cx2 - u * 0.06, cy2 - u * 0.08, u * 0.12, u * 0.08, () => { CAFE.purrT = nowT; purr('Рудик'); }, cx2); }   // a sleepy ginger cat: pet it for a purr
+      { const key = (fx === CF.tableA ? 'A' : third ? 'C' : 'B') + sg, v = cafeVisitorAt(key); if (v) { const sc2 = inScale(base) * 0.9, seatY = base - h * 0.055; drawSeated(c, v, chx, seatY, sg, sc2, t); seatHits.push([chx - u * 0.06, seatY - u * 0.3, u * 0.12, u * 0.3, () => talk(NPC[v.npc]), chx]); } } }
     c.fillStyle = '#6b4422'; c.fillRect(x - u * 0.01, top, u * 0.02, base - top); c.fillRect(x - u * 0.05, base - u * 0.01, u * 0.1, u * 0.01);
     c.fillStyle = '#fffdf5'; c.beginPath(); c.ellipse(x, top, tw / 2, u * 0.025, 0, 0, 7); c.fill(); c.beginPath(); c.moveTo(x - tw / 2, top); c.lineTo(x - tw * 0.46, top + h * 0.045); c.quadraticCurveTo(x, top + h * 0.06, x + tw * 0.46, top + h * 0.045); c.lineTo(x + tw / 2, top); c.closePath(); c.fill();
     c.fillStyle = '#c0392b'; for (let k = -4; k <= 4; k++) { c.save(); c.translate(x + k * tw * 0.1, top + h * 0.04 + Math.abs(k) * -h * 0.002); c.rotate(Math.PI / 4); c.fillRect(-u * 0.006, -u * 0.006, u * 0.012, u * 0.012); c.restore(); }   // the embroidered hem
@@ -7110,8 +7253,11 @@ function drawCafe(t) {
     if (!cat && !third && CAFE.served && t - CAFE.served.t < 90) { const sx2 = x + tw * 0.24, sy2 = top - u * 0.008; c.fillStyle = '#fffdf5'; ell(c, sx2, sy2, u * 0.035, u * 0.009); drawIcon(c, W[CAFE.served.id].ic[0] === '@' ? W[CAFE.served.id].ic : W[CAFE.served.id].ic, sx2, sy2 + u * 0.005, u * 0.05);
       for (let i = 0; i < 3; i++) { const q = (t * 0.45 + i / 3) % 1; c.fillStyle = 'rgba(255,255,255,' + (0.5 * (1 - q)) + ')'; circ(c, sx2 + Math.sin(t * 2 + i) * u * 0.008, sy2 - u * 0.05 - q * u * 0.08, u * (0.007 + q * 0.01)); } }
     hit(x - tw / 2, top - u * 0.05, tw, base - top + u * 0.05, word('stil'), x);
+    for (const sg of [-1, 1]) { const key = (fx === CF.tableA ? 'A' : third ? 'C' : 'B') + sg; if (cafeVisitorAt(key)) { const cx3 = x + sg * tw * 0.22; c.fillStyle = '#fffdf5'; c.fillRect(cx3 - u * 0.012, top - u * 0.03, u * 0.024, u * 0.022); c.fillStyle = '#e9dcc0'; ell(c, cx3, top - u * 0.008, u * 0.022, u * 0.005); for (let i = 0; i < 2; i++) { const q = (t * 0.5 + i / 2 + sg) % 1; c.fillStyle = 'rgba(255,255,255,' + (0.4 * (1 - q)) + ')'; circ(c, cx3, top - u * 0.04 - q * u * 0.06, u * (0.006 + q * 0.008)); } } }   // their cups
+    for (const sh of seatHits) hit(...sh);
   };
-  const order = [{ y: fy + h * 0.1, f: () => table(CF.tableA, false) }, { y: fy + h * 0.1, f: () => table(CF.tableC, false, true) }, { y: fy + h * 0.1, f: () => table(CF.tableB, true) }, { y: IN.y, f: () => inDraw(c, t) }];
+  const order = [{ y: fy + h * 0.045, f: () => { const v = cafeVisitorAt('counter'); if (!v) return; const vx = (CF.counter - 0.115) * RW, vy = fy + h * 0.045, sc3 = inScale(vy) * 0.95; person(c, vx, vy, NPC[v.npc].look, t, false, sc3, undefined, { side: 0.5 }); hit(vx - u * 0.07, vy - u * 0.32, u * 0.14, u * 0.32, () => talk(NPC[v.npc]), vx); } },   // chatting with Solomiia at the counter
+    { y: fy + h * 0.1, f: () => table(CF.tableA, false) }, { y: fy + h * 0.1, f: () => table(CF.tableC, false, true) }, { y: fy + h * 0.1, f: () => table(CF.tableB, true) }, { y: IN.y, f: () => inDraw(c, t) }];
   order.sort((p, q) => p.y - q.y).forEach(o => o.f());
   c.restore();
   if (day > 0.3) { c.fillStyle = 'rgba(255,248,225,' + (0.4 * wxL) + ')'; for (let i = 0; i < 16; i++) { const q = (t * 0.015 + i * 0.06) % 1; circ(c, ((i * 0.43 + Math.sin(t * 0.2 + i) * 0.03) % 1) * w, h * (0.85 - q * 0.6), 1.2); } }
@@ -8133,7 +8279,7 @@ function update(dt, t, rdt = dt) {
     P.va = cur + P.vav * rdt;
     if (Math.abs(P.vav) < 0.01 && Math.abs(goal - P.va) < 0.003) { P.va = ((goal % TAU) + TAU) % TAU; P.vav = 0; }
     P.wk += ((P.moving ? 1 : 0) - P.wk) * (1 - Math.exp(-rdt * 14)); }
-  villageNight(dt); trainStep(dt);
+  villageNight(dt); trainStep(dt); visitorsStep(dt);
   for (const e of ents) {
     if (e.face !== undefined && !e.route2) turnTo(e, e.face, dt, TURN_SLOW[e.an] || 1);
     if (e.route2 || e.asleep) continue;   // heading home for the night
@@ -8291,6 +8437,7 @@ function drawWorld(t) {
       c.save(); c.translate(x, y - mid * 4); c.scale((view === 3 ? -1 : 1) * (1 - mid * 0.4), 1);
       if (view === 1 || view === 3) personSide(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7); else person(c, 0, 0, ME, t, P.wk, 1, P.step * 3.7, { back: view === 2 ? 1 : 0 });
       c.restore(); continue; }
+    if (e.vis) { drawVisitor(c, x, y, e, t); continue; }
     if (e.kind === 'npc' && e.route2) { const L = Object.assign({}, NPC[e.npc].look, { armR: undefined, armL: undefined }); c.save(); c.translate(x, y); c.scale(e.wface || 1, 1); personSide(c, 0, 0, L, t, 1, 1, e.homeGo * 3.7); c.restore(); continue; }
     if (e.kind === 'npc') {
       const ok = e.npc === 'oksana', a = Math.abs(e.tv || 0), L = NPC[e.npc].look, tt = ok ? t + 19.5 : t + e.x;
