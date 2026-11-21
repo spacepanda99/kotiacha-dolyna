@@ -2234,7 +2234,7 @@ const BRIDGE = { x: 34.6, y: 17.1, a: -0.85 };             // across the stream,
 // The forest edge. forestDepth is how far into the trees a spot is (in tiles; 0 or less is outside). The path
 // leads in from the bridge; FOREST_GLADES are the clearings (x, y, radius); FOREST_SPOTS are kept free of trees
 // for the stump and the animals' patches.
-const TRAIL = [[34.6, 17.1], [35.3, 17.9], [36.5, 19.2], [37.9, 20.5], [39.4, 22.4], [40.3, 24.8], [41.5, 26.9], [42.3, 29.6], [41.6, 32.3], [42.2, 34.6], [43.6, 35.9], [42.4, 37.1], [39.6, 37.0], [37.2, 35.6], [35.6, 33.4], [33.9, 31.6], [32.1, 30.6]];   // ...and back out of the trees to the blue cottage on the bottom road
+const TRAIL = [[34.6, 17.1], [35.3, 17.9], [36.5, 19.2], [37.9, 20.5], [39.4, 22.4], [40.3, 24.8], [41.5, 26.9], [42.3, 29.6], [41.6, 32.3], [42.2, 34.6], [43.6, 35.9], [42.4, 37.1], [39.6, 37.0], [37.2, 35.6], [35.6, 33.4], [33.9, 31.6], [32.75, 30.95]];   // ...and back out of the trees to the blue cottage on the bottom road
 const FOREST_GLADES = [[42.8, 27.6, 2.6], [44.4, 35.2, 2.2], [37.9, 20.5, 1.3]];
 const FOREST_SPOTS = [[43.5, 27.1], [41.9, 26.4], [38.3, 21.0], [41.8, 31.6], [45.2, 34.6], [40.7, 33.7],   // stump, squirrel, hare, fox, deer, hedgehog
   [46.4, 24.2], [39.0, 33.2], [47.2, 31.0], [44.2, 29.6], [38.9, 35.3], [45.0, 21.0],   // hares and leverets, hares, deer and fawn, deer, wild boar, more hares
@@ -2390,7 +2390,7 @@ function add(e) {
     // things to gather
     for (const [x, y] of [[41.2, 26.1], [44.3, 28.9], [41.5, 29.0], [45.6, 36.3], [38.2, 23.2]]) if (free(x, y)) add({ w: 'chornytsi', ic: '@chornytsi', x, y, s: 1.0, give: 'chornytsi', cd: 150, hide: true, only: ['lito'] });
     for (const [x, y] of [[38.6, 20.6], [40.9, 23.9], [40.6, 31.4], [43.0, 34.6]]) if (free(x, y)) add({ w: 'sunytsi', ic: '@sunytsi', x, y, s: 0.8, give: 'sunytsi', cd: 150, hide: true, only: ['vesna', 'lito'] });
-    for (const [x, y] of [[39.8, 21.7], [44.7, 26.4], [42.3, 33.0], [43.3, 36.7], [41.0, 27.9], [46.1, 9.4], [39.6, 30.0]]) if (free(x, y)) add({ w: 'hryb', x, y, s: 0.7, give: 'hryb', cd: 120, hide: true });
+    for (const [x, y] of [[39.8, 21.7], [44.7, 26.4], [42.3, 33.0], [43.3, 36.7], [41.0, 27.9], [46.1, 9.4], [39.6, 30.0]]) if (free(x, y)) { const a0 = add({ w: 'hryb', x, y, s: 0.72, give: 'hryb', cd: 120, hide: true }); for (const [dx, dy, ss] of [[0.27, 0.1, 0.58], [-0.21, 0.15, 0.5]]) if (free(x + dx, y + dy)) add({ w: 'hryb', x: x + dx, y: y + dy, s: ss, give: 'hryb', cd: 120, hide: true, quiet: true, clumpOf: a0 }); }   // mushrooms grow in little clumps of three
     near('yalyna', 4, e => { const x = e.x + 0.55, y = e.y + 0.3; if (free(x, y)) add({ w: 'shyshka', ic: '@shyshka', x, y, s: 0.6, give: 'shyshka', cd: 120, hide: true }); });
     near('dub', 3, e => { const x = e.x - 0.6, y = e.y + 0.32; if (free(x, y)) add({ w: 'zholud', ic: '@zholud', x, y, s: 0.6, give: 'zholud', cd: 120, hide: true, only: ['osin'] }); });
     // a woodpecker drumming on a birch by the path, in the daytime
@@ -2427,8 +2427,8 @@ function add(e) {
     // butterflies over the clearings
     for (const [x, y] of [[42.4, 28.4], [44.0, 26.6], [44.8, 35.9]]) add({ w: 'metelyk', x, y, s: 0.6, kind: 'fly', cx: x, cy: y, ph: x * 1.7 });
     // anything to pick that ended up on or right beside the path is moved off it, into the grass
-    for (const e of ents) if (e.give && e.x > 33 && trailDist(e.x, e.y) < 1.0) {
-      for (let k = 0; k < 24; k++) { const a = k * 0.9, rr2 = 1.0 + (k % 4) * 0.25, nx = e.x + Math.cos(a) * rr2, ny = e.y + Math.sin(a) * rr2 * 0.8; if (trailDist(nx, ny) >= 1.0 && free(nx, ny) && !ents.some(q => q !== e && q.give && Math.hypot(q.x - nx, q.y - ny) < 0.8)) { e.x = nx; e.y = ny; break; } } }
+    for (const e of ents) if (e.give && !e.clumpOf && e.x > 33 && trailDist(e.x, e.y) < 1.0) {
+      for (let k = 0; k < 24; k++) { const a = k * 0.9, rr2 = 1.0 + (k % 4) * 0.25, nx = e.x + Math.cos(a) * rr2, ny = e.y + Math.sin(a) * rr2 * 0.8; if (trailDist(nx, ny) >= 1.0 && free(nx, ny) && !ents.some(q => q !== e && q.clumpOf !== e && q.give && Math.hypot(q.x - nx, q.y - ny) < 0.8)) { const ddx = nx - e.x, ddy = ny - e.y; e.x = nx; e.y = ny; for (const q of ents) if (q.clumpOf === e) { q.x += ddx; q.y += ddy; } break; } } }   // (a clump of mushrooms moves together)
   }
   // Nothing that grows stands on a road or path: any flower, mushroom or crop that would is moved onto the grass
   // beside it (checked at its foot and a little above, since it's drawn upward from there).
@@ -2506,7 +2506,7 @@ function visGo(e, act) {
   e.goal = to; e.vp = visRoute(e.x, e.y, to[0], to[1]);
   if (!e.vp.length) e.vp = [{ x: to[0], y: to[1] }];
 }
-// A route that keeps to the roads and paths: grass costs four times as much to cross as a road, so they only
+// A route that keeps to the roads and paths: grass costs ten times as much to cross as a road, so they only
 // step off the path near where they're going. (Dijkstra over the tile grid; it's small.)
 function visRoute(fx, fy, tx, ty) {
   const sx = Math.floor(fx), sy = Math.floor(fy), gx = Math.floor(tx), gy = Math.floor(ty), N = MW * MH, dist = new Float32Array(N).fill(1e9), prev = new Int32Array(N).fill(-1), done = new Uint8Array(N);
@@ -2516,7 +2516,7 @@ function visRoute(fx, fy, tx, ty) {
     let bi = 0; for (let i = 1; i < open.length; i++) if (dist[open[i]] < dist[open[bi]]) bi = i;
     const cur = open[bi]; open[bi] = open[open.length - 1]; open.pop(); if (done[cur]) continue; done[cur] = 1;
     const cx = cur % MW, cy = (cur / MW) | 0; if (cx === gx && cy === gy) break;
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = cx + dx, ny = cy + dy; if (!ok(nx, ny)) continue; const ni = ny * MW + nx, nd = dist[cur] + (isRoad(nx, ny) ? 1 : 4); if (nd < dist[ni]) { dist[ni] = nd; prev[ni] = cur; open.push(ni); } }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = cx + dx, ny = cy + dy; if (!ok(nx, ny)) continue; const ni = ny * MW + nx, nd = dist[cur] + (isRoad(nx, ny) ? 1 : 10); if (nd < dist[ni]) { dist[ni] = nd; prev[ni] = cur; open.push(ni); } }
   }
   const g0 = gy * MW + gx; if (prev[g0] < 0 && g0 !== s0) { const fb = findPath(tx, ty, null, { x: fx, y: fy }); return fb.length ? fb : [{ x: tx, y: ty }]; }
   const path = []; for (let i = g0; i >= 0 && i !== s0; i = prev[i]) path.unshift({ x: (i % MW) + 0.5, y: ((i / MW) | 0) + 0.5 });
@@ -3075,6 +3075,7 @@ function paintGround() {
   // the forest path and the little one up to the road, over the road edges but under the stream bank
   { const trail = FOREST_TRAIL, rf = seeded(29);
     trail(T * 0.95, 'rgba(60,100,40,.16)'); trail(T * 0.6, '#b39463'); trail(T * 0.42, '#c9ad7a');
+    { const cx = 31.5 * T, cy = 30.3 * T, R = T * 1.45, gr = c.createRadialGradient(cx, cy, 0, cx, cy, R); gr.addColorStop(0, '#ecd9a6'); gr.addColorStop(0.45, 'rgba(230,210,157,.92)'); gr.addColorStop(0.75, 'rgba(212,187,130,.45)'); gr.addColorStop(1, 'rgba(212,187,130,0)'); c.save(); c.translate(cx, cy); c.scale(1, 0.78); c.translate(-cx, -cy); c.fillStyle = gr; c.fillRect(cx - R, cy - R, R * 2, R * 2); c.restore(); }   // where the path reaches the blue cottage: it fades into the worn doorstep
     for (let i = 0; i < 160; i++) { const k = rf() * (TRAIL.length - 1), j = Math.floor(k), f = k - j, [ax, ay] = TRAIL[j], [bx, by] = TRAIL[j + 1]; c.fillStyle = rf() < 0.5 ? 'rgba(140,110,62,.5)' : 'rgba(226,206,160,.55)'; ell(c, (ax + (bx - ax) * f + (rf() - 0.5) * 0.4) * T, (ay + (by - ay) * f + (rf() - 0.5) * 0.4) * T, 1.5 + rf() * 2.5, 1 + rf() * 1.4); }
   }
   // The stream: damp grass, a pebbly bank, then running water, painted before the pond so they join.
@@ -3655,7 +3656,7 @@ function villageNight(dt) {
       if (villageNightT < (HOME_DELAY[who] || 2) + (e.fetch ? 0.7 : 0)) continue;
       const H = dest === 'cafe' ? { x: 18.5, y: 36.25 } : ents.find(q => q.k === NPC_HOME[who]); if (!H) continue;
       if (e.x0 === undefined) { e.x0 = e.x; e.y0 = e.y; }
-      e.gone = dest; e.route2 = findPath(H.x, H.y + 0.5, null, e); e.homeGo = 0;
+      e.gone = dest; e.route2 = visRoute(e.x, e.y, H.x, H.y + 0.5); e.homeGo = 0;   // along the roads, like the visitors
       if (!e.route2.length) { arrive(e); continue; }
     }
     const n = e.route2[0], dx = n.x - e.x, dy = n.y - e.y, d = Math.hypot(dx, dy), sp = (e.fetch ? 1.9 : 1.6) * dt;
