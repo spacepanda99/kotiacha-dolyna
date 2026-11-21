@@ -1078,6 +1078,77 @@ const DRAW = {
     c.fillStyle = '#c9a43a'; c.fillRect(0, -8, 1.2, 4); c.fillRect(3, -8, 1.2, 4);
     c.restore();
   },
+  // A beaver: a round brown body, a flat scaly tail, little ears and orange front teeth; it gnaws when it stops.
+  bobr(c, o) {
+    const t = (o && o.t) || 0, run = o && o.walk, gnaw = run ? 0 : Math.abs(Math.sin(t * 7)) * 1.2, st = run ? Math.sin(t * 9) : 0;
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 0, 0, 26, 4.5);
+    c.fillStyle = '#4a3a2c'; c.save(); c.translate(-16, -4); c.rotate(-0.15 + st * 0.05); ell(c, -8, 0, 11, 4.5); c.strokeStyle = 'rgba(20,14,10,.45)'; c.lineWidth = 0.7; for (let i = -16; i < 0; i += 3) { c.beginPath(); c.moveTo(i, -3.5); c.lineTo(i + 1.5, 3.5); c.stroke(); } c.restore();   // the flat tail
+    c.fillStyle = '#6b4a2e'; for (const [x, k] of [[-6, 1], [8, -1]]) rr(c, x - 2.5 + st * k * 1.5, -6, 5, 6, 2);
+    c.fillStyle = '#7a5434'; ell(c, 0, -12, 15, 10);
+    c.fillStyle = '#8a6240'; ell(c, -2, -15, 9, 5);
+    c.fillStyle = '#7a5434'; circ(c, 13, -15, 7); circ(c, 9, -21, 2.4);
+    c.fillStyle = '#5a3c22'; ell(c, 19, -14, 3, 2.6); c.fillStyle = '#1e140e'; circ(c, 20.5, -15, 1.1); circ(c, 14, -18, 1.3);
+    c.fillStyle = '#e8902a'; c.fillRect(17.5, -11.5 + gnaw, 3.4, 3.4); c.fillStyle = 'rgba(0,0,0,.3)'; c.fillRect(19.1, -11.5 + gnaw, 0.3, 3.4);   // the teeth
+  },
+  // A badger: low and grey, with the black-and-white striped face, trundling about at dusk.
+  borsuk(c, o) {
+    const t = (o && o.t) || 0, run = o && o.walk, st = run ? Math.sin(t * 8) : 0;
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 0, 0, 24, 4.5);
+    c.fillStyle = '#2a2622'; for (const [x, k] of [[-12, 1], [-6, -1], [7, -1], [12, 1]]) rr(c, x - 2.2 + st * k * 1.6, -7, 4.4, 7, 1.5);
+    c.fillStyle = '#8f8a84'; c.beginPath(); c.moveTo(-20, -6); c.bezierCurveTo(-22, -20, 0, -22, 12, -16); c.lineTo(14, -6); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(60,56,52,.5)'; c.lineWidth = 0.8; for (let i = 0; i < 8; i++) { c.beginPath(); c.moveTo(-16 + i * 3.6, -18 + Math.abs(i - 4) * 0.5); c.lineTo(-17 + i * 3.6, -14); c.stroke(); }
+    c.fillStyle = '#2a2622'; ell(c, -2, -8, 13, 3);
+    c.fillStyle = '#f2f0ea'; poly(c, [[10, -18], [26, -10], [24, -7], [10, -8]]);
+    c.fillStyle = '#1e1a16'; poly(c, [[11, -17], [24, -10.5], [23, -9], [11, -13]]); poly(c, [[11, -10], [23, -8], [22, -7], [11, -8]]);
+    c.fillStyle = '#f2f0ea'; ell(c, 12, -17, 3, 2);
+    c.fillStyle = '#1e1a16'; circ(c, 26, -9, 1.6);
+    c.fillStyle = '#8f8a84'; poly(c, [[-20, -9], [-26, -7], [-20, -6]]);
+  },
+  // An elk: tall and dark, long pale legs, a humped back, the hanging bell under the chin and broad flat antlers.
+  los(c, o) {
+    const t = (o && o.t) || 0, run = o && o.walk, st = run ? Math.sin(t * 4.5) : 0, dip = run ? 0 : Math.max(0, Math.sin(t * 0.4)) * 0.5;
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 0, 34, 5.5);
+    for (const [x, k] of [[-18, 1], [-12, -1], [12, -1], [18, 1]]) { c.save(); c.translate(x, -34); c.rotate(st * k * 0.22); c.fillStyle = '#b8a48a'; c.fillRect(-2, 0, 4, 32); c.fillStyle = '#2a1e16'; c.fillRect(-2.2, 30, 4.4, 4); c.restore(); }
+    c.fillStyle = '#3e2a1c'; c.beginPath(); c.moveTo(-24, -34); c.bezierCurveTo(-26, -48, -6, -50, 8, -54); c.bezierCurveTo(18, -56, 22, -46, 20, -34); c.closePath(); c.fill();   // the body and the hump
+    c.fillStyle = '#4e3626'; ell(c, -4, -42, 16, 6);
+    c.save(); c.translate(18, -48); c.rotate(dip);
+    c.fillStyle = '#3e2a1c'; poly(c, [[-4, 2], [4, -10], [10, -8], [6, 4]]);
+    c.fillStyle = '#4a3222'; poly(c, [[6, -10], [24, -4], [25, 2], [18, 3], [6, -2]]); ell(c, 23, 0, 4, 4.5);
+    c.fillStyle = '#3e2a1c'; poly(c, [[10, -1], [13, 10], [16, -1]]);   // the bell
+    c.fillStyle = '#1e140e'; circ(c, 12, -6, 1.4); circ(c, 25.5, 0, 1);
+    c.fillStyle = '#d8c6a0'; for (const sd of [-1, 1]) { c.save(); c.translate(7, -11); c.scale(sd < 0 ? 0.85 : 1, 1); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(sd * 4 - 6, -8, sd * 8 - 14, -12); for (let i = 0; i < 4; i++) c.lineTo(sd * 8 - 14 + i * 4.5, -17 + (i % 2) * 3); c.lineTo(sd * 8 + 2, -9); c.closePath(); c.fill(); c.restore(); }
+    c.restore();
+  },
+  // A jay: a pinkish-brown bird with a flash of blue-and-black barred wing and a black moustache; wings flapping.
+  soika(c, o) {
+    const t = (o && o.t) || 0, fl = Math.sin(t * 16);
+    c.fillStyle = '#d8b8a8'; ell(c, 0, -6, 9, 5.5);
+    c.fillStyle = '#2a2a2e'; poly(c, [[-8, -6], [-17, -4], [-15, -8]]);
+    c.save(); c.translate(-1, -8); c.rotate(-0.4 - fl * 0.7);
+    c.fillStyle = '#c8a898'; ell(c, -4, -4, 8, 3.5); c.fillStyle = '#3a6fc8'; c.fillRect(-7, -6, 5, 3); c.fillStyle = '#1e1e22'; for (let i = 0; i < 3; i++) c.fillRect(-6.5 + i * 1.7, -6, 0.6, 3); c.fillStyle = '#ffffff'; c.fillRect(-11, -5, 3, 2);
+    c.restore();
+    c.fillStyle = '#d8b8a8'; circ(c, 8, -10, 4.5); c.fillStyle = '#f2ece6'; ell(c, 7, -13.5, 3, 1.6);
+    c.fillStyle = '#1e1e22'; poly(c, [[7, -8], [11, -7], [9, -6]]); circ(c, 9.6, -11, 0.9); c.fillStyle = '#3a3a3a'; poly(c, [[12, -11], [16, -10], [12, -9]]);
+  },
+  // A snail: a coiled brown shell and a pale body with its eyes on stalks, very slowly going somewhere.
+  ravlyk(c, o) {
+    const t = (o && o.t) || 0, run = o && o.walk, str = run ? Math.sin(t * 2) * 1.5 : 0;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, 0, 18, 3);
+    c.fillStyle = '#e0cca0'; c.beginPath(); c.moveTo(-14 - str * 0.5, 0); c.quadraticCurveTo(0, -3, 12 + str, -2); c.quadraticCurveTo(16 + str, -8, 12 + str, -10); c.lineTo(8, -6); c.lineTo(-14, -1); c.closePath(); c.fill();
+    c.strokeStyle = '#d4bc8c'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(11 + str, -9); c.lineTo(13 + str, -17); c.moveTo(13 + str, -9); c.lineTo(17 + str, -16); c.stroke();
+    c.fillStyle = '#2a2018'; circ(c, 13 + str, -17.5, 1.3); circ(c, 17 + str, -16.5, 1.3);
+    c.fillStyle = '#9a6a38'; circ(c, -1, -10, 9); c.strokeStyle = '#6b4422'; c.lineWidth = 1.6; c.beginPath(); for (let a = 0; a < Math.PI * 5; a += 0.2) { const r = 8.5 - a * 0.52, x = -1 + Math.cos(a) * r, y = -10 + Math.sin(a) * r; a ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke();
+    c.fillStyle = 'rgba(255,255,255,.3)'; ell(c, -4, -15, 3, 1.6);
+  },
+  // An anthill: a heap of pine needles and twigs, with ants trickling over it.
+  murashnyk(c, o) {
+    const t = (o && o.t) || 0;
+    c.fillStyle = 'rgba(0,0,0,.15)'; ell(c, 0, 0, 36, 6);
+    c.fillStyle = '#7a5530'; c.beginPath(); c.moveTo(-34, 0); c.quadraticCurveTo(-26, -30, 0, -34); c.quadraticCurveTo(26, -30, 34, 0); c.closePath(); c.fill();
+    c.fillStyle = '#93683c'; c.beginPath(); c.moveTo(-26, -4); c.quadraticCurveTo(-18, -26, 0, -30); c.quadraticCurveTo(8, -24, 4, -4); c.closePath(); c.fill();
+    c.strokeStyle = '#5a3c20'; c.lineWidth = 0.9; for (let i = 0; i < 46; i++) { const a = i * 2.4, r = (i % 9) / 9, x = Math.cos(a) * 28 * r, y = -2 - (1 - r * r) * 28 + Math.sin(a) * 3; c.save(); c.translate(x, y); c.rotate(a); c.beginPath(); c.moveTo(-3, 0); c.lineTo(3, 0); c.stroke(); c.restore(); }
+    c.fillStyle = '#1a120c'; for (let i = 0; i < 12; i++) { const q = (t * 0.12 + i / 12) % 1, a = Math.PI * (1.05 + q * 0.9) + i, x = Math.cos(a) * 30 * (0.3 + (i % 3) * 0.3), y = -2 - Math.sin(Math.PI * q) * 26 * (1 - (i % 3) * 0.2); ell(c, x, y, 1.3, 0.8); }
+  },
   // A tawny owl on the stump at night: round and fluffy, blinking big dark eyes now and then, and turning its head.
   sova(c, o) {
     const t = (o && o.t) || 0, blink = (t % 4.2) < 0.16, turn = Math.sin(t * 0.5) * 3;
@@ -2166,7 +2237,8 @@ const BRIDGE = { x: 34.6, y: 17.1, a: -0.85 };             // across the stream,
 const TRAIL = [[34.6, 17.1], [35.3, 17.9], [36.5, 19.2], [37.9, 20.5], [39.4, 22.4], [40.3, 24.8], [41.5, 26.9], [42.3, 29.6], [41.6, 32.3], [42.2, 34.6], [43.6, 35.9], [42.4, 37.1], [39.6, 37.0], [37.2, 35.6], [35.6, 33.4], [33.9, 31.6], [32.1, 30.6]];   // ...and back out of the trees to the blue cottage on the bottom road
 const FOREST_GLADES = [[42.8, 27.6, 2.6], [44.4, 35.2, 2.2], [37.9, 20.5, 1.3]];
 const FOREST_SPOTS = [[43.5, 27.1], [41.9, 26.4], [38.3, 21.0], [41.8, 31.6], [45.2, 34.6], [40.7, 33.7],   // stump, squirrel, hare, fox, deer, hedgehog
-  [46.4, 24.2], [39.0, 33.2], [47.2, 31.0], [44.2, 29.6], [38.9, 35.3], [45.0, 21.0]];   // hares and leverets, hares, deer and fawn, deer, wild boar, more hares
+  [46.4, 24.2], [39.0, 33.2], [47.2, 31.0], [44.2, 29.6], [38.9, 35.3], [45.0, 21.0],   // hares and leverets, hares, deer and fawn, deer, wild boar, more hares
+  [45.6, 16.75], [39.8, 29.6], [47.8, 19.6], [45.9, 33.0], [38.9, 24.1]];   // beaver, badger, elk, anthill, a second squirrel
 function forestDepth(x, y) {
   const w = 0.55 * Math.sin(y * 1.3) + 0.35 * Math.sin(y * 2.9 + 1);
   if (y < 14.6) return y < 3.4 ? -9 : x - (43.6 + 0.5 * Math.sin(y * 1.7));
@@ -2301,7 +2373,7 @@ function add(e) {
     const r = (q => () => (q = (q * 16807) % 2147483647) / 2147483647)(91), trees = [], SPTS = streamPts(0.3);
     const keep = [[37.3, 18.9, 1.0], ...FOREST_SPOTS.map(([x, y]) => [x, y, 0.95])];
     const open = (x, y) => trailDist(x, y) > 1.05 && !FOREST_GLADES.some(([gx, gy, gr]) => Math.hypot(x - gx, (y - gy) * 1.15) < gr);   // checked at the trunk and at the middle of the crown, which stands well above it
-    const clearOf = (x, y) => open(x, y) && open(x, y - 1.6) && open(x - 0.6, y - 1.3) && open(x + 0.6, y - 1.3) && !keep.some(([kx, ky, kr]) => Math.hypot(x - kx, y - ky) < kr) && !SPTS.some(([sx, sy]) => Math.hypot(x - sx, y - sy) < 1.35);
+    const clearOf = (x, y) => open(x, y) && open(x, y - 1.6) && open(x - 0.6, y - 1.3) && open(x + 0.6, y - 1.3) && !keep.some(([kx, ky, kr]) => Math.hypot(x - kx, y - ky) < kr || Math.hypot(x - kx, y - 1.4 - ky) < kr + 0.3) && !SPTS.some(([sx, sy]) => Math.hypot(x - sx, y - sy) < 1.35);
     for (let gy = 3.6; gy < MH - 0.3; gy += 1.12) for (let gx = 33.5; gx < MW - 0.3; gx += 1.22) {
       const x = gx + (r() - 0.5) * 0.85, y = gy + (r() - 0.5) * 0.8, d = forestDepth(x, y);
       if (d <= 0 || r() > Math.min(0.94, 0.42 + d * 0.16) || !clearOf(x, y) || x > MW - 0.35 || y > MH - 0.15) continue;
@@ -2343,6 +2415,13 @@ function add(e) {
     beast('olen', 'olen3', S1[9], { s: 1.45, rx: 0.5, ry: 0.12, sp: 0.2, hrs: [0.26, 0.7] });
     beast('olenia', 'olenia2', [S1[4][0] + 0.7, S1[4][1] + 0.35], { s: 1.0, rx: 0.5, ry: 0.15, sp: 0.3, hrs: [0.26, 0.66] });
     beast('kaban', 'kaban', S1[10], { s: 1.15, rx: 1.0, ry: 0.3, sp: 0.4, hrs: [0.64, 0.4] });
+    beast('bobr', 'bobr', S1[12], { s: 1.6, rx: 0.8, ry: 0.08, sp: 0.35, hrs: [0.5, 0.92], only: ['vesna', 'lito', 'osin'] });   // on the bank of the stream, in the afternoon and evening
+    beast('borsuk', 'borsuk', S1[13], { s: 1.45, rx: 0.8, ry: 0.25, sp: 0.45, hrs: [0.7, 0.36], only: ['vesna', 'lito', 'osin'] });   // out at dusk and through the night
+    beast('los', 'los', S1[14], { s: 2.0, rx: 0.5, ry: 0.12, sp: 0.15, hrs: [0.26, 0.62] });   // deep in the trees in the morning
+    beast('bilka', 'bilka2', S1[16], { s: 0.75, rx: 0.8, ry: 0.2, sp: 1.3, hrs: [0.28, 0.84], only: ['vesna', 'lito', 'osin'] });
+    beast('ravlyk', 'ravlyk', [S1[0][0] + 0.75, S1[0][1] + 0.35], { s: 0.6, rx: 0.3, ry: 0.06, sp: 0.06, only: ['vesna', 'lito', 'osin'] });   // by the stump
+    add({ w: 'murashnyk', ic: '@murashnyk', k: 'murashnyk', x: S1[15][0], y: S1[15][1], s: 1.0, solid: true, only: ['vesna', 'lito', 'osin'] });
+    add({ w: 'soika', ic: '@soika', k: 'soika', x: 42.8, y: 26.2, s: 0.95, kind: 'fly', swoop: true, cx: 42.8, cy: 26.2, ph: 0.6, hrs: [0.3, 0.82] });   // a jay flitting across the big clearing
     // a cuckoo up an oak, calling «ку-ку» through the day
     near('dub', 6, e => { if (ents.some(q => q.k === 'zozulia') || Math.hypot(e.x - 40, e.y - 22) < 4) return; add({ w: 'zozulia', ic: '@zozulia', k: 'zozulia', x: e.x + 0.18, y: e.y + 0.02, s: 0.6, lift: 1.3 + e.s * 0.1, hrs: [0.3, 0.8], only: ['vesna', 'lito'] }); });
     // butterflies over the clearings
