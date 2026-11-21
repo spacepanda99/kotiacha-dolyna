@@ -1000,8 +1000,14 @@ const DRAW = {
     c.fillStyle = '#d43a3a'; c.fillRect(-24, -46, 9, 3);
   },
   bench(c) {
-    c.fillStyle = '#8a5a2b'; c.fillRect(-34, -30, 7, 30); c.fillRect(27, -30, 7, 30);
-    c.fillStyle = '#c08a55'; rr(c, -42, -36, 84, 10, 3); rr(c, -42, -58, 84, 9, 3);
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 46, 6);
+    c.fillStyle = '#7a4b22'; for (const x of [-36, 30]) { c.fillRect(x, -62, 6, 62); }   // back posts, running down into the legs
+    c.fillStyle = '#6b4422'; for (const x of [-34, 28]) c.fillRect(x, -30, 6, 30);
+    c.fillStyle = '#b07a44'; rr(c, -44, -66, 88, 8, 3); rr(c, -44, -54, 88, 7, 3);   // the backrest, two rails
+    c.fillStyle = '#c99463'; c.fillRect(-42, -65, 84, 2); c.fillStyle = '#d43a3a'; c.fillRect(-44, -61, 88, 2.4);
+    c.fillStyle = '#9b6b3c'; for (let x = -30; x <= 30; x += 12) c.fillRect(x - 1.5, -58, 3, 6);   // spindles between them
+    c.fillStyle = '#b07a44'; rr(c, -46, -34, 92, 9, 3); c.fillStyle = '#c99463'; rr(c, -46, -36, 92, 4, 2);   // the seat
+    c.strokeStyle = 'rgba(80,50,25,.35)'; c.lineWidth = 1; for (const x of [-15, 15]) { c.beginPath(); c.moveTo(x, -35); c.lineTo(x, -26); c.stroke(); }
   },
   stork(c, o) {
     const sea = treeSeason(o);
@@ -2491,9 +2497,9 @@ function add(e) {
   rect(3, 27, 6, 29); add({ w: 'khata', ic: '@khata_bohdan', k: 'bohdanHome', x: 5.5, y: 30, s: 3.7 });    // Mr. Bohdan's cottage, bottom left, by his bees
   rect(28, 25, 34, 29); add({ w: 'khata', ic: '@khata_taras', k: 'tarasHome', x: 31.5, y: 30, s: 5.4 });  // the family cottage, bottom right, below the pond: Taras, Oksana and Andriiko live here, so it's bigger
   add({ w: 'khata', ic: '@khata_olia', k: 'oliaHome', x: 28.5, y: 11, s: 3.7 });
-  add({ w: 'kurka', x: 25.4, y: 11.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens
-  add({ w: 'kurka', x: 26.2, y: 12.6, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
-  add({ w: 'piven', x: 25.1, y: 12.95, kind: 'animal', r: 1.2 });
+  add({ w: 'kurka', x: 32.7, y: 10.2, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });   // Grandma's hens, by the tree to the right of her cottage, with the other animals
+  add({ w: 'kurka', x: 33.6, y: 10.9, kind: 'animal', r: 1.1, give: 'yaitse', cd: 90, olias: true });
+  add({ w: 'piven', x: 34.3, y: 10.1, kind: 'animal', r: 1.2 });
   add({ w: 'kit', x: 22.4, y: 12.3, kind: 'animal', r: 0.8 });
   add({ w: 'kit', x: 12.4, y: 13.2, kind: 'animal', r: 1.2, s: 0.9 });
   add({ w: 'kit', x: 17.2, y: 20.6, kind: 'animal', r: 1.2, s: 0.85 });
@@ -2515,7 +2521,7 @@ function add(e) {
   for (const [lx, ly, fl] of [[22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [23.45, 33.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
-  add({ w: 'lavka', ic: '@benchside', x: 35.15, y: 13.4, s: 1.25, solid: true });   // beside the school, facing its porch
+  add({ w: 'lavka', ic: '@bench', x: 28.5, y: 17.15, s: 1.25, solid: true });   // above the lake, looking out over it   // beside the school, facing its porch
   rect(36, 11, 40, 13); add({ w: 'shkola', ic: '@shkola', k: 'school', x: 38.5, y: 14.0, s: 4.0 });
   for (let x = 0; x < MW; x++) for (let y = 0; y <= 2; y++) block(x, y);   // the railway and the platform
   rect(16, 3, 20, 4); add({ w: 'vokzal', ic: '@vokzal', k: 'station', x: 18.5, y: 5.0, s: 4.4 });   // Dolyna station, at the north end of the village road
@@ -2542,7 +2548,7 @@ function add(e) {
   add({ w: 'pysanka', x: STALL.x + 0.8, y: STALL.y + 0.1, s: 0.6 });   // a basket of pysanky on the ground in front of the stall, by the right-hand crate
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
   for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) add({ w: 'pshenytsia', x: 33.35 + k * 0.72, y: 21.7 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 34.1 });   // a square little field of wheat by the pond
-  for (let r = 0; r < 4; r++) for (let k = 0; k < 4; k++) add({ w: 'pshenytsia', x: 32.6 + k * 0.72 + (r % 2) * 0.3, y: 2.9 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 33.8 });   // and a wheat field beside the church
+  for (let r = 0; r < 6; r++) for (let k = 0; k < 8; k++) add({ w: 'pshenytsia', x: 35.4 + k * 0.72 + (r % 2) * 0.3, y: 3.75 + r * 0.72, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 38.1 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
   // (the flag now flies from the station's clock tower, not the fountain)
@@ -2671,7 +2677,7 @@ const VIS_FAV = {   // away from the café: the market, or a bench (how much eac
 };
 const CAFE_CROWD = 2;   // how many of them are in the café at a time (the rest about the village, so it feels lived in)
 // the benches they sit on: where to stand to sit down, where they sit, and which way they face
-const VIS_BENCHES = [{ walk: [16.9, 18.6], at: [16.45, 17.92], face: 1 }, { walk: [21.1, 18.6], at: [21.55, 17.92], face: -1 }, { walk: [35.6, 14.2], at: [35.15, 13.42], face: 1 }];
+const VIS_BENCHES = [{ walk: [16.9, 18.6], at: [16.45, 17.92], face: 1 }, { walk: [21.1, 18.6], at: [21.55, 17.92], face: -1 }, { walk: [29.15, 17.35], at: [28.5, 17.17], face: 1, front: true }];
 const VIS_SPOTS = {
   cafe: [[18.5, 36.75]], lake: [[26.6, 23.7], [31.8, 23.9], [25.6, 21.4]], fountain: [[16.9, 19.0], [21.1, 19.0], [19.0, 16.4]],
   market: [[20.6, 14.6], [22.8, 14.6], [21.7, 15.0], [19.9, 15.1], [20.9, 11.5], [22.6, 11.5]],   // (the last two: round the back of the stall) church: [[30.2, 6.8], [31.4, 7.4]], school: [[37.6, 15.2], [39.4, 15.2]], mill: [[12.6, 6.8], [10.4, 6.9]], station: [[17.4, 6.8], [19.8, 6.8]],
@@ -2856,7 +2862,7 @@ function drawVisitor(c, x, y, e, t) {
   }
   if (e.sit) {
     c.save(); c.beginPath(); c.rect(x - 40, y - 140, 80, 140 - 16); c.clip();
-    c.translate(x, y + 9); c.scale(e.sit.face, 1); person(c, 0, 0, Object.assign({}, L, { armR: 0.5, armL: 0.5 }), t + e.x * 3, false, 1, undefined, { side: 0.65 }); c.restore();
+    c.translate(x, y + 9); c.scale(e.sit.face, 1); person(c, 0, 0, Object.assign({}, L, { armR: 0.5, armL: 0.5 }), t + e.x * 3, false, 1, undefined, { side: e.sit.front ? 0 : 0.65 }); c.restore();
     if (e.npc === 'lesia') { c.fillStyle = '#fffdf5'; rr(c, x + e.sit.face * 4 - 7, y - 33, 14, 10, 1.5); c.strokeStyle = '#8a5a2b'; c.lineWidth = 1; c.strokeRect(x + e.sit.face * 4 - 7, y - 33, 14, 10); c.fillStyle = ['#e86fa0', '#2f6fb0', '#f2c230'][Math.floor(t * 0.5) % 3]; circ(c, x + e.sit.face * 4, y - 28, 2); }   // sketching
     return;
   }
