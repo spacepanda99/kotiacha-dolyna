@@ -280,7 +280,7 @@ window.DATA = {
     { id: "olen", uk: "олень", tr: "O-len'", en: "deer", ic: "@olen", acc: "оленя" },
     { id: "sova", uk: "сова", tr: "so-VA", en: "owl", ic: "@sova", acc: "сову", fact: { uk: "Сова вдень спить, а вночі полює.", en: "The owl sleeps by day and hunts at night." } },
     { id: "diatel", uk: "дятел", tr: "DIA-tel", en: "woodpecker", ic: "@diatel", fact: { uk: "Дятел стукає дзьобом: тук-тук-тук!", en: "The woodpecker knocks with its beak: tuk-tuk-tuk!" } },
-    { id: "bilyhryb", uk: "білий гриб", tr: "BI-lyi HRYB", en: "porcini (white mushroom)", ic: "🍄", acc: "білий гриб", fact: { uk: "Білий гриб — найцінніший з лісових грибів: його вважають царем грибів.", en: "The porcini is the prized king of the forest mushrooms: it grows in threes and is worth two of the common kind." } },
+    { id: "bilyhryb", uk: "білий гриб", tr: "BI-lyi HRYB", en: "porcini (white mushroom)", ic: "@bilyhryb", acc: "білий гриб", fact: { uk: "Білий гриб — найцінніший з лісових грибів: його вважають царем грибів.", en: "The porcini is the prized king of the forest mushrooms: it grows in threes and is worth two of the common kind." } },
     { id: "zaichenia", uk: "зайченя", tr: "zai-che-NIA", en: "baby hare (leveret)", ic: "@zaichenia" },
     { id: "olenia", uk: "оленя", tr: "o-le-NIA", en: "fawn (baby deer)", ic: "@olenia" },
     { id: "kaban", uk: "кабан", tr: "ka-BAN", en: "wild boar", ic: "@kaban", acc: "кабана", fact: { uk: "Кабан риє землю носом, шукаючи жолуді.", en: "The wild boar digs up the ground with its snout, looking for acorns." } },

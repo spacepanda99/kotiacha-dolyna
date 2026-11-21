@@ -1921,6 +1921,25 @@ const DRAW = {
     c.strokeStyle = '#3d86bf'; c.lineWidth = 5; c.beginPath(); c.arc(-26, -26, 14, Math.PI * 0.5, Math.PI * 1.5); c.stroke();
     c.fillStyle = '#3d86bf'; circ(c, 46, -52, 6);
   },
+  // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
+  // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
+  bilyhryb(c) {
+    c.fillStyle = 'rgba(40,60,20,.22)'; ell(c, 0, -2, 34, 7);
+    // the stem: narrow under the cap, bulging toward the foot
+    const st = c.createLinearGradient(-30, 0, 30, 0); st.addColorStop(0, '#d9cdb0'); st.addColorStop(0.45, '#f6f0df'); st.addColorStop(1, '#cbbd9c'); c.fillStyle = st;
+    c.beginPath(); c.moveTo(-14, -54); c.bezierCurveTo(-20, -40, -34, -24, -27, -8); c.quadraticCurveTo(-20, 0, 0, 0); c.quadraticCurveTo(20, 0, 27, -8); c.bezierCurveTo(34, -24, 20, -40, 14, -54); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(150,128,92,.45)'; c.lineWidth = 1.3;   // the fine net on the upper stem
+    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 4.5 - 3, -52); c.quadraticCurveTo(i * 5.5, -44, i * 6.5 + 3, -34); c.stroke(); }
+    for (const y of [-48, -42, -37]) { c.beginPath(); c.moveTo(-15 - (y + 52) * 0.35, y); c.quadraticCurveTo(0, y + 2, 15 + (y + 52) * 0.35, y); c.stroke(); }
+    c.fillStyle = 'rgba(120,96,60,.18)'; ell(c, 12, -16, 9, 12);
+    // the cream sponge under the cap
+    c.fillStyle = '#e8d9a0'; c.beginPath(); c.ellipse(0, -56, 40, 8, 0, 0, Math.PI); c.fill();
+    // the cap: a broad brown dome, darker at the crown, with a pale lip
+    const cp = c.createRadialGradient(-10, -84, 4, 0, -66, 50); cp.addColorStop(0, '#a5693a'); cp.addColorStop(0.6, '#86522b'); cp.addColorStop(1, '#6c3f20'); c.fillStyle = cp;
+    c.beginPath(); c.moveTo(-44, -55); c.bezierCurveTo(-46, -84, -24, -96, 0, -96); c.bezierCurveTo(24, -96, 46, -84, 44, -55); c.quadraticCurveTo(0, -48, -44, -55); c.closePath(); c.fill();
+    c.strokeStyle = '#d8bf8a'; c.lineWidth = 3; c.beginPath(); c.moveTo(-43, -56); c.quadraticCurveTo(0, -49, 43, -56); c.stroke();
+    c.fillStyle = 'rgba(255,236,200,.28)'; ell(c, -14, -82, 13, 6);
+  },
 };
 
 // Draw an icon (emoji or "@drawn") with its bottom centre at (x, y), about s pixels tall.
@@ -4228,9 +4247,13 @@ function churnCard() {
 function take(e) {
   if (e.owner && !e.stealOk) return caught(e);
   e.stealOk = false;
-  S.cd[e.k] = now() + e.cd * 1000;
-  give(e.give, e.yield || 1); blip(880); fxBurst(e.x, e.y - e.s * 0.45, W[e.give].ic);
-  toast(`+${e.yield || 1} ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
+  // a clump (the porcini grow in threes): one pick takes every mushroom in it that is still standing, one each
+  const head = e.clumpOf || e, grp = ents.some(q => q.clumpOf === head) ? ents.filter(q => (q === head || q.clumpOf === head) && ready(q)) : [e];
+  if (!grp.includes(e)) grp.push(e);
+  const n = grp.length > 1 ? grp.length : (e.yield || 1);
+  for (const q of grp) { S.cd[q.k] = now() + q.cd * 1000; fxBurst(q.x, q.y - q.s * 0.45, W[e.give].ic); }
+  give(e.give, n); blip(880);
+  toast(`+${n} ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
   // Grandma calls out from her cottage that you're welcome to her eggs and milk.
   if (e.give !== e.w) wordCard(e.give, e.olias ? { note: `👵 <b>«${NPC.olia.lines.share.uk}»</b>${xl(`<br>${NPC.olia.lines.share.en}`)}`, clips: ['v_olia_share'] } : {}); else closeSheet();
 }
@@ -7774,14 +7797,13 @@ function churchTap(sx, py) {
 // bright inharmonic partials above, each dying away at its own rate (the high ones fast, the hum for many
 // seconds). Every partial is a pair of slightly detuned tones, so the note warbles slowly as real bells do,
 // and the clapper's strike is a short metallic clang. It all rings into a long echo, like a tower over a valley.
-let bellVerb = null, bellComp = null;
+let bellVerb = null, bellComp = null, bellIR = null;
 function bellBus() { if (bellComp) return bellComp; bellComp = actx.createDynamicsCompressor(); bellComp.threshold.value = -18; bellComp.knee.value = 8; bellComp.ratio.value = 4; bellComp.attack.value = 0.003; bellComp.release.value = 0.4; const mk = actx.createGain(); mk.gain.value = 2.6; bellComp.connect(mk); mk.connect(actx.destination); return bellComp; }
 function bellReverb() {
   if (bellVerb) return bellVerb;
   const len = actx.sampleRate * 6, ir = actx.createBuffer(2, len, actx.sampleRate);
   for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6) * (i < actx.sampleRate * 0.02 ? i / (actx.sampleRate * 0.02) : 1); }
-  const cv2 = actx.createConvolver(); cv2.buffer = ir; const wet2 = actx.createGain(); wet2.gain.value = 0.6; cv2.connect(wet2); wet2.connect(bellBus());
-  return (bellVerb = cv2);
+  bellIR = ir; return (bellVerb = true);
 }
 // The bell: one big low note (110 Hz) that is struck and rings on for a long while. What makes it a bell and not a
 // plucked string is its overtones: a bell's don't sit on the string's neat harmonics but a little off them (the
@@ -7791,7 +7813,13 @@ function bellReverb() {
 function churchBell(vol = 1, f0 = 110, len = 1) {
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume();
-    const t0 = actx.currentTime + 0.01, out = actx.createGain(); out.gain.value = vol; out.connect(bellBus()); out.connect(bellReverb());
+    // Each strike has its own compressor and its volume comes AFTER it. (It used to share one compressor with a fixed
+    // boost behind it, which squashed any volume change to a couple of dB, so a "softer" bell sounded just as loud.)
+    const t0 = actx.currentTime + 0.01, out = actx.createGain(), comp = actx.createDynamicsCompressor(), post = actx.createGain();
+    comp.threshold.value = -18; comp.knee.value = 8; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.4; post.gain.value = 2.6 * vol;
+    bellReverb(); const cv2 = actx.createConvolver(); cv2.buffer = bellIR; const wet = actx.createGain(); wet.gain.value = 0.6;
+    out.connect(comp); out.connect(cv2); cv2.connect(wet); wet.connect(comp); comp.connect(post); post.connect(actx.destination);
+    setTimeout(() => { try { post.disconnect(); cv2.disconnect(); } catch (e) {} }, (22 * len + 7) * 1000);
     //  ratio to the hum, loudness, how long it rings (s): the hum carries on longest; the overtones fade sooner
     for (const [r, amp, d0, det] of [[1, 0.85, 22, 0.25], [2.0, 0.42, 13, 0.6], [2.4, 0.3, 9, 0.7], [3.0, 0.14, 6, 0.8], [4.0, 0.26, 7, 1.0], [5.05, 0.09, 3, 1.2], [5.4, 0.07, 2.4, 1.3]]) for (const sd of [-1, 1]) {
       const o = actx.createOscillator(), g = actx.createGain(), d = d0 * len; o.type = 'sine'; o.frequency.value = f0 * r + sd * det * 0.5;
@@ -7805,7 +7833,7 @@ function churchBell(vol = 1, f0 = 110, len = 1) {
   } catch (e) {}
 }
 // Pulling the rope: the one bell, rung twice.
-function churchPeal(vol = 1) { churchBell(vol); setTimeout(() => churchBell(vol), 3500); }
+function churchPeal(vol = 0.45) { churchBell(vol); setTimeout(() => churchBell(vol), 3500); }
 function churchRope() { if (nowT - CHURCH.bell < 3.8) return; CHURCH.bell = nowT; duck = 0.75; setTimeout(() => { duck = 1; }, 10000); churchPeal(); toast('🔔 Дзень-дзелень!' + xlT(' · The bell rings out over the valley.'), 2600); }
 // The only thing to do at the altar: put a few coins in the box. It counts what you've given, and that's all.
 function donateCard() {
@@ -9111,7 +9139,7 @@ function dayTick(dt) {
   C.ev = C.ev || {};
   // Noon: the church bell rings out over the village three times, louder the nearer you are to the church.
   if (was < 0.5 && C.t >= 0.5 && !C.ev.noon) { C.ev.noon = 1;
-    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = 0.4;   // the noon bell rings out through the whole village (a little softer than full)
+    const d = Math.hypot(P.x - 30.5, P.y - 6), vol = Math.max(0.12, 0.35 - d * 0.012);   // heard all over the village, softer the farther from the church
     duck = 0.75; setTimeout(() => { duck = 1; }, 14000);   // the music plays on, just a little softer
     for (let i = 0; i < 3; i++) setTimeout(() => churchBell(vol, 147), 300 + i * 4000);   // pitched a fourth above the big bell's 110 Hz   // three slow strokes of the big bell (this line had slipped into the comment above, so noon was silent)
     S.bellT = nowT; toast('🔔 ' + (stage() < 3 ? 'Noon: the church bell rings.' : 'Дзень-дзелень!'), 3000); }
