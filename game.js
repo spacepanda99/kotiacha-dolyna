@@ -843,14 +843,22 @@ const DRAW = {
   tree(c, o) {
     const sea = treeSeason(o), P = treePal(sea, o);
     if (sea === 'osin') fallenLeaves(c, o, 46);
-    c.fillStyle = '#7a4e26'; poly(c, [[-10, 0], [-6, -46], [6, -46], [10, 0]]);
+    c.fillStyle = '#6b4422'; poly(c, [[-14, 0], [-9, -4], [-6, -46], [6, -46], [9, -4], [14, 0]]);   // the trunk, flaring into its roots
     c.fillStyle = '#93602f'; poly(c, [[-6, 0], [-3.5, -46], [2.5, -46], [1.5, 0]]);
+    c.strokeStyle = 'rgba(60,35,15,.4)'; c.lineWidth = 0.9; for (const [x0, y0, x1, y1] of [[-4, -6, -3, -18], [3, -12, 2.4, -26], [-2.5, -24, -2, -38], [4, -32, 3, -42]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
+    c.fillStyle = 'rgba(30,50,20,.35)'; c.fillRect(-6, -46, 12, 7);   // shade under the crown
     c.save(); c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40);
     if (sea === 'zyma') { bareBranches(c, 1); c.restore(); return; }
+    const v = (o && o.v) || 0, hv = k => { const q = Math.sin((v + k) * 78.233) * 43758.5; return q - Math.floor(q); };
     c.fillStyle = P[0]; circ(c, 0, -62, 33); circ(c, -23, -47, 20); circ(c, 23, -47, 20);
+    for (let i = 0; i < 16; i++) { const a = Math.PI * (0.95 + i / 15 * 1.1) + (hv(i) - 0.5) * 0.12, R = 33 + (i % 3) * 2; circ(c, Math.cos(a) * R * 0.95, -60 + Math.sin(a) * R * 0.92, 6 + hv(i + 20) * 3); }   // the leafy edge, in little clusters
     c.fillStyle = P[1]; circ(c, 0, -67, 32); circ(c, -22, -52, 19); circ(c, 22, -52, 19);
+    for (let i = 0; i < 9; i++) { const a = Math.PI * (1.1 + i / 8 * 0.8), R = 26; circ(c, Math.cos(a) * R, -66 + Math.sin(a) * R * 0.9, 5.5 + hv(i + 40) * 2.5); }
     c.fillStyle = P[2]; circ(c, -8, -77, 16); circ(c, 14, -63, 11); circ(c, -23, -57, 9);
-    c.fillStyle = P[3]; circ(c, -11, -82, 7); circ(c, 12, -67, 4.5);
+    for (let i = 0; i < 6; i++) circ(c, -16 + hv(i + 60) * 26, -86 + hv(i + 70) * 22, 3.5 + hv(i + 80) * 2);
+    c.fillStyle = P[3]; circ(c, -11, -82, 7); circ(c, 12, -67, 4.5); circ(c, -24, -60, 3.5);
+    c.fillStyle = 'rgba(20,50,25,.2)'; c.beginPath(); c.ellipse(4, -38, 30, 9, 0, 0, Math.PI); c.fill();   // the shaded underside of the crown
+    c.fillStyle = 'rgba(20,50,25,.22)'; for (let i = 0; i < 7; i++) circ(c, -20 + hv(i + 90) * 44, -58 + hv(i + 100) * 22, 2.2);   // deep gaps between the leaves
     if (sea === 'osin') autumnSpeckle(c, o); if (sea === 'vesna') blossom(c, o, 1);
     c.restore();
   },
@@ -886,50 +894,98 @@ const DRAW = {
   // A white village church: a tall middle with a golden onion dome on a drum, two lower wings with blue
   // domes, arched windows and a wooden door, gold crosses on top.
   church(c) {
-    c.save(); c.scale(0.77, 0.77);   // drawn 130 tall, fitted into the 100-unit icon box
-    const wall = '#fffaf0', shade = '#ebe2cf', trim = '#c9b98f';
+    // drawn once into its own canvas (a lot of detail), then copied each frame
+    if (!DRAW._churchCv) { const K = 5, W0 = -66, H0 = -130, CW = 132, CH = 136, cv = document.createElement('canvas'); cv.width = CW * K; cv.height = CH * K; const g = cv.getContext('2d'); g.scale(K, K); g.translate(-W0, -H0); DRAW._churchPaint(g); DRAW._churchCv = { cv, W0, H0, CW, CH }; }
+    const C = DRAW._churchCv; c.drawImage(C.cv, C.W0, C.H0, C.CW, C.CH);
+  },
+  // A Ukrainian church in the Cossack-baroque way: whitewashed walls on a stone plinth, pilasters and moulded
+  // cornices, a painted ornament band, framed arched windows with keystones, a pediment over the carved double
+  // door with an icon above it, and three ribbed onion domes on windowed drums, the middle one gilded.
+  _churchPaint(c) {
+    c.save(); c.scale(0.77, 0.77);   // drawn about 140 tall, fitted into the 100-unit icon box
+    const wall = '#fffaf0', shade = '#e9dfca', deep = '#d9cdb2', trim = '#c9b98f', gold = '#e3a91f', goldHi = '#fbe07a', blue = '#2f6fb8', blueD = '#245a96', blueHi = '#6aa3e0';
     const arch = (x, y, w, h) => { c.beginPath(); c.moveTo(x - w / 2, y); c.lineTo(x - w / 2, y - h + w / 2); c.arc(x, y - h + w / 2, w / 2, Math.PI, 0); c.lineTo(x + w / 2, y); c.closePath(); c.fill(); };
-    const onion = (x, yb, w, h, col, hi) => {
-      c.fillStyle = col; c.beginPath(); c.moveTo(x - w * 0.42, yb);
-      c.bezierCurveTo(x - w * 0.78, yb - h * 0.38, x - w * 0.5, yb - h * 0.72, x, yb - h);
-      c.bezierCurveTo(x + w * 0.5, yb - h * 0.72, x + w * 0.78, yb - h * 0.38, x + w * 0.42, yb); c.closePath(); c.fill();
-      c.fillStyle = hi; c.beginPath(); c.moveTo(x - w * 0.3, yb - h * 0.12);
-      c.bezierCurveTo(x - w * 0.52, yb - h * 0.4, x - w * 0.3, yb - h * 0.66, x - w * 0.04, yb - h * 0.86);
-      c.bezierCurveTo(x - w * 0.2, yb - h * 0.6, x - w * 0.28, yb - h * 0.36, x - w * 0.12, yb - h * 0.12); c.closePath(); c.fill();
+    const window2 = (x, y, w, h) => {   // a framed arched window: moulded surround, keystone, sill, glass with a cross of glazing bars
+      c.fillStyle = trim; arch(x, y + 1.5, w + 4.5, h + 4); c.fillStyle = wall; arch(x, y + 0.5, w + 2, h + 2);
+      c.fillStyle = '#3a6fa8'; arch(x, y, w, h); const gg = c.createLinearGradient(0, y - h, 0, y); gg.addColorStop(0, '#d8f0ff'); gg.addColorStop(1, '#8fc4ea'); c.fillStyle = gg; arch(x, y - 0.8, w - 1.6, h - 1.6);
+      c.fillStyle = '#3a6fa8'; c.fillRect(x - 0.45, y - h + 1, 0.9, h - 1.5); c.fillRect(x - w / 2 + 0.8, y - h * 0.45, w - 1.6, 0.8);
+      c.fillStyle = 'rgba(255,255,255,.6)'; c.fillRect(x - w / 2 + 1.4, y - h + w / 2 + 0.5, 0.9, h * 0.45);
+      c.fillStyle = trim; poly(c, [[x - 1.6, y - h - 2], [x + 1.6, y - h - 2], [x + 1.1, y - h + 1], [x - 1.1, y - h + 1]]);   // keystone
+      c.fillStyle = deep; c.fillRect(x - w / 2 - 2.5, y + 1, w + 5, 1.6);   // sill
     };
-    const cross = (x, y, k) => {
-      c.fillStyle = '#e8b628'; c.fillRect(x - 1.3 * k, y - 15 * k, 2.6 * k, 15 * k); c.fillRect(x - 5 * k, y - 11.5 * k, 10 * k, 2.2 * k);
-      c.save(); c.translate(x, y - 4.5 * k); c.rotate(-0.35); c.fillRect(-4 * k, -1 * k, 8 * k, 2 * k); c.restore();
-      c.fillStyle = '#f7d65a'; circ(c, x, y, 2 * k);
+    const cornice = (x, y, w) => { c.fillStyle = trim; c.fillRect(x - w / 2 - 2, y - 1, w + 4, 2.4); c.fillStyle = wall; c.fillRect(x - w / 2 - 1, y - 2.6, w + 2, 1.8); c.fillStyle = 'rgba(120,96,60,.22)'; c.fillRect(x - w / 2, y + 1.4, w, 1.6); };
+    const pilasters = (x, y, w, h) => { for (const sx of [-1, 1]) { const px = x + sx * (w / 2 - 2.2); c.fillStyle = sx < 0 ? '#fffdf7' : shade; c.fillRect(px - 2.2, y - h, 4.4, h); c.fillStyle = trim; c.fillRect(px - 2.8, y - h, 5.6, 1.4); c.fillRect(px - 2.8, y - 2.5, 5.6, 1.4); } };
+    const band = (x, y, w) => {   // the painted ornament: a blue band with golden diamonds and red dots
+      c.fillStyle = '#3a6fa8'; c.fillRect(x - w / 2, y, w, 3.2);
+      for (let k = x - w / 2 + 2.5; k < x + w / 2 - 1; k += 5) { c.fillStyle = goldHi; poly(c, [[k, y + 0.3], [k + 1.4, y + 1.6], [k, y + 2.9], [k - 1.4, y + 1.6]]); c.fillStyle = '#d43a3a'; circ(c, k + 2.5, y + 1.6, 0.55); }
     };
-    // side wings
+    const onion = (x, yb, w, h, col, colD, hi) => {
+      const path = () => { c.beginPath(); c.moveTo(x - w * 0.42, yb); c.bezierCurveTo(x - w * 0.8, yb - h * 0.38, x - w * 0.5, yb - h * 0.72, x, yb - h); c.bezierCurveTo(x + w * 0.5, yb - h * 0.72, x + w * 0.8, yb - h * 0.38, x + w * 0.42, yb); c.closePath(); };
+      const gr = c.createLinearGradient(x - w * 0.6, 0, x + w * 0.6, 0); gr.addColorStop(0, hi); gr.addColorStop(0.35, col); gr.addColorStop(1, colD); c.fillStyle = gr; path(); c.fill();
+      c.save(); path(); c.clip(); c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = 0.7;   // its ribs, curving to the tip
+      for (const f of [-0.62, -0.32, 0, 0.32, 0.62]) { c.beginPath(); c.moveTo(x + f * w * 0.42, yb); c.bezierCurveTo(x + f * w * 0.8, yb - h * 0.38, x + f * w * 0.5, yb - h * 0.72, x, yb - h); c.stroke(); }
+      c.fillStyle = 'rgba(255,255,255,.45)'; c.beginPath(); c.ellipse(x - w * 0.2, yb - h * 0.45, w * 0.07, h * 0.18, -0.25, 0, 7); c.fill(); c.restore();
+      c.fillStyle = colD; c.fillRect(x - w * 0.46, yb - 0.6, w * 0.92, 2.2);   // the collar where it meets the drum
+      c.fillStyle = gold; c.fillRect(x - 0.8, yb - h - 3, 1.6, 3); circ(c, x, yb - h - 3.4, 1.4);   // the finial
+    };
+    const cross = (x, y, k) => {   // an Orthodox cross on a crescent
+      c.fillStyle = gold; c.fillRect(x - 1.2 * k, y - 16 * k, 2.4 * k, 16 * k); c.fillRect(x - 5 * k, y - 11.5 * k, 10 * k, 2 * k); c.fillRect(x - 3 * k, y - 14.6 * k, 6 * k, 1.5 * k);
+      c.save(); c.translate(x, y - 4.5 * k); c.rotate(-0.35); c.fillRect(-3.8 * k, -0.9 * k, 7.6 * k, 1.8 * k); c.restore();
+      c.strokeStyle = gold; c.lineWidth = 1.4 * k; c.beginPath(); c.arc(x, y - 1.5 * k, 3.4 * k, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
+      c.fillStyle = goldHi; c.fillRect(x - 0.5 * k, y - 15.5 * k, 0.8 * k, 14 * k);
+    };
+    const parapet = (x, yb, w) => {   // a flat roof's edge: a low wall of little balusters between a rail and a plinth
+      c.fillStyle = wall; c.fillRect(x - w / 2, yb - 6, w, 6); c.fillStyle = 'rgba(120,96,60,.14)'; c.fillRect(x - w / 2, yb - 6, w, 6);
+      c.fillStyle = wall; for (let k = x - w / 2 + 2; k < x + w / 2 - 1; k += 3.2) { c.fillRect(k, yb - 5, 1.6, 4); }
+      c.fillStyle = trim; c.fillRect(x - w / 2 - 0.5, yb - 7, w + 1, 1.8); c.fillRect(x - w / 2, yb - 1.2, w, 1.2);
+      for (const sx of [-1, 1]) { c.fillStyle = wall; c.fillRect(x + sx * (w / 2 - 1.5) - 1.5, yb - 8.5, 3, 8.5); c.fillStyle = trim; c.fillRect(x + sx * (w / 2 - 1.5) - 2, yb - 9.5, 4, 1.4); }   // posts at the corners
+    };
+    const drum = (x, yb, w, h, wins) => {   // the round drum a dome sits on: walls, little arched windows, a cornice
+      c.fillStyle = wall; c.fillRect(x - w / 2, yb - h, w, h); c.fillStyle = shade; c.fillRect(x + w * 0.2, yb - h, w * 0.3, h);
+      c.fillStyle = 'rgba(120,96,60,.12)'; c.fillRect(x - w / 2, yb - h, w * 0.12, h);
+      for (let i = 0; i < wins; i++) { const wx = x - w / 2 + (i + 0.5) * w / wins; c.fillStyle = '#3a6fa8'; arch(wx, yb - h * 0.25, w / wins * 0.42, h * 0.55); c.fillStyle = 'rgba(200,232,255,.8)'; arch(wx, yb - h * 0.27, w / wins * 0.26, h * 0.45); }
+      cornice(x, yb - h, w); c.fillStyle = trim; c.fillRect(x - w / 2 - 1, yb - 1.5, w + 2, 1.5);
+    };
+    // the ground under it: a stone plinth all along, and three steps up to the door
+    c.fillStyle = '#b9b2a4'; c.fillRect(-52, -8, 104, 8); c.fillStyle = '#a49c8d'; for (let x = -51; x < 51; x += 8.5) rr(c, x, -7.2, 7.4, 3.2, 1); for (let x = -47; x < 51; x += 8.5) rr(c, x, -3.6, 7.4, 3.2, 1);
+    c.fillStyle = '#cfc8b9'; c.fillRect(-52, -9, 104, 1.6);
+    // the side wings, each with its own little dome
     for (const sd of [-1, 1]) {
-      const x = sd * 33;
-      c.fillStyle = wall; c.fillRect(x - 13, -40, 26, 40);
-      c.fillStyle = shade; c.fillRect(sd > 0 ? x + 6 : x - 13, -40, 7, 40);
-      c.fillStyle = '#2f6fb8'; poly(c, [[x - 16, -39], [x + 16, -39], [x + 11, -47], [x - 11, -47]]);
-      c.fillStyle = wall; c.fillRect(x - 5, -56, 10, 10); c.fillStyle = trim; c.fillRect(x - 6, -47, 12, 2);
-      onion(x, -55, 14, 15, '#2f6fb8', '#6aa3e0'); cross(x, -70, 0.7);
-      c.fillStyle = '#3a6fa8'; arch(x, -12, 9, 18); c.fillStyle = '#bfe3fa'; arch(x, -13.5, 6.5, 15);
-      c.fillStyle = 'rgba(255,255,255,.7)'; c.fillRect(x - 0.5, -26, 1, 12);
+      const x = sd * 34, wW = 28, wH = 46;
+      c.fillStyle = wall; c.fillRect(x - wW / 2, -8 - wH, wW, wH); c.fillStyle = sd > 0 ? shade : 'rgba(255,255,255,0)'; c.fillRect(sd > 0 ? x + wW / 2 - 8 : x - wW / 2, -8 - wH, 8, wH);
+      if (sd < 0) { c.fillStyle = 'rgba(120,96,60,.1)'; c.fillRect(x + wW / 2 - 3, -8 - wH, 3, wH); }
+      pilasters(x, -8, wW, wH); band(x, -8 - wH + 3, wW - 6);
+      window2(x, -17, 9, 20);
+      cornice(x, -8 - wH, wW);
+      drum(x, -8 - wH - 2, 12, 9, 2); parapet(x, -8 - wH - 2, wW);
+      onion(x, -8 - wH - 11.5, 15, 17, blue, blueD, blueHi); cross(x, -8 - wH - 32, 0.62);
     }
-    // the middle: nave, gable, drum, golden dome
-    c.fillStyle = wall; c.fillRect(-21, -62, 42, 62);
-    c.fillStyle = shade; c.fillRect(11, -62, 10, 62);
-    c.fillStyle = '#2f6fb8'; poly(c, [[-25, -60], [25, -60], [0, -76]]);
-    c.fillStyle = '#245a96'; poly(c, [[0, -76], [25, -60], [12, -60]]);
-    c.fillStyle = wall; c.fillRect(-10, -88, 20, 20); c.fillStyle = shade; c.fillRect(4, -88, 6, 20);
-    c.fillStyle = '#3a6fa8'; for (const x of [-5, 3]) arch(x, -73, 4, 10);
-    c.fillStyle = trim; c.fillRect(-12, -89, 24, 2.5);
-    onion(0, -88, 24, 26, '#e3a91f', '#fbe07a'); cross(0, -114, 1);
-    // round window over the door, the door itself, the base
-    c.fillStyle = '#3a6fa8'; circ(c, 0, -46, 5); c.fillStyle = '#bfe3fa'; circ(c, 0, -46, 3.6);
-    c.fillStyle = '#c9a65a'; arch(0, 0, 18, 30);
-    c.fillStyle = '#7a4a24'; arch(0, 0, 14.5, 27);
-    c.fillStyle = '#5e3818'; c.fillRect(-0.6, -21, 1.2, 21);
-    c.fillStyle = '#e8b628'; circ(c, -2.5, -11, 1.2); circ(c, 2.5, -11, 1.2);
-    c.fillStyle = '#d6cdb6'; c.fillRect(-48, -5, 96, 5);
-    c.fillStyle = '#c9a65a'; c.fillRect(-21, -63, 42, 2); for (const x of [-33, 33]) c.fillRect(x - 13, -41, 26, 2);
+    // the middle: the nave with its pediment, then a two-tier drum and the golden dome
+    const nW = 46, nH = 70, top = -8 - nH;
+    c.fillStyle = wall; c.fillRect(-nW / 2, top, nW, nH); c.fillStyle = shade; c.fillRect(nW / 2 - 11, top, 11, nH); c.fillStyle = 'rgba(120,96,60,.1)'; c.fillRect(-nW / 2, top, 3, nH);
+    pilasters(0, -8, nW, nH);
+    c.fillStyle = trim; c.fillRect(-nW / 2 - 1, top + 34, nW + 2, 1.6);   // the string course between the storeys
+    band(0, top + 3, nW - 8);
+    cornice(0, top, nW);
+    // the upper storey: a round window between the two arched ones
+    c.fillStyle = trim; circ(c, 0, top + 18, 4.4); c.fillStyle = '#3a6fa8'; circ(c, 0, top + 18, 3.4); c.fillStyle = '#bfe3fa'; circ(c, 0, top + 18, 2.5); c.fillStyle = '#3a6fa8'; c.fillRect(-0.4, top + 15.5, 0.8, 5); c.fillRect(-2.5, top + 17.6, 5, 0.8);
+    // the upper storey: two arched windows
+    for (const x of [-11, 11]) window2(x, top + 30, 7, 16);
+    // the lower storey: the door in a deep arched portal with an icon above it
+    c.fillStyle = trim; arch(0, -8, 22, 36); c.fillStyle = deep; arch(0, -8, 19, 34);
+    c.fillStyle = '#6b3f1e'; arch(0, -8, 15.5, 30);
+    c.fillStyle = '#7d4b24'; c.fillRect(-7.2, -30, 6.8, 22); c.fillRect(0.4, -30, 6.8, 22);   // the two leaves
+    c.strokeStyle = 'rgba(40,20,8,.5)'; c.lineWidth = 0.6; for (const x0 of [-7.2, 0.4]) { c.strokeRect(x0 + 1, -28.5, 4.8, 8.5); c.strokeRect(x0 + 1, -18.5, 4.8, 8.5); }
+    c.fillStyle = gold; circ(c, -1.6, -18, 0.9); circ(c, 1.6, -18, 0.9);
+    c.fillStyle = gold; arch(0, -40, 9.5, 11); c.fillStyle = '#2f5f9e'; arch(0, -40.6, 7.6, 9.6);   // the icon: a gilded frame, a blue ground
+    c.fillStyle = goldHi; circ(c, 0, -46.5, 2.2); c.fillStyle = '#e8bf9e'; circ(c, 0, -46.3, 1.3); c.fillStyle = '#b53a2c'; poly(c, [[-2.4, -40.8], [2.4, -40.8], [1.5, -44.6], [-1.5, -44.6]]);
+    // the front steps, each catching the light on its top
+    for (let i = 0; i < 3; i++) { c.fillStyle = ['#cfc8b9', '#c2baa9', '#b5ad9b'][i]; c.fillRect(-14 + i * 2, -8 + i * 2.7 - 0.0, 28 - i * 4, 2.7); }
+    c.fillStyle = '#d6cfc0'; c.fillRect(-15, -0.5, 30, 0.5);
+    // the drums and the golden dome
+    drum(0, top - 2, 22, 12, 3); parapet(0, top - 2, nW);   // the big drum stands on the flat roof, the parapet in front of its foot
+    drum(0, top - 14, 16, 8, 2);
+    onion(0, top - 22, 26, 28, gold, '#b98418', goldHi); cross(0, top - 54, 1);
     c.restore();
   },
   // A wooden Ukrainian windmill: a tapering plank tower on a stone footing, a shingled cap, a little door
@@ -939,15 +995,27 @@ const DRAW = {
     c.fillStyle = '#9d988f'; c.fillRect(-27, -8, 54, 8);
     c.fillStyle = '#b8b3a9'; for (const [x, w] of [[-26, 12], [-13, 14], [2, 11], [14, 12]]) rr(c, x, -8, w, 6, 2);
     c.fillStyle = '#b07a45'; poly(c, [[-24, -7], [24, -7], [15, -62], [-15, -62]]);
-    c.strokeStyle = 'rgba(90,55,25,.35)'; c.lineWidth = 1.1;
-    for (let i = -3; i <= 3; i++) { c.beginPath(); c.moveTo(i * 6.6, -7); c.lineTo(i * 4.1, -62); c.stroke(); }
+    // the tail pole: a long beam from the cap down to the ground, for turning the sails into the wind
+    c.strokeStyle = '#6b4224'; c.lineWidth = 3.2; c.lineCap = 'round'; c.beginPath(); c.moveTo(12, -60); c.lineTo(40, -2); c.stroke(); c.strokeStyle = '#8a5a2b'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(12.6, -60); c.lineTo(40.4, -3); c.stroke();
+    c.fillStyle = '#6b4224'; c.fillRect(36, -4, 9, 4);
+    c.fillStyle = '#b07a45'; poly(c, [[-24, -7], [24, -7], [15, -62], [-15, -62]]);
+    c.strokeStyle = 'rgba(90,55,25,.35)'; c.lineWidth = 0.8;
+    for (let y = -11; y > -61; y -= 4) { const w = 24 - (-7 - y) * (9 / 55); c.beginPath(); c.moveTo(-w, y); c.lineTo(w, y); c.stroke(); }   // the boards
+    c.strokeStyle = 'rgba(90,55,25,.25)'; for (let i = -2; i <= 2; i++) { c.beginPath(); c.moveTo(i * 9.5, -7); c.lineTo(i * 6, -62); c.stroke(); }
     c.fillStyle = 'rgba(0,0,0,.13)'; poly(c, [[9, -7], [24, -7], [15, -62], [6, -62]]);
-    c.fillStyle = '#8a5a2b'; poly(c, [[-21, -33], [21, -33], [20.5, -30], [-20.5, -30]]); poly(c, [[-16, -60], [16, -60], [15.6, -57], [-15.6, -57]]);
+    c.fillStyle = '#8a5a2b'; poly(c, [[-16, -60], [16, -60], [15.6, -57], [-15.6, -57]]);
+    // the gallery: a plank walkway round the tower on brackets, with a railing
+    c.fillStyle = '#7a4a24'; c.fillRect(-27, -33, 54, 3.5); c.fillStyle = '#9b6b3c'; c.fillRect(-27, -34, 54, 1.4);
+    c.strokeStyle = '#6b4224'; c.lineWidth = 1.4; for (const x of [-23, 23]) { c.beginPath(); c.moveTo(x, -30); c.lineTo(x * 0.84, -24); c.stroke(); }
+    c.fillStyle = '#7a4a24'; c.fillRect(-27, -43, 54, 1.6); for (let x = -26; x <= 26; x += 4.3) c.fillRect(x - 0.6, -42, 1.2, 8.5);
     // door, steps, window
     c.fillStyle = '#7a4a24'; rr(c, -6.5, -24, 13, 17, [6.5, 6.5, 0, 0]); c.fillStyle = '#e8b628'; circ(c, 3.5, -15, 1.1);
     c.fillStyle = '#8a7f70'; c.fillRect(-9, -7, 18, 3); c.fillStyle = '#a89e8e'; c.fillRect(-7, -9, 14, 2.5);
-    c.fillStyle = '#5e3818'; c.fillRect(-5.5, -50, 11, 11); c.fillStyle = '#ffe9a8'; c.fillRect(-4, -48.5, 8, 8);
-    c.fillStyle = '#5e3818'; c.fillRect(-0.5, -48.5, 1, 8); c.fillRect(-4, -45, 8, 1);
+    c.fillStyle = '#5e3818'; c.fillRect(-5.5, -54, 11, 10); c.fillStyle = '#ffe9a8'; c.fillRect(-4, -52.5, 8, 7);
+    c.fillStyle = '#5e3818'; c.fillRect(-0.5, -52.5, 1, 7); c.fillRect(-4, -49.5, 8, 1);
+    c.fillStyle = '#3f7a46'; c.fillRect(-9.5, -54, 3.8, 10); c.fillRect(5.7, -54, 3.8, 10); c.fillStyle = 'rgba(255,255,255,.25)'; for (const x of [-9, 6.2]) for (let y = -52.5; y < -45; y += 2.4) c.fillRect(x, y, 2.8, 0.8);   // shutters
+    // a sack of grain by the door
+    c.fillStyle = '#d9c08a'; c.beginPath(); c.moveTo(11, -7); c.quadraticCurveTo(9, -16, 13, -18); c.lineTo(17, -18); c.quadraticCurveTo(21, -16, 19, -7); c.closePath(); c.fill(); c.fillStyle = '#b89c64'; c.fillRect(12.2, -18.5, 5.6, 1.6);
     // shingled cap
     c.fillStyle = '#6b4224'; c.beginPath(); c.moveTo(-20, -60); c.quadraticCurveTo(-17, -80, 0, -88); c.quadraticCurveTo(17, -80, 20, -60); c.closePath(); c.fill();
     c.strokeStyle = 'rgba(40,20,5,.35)'; c.lineWidth = 1;
@@ -1446,9 +1514,17 @@ const DRAW = {
     }
   },
   plot(c) {
-    c.fillStyle = '#8a5a3c'; rr(c, -46, -72, 92, 64, 10);
-    c.strokeStyle = '#6f452c'; c.lineWidth = 3;
-    for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(-36, -58 + i * 18); c.lineTo(36, -58 + i * 18); c.stroke(); }
+    c.fillStyle = 'rgba(40,30,10,.25)'; rr(c, -47, -70, 96, 66, 10);
+    c.fillStyle = '#9b6b3c'; rr(c, -48, -74, 96, 66, 9); c.fillStyle = '#b4834f'; rr(c, -48, -74, 96, 4, 3);   // the plank edging
+    c.strokeStyle = 'rgba(70,40,15,.45)'; c.lineWidth = 0.8; for (const x of [-16, 16]) { c.beginPath(); c.moveTo(x, -74); c.lineTo(x, -70); c.stroke(); }
+    c.fillStyle = '#6e4630'; rr(c, -43, -70, 86, 58, 7);   // the soil
+    for (let i = 0; i < 4; i++) { const y = -62 + i * 14;   // raised rows, lit along their tops
+      c.fillStyle = '#5a3824'; c.beginPath(); c.ellipse(0, y + 5, 38, 4.2, 0, 0, 7); c.fill();
+      c.fillStyle = '#86583a'; c.beginPath(); c.ellipse(0, y + 2, 38, 4.5, 0, 0, 7); c.fill();
+      c.fillStyle = 'rgba(190,140,95,.45)'; c.beginPath(); c.ellipse(-3, y, 33, 1.4, 0, 0, 7); c.fill(); }
+    let r = 7; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 34; i++) { c.fillStyle = rnd() < 0.5 ? 'rgba(40,24,12,.5)' : 'rgba(180,130,90,.45)'; circ(c, -40 + rnd() * 80, -66 + rnd() * 52, 0.8 + rnd() * 0.9); }
+    c.fillStyle = '#a49c8d'; for (const [x, y] of [[-37, -18], [33, -64], [26, -16]]) { c.beginPath(); c.ellipse(x, y, 2.6, 1.8, 0, 0, 7); c.fill(); }
   },
   table(c, o) {
     const sw = (o && o.swing) || 0, at = y => sw * (y + 54) / 26;   // the hanging end swings, the top stays put
