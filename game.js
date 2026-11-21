@@ -8112,7 +8112,8 @@ function drawSchool(t) {
     c.fillStyle = '#c0392b'; c.font = cozyFont(Math.round(u * 0.032)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('АБЕТКА', x, y + ph * 0.1);
     const L2 = [['А', '🍉'], ['Б', '🍌'], ['В', '🐺'], ['Г', '🦆'], ['Д', '🏠'], ['Е', '🦝'], ['Ж', '🐸'], ['З', '⭐'], ['І', '🦃']];
     L2.forEach(([ch, ic], i) => { const cx = x - pw * 0.33 + (i % 3) * pw * 0.33, cy = y + ph * 0.28 + Math.floor(i / 3) * ph * 0.24; c.fillStyle = ['#2f5f9e', '#3f8a3a', '#c0392b'][i % 3]; c.font = '900 ' + Math.round(u * 0.04) + 'px system-ui'; c.fillText(ch, cx - u * 0.025, cy); drawIcon(c, ic, cx + u * 0.03, cy + u * 0.018, u * 0.04); });
-    hit(x - pw / 2, y, pw, ph, word('abetka', { note: '🔤 ' + xl('The Ukrainian alphabet has 33 letters.') }), x); }
+    c.fillStyle = '#d43a3a'; rr(c, x - pw * 0.3, y + ph * 0.86, pw * 0.6, ph * 0.12, ph * 0.04); c.fillStyle = '#fffbea'; c.font = cozyFont(Math.round(u * 0.022)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('🎮 Гра · Play', x, y + ph * 0.92);
+    hit(x - pw / 2, y, pw, ph, () => sfStart(), x); }   // the alphabet poster opens Spot the fake
   // ---- the door out
   { const x = SX.door * RW, dw = u * 0.16, dt2 = fy - h * 0.3;
     c.fillStyle = '#6b4422'; rr(c, x - dw / 2 - u * 0.012, dt2 - u * 0.012, dw + u * 0.024, fy - dt2 + u * 0.012, u * 0.01);
@@ -8352,6 +8353,237 @@ function abFrame(me) {
     }
   }
   requestAnimationFrame(() => abFrame(me));
+}
+
+// ------------------------------------------------------------------ Spot the fake (Знайди підробку!), on the alphabet poster
+// A letters lesson. The picture of a word appears (and is said), with an empty slot for each of its letters, and
+// letter tiles come drifting down. Tap the word's letters, in order, as they fall. Some tiles are fakes: English
+// letters for the same sound (a V where the word needs В, an R for Р, an N for Н...). Tap a fake and it cracks
+// and costs a heart. Other Ukrainian letters are just the wrong letter (no heart lost, but the streak resets).
+// Once the word is built, a quick check: which of two spellings is the real one? Then say the word (the 🎤 is a
+// choice, never a must: Next always works). Six words a lesson, harder each level, marked out of 12 at the end.
+let sf = null;
+const SF_FAKE = { 'В': 'V', 'Р': 'R', 'Н': 'N', 'С': 'S', 'У': 'U', 'Д': 'D', 'Г': 'G', 'Л': 'L', 'Ф': 'F', 'З': 'Z', 'Й': 'J', 'Ш': 'W' };   // only English letters that don't look like any Ukrainian one
+const SF_SPARE_FAKES = ['V', 'R', 'N', 'S', 'U', 'D', 'G', 'L', 'F', 'Z', 'J', 'W', 'Q'];
+const SF_CYR = 'АБВГДЕЖЗИІЙКЛМНОПРСТУФХЦЧШЩЮЯ'.split('');
+const SF_WORDS = [
+  ['syr', 'dub', 'lis', 'rys', 'med', 'khlib', 'hryb', 'tort', 'sova', 'voda'],
+  ['kava', 'ryba', 'koza', 'zhaba', 'knyha', 'hrusha', 'lampa', 'kubok', 'vazon', 'sontse', 'bilka', 'kaban', 'olen'],
+  ['sobaka', 'korova', 'kavun', 'morkva', 'leleka', 'stavok', 'harbuz', 'vokzal', 'potiah', 'hlobus', 'bereza', 'yabluko'],
+];
+const SF_COLS = ['#c0392b', '#2f5f9e', '#3f8a3a', '#d98a1c'];
+const sfUp = id => W[id].uk.toUpperCase();
+function sfStart() {
+  S.spot = S.spot || { lvl: 1, games: 0, best: 0 };
+  learn('abetka');
+  const pool = SF_WORDS[S.spot.lvl - 1].filter(id => W[id] && [...sfUp(id)].some(ch => SF_FAKE[ch])), list = [];
+  while (list.length < 6 && pool.length) list.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  sf = { lvl: S.spot.lvl, list, i: 0, hearts: 3, score: 0, combo: 0, best: 0, perfect: 0, coins: 0, tiles: [], fx: [], fly: [], shake: 0, k: 1, phase: 'intro', t0: nowT };
+  openSheet(`<div class="card gamecard spcard"><div class="tag" id="sfTag"></div>
+    <div class="word" id="sfLine" style="font-size:20px;line-height:1.25"></div><div class="en" id="sfEn" style="font-size:15px"></div>
+    <canvas id="sfPad" class="cookpad" style="width:100%;display:block;height:390px;touch-action:none"></canvas>
+    <div class="row" id="sfRow"></div></div>`, () => { sf = null; });
+  const pad = $('#sfPad'), dpr = Math.min(2, window.devicePixelRatio || 1), me = sf;
+  fitPad(pad, 390); pad.width = Math.round(pad.clientWidth * dpr); pad.height = Math.round(pad.clientHeight * dpr); sf.k = dpr;
+  for (const ev of ['touchstart', 'touchmove', 'touchend']) pad.addEventListener(ev, e => e.stopPropagation(), { passive: true });
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); if (sf !== me) return; const r = pad.getBoundingClientRect(); sfTap((e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height); });
+  sfSetup(); requestAnimationFrame(() => sfFrame(me));
+}
+// A new word: its picture and empty slots; it's said, and after a moment the letters start to fall.
+function sfSetup() {
+  const id = sf.list[sf.i]; sf.id = id; sf.word = [...sfUp(id)]; sf.got = 0; sf.tiles = []; sf.fly = []; sf.miss = 0; sf.phase = 'intro'; sf.t0 = nowT; sf.spawnT = nowT + 1.3; sf.said = ''; sf.check = null; sf.checked = false;
+  sf.speed = [0.13, 0.16, 0.19][sf.lvl - 1] + sf.i * 0.008;
+  stopSay(); say('w_' + id); sfRender();
+}
+// What comes down next: often the letter you need, often a fake for it, sometimes another letter.
+function sfSpawn() {
+  const need = sf.word[sf.got], r = Math.random(), lane = () => 0.12 + Math.random() * 0.76;
+  let ch, kind;
+  if (r < 0.42) { ch = need; kind = 'need'; }
+  else if (r < 0.74) { const own = sf.word.slice(sf.got).map(c2 => SF_FAKE[c2]).filter(Boolean); ch = own.length && Math.random() < 0.75 ? own[Math.floor(Math.random() * own.length)] : SF_SPARE_FAKES[Math.floor(Math.random() * SF_SPARE_FAKES.length)]; kind = 'fake'; }
+  else { do ch = SF_CYR[Math.floor(Math.random() * SF_CYR.length)]; while (ch === need); kind = 'other'; }
+  let x = lane(); for (let tries = 0; tries < 6 && sf.tiles.some(q => Math.abs(q.x - x) < 0.14 && q.y < 0.2); tries++) x = lane();
+  sf.tiles.push({ ch, kind, x, y: -0.08, vy: sf.speed * (0.85 + Math.random() * 0.3), rot: (Math.random() - 0.5) * 0.5, spin: (Math.random() - 0.5) * 0.8, ph: Math.random() * 6, col: SF_COLS[Math.floor(Math.random() * 4)], born: nowT });
+}
+const SF_TRAY = 0.8;   // where the shelf of slots sits (share of the pad's height); tiles below it are gone
+function sfSlot(i) { const n = sf.word.length, sz = Math.min(0.13, 0.72 / n), x0 = 0.26 + (0.72 - sz * n) / 2; return { x: x0 + sz * (i + 0.5), y: SF_TRAY + 0.095, sz }; }
+function sfTap(x, y) {
+  if (!sf) return;
+  if (sf.phase === 'check') {   // which spelling is real?
+    const c2 = sf.check, side = x < 0.5 ? 0 : 1; if (sf.checked || y < 0.3 || y > 0.75) return;
+    if (side === c2.real) { sf.checked = true; c2.pick = side; c2.t = nowT; sf.score += 20; sfChime(5); stopSay(); say('p_pravylno', 'w_' + sf.id); setTimeout(() => { if (sf && sf.phase === 'check') { sf.phase = 'say'; sfRender(); } }, 1300); }
+    else { c2.wrong = nowT; c2.pickWrong = side; sf.miss++; sf.combo = 0; sfBuzz(); }
+    return;
+  }
+  if (sf.phase !== 'fall') return;
+  const pw = $('#sfPad'), asp = pw ? pw.width / pw.height : 1;
+  let best = null, bd = 0.1;
+  for (const q of sf.tiles) { if (q.gone) continue; const d = Math.hypot((q.x - x) * asp, q.y - y) / asp; if (d < bd) { bd = d; best = q; } }
+  if (!best) return;
+  if (best.kind === 'fake') { best.gone = 'fake'; best.t = nowT; sf.hearts--; sf.miss++; sf.combo = 0; sf.shake = nowT; sfCrack(); sf.fx.push({ k: 'stamp', x: best.x, y: best.y, t: nowT, ch: best.ch, real: Object.keys(SF_FAKE).find(c2 => SF_FAKE[c2] === best.ch) });
+    if (sf.hearts <= 0) setTimeout(() => { if (sf) sfFinish(true); }, 1100); return; }
+  if (best.ch !== sf.word[sf.got]) { best.gone = 'no'; best.t = nowT; sf.combo = 0; sf.miss++; sfBuzz(); sf.fx.push({ k: 'no', x: best.x, y: best.y, t: nowT }); return; }
+  // the right letter: it flies down into its slot
+  best.gone = 'caught'; const s0 = sfSlot(sf.got); sf.fly.push({ ch: best.ch, col: best.col, x0: best.x, y0: best.y, x1: s0.x, y1: s0.y, t: nowT, i: sf.got });
+  sf.got++; sf.combo++; sf.best = Math.max(sf.best, sf.combo); sf.score += 10 * Math.min(5, sf.combo); sfChime(sf.got);
+  sf.fx.push({ k: 'burst', x: best.x, y: best.y, t: nowT, col: best.col });
+  if (sf.combo >= 3) sf.fx.push({ k: 'combo', x: best.x, y: best.y - 0.06, t: nowT, n: sf.combo });
+  if (sf.got >= sf.word.length) { sf.phase = 'built'; sf.t0 = nowT; for (const q of sf.tiles) if (!q.gone) q.gone = 'fade', q.t = nowT;
+    setTimeout(() => { if (!sf || sf.phase !== 'built') return; stopSay(); say('w_' + sf.id); sfChord(); }, 450);
+    setTimeout(() => { if (!sf || sf.phase !== 'built') return; sfMakeCheck(); }, 2100); }
+}
+// The check: the word spelled right, beside the same word with one letter swapped for its English fake.
+function sfMakeCheck() {
+  const w = sf.word, idx = w.map((c2, i) => SF_FAKE[c2] ? i : -1).filter(i => i >= 0), j = idx[Math.floor(Math.random() * idx.length)];
+  const fake = w.slice(); fake[j] = SF_FAKE[w[j]];
+  sf.check = { real: Math.random() < 0.5 ? 0 : 1, fakeWord: fake, j }; sf.phase = 'check'; sf.t0 = nowT; sfRender();
+}
+function sfNext() {
+  if (!sf) return;
+  if (!sf.miss) { sf.perfect++; sf.coins++; S.coins += 1; hud(); }
+  learn(sf.id);
+  if (sf.i >= sf.list.length - 1) return sfFinish(false);
+  sf.i++; sfSetup();
+}
+function sfFinish(out) {
+  const done = sf.i + (out ? 0 : 1), g = Math.max(1, Math.round(12 * sf.perfect / sf.list.length));
+  S.spot.games++; S.spot.best = Math.max(S.spot.best || 0, g); S.spot.hi = Math.max(S.spot.hi || 0, sf.score);
+  if (g >= 9 && !out) S.spot.lvl = Math.min(3, (S.spot.lvl || 1) + 1);
+  if (g >= 10) { S.coins += 3; sf.coins += 3; hud(); }
+  save(); sf.phase = 'report'; sf.out = out; sf.mark = g; sf.done = done; sf.t0 = nowT; stopSay(); say(g >= 10 ? 'p_molodets' : 'p_chudovo'); sfRender();
+}
+async function sfSay() {
+  if (!sf || sf.phase !== 'say' || sf.busy) return; if (!micOk()) return micHelp(MIC.lastReason && MIC.lastReason !== 'site' ? MIC.lastReason : 'chrome');
+  const me = sf, id = sf.id; sf.busy = true; stopSay(); sf.said = '🎤 Say it now…'; sfRender();
+  try { const rec = await recordOnce({ stop: false }, () => {}); if (sf !== me) return;
+    if (rec.quiet) sf.said = '🤫 I didn’t hear anything. Tap 🎤 and say it out loud.';
+    else { sf.said = '⏳ Listening…'; sfRender(); const res = await scoreWord(id, rec.wav); if (sf !== me) return;
+      if (res.limit) sf.said = '🌙 ' + (res.message || '');
+      else { const n = starsFor(res.score); S.say = S.say || {}; S.say[id] = Math.max(S.say[id] || 0, res.score); if (n >= 8) sf.score += 30; save(); sf.said = '<div class="saidres"><div class="st" style="color:' + (n >= 9 ? '#3f8a3a' : n >= 6 ? '#e0a01c' : '#e2574c') + '">' + starStr(n) + ' <b>' + n + '/10</b></div>' + (res.tip ? '<div class="tip">' + res.tip + '</div>' : '') + '</div>'; } } }
+  catch (e) { if (sf === me) sf.said = 'The microphone didn’t start.'; }
+  if (sf === me) { sf.busy = false; sfRender(); }
+}
+// The sheet's words and buttons for each moment of the lesson.
+function sfRender() {
+  if (!sf || !$('#sfTag')) return;
+  const row = $('#sfRow'), L = (uk, e) => { $('#sfLine').innerHTML = uk; $('#sfEn').innerHTML = e; };
+  $('#sfTag').innerHTML = '🔤 Знайди підробку! · Spot the fake · ' + Math.min(sf.i + 1, sf.list.length) + '/' + sf.list.length;
+  if (sf.phase === 'report') {
+    L(sf.out ? '💔 Усі серця розбиті!' : '📜 Оцінка: <b>' + sf.mark + '</b> / 12', (sf.out ? 'Out of hearts after ' + sf.done + ' word' + (sf.done === 1 ? '' : 's') + '. Mark: ' + sf.mark + ' / 12' : 'Your mark: ' + sf.mark + ' out of 12') + ' · ' + sf.score + ' points · +' + sf.coins + ' 💰' + (S.spot.hi === sf.score && sf.score ? '<br><b>🏆 New best score!</b>' : ''));
+    row.innerHTML = btn('sfAgain', '', 'Ще раз<small>Again</small>', 'blue') + btn('close', '', lab('close'), 'ghost'); return;
+  }
+  if (sf.phase === 'say') {
+    L('🗣️ ' + W[sf.id].uk, (W[sf.id].en) + (sf.said ? sf.said : '<br><small>Say the word you built, if you like: tap 🎤. Or go on.</small>'));
+    row.innerHTML = btn('sfHear', '', '🔊', 'round blue') + btn('sfSay', '', '🎤 ' + W[sf.id].uk + '<small>Say it</small>', 'green prb') + btn('sfNext', '', (sf.i >= sf.list.length - 1 ? 'Оцінка' : 'Далі') + '<small>' + (sf.i >= sf.list.length - 1 ? 'Your mark' : 'Next') + '</small>'); return;
+  }
+  if (sf.phase === 'check') { L('Яке слово справжнє?', 'Which one is the real word? One of them has a fake letter in it.'); row.innerHTML = btn('sfHear', '', '🔊', 'round blue') + btn('close', '', lab('close'), 'ghost'); return; }
+  L('Лови літери! <small style="font-weight:700;color:var(--soft)">' + W[sf.id].tr + '</small>', sf.i ? '<b>' + W[sf.id].en + '</b> · catch its letters, leave the fakes' : 'Tap the letters of <b>' + W[sf.id].en + '</b> in order as they fall. Leave the fakes: English letters dressed up as Ukrainian ones.');
+  row.innerHTML = btn('sfHear', '', '🔊', 'round blue') + btn('close', '', lab('close'), 'ghost');
+}
+// ---- sounds
+function sfChime(n) { const f = 523 * Math.pow(2, Math.min(12, (n - 1) * 2) / 12); try { sfxTone(f, f * 1.01, 0.18, 0.09); sfxTone(f * 2, f * 2, 0.12, 0.03); } catch (e) {} }
+function sfChord() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => { try { sfxTone(f, f, 0.35, 0.07); } catch (e) {} }, i * 90)); }
+function sfBuzz() { try { sfxTone(180, 140, 0.18, 0.08, 'square'); } catch (e) {} }
+function sfCrack() { try { sfxHit(1800, 0.18, 0.12, 'highpass', 1); sfxTone(220, 90, 0.3, 0.1, 'triangle'); setTimeout(() => sfxHit(400, 0.12, 0.12, 'lowpass', 1), 120); } catch (e) {} }
+// ---- drawing
+function sfTile(c, x, y, sz, ch, col, rot, k, o = {}) {
+  c.save(); c.translate(x, y); c.rotate(rot); if (o.sc) c.scale(o.sc, o.sc);
+  c.fillStyle = 'rgba(40,25,10,.22)'; rr(c, -sz / 2 + 2 * k, -sz / 2 + 4 * k, sz, sz, sz * 0.18);
+  const g = c.createLinearGradient(0, -sz / 2, 0, sz / 2); g.addColorStop(0, o.tint || '#fffaf0'); g.addColorStop(1, o.tint2 || '#f2e6cc'); c.fillStyle = g; rr(c, -sz / 2, -sz / 2, sz, sz, sz * 0.18);
+  c.strokeStyle = col; c.lineWidth = Math.max(1.5, sz * 0.05); c.beginPath(); if (c.roundRect) c.roundRect(-sz / 2 + sz * 0.07, -sz / 2 + sz * 0.07, sz * 0.86, sz * 0.86, sz * 0.12); c.stroke();
+  c.fillStyle = col; for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { c.save(); c.translate(dx * sz * 0.33, dy * sz * 0.33); c.rotate(Math.PI / 4); c.fillRect(-sz * 0.035, -sz * 0.035, sz * 0.07, sz * 0.07); c.restore(); }   // little embroidered corners
+  c.fillStyle = o.ink || '#2b2220'; c.font = cozyFont(Math.round(sz * 0.6)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 0, sz * 0.04);
+  c.fillStyle = 'rgba(255,255,255,.5)'; rr(c, -sz * 0.36, -sz * 0.42, sz * 0.5, sz * 0.08, sz * 0.04);
+  c.restore();
+}
+function sfHeart(c, x, y, s, full) { c.save(); c.translate(x, y); c.scale(s / 20, s / 20); c.beginPath(); c.moveTo(0, 6); c.bezierCurveTo(-10, -2, -10, -10, -4, -10); c.bezierCurveTo(-1, -10, 0, -8, 0, -6); c.bezierCurveTo(0, -8, 1, -10, 4, -10); c.bezierCurveTo(10, -10, 10, -2, 0, 6); c.closePath(); c.fillStyle = full ? '#e2394f' : 'rgba(120,90,80,.25)'; c.fill(); if (full) { c.fillStyle = 'rgba(255,255,255,.5)'; ell(c, -4, -6, 2, 1.4); } c.restore(); }
+function sfFrame(me) {
+  const pad = $('#sfPad'); if (!pad || sf !== me || !sheetOpen()) return;
+  const c = pad.getContext('2d'), w = pad.width, h = pad.height, k = sf.k, t = nowT, dt = Math.min(0.05, t - (sf.lt || t)); sf.lt = t;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  const shk = t - sf.shake < 0.35 ? Math.sin((t - sf.shake) * 70) * 6 * k * (1 - (t - sf.shake) / 0.35) : 0;
+  c.translate(shk, 0);
+  // the sky of the poster: a soft wash, drifting chalk letters far behind, and sunbeams
+  let g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#cfe9f7'); g.addColorStop(0.55, '#f4eedd'); g.addColorStop(1, '#efe2c2'); c.fillStyle = g; c.fillRect(-10, 0, w + 20, h);
+  c.save(); c.globalAlpha = 0.09; c.fillStyle = '#2f5f9e'; c.font = cozyFont(Math.round(h * 0.09)); c.textAlign = 'center';
+  for (let i = 0; i < 14; i++) { const q = ((t * 0.02 + i * 0.137) % 1); c.save(); c.translate(((i * 0.29) % 1) * w, q * h * 0.85); c.rotate(Math.sin(i + t * 0.3) * 0.3); c.fillText(SF_CYR[(i * 7) % SF_CYR.length], 0, 0); c.restore(); }
+  c.restore();
+  c.save(); c.globalAlpha = 0.16; c.fillStyle = '#fff6c8'; for (let i = 0; i < 3; i++) { const x0 = w * (0.15 + i * 0.32) + Math.sin(t * 0.2 + i) * w * 0.03; c.beginPath(); c.moveTo(x0, 0); c.lineTo(x0 + w * 0.08, 0); c.lineTo(x0 + w * 0.2, h * SF_TRAY); c.lineTo(x0 + w * 0.06, h * SF_TRAY); c.closePath(); c.fill(); } c.restore();
+  // hearts and score
+  for (let i = 0; i < 3; i++) sfHeart(c, w * 0.06 + i * 26 * k, h * 0.06, 22 * k, i < sf.hearts);
+  c.fillStyle = '#5a3a20'; c.font = cozyFont(Math.round(18 * k)); c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillText('⭐ ' + sf.score, w * 0.95, h * 0.06);
+  // falling tiles
+  if (sf.phase === 'intro' && t >= sf.spawnT) { sf.phase = 'fall'; sf.spawnT = t; }
+  if (sf.phase === 'fall' && t >= sf.spawnT) { sfSpawn(); sf.spawnT = t + Math.max(0.42, [0.85, 0.72, 0.62][sf.lvl - 1] - sf.i * 0.03); }
+  const tsz = Math.min(w * 0.14, h * 0.13);
+  for (const q of sf.tiles) {
+    if (!q.gone && sf.phase === 'fall') { q.y += q.vy * dt; q.rot += q.spin * dt * 0.3; }
+    const sway = Math.sin(t * 1.6 + q.ph) * 0.012, x = (q.x + sway) * w, y = q.y * h;
+    if (!q.gone) { if (q.y > SF_TRAY - 0.05) { q.gone = 'drop'; q.t = t; } sfTile(c, x, y, tsz, q.ch, q.col, q.rot * 0.4 + sway * 3, k); continue; }
+    const a = t - q.t;
+    if (q.gone === 'fake') { if (a > 1.1) { q.dead = 1; continue; } const fall = a > 0.45 ? (a - 0.45) * (a - 0.45) * 2.2 : 0;   // it cracks in two and the halves drop away
+      for (const sd of [-1, 1]) { c.save(); c.beginPath(); c.rect(sd < 0 ? x - tsz : x, y - tsz, tsz, tsz * 2); c.clip(); sfTile(c, x + sd * Math.min(a, 0.45) * tsz * 0.5, y + fall * h, tsz, q.ch, '#c0392b', q.rot * 0.4 + sd * Math.min(a, 0.45) * 0.8, k, { tint: '#ffe4df', tint2: '#f7c2b8' }); c.restore(); } continue; }
+    if (q.gone === 'no') { if (a > 0.5) { q.gone = null; continue; } const s2 = Math.sin(a * 60) * 4 * k * (1 - a / 0.5); sfTile(c, x + s2, y, tsz, q.ch, q.col, q.rot * 0.4, k, { tint: '#f3eee6' }); continue; }   // shakes its head and carries on falling
+    if (q.gone === 'drop' || q.gone === 'fade') { if (a > 0.4) { q.dead = 1; continue; } c.globalAlpha = 1 - a / 0.4; sfTile(c, x, y + a * h * 0.08, tsz * (1 - a * 0.5), q.ch, q.col, q.rot * 0.4, k); c.globalAlpha = 1; continue; }
+    q.dead = 1;
+  }
+  sf.tiles = sf.tiles.filter(q => !q.dead);
+  // the shelf: the word's picture in a round frame, and a slot for each letter
+  { const ty = h * SF_TRAY;
+    g = c.createLinearGradient(0, ty, 0, h); g.addColorStop(0, '#a8743f'); g.addColorStop(0.1, '#8a5a2b'); g.addColorStop(1, '#6b4422'); c.fillStyle = g; c.fillRect(-10, ty, w + 20, h - ty);
+    c.fillStyle = 'rgba(255,255,255,.18)'; c.fillRect(-10, ty, w + 20, 2 * k); c.strokeStyle = 'rgba(40,20,5,.25)'; c.lineWidth = 1 * k; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(0, ty + (h - ty) * (0.35 + i * 0.22)); c.lineTo(w, ty + (h - ty) * (0.35 + i * 0.22)); c.stroke(); }
+    const px = w * 0.13, py = ty + (h - ty) * 0.5, pr = Math.min(w * 0.1, (h - ty) * 0.42), bob = sf.phase === 'built' ? Math.abs(Math.sin((t - sf.t0) * 6)) * 4 * k * Math.max(0, 1 - (t - sf.t0)) : 0;
+    c.fillStyle = '#fffaf0'; circ(c, px, py - bob, pr); c.strokeStyle = '#d98a1c'; c.lineWidth = 3 * k; c.beginPath(); c.arc(px, py - bob, pr, 0, 7); c.stroke();
+    drawIcon(c, W[sf.id].ic, px, py - bob + pr * (W[sf.id].ic[0] === '@' ? 0.7 : 0.55), pr * (W[sf.id].ic[0] === '@' ? 1.9 : 1.35));   /* the drawn pictures sit smaller in their box than emoji */
+    for (let i = 0; i < sf.word.length; i++) {
+      const s0 = sfSlot(i), sx = s0.x * w, sy = s0.y * h, ssz = Math.min(s0.sz * w * 0.9, (h - ty) * 0.75);
+      const filled = i < sf.got && !sf.fly.some(f => f.i === i && t - f.t < 0.35) && sf.phase !== 'check';   // (hidden during the check: it would give the answer away)
+      if (!filled) { c.save(); c.setLineDash([4 * k, 4 * k]); c.strokeStyle = i === sf.got && sf.phase === 'fall' ? 'rgba(255,226,120,' + (0.6 + 0.4 * Math.sin(t * 6)) + ')' : 'rgba(255,245,220,.45)'; c.lineWidth = 2 * k; c.beginPath(); if (c.roundRect) c.roundRect(sx - ssz / 2, sy - ssz / 2, ssz, ssz, ssz * 0.18); c.stroke(); c.restore(); }
+      else { const wave = sf.phase !== 'fall' && sf.phase !== 'intro' ? Math.max(0, Math.sin((t - sf.t0) * 7 - i * 0.7)) * 6 * k * Math.max(0, 1 - (t - sf.t0) * 0.6) : 0; sfTile(c, sx, sy - wave, ssz, sf.word[i], SF_COLS[i % 4], 0, k); }
+    }
+  }
+  // letters on their way to the shelf
+  sf.fly = sf.fly.filter(f => t - f.t < 0.6);
+  for (const f of sf.fly) { const q = Math.min(1, (t - f.t) / 0.35); if (q >= 1) continue; const e = q * q * (3 - 2 * q), x = f.x0 + (f.x1 - f.x0) * e, y = f.y0 + (f.y1 - f.y0) * e - Math.sin(q * Math.PI) * 0.12; sfTile(c, x * w, y * h, tsz * (1 - 0.2 * q), f.ch, f.col, (1 - q) * 0.6, k); }
+  // the check: the real word and the one with a fake letter, as two cards
+  if (sf.phase === 'check' || (sf.phase === 'say' && sf.check)) {
+    const C2 = sf.check, pop = Math.min(1, (t - sf.t0) / 0.3);
+    if (sf.phase === 'check') { c.fillStyle = 'rgba(40,30,20,' + (0.28 * pop) + ')'; c.fillRect(-10, 0, w + 20, h * SF_TRAY); }
+    if (sf.phase === 'check') for (let side = 0; side < 2; side++) {
+      const word = side === C2.real ? sf.word : C2.fakeWord, cx = w * (side ? 0.75 : 0.25), cy = h * 0.5, cw = w * 0.44, ch2 = h * 0.4, wr = C2.wrong && C2.pickWrong === side && t - C2.wrong < 0.4 ? Math.sin((t - C2.wrong) * 60) * 5 * k : 0;
+      const right = C2.pick === side;
+      c.save(); c.translate(cx + wr, cy); c.scale(0.85 + 0.15 * pop, 0.85 + 0.15 * pop);
+      c.fillStyle = 'rgba(0,0,0,.18)'; rr(c, -cw / 2 + 3 * k, -ch2 / 2 + 5 * k, cw, ch2, 14 * k);
+      c.fillStyle = right ? '#e6f6df' : C2.pickWrong === side && C2.wrong ? '#fbe3de' : '#fffaf0'; rr(c, -cw / 2, -ch2 / 2, cw, ch2, 14 * k);
+      c.strokeStyle = right ? '#3f8a3a' : '#d98a1c'; c.lineWidth = 3 * k; c.beginPath(); if (c.roundRect) c.roundRect(-cw / 2 + 5 * k, -ch2 / 2 + 5 * k, cw - 10 * k, ch2 - 10 * k, 10 * k); c.stroke();
+      const n = word.length, lsz = Math.min(cw * 0.9 / n, ch2 * 0.42);
+      for (let i = 0; i < n; i++) { const bad = side !== C2.real && i === C2.j && C2.wrong && C2.pickWrong === side; sfTile(c, -lsz * n / 2 + lsz * (i + 0.5), -ch2 * 0.05, lsz * 0.92, word[i], bad ? '#c0392b' : SF_COLS[i % 4], 0, k, bad ? { tint: '#ffe4df' } : {}); }
+      if (right) { c.strokeStyle = '#3f8a3a'; c.lineWidth = 5 * k; c.lineCap = 'round'; const q = Math.min(1, (t - C2.t) / 0.3); c.beginPath(); c.moveTo(-cw * 0.12, ch2 * 0.3); c.lineTo(-cw * 0.12 + cw * 0.08 * Math.min(1, q * 2), ch2 * 0.3 + ch2 * 0.08 * Math.min(1, q * 2)); if (q > 0.5) c.lineTo(-cw * 0.04 + cw * 0.2 * (q - 0.5) * 2, ch2 * 0.38 - ch2 * 0.22 * (q - 0.5) * 2); c.stroke(); }
+      if (C2.wrong && C2.pickWrong === side) { c.fillStyle = '#c0392b'; c.font = cozyFont(Math.round(14 * k)); c.textAlign = 'center'; c.fillText(word[C2.j] + ' is English!', 0, ch2 * 0.33); }
+      c.restore();
+    }
+  }
+  // the lesson's mark
+  if (sf.phase === 'report') { c.fillStyle = 'rgba(40,30,20,.3)'; c.fillRect(-10, 0, w + 20, h * SF_TRAY); const pop = Math.min(1, (t - sf.t0) / 0.4), e = 1 + Math.sin(pop * Math.PI) * 0.15;
+    c.save(); c.translate(w / 2, h * 0.4); c.scale(e * pop, e * pop); c.fillStyle = '#fffaf0'; rr(c, -w * 0.3, -h * 0.17, w * 0.6, h * 0.34, 16 * k); c.strokeStyle = '#d98a1c'; c.lineWidth = 3 * k; c.beginPath(); if (c.roundRect) c.roundRect(-w * 0.3 + 6 * k, -h * 0.17 + 6 * k, w * 0.6 - 12 * k, h * 0.34 - 12 * k, 12 * k); c.stroke();
+    c.fillStyle = sf.mark >= 10 ? '#3f8a3a' : sf.mark >= 7 ? '#d98a1c' : '#c0392b'; c.font = cozyFont(Math.round(h * 0.13)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(sf.mark + ' / 12', 0, -h * 0.03);
+    c.fillStyle = '#5a3a20'; c.font = cozyFont(Math.round(h * 0.045)); c.fillText('⭐ ' + sf.score + (sf.best >= 3 ? '   🔥 ×' + sf.best : ''), 0, h * 0.09); c.restore();
+    if (sf.mark >= 10) for (let i = 0; i < 24; i++) { const q = ((t - sf.t0) * 0.35 + i / 24) % 1; c.fillStyle = SF_COLS[i % 4]; c.save(); c.translate(((i * 0.37) % 1) * w, q * h * SF_TRAY); c.rotate(t * 3 + i); c.fillRect(-3 * k, -1.5 * k, 6 * k, 3 * k); c.restore(); } }
+  // effects: bursts, combo badges, the red stamp on a fake
+  sf.fx = sf.fx.filter(f => t - f.t < 1.4);
+  for (const f of sf.fx) { const a = t - f.t, x = f.x * w, y = f.y * h;
+    if (f.k === 'burst' && a < 0.5) { for (let i = 0; i < 10; i++) { const an = i / 10 * 7, r = a * 160 * k; c.globalAlpha = 1 - a / 0.5; c.fillStyle = i % 2 ? f.col : '#ffd23f'; circ(c, x + Math.cos(an) * r, y + Math.sin(an) * r, 3 * k * (1 - a)); } c.globalAlpha = 1; }
+    if (f.k === 'combo' && a < 0.9) { c.globalAlpha = 1 - a / 0.9; c.fillStyle = '#e0601c'; c.font = cozyFont(Math.round(18 * k + f.n * 1.5 * k)); c.textAlign = 'center'; c.fillText('🔥 ×' + f.n, x, y - a * 40 * k); c.globalAlpha = 1; }
+    if (f.k === 'no' && a < 0.5) { c.globalAlpha = 1 - a / 0.5; c.strokeStyle = '#8a7a6a'; c.lineWidth = 3 * k; c.lineCap = 'round'; const r = 10 * k; c.beginPath(); c.moveTo(x - r, y - tsz * 0.75 - r); c.lineTo(x + r, y - tsz * 0.75 + r); c.moveTo(x + r, y - tsz * 0.75 - r); c.lineTo(x - r, y - tsz * 0.75 + r); c.stroke(); c.globalAlpha = 1; }
+    if (f.k === 'stamp') { const q = Math.min(1, a / 0.18), sc = 1.8 - 0.8 * q; c.save(); c.globalAlpha = a > 1.0 ? Math.max(0, 1 - (a - 1.0) / 0.4) : 1; c.translate(Math.min(Math.max(x, w * 0.25), w * 0.75), Math.max(y, h * 0.22)); c.rotate(-0.18); c.scale(sc, sc);
+      c.strokeStyle = '#c0392b'; c.lineWidth = 3 * k; c.fillStyle = 'rgba(255,240,236,.9)'; rr(c, -84 * k, -20 * k, 168 * k, 40 * k, 6 * k); c.beginPath(); if (c.roundRect) c.roundRect(-80 * k, -16 * k, 160 * k, 32 * k, 4 * k); c.stroke();
+      c.fillStyle = '#c0392b'; c.font = cozyFont(Math.round(17 * k)); c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ПІДРОБКА!', 0, -3 * k);
+      c.font = '700 ' + Math.round(10 * k) + 'px system-ui'; c.fillText(f.ch + ' is English' + (f.real ? ' · Ukrainian: ' + f.real : ''), 0, 11 * k); c.restore(); }
+  }
+  // the word's first moment: its picture big in the middle, said aloud
+  if (sf.phase === 'intro') { const a = t - sf.t0, q = Math.min(1, a / 0.3), out = Math.max(0, (a - 0.9) / 0.4); c.globalAlpha = 1 - out; c.save(); c.translate(w / 2, h * 0.4); c.scale(q * (1 + 0.1 * Math.sin(q * Math.PI)), q * (1 + 0.1 * Math.sin(q * Math.PI)));
+    c.fillStyle = 'rgba(255,250,240,.92)'; circ(c, 0, 0, h * 0.2); c.strokeStyle = '#d98a1c'; c.lineWidth = 4 * k; c.beginPath(); c.arc(0, 0, h * 0.2, 0, 7); c.stroke(); drawIcon(c, W[sf.id].ic, 0, h * (W[sf.id].ic[0] === '@' ? 0.15 : 0.12), h * (W[sf.id].ic[0] === '@' ? 0.36 : 0.26)); c.restore(); c.globalAlpha = 1; }
+  requestAnimationFrame(() => sfFrame(me));
 }
 
 // ------------------------------------------------------------------ inside Grandma Olia's cottage
@@ -10148,7 +10380,7 @@ let last = 0, running = false;
 let nowT = 0, waterFx = null, slowT = 0;
 let busyUI = false;
 function frame(ms) {
-  { const b = !!(mg || chop || ck || ab || fest || bed); if (b !== busyUI) { busyUI = b; document.body.classList.toggle('busy', b); } }
+  { const b = !!(mg || chop || ck || ab || sf || fest || bed); if (b !== busyUI) { busyUI = b; document.body.classList.toggle('busy', b); } }
   const raw = t0 => t0 - last || 0.016, t = ms / 1000, real = raw(t), dt = Math.min(0.05, real); last = t; nowT = t;
   // A phone that cannot keep up (under 25 frames a second for three seconds) drops the finery and stays smooth.
   if (running && !GFX.lock && GFX.cloud) { slowT = real > 0.04 && real < 0.5 ? slowT + real : Math.max(0, slowT - real * 2); if (slowT > 3) GFX.cloud = GFX.motes = GFX.smoke = GFX.sway = 0; }
@@ -10370,6 +10602,7 @@ const A = {
   hear(v) { say(v); },
   myChoose(v) { const c = MYC[+v]; if (c) c.fn(); }, myLang() { MY_LANG = MY_LANG === 'uk' ? 'en' : 'uk'; if (myLast) myDialog(...myLast); }, myLangNb() { MY_LANG = MY_LANG === 'uk' ? 'en' : 'uk'; myNotebook(); }, myMark(v) { myMark(v); }, myBook() { myNotebook(); },
   cafeBuy(v) { cafeBuy(v); },
+  sfAgain() { sfStart(); }, sfHear() { if (sf) { stopSay(); say('w_' + sf.id); } }, sfSay() { sfSay(); }, sfNext() { sfNext(); },
   abDone() { abDone(); }, abPick(v) { abPick(v); }, abNext() { abNext(); }, abSay() { abSay(); }, abHear() { if (ab && ab.sent) { stopSay(); say(...ab.sent.clips); } }, abHearN() { if (ab) { stopSay(); say('w_' + numId(ab.list[ab.i].n)); } }, abAgain() { closeSheet(); setTimeout(abStart, 200); },
   prac(v) { pracAttempt(v); },
   subs() {
