@@ -9467,14 +9467,26 @@ function nightLamps(c, list, sx, sy, t) {
 }
 // Night, dusk and weather painted over a finished scene, in screen pixels. lights: [[x, y, r], …] warm glows.
 let vignetteSpr = null, vignetteKey = '';
+// How hard it's raining, 0-1. It follows the weather gently instead of switching: when the rain stops (or the
+// weather turns) the drops thin out and the grey lifts over about twenty seconds, and new rain comes on over eight.
+const RAINK = { k: null, storm: false, t: 0 };
+function rainStep(t) {
+  const want = wet(S.wx) ? 1 : 0;
+  if (RAINK.k == null) RAINK.k = want;   // on opening the game: as it is now, no fade
+  const dt = Math.min(0.25, Math.max(0, t - RAINK.t)); RAINK.t = t;
+  if (want) RAINK.storm = S.wx === 'storm';
+  RAINK.k = want > RAINK.k ? Math.min(1, RAINK.k + dt / 8) : Math.max(0, RAINK.k - dt / 20);
+  return RAINK.k;
+}
 function paintSky(c, w, h, t, lights, outdoors) {
-  const L = skyLight(S.clock.t), wx = S.wx;
+  const L = skyLight(S.clock.t), wx = S.wx, rk = rainStep(t);
   if (outdoors) {
     if (wx === 'sun' && L.dark < 0.5) { c.save(); c.globalCompositeOperation = 'soft-light'; const sg = c.createLinearGradient(0, 0, w, h); sg.addColorStop(0, `rgba(255,236,186,${0.55 * (1 - L.dark * 2)})`); sg.addColorStop(0.6, 'rgba(255,236,186,0)'); c.fillStyle = sg; c.fillRect(0, 0, w, h); c.restore(); }   // warm light from the sun, top left
     if (vignetteKey !== w + 'x' + h) { vignetteKey = w + 'x' + h; vignetteSpr = document.createElement('canvas'); vignetteSpr.width = Math.max(1, w >> 2); vignetteSpr.height = Math.max(1, h >> 2); const vc = vignetteSpr.getContext('2d'), vw2 = vignetteSpr.width, vh2 = vignetteSpr.height, vg = vc.createRadialGradient(vw2 / 2, vh2 * 0.48, Math.min(vw2, vh2) * 0.42, vw2 / 2, vh2 * 0.48, Math.max(vw2, vh2) * 0.75); vg.addColorStop(0, 'rgba(40,30,20,0)'); vg.addColorStop(1, 'rgba(40,30,20,.32)'); vc.fillStyle = vg; vc.fillRect(0, 0, vw2, vh2); }
     c.drawImage(vignetteSpr, 0, 0, w, h);   // a gentle darkening at the edges draws the eye in
   }
-  if (outdoors && wx !== 'sun' && wx !== 'fog') { c.fillStyle = wx === 'snow' ? 'rgba(200,210,228,.14)' : wx === 'storm' ? 'rgba(40,50,78,.4)' : wx === 'rain' ? 'rgba(70,86,112,.26)' : 'rgba(110,118,135,.16)'; c.fillRect(0, 0, w, h); }
+  if (outdoors && (wx === 'snow' || wx === 'cloud')) { c.fillStyle = wx === 'snow' ? 'rgba(200,210,228,.14)' : 'rgba(110,118,135,.16)'; c.fillRect(0, 0, w, h); }
+  if (outdoors && rk > 0.005) { c.fillStyle = RAINK.storm ? `rgba(40,50,78,${0.4 * rk})` : `rgba(70,86,112,${0.26 * rk})`; c.fillRect(0, 0, w, h); }   // the grey of the rain, lifting as it eases off
   c.save();
   c.globalCompositeOperation = 'multiply';
   if (L.dawn > 0) { c.globalAlpha = L.dawn * 0.35; c.fillStyle = 'rgb(255,190,200)'; c.fillRect(0, 0, w, h); }
@@ -9496,7 +9508,7 @@ function paintSky(c, w, h, t, lights, outdoors) {
   if (outdoors && season() === 'osin' && !wet(wx)) for (let i = 0; i < 14; i++) { const x = ((i * 127.3 + t * 18 + Math.sin(t + i) * 30) % w + w) % w, y = (i * 211.9 + t * 30) % h; c.save(); c.translate(x, y); c.rotate(t * 2 + i); c.fillStyle = ['#e0712c', '#d9a330', '#b8432b'][i % 3]; ell(c, 0, 0, 5 * w / 390, 2.6 * w / 390); c.restore(); }
   if (outdoors && season() === 'vesna' && !wet(wx)) { c.fillStyle = 'rgba(255,196,214,.85)'; for (let i = 0; i < 16; i++) ell(c, ((i * 97.7 + t * 22) % w), (i * 191.3 + t * 26) % h, 3.6 * w / 390, 2.2 * w / 390); }
   if (outdoors) skyEvents(c, w, h, t, L);   // lightning, fog, the rainbow, the cranes going over
-  if (outdoors && wet(wx)) drawRain(c, w, h, t, wx === 'storm');
+  if (outdoors && rk > 0.01) drawRain(c, w, h, t, RAINK.storm, rk);
 }
 // Each season's weather: summer has thunderstorms, autumn and spring misty mornings, winter snow.
 function dayWeather(sea, r) {
@@ -9525,25 +9537,25 @@ function skyEvents(c, w, h, t, L) {
 }
 const RAIN = (() => { const r = seeded(77), a = []; for (let i = 0; i < 260; i++) { const layer = i < 120 ? 0 : i < 210 ? 1 : 2; a.push({ x: r(), y: r(), sp: [0.55, 0.85, 1.25][layer] * (0.8 + r() * 0.4), len: [0.022, 0.036, 0.06][layer] * (0.7 + r() * 0.6), a: [0.4, 0.55, 0.75][layer] * (0.65 + r() * 0.45), lw: [0.9, 1.3, 2][layer], layer, ph: r() * 9 }); } return a; })();
 const SPLASH = (() => { const r = seeded(91), a = []; for (let i = 0; i < 40; i++) a.push({ x: r(), y: 0.15 + r() * 0.85, ph: r(), sp: 1.4 + r() * 1.2 }); return a; })();
-function drawRain(c, w, h, t, storm) {
-  const k = w / 390;
+function drawRain(c, w, h, t, storm, amount = 1) {
+  const k = w / 390, thin = i => ((i * 7) % 20) / 20 >= amount;   // easing off: fewer drops (and fewer splashes), and fainter
   // the wind: a steady lean with slow gusts on top (stronger in a storm)
   const gust = Math.sin(t * 0.37) * 0.5 + Math.sin(t * 1.13 + 2) * 0.3 + Math.sin(t * 2.9) * 0.12, lean = (storm ? 0.38 : 0.2) + gust * (storm ? 0.3 : 0.14);
   c.lineCap = 'round';
   for (let L = 0; L < 3; L++) {
     c.lineWidth = Math.max(0.8, k) * [0.9, 1.3, 2][L] * (storm ? 1.15 : 1);
-    for (let i = 0; i < RAIN.length; i++) { const d = RAIN[i]; if (d.layer !== L || (!storm && i % 4 === 3)) continue;   // ordinary rain: three drops in four, at every depth
+    for (let i = 0; i < RAIN.length; i++) { const d = RAIN[i]; if (d.layer !== L || (!storm && i % 4 === 3) || thin(i)) continue;   // ordinary rain: three drops in four, at every depth
       const fall = h * (1 + d.len) * (storm ? 1.25 : 1) * d.sp, yy = ((d.y * (h + 200) + t * fall + d.ph * 50) % (h + 200)) - 100, wob = Math.sin(t * 3 + d.ph) * 0.04;
       const x = ((d.x * (w + 200) - yy * (lean + wob) + d.ph * 30) % (w + 200) + w + 200) % (w + 200) - 100, ln = d.len * h * (storm ? 1.3 : 1);
-      c.strokeStyle = `rgba(210,226,255,${d.a * (0.75 + 0.25 * Math.sin(t * 7 + d.ph))})`;
+      c.strokeStyle = `rgba(210,226,255,${d.a * (0.75 + 0.25 * Math.sin(t * 7 + d.ph)) * (0.55 + 0.45 * amount)})`;
       c.beginPath(); c.moveTo(x, yy); c.lineTo(x - ln * (lean + wob), yy + ln); c.stroke(); }
   }
   // where the drops land: a little crown of splash and a ring spreading on the ground, all at their own times
-  for (const s of SPLASH) { const p = ((t * s.sp + s.ph * 7) % 1), x = s.x * w, y = s.y * h;
+  for (const [si, s] of SPLASH.entries()) { if (thin(si * 3)) continue; const p = ((t * s.sp + s.ph * 7) % 1), x = s.x * w, y = s.y * h;
     if (p < 0.25) { const q = p / 0.25; c.fillStyle = `rgba(225,236,255,${0.55 * (1 - q)})`; for (let j = -1; j <= 1; j++) circ(c, x + j * (3 + q * 5) * k, y - Math.sin(q * Math.PI) * 5 * k, 1.2 * k); }
     const q2 = p; c.strokeStyle = `rgba(225,236,255,${0.3 * (1 - q2)})`; c.lineWidth = 1 * k; c.beginPath(); c.ellipse(x, y, (2 + q2 * 10) * k, (1 + q2 * 3.5) * k, 0, 0, 7); c.stroke(); }
   // in a storm, sheets of heavier rain sweep across now and then
-  if (storm) { const sw = (t * 0.07) % 1; c.fillStyle = 'rgba(180,195,220,.08)'; c.fillRect((sw * 1.6 - 0.3) * w, 0, w * 0.35, h); }
+  if (storm) { const sw = (t * 0.07) % 1; c.fillStyle = `rgba(180,195,220,${0.08 * amount})`; c.fillRect((sw * 1.6 - 0.3) * w, 0, w * 0.35, h); }
 }
 // Snow that falls like snow: flakes at three depths (small, slow and faint far off; big, soft and quicker
 // close by), each swaying on its own, blown by a slow changing breeze, some tumbling as they come down.
@@ -9619,6 +9631,7 @@ function drawPrints(c, t) {
 // talk to; if someone is standing right where she's heading, she stops just short of them).
 const PEOPLE_GAP = 0.62;
 function peopleApart(dt) {
+  return;   // turned off at the user's request: people pass through each other (nudging and stepping round each other kept leaving them stuck in knots)
   if (dt <= 0) return;
   const people = ents.filter(e => e.kind === 'npc' && !e.asleep && !e.inside && !e.door && !e.route2 && !goneNow(e));
   const free = (x, y) => x > 0.5 && x < MW - 0.5 && y > 1 && y < MH - 0.5 && !solid[Math.floor(y)][Math.floor(x)];
