@@ -199,7 +199,8 @@
 
   #start { position:fixed; inset:0; z-index:30; background:#bfe7fb; overflow:hidden; }
   #start #tc { position:absolute; inset:0; width:100%; height:100%; display:block; }
-  #start .tmusic { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); width:46px; height:46px; border-radius:50%; background:rgba(255,248,234,.92); border:3px solid #4a2c1a; font-size:20px; box-shadow:0 3px 0 rgba(74,44,26,.35); z-index:2; }
+  #start .tquit { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:calc(8px + env(safe-area-inset-right)); width:46px; height:46px; background:none; border:0; padding:0; color:#d9302a; font-size:34px; font-weight:800; -webkit-text-stroke:1.5px #d9302a; text-shadow:0 1px 0 #fff, 0 2px 6px rgba(30,10,30,.35); z-index:2; }
+  #start .tmusic { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:calc(62px + env(safe-area-inset-right)); width:46px; height:46px; border-radius:50%; background:rgba(255,248,234,.92); border:3px solid #4a2c1a; font-size:20px; box-shadow:0 3px 0 rgba(74,44,26,.35); z-index:2; }
   #start .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
   #start .btns { position:absolute; left:0; right:0; bottom:calc(34px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; gap:10px; }
   #start .b { font-size:24px; padding:14px 46px; font-family:"Cozy", system-ui, sans-serif; letter-spacing:.5px; box-shadow:0 5px 0 #c98a1a, 0 8px 18px rgba(60,40,20,.25); border:3px solid #4a2c1a; }
@@ -233,7 +234,7 @@
   #update small { font-weight:600; opacity:.85; }
   #update.show { display:block; }
   #start .ticon { position:absolute; bottom:calc(34px + env(safe-area-inset-bottom)); width:58px; height:58px; border-radius:50%; background:rgba(255,248,234,.92); border:3px solid #4a2c1a; font-size:27px; line-height:1; padding:0; box-shadow:0 4px 0 rgba(74,44,26,.4), 0 8px 18px rgba(30,10,30,.3); z-index:2; }
-  #start .tmic { left:calc(14px + env(safe-area-inset-left)); } #start .tletter { right:calc(14px + env(safe-area-inset-right)); }
+  #start .tmic { left:calc(14px + env(safe-area-inset-left)); } #start .tletter { right:calc(14px + env(safe-area-inset-right)); background:none; border:0; box-shadow:none; font-size:40px; filter:drop-shadow(0 0 1px #6b6b6b) drop-shadow(0 0 1px #6b6b6b) drop-shadow(0 3px 4px rgba(30,10,30,.45)); }
   #start .tmic.on::after { content:''; position:absolute; right:2px; top:2px; width:14px; height:14px; border-radius:50%; background:#3fb950; border:2px solid #fff; }
   #start .tmic.blocked::after { content:''; position:absolute; right:2px; top:2px; width:14px; height:14px; border-radius:50%; background:#e2574c; border:2px solid #fff; }
   #start .tmic.off { opacity:.5; }
@@ -313,6 +314,7 @@
 
 <div id="start">
   <canvas id="tc"></canvas>
+  <button class="tquit" data-a="quit" aria-label="Вийти / Exit">✕</button>
   <button class="tmusic" data-a="music" aria-label="Музика / Music">🎵</button>
   <button class="tdev" data-a="devPin" aria-label="Developer">🛠️</button>
   <h1 class="sr">Котяча Долина · Kotiacha Dolyna · Cat Valley</h1>
@@ -321,12 +323,12 @@
   </div>
   <button class="ticon tmic" id="micBtn" data-a="mic" aria-label="Мікрофон · Microphone" title="Мікрофон · Microphone">🎤</button>
   <button class="ticon tletter" data-a="story" aria-label="Лист від баби Олі · A letter from Grandma Olia" title="Лист від баби Олі · A letter from Grandma Olia">✉️</button>
-  <div class="ver">v317</div>
+  <div class="ver">v318</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '317';</script>
-<script src="data.js?v=317"></script>
-<script src="game.js?v=317"></script>
+<script>window.APP_VERSION = '318';</script>
+<script src="data.js?v=318"></script>
+<script src="game.js?v=318"></script>
 </body>
 </html>

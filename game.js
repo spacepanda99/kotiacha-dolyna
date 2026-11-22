@@ -3291,7 +3291,8 @@ function add(e) {
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
   add({ w: 'pysanka', x: STALL.x + 0.8, y: STALL.y + 0.1, s: 0.6 });   // a basket of pysanky on the ground in front of the stall, by the right-hand crate
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
-  for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) add({ w: 'pshenytsia', x: 33.35 + k * 0.72, y: 21.7 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 34.1 });   // a square little field of wheat by the pond
+  // (the little wheat field by the pond is gone, at the user's request: a few wildflowers grow there instead)
+  for (const [x, y, w] of [[33.5, 22.0, 'kvitka'], [34.7, 22.6, 'mak'], [33.9, 23.5, 'kvitka'], [35.1, 23.9, 'kvitka'], [34.2, 24.6, 'mak']]) add({ w, x, y, s: 0.8, give: w, cd: 150, hide: true, quiet: true });
   add({ w: 'vinok', k: 'cc_field', x: 15.95, y: 17.74, s: 1, kind: 'cc', flat: true, quiet: true });   // the harvest wreath on the festival post (autumn, when there is one): tap it to look
   for (let r = 0; r < 6; r++) for (let k = 0; k < 8; k++) add({ w: 'pshenytsia', x: 35.4 + k * 0.72 + (r % 2) * 0.3, y: 3.75 + r * 0.72, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 38.1 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
@@ -3308,7 +3309,8 @@ function add(e) {
   // Beehives and the sunflower field.
   for (let i = 0; i < 3; i++) add({ w: 'vulyk', x: 4.5 + i * 1.5, y: 19.9, s: 1.3, solid: true });
   for (let i = 0; i < 3; i++) add({ w: 'bdzhola', x: 5 + i * 1.3, y: 18.6, s: 0.5, kind: 'fly', cx: 5 + i * 1.3, cy: 18.6, ph: i * 2.1 });
-  for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) add({ w: 'soniashnyk', x: x + 0.5, y: y + 0.85, s: 1.25, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' });
+  for (let y = 23; y <= 25; y++) for (let x = 3; x <= 9; x++) { const h = k => { const v = Math.sin(x * 12.9898 + y * 78.233 + k * 37.7) * 43758.5453; return v - Math.floor(v); };   // no two alike: each a different height, a little off the row, leaning its own way
+    add({ w: 'soniashnyk', x: x + 0.5 + (h(1) - 0.5) * 0.3, y: y + 0.85 + (h(2) - 0.5) * 0.22, s: 1.0 + h(3) * 0.55, tilt: (h(4) - 0.5) * 0.3, give: 'soniashnyk', cd: 150, hide: true, owner: 'bohdan' }); }
   // Trees, bushes, stones, flowers, mushrooms, butterflies.
   for (const [x, y] of [[2.5, 6.9], [15.7, 10.4], [23.8, 3.4], [25.5, 4.9], [33.5, 8.9], [2.5, 17.9], [12.5, 25.9], [22.5, 25.9], [33.5, 25.9], [7.5, 3.9], [0.9, 17.6]]) add({ w: 'derevo', ic: '@tree', x, y, s: 2.5, solid: true });
   for (const [x, y] of [[15.5, 9.9], [16.8, 8.7], [3.5, 13.5], [23.5, 23.9]]) add({ w: 'kushch', x, y, s: 1.1, solid: true });
@@ -5513,7 +5515,7 @@ function catSheet(e) {
   catPortrait(ct.id);
 }
 const CAT_LAT = { rudko: 'Rudko', vuhlyk: 'Vuhlyk', snizhok: 'Snizhok', dymok: 'Dymok', smuhastyk: 'Smuhastyk', murka: 'Murka', bublyk: 'Bublyk', zirka: 'Zirka' };
-function catPortrait(id) { const pid = 'cat_' + id; if (!PORTRAITS.has(pid) || !sheet.classList.contains('show')) return; const card = sheet.querySelector('.card') || sheet.firstElementChild; if (!card) return; const ct = D.cats.find(x => x.id === id); const big = card.querySelector('img.big'); if (big) big.remove(); card.insertAdjacentHTML('afterbegin', portraitHTML + (ct ? '<div class="catname">' + (CAT_LAT[id] || ct.name) + '<span>' + ct.name + '</span></div>' : '')); portraitShow(pid); }
+function catPortrait(id) { const pid = 'cat_' + id; if (!PORTRAITS.has(pid) || !sheet.classList.contains('show')) return; const card = sheet.querySelector('.card') || sheet.firstElementChild; if (!card) return; const ct = D.cats.find(x => x.id === id); const big = card.querySelector('img.big'); if (big) big.remove(); const wd = card.querySelector('.word'); if (wd) { wd.style.clear = 'both'; wd.style.whiteSpace = 'nowrap'; wd.style.textAlign = 'center'; } card.insertAdjacentHTML('afterbegin', portraitHTML + (ct ? '<div class="catname">' + (CAT_LAT[id] || ct.name) + '<span>' + ct.name + '</span></div>' : '')); portraitShow(pid); }
 const catFriends = () => D.cats.filter(ct => S.cats[ct.id]).length;
 
 // ------------------------------------------------------------------ walking
@@ -5990,7 +5992,7 @@ function farmEnts() {
 function millCard() {
   const has = (S.bag.pshenytsia || 0) > 0;
   wordCard('zhorna', {
-    note: `🌾 ${W.pshenytsia.uk}: ${S.bag.pshenytsia || 0}${xl((has ? ' · One wheat makes one flour.' : ' · You need wheat. It grows in the field beside the church, and in a strip by the pond.'))}`,
+    note: `🌾 ${W.pshenytsia.uk}: ${S.bag.pshenytsia || 0}${xl((has ? ' · One wheat makes one flour.' : ' · You need wheat. It grows in the field beside the church.'))}`,
     acts: has ? [{ k: 'grind', fn: () => {
       S.bag.pshenytsia--; give('boroshno'); learn('boroshno'); useWord('pshenytsia', true); grindUntil = now() + 1800; blip(520, 0.12); setTimeout(() => blip(600, 0.12), 450);
       const me = ents.find(q => q.k === 'my_mill'); if (me) setTimeout(() => fxBurst(me.x, me.y - 1, W.boroshno.ic), 1000);
@@ -6262,7 +6264,7 @@ function sourceHint(id) {
   if (D.shop.seeds[id]) return '🌱 Grow it in your garden. Seeds are at the market.';
   if (D.shop.food[id]) return '🧺 Oksana sells it at the market.';
   if (id === 'kalyna') return '🌿 Kalyna bushes grow in the valley.';
-  if (id === 'pshenytsia') return '🌾 Wheat grows in the field beside the church, and in a strip by the pond.';
+  if (id === 'pshenytsia') return '🌾 Wheat grows in the field beside the church.';
   if (id === 'mak') return '🌺 Poppies grow beside the sunflower field.';
   if (D.shop.home[id]) return '🧺 Oksana sells it at the market, for your cottage.';
   return { yabluko: '🌳 Pick one from the apple tree by your cottage.', kvitka: '🌷 Pick a flower.', hryb: '🍄 Mushrooms grow near the trees.', voda: '💧 Draw some from the well.', ryba: winter() ? (S.gear && S.gear.lodobur ? '🧊 Fish through the ice on the pond with your ice auger.' : '🧊 Buy an ice auger (льодобур) at the market, then fish through the ice.') : S.gear && S.gear.vudka ? '🎣 Catch one in the pond.' : '🎣 Buy a fishing rod (вудка) at the market, then fish in the pond.' }[id] || '';
@@ -9255,7 +9257,7 @@ function millRope() {
 }
 function millHopper() {
   const have = S.bag.pshenytsia || 0;
-  if (!have) { learn('pshenytsia'); return wordCard('kivsh', { note: `🌾 ${W.pshenytsia.uk} × 0${xl(' · You need wheat to grind. It grows in the field beside the church and in the strip by the pond, or buy seeds at the market.')}` }); }
+  if (!have) { learn('pshenytsia'); return wordCard('kivsh', { note: `🌾 ${W.pshenytsia.uk} × 0${xl(' · You need wheat to grind. It grows in the field beside the church, or buy seeds at the market.')}` }); }
   const n = Math.min(have, 6 - Math.ceil(MILL.grain));
   if (n <= 0) return toast('🌾 ' + xlT('The hopper is full.'), 1800);
   S.bag.pshenytsia -= n; MILL.grain += n; hud(); save(); learn('kivsh'); millFlash('nasyp');
@@ -9307,7 +9309,7 @@ const MILL_STEPS = {
   sack: ['🛍️', 'Постав мішок під жолоб', 'Tap the dotted box under the spout: stand a sack there.'],
   hopper: ['🌾', 'Насип пшеницю в ківш', 'Tap the hopper up by the ladder: she climbs up and tips your wheat in.'],
   climb: ['🪜', 'Насип пшеницю в ківш', 'Up the ladder with the wheat…'],
-  nowheat: ['🌾', 'Немає пшениці', 'You have no wheat to grind. Pick some in the field beside the church or the strip by the pond, then come back.'],
+  nowheat: ['🌾', 'Немає пшениці', 'You have no wheat to grind. Pick some in the field beside the church, then come back.'],
   start: ['🔴', 'Тягни важіль: млин рушить', 'Pull the red lever: the sails turn and the stones start.'],
   wheel: ['🔄', 'Крути колесо: стрілка на зелене', 'Hold the little wheel. Let go when the needle is on green.'],
   wait: ['⏳', 'Мелемо…', 'Grinding: watch the flour pour into the sack.'],
@@ -11647,7 +11649,7 @@ function drawWorld(t) {
     else if (e.w === 'metelyk') drawIcon(c, e.ic, x, y - hop, s, { t: t + e.ph });   // each butterfly flaps on its own beat
     else if (e.lean) { c.save(); c.translate(x, y); c.rotate(e.lean); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }   // propped against something
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
-    else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
+    else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, (e.tilt || 0) + (GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0), zoom);   // flowers nod in the breeze
     else if (e.w === 'krynytsia') drawIcon(c, e.ic, x, y, s, { t, fx: WELLFX && WELLFX.phase === 'draw' ? t - WELLFX.t0 : null });
     else { const sway = GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0; if (hop || e.ic[0] !== '@' || !cachedIcon(c, e, x, y, s, sway)) drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway }); }
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 1.0, t, s / 220);
@@ -12615,11 +12617,12 @@ function posterBackground(W, H) {
     for (let i = 0; i < 14; i++) { const k = i / 13, x = W * (0.9 + (i % 3) * 0.035) + k * W * 0.02, y = H * (0.5 + k * 0.28); if (Math.abs(y - (ey - H * 0.05)) < H * 0.03) continue; (i % 2 ? fir : round)(x, y, S * (0.05 + k * 0.03)); }
     // the stream carries on from where it leaves the village, a short way right and a little up, out of the picture
     const SP2 = STREAM.map(p => proj(p[0] * T, p[1] * T)).reverse(), i0 = Math.max(1, SP2.findIndex(p => p[0] > W * 0.86));   // the village's stream, from the pond outwards
-    const j0 = SP2[i0 - 1], sp = [[j0[0], j0[1]], [Math.min(W * 0.93, j0[0] + W * 0.05), j0[1] - H * 0.004], [W * 1.05, j0[1] - H * 0.02]];
+    // it starts back on the village's own stream, drawn the same way (bank, sand, water, shine) so the joint can't be seen
+    const j0 = SP2[Math.max(0, i0 - 3)], j1 = SP2[i0 - 1], ws = j1[2];
+    const sp = [[j0[0], j0[1]], [j1[0], j1[1]], [Math.min(W * 0.95, j1[0] + W * 0.06), j1[1] - H * 0.006], [W * 1.06, j1[1] - H * 0.022]];
     c.lineCap = 'round'; c.lineJoin = 'round';
-    for (const [col, wk] of [[sea === 'zyma' ? '#c9d8ea' : '#2f6f9a', 1.4], [sea === 'zyma' ? '#e8f0fa' : '#4aa3dc', 1], [sea === 'zyma' ? '#ffffff' : 'rgba(210,240,255,.95)', 0.35]])
-      for (let i = 0; i < sp.length - 1; i++) { const m0 = i ? [(sp[i - 1][0] + sp[i][0]) / 2, (sp[i - 1][1] + sp[i][1]) / 2] : sp[0], m1 = i < sp.length - 2 ? [(sp[i][0] + sp[i + 1][0]) / 2, (sp[i][1] + sp[i + 1][1]) / 2] : sp[i + 1];   // a smooth winding line through the points
-        c.strokeStyle = col; c.lineWidth = S * 0.011 * wk * (1 - i * 0.12); c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(sp[i][0], sp[i][1], m1[0], m1[1]); c.stroke(); }
+    const layers = sea === 'zyma' ? [['rgba(255,255,255,.4)', 1.5], ['#e9eef4', 1.12], ['#d2dae4', 0.92], ['#e1ecf8', 0.72], ['#ffffff', 0.36]] : [['rgba(88,156,76,.32)', 1.5], ['#d9c590', 1.12], ['#bba676', 0.92], ['#4fa8dc', 0.72], ['#7ccbef', 0.36]];
+    for (const [col, k] of layers) { c.strokeStyle = col; c.lineWidth = T * k * ws; c.beginPath(); c.moveTo(sp[0][0], sp[0][1]); c.lineTo(sp[1][0], sp[1][1]); c.quadraticCurveTo(sp[2][0], sp[2][1], (sp[2][0] + sp[3][0]) / 2, (sp[2][1] + sp[3][1]) / 2); c.lineTo(sp[3][0], sp[3][1]); c.stroke(); }
   }
   // the hill she stands on: a grassy crest across the bottom, rim-lit by the low sun
   const crest = x => H * (land ? 0.84 : 0.86) - Math.sin(x / W * 2.6 + 0.4) * H * 0.04 - (1 - x / W) * H * (land ? 0.02 : 0.05);
@@ -12672,10 +12675,10 @@ function drawTitle(t) {
     ribbon(c, 'Долина Вікі', cx, top + rib * 0.8, rib);
     fancyText(c, "Vickie's Valley", cx, top + rib * 1.9 + big * 0.85, W * 0.62, big, t);
   } else {
-    const big = Math.min(W * 0.2, H * 0.1), rib = big * 0.34;
-    const top2 = Math.max(top, B.hor - H * 0.025 - (rib * 1.9 + big * 1.95));   // the logo sits just above the hills
+    const big = Math.min(W * 0.19, H * 0.095), rib = big * 0.34, gap = rib * 2.25;
+    const top2 = Math.max(56 * (W / innerWidth), B.hor - H * 0.12 - (gap + big * 1.88));   // the logo is up in the sky, the bottom of «Valley» just above the hilltops
     ribbon(c, 'Долина Вікі', W / 2, top2 + rib * 0.8, rib);
-    const y1 = top2 + rib * 1.9 + big * 0.85, s1 = fancyText(c, "Vickie's", W / 2, y1, W * 0.84, big, t);
+    const y1 = top2 + gap + big * 0.85, s1 = fancyText(c, "Vickie's", W / 2, y1, W * 0.84, big, t);
     fancyText(c, 'Valley', W / 2, y1 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
   }
 }
