@@ -201,7 +201,7 @@
   #start #tc { position:absolute; inset:0; width:100%; height:100%; display:block; }
   #start .tmusic { position:absolute; top:calc(10px + env(safe-area-inset-top)); right:calc(10px + env(safe-area-inset-right)); width:46px; height:46px; border-radius:50%; background:rgba(255,248,234,.92); border:3px solid #4a2c1a; font-size:20px; box-shadow:0 3px 0 rgba(74,44,26,.35); z-index:2; }
   #start .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-  #start .btns { position:absolute; left:0; right:0; bottom:calc(44px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; gap:10px; }
+  #start .btns { position:absolute; left:0; right:0; bottom:calc(34px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; align-items:center; gap:10px; }
   #start .b { font-size:24px; padding:14px 46px; font-family:"Cozy", system-ui, sans-serif; letter-spacing:.5px; box-shadow:0 5px 0 #c98a1a, 0 8px 18px rgba(60,40,20,.25); border:3px solid #4a2c1a; }
   #start .b small { font-family:system-ui, sans-serif; }
   #start .letter { font-size:17px; padding:9px 20px; background:#fff8ea; box-shadow:0 4px 0 #dccfb6, 0 8px 18px rgba(60,40,20,.2); }
@@ -232,6 +232,11 @@
   #update { position:fixed; left:50%; transform:translateX(-50%); bottom:calc(84px + env(safe-area-inset-bottom)); z-index:35; display:none; background:var(--ink); color:#fff; border-radius:999px; padding:10px 16px; font-weight:800; font-size:15px; box-shadow:0 4px 14px rgba(0,0,0,.25); white-space:nowrap; }
   #update small { font-weight:600; opacity:.85; }
   #update.show { display:block; }
+  #start .ticon { position:absolute; bottom:calc(34px + env(safe-area-inset-bottom)); width:58px; height:58px; border-radius:50%; background:rgba(255,248,234,.92); border:3px solid #4a2c1a; font-size:27px; line-height:1; padding:0; box-shadow:0 4px 0 rgba(74,44,26,.4), 0 8px 18px rgba(30,10,30,.3); z-index:2; }
+  #start .tmic { left:calc(14px + env(safe-area-inset-left)); } #start .tletter { right:calc(14px + env(safe-area-inset-right)); }
+  #start .tmic.on::after { content:''; position:absolute; right:2px; top:2px; width:14px; height:14px; border-radius:50%; background:#3fb950; border:2px solid #fff; }
+  #start .tmic.blocked::after { content:''; position:absolute; right:2px; top:2px; width:14px; height:14px; border-radius:50%; background:#e2574c; border:2px solid #fff; }
+  #start .tmic.off { opacity:.5; }
   #start .ver { position:absolute; left:12px; bottom:calc(8px + env(safe-area-inset-bottom)); font-size:14px; color:#fff; opacity:.9; text-shadow:0 1px 2px rgba(0,0,0,.45); }
   #start .reset { position:absolute; right:12px; bottom:calc(8px + env(safe-area-inset-bottom)); font-size:14px; background:none; color:#fff; opacity:.9; text-decoration:underline; text-shadow:0 1px 2px rgba(0,0,0,.45); }
   /* action words (verbs) stand out wherever they appear */
@@ -313,15 +318,15 @@
   <h1 class="sr">Котяча Долина · Kotiacha Dolyna · Cat Valley</h1>
   <div class="btns">
     <button class="b" data-a="start">Почати<small>Start</small></button>
-    <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
-    <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v315</div>
+  <button class="ticon tmic" id="micBtn" data-a="mic" aria-label="Мікрофон · Microphone" title="Мікрофон · Microphone">🎤</button>
+  <button class="ticon tletter" data-a="story" aria-label="Лист від баби Олі · A letter from Grandma Olia" title="Лист від баби Олі · A letter from Grandma Olia">✉️</button>
+  <div class="ver">v316</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '315';</script>
-<script src="data.js?v=315"></script>
-<script src="game.js?v=315"></script>
+<script>window.APP_VERSION = '316';</script>
+<script src="data.js?v=316"></script>
+<script src="game.js?v=316"></script>
 </body>
 </html>

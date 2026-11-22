@@ -8245,7 +8245,7 @@ function micRefresh() {
   else if (MIC.state === 'granted') { top = '🎤 Мікрофон увімкнено ✓'; sub = 'Microphone is on'; }
   else if (MIC.state === 'denied') { top = '🎤 Мікрофон заблоковано'; sub = 'Blocked: tap for how to allow it'; }
   else { top = '🎤 Увімкнути мікрофон'; sub = 'Enable microphone'; }
-  b.innerHTML = `${top}<small>${sub}</small>`; b.classList.toggle('off', off);
+  b.innerHTML = '🎤'; b.title = top.replace('🎤 ', '') + ' · ' + sub; b.setAttribute('aria-label', b.title); b.classList.toggle('off', off); b.classList.toggle('on', MIC.state === 'granted'); b.classList.toggle('blocked', MIC.state === 'denied');
 }
 if (MIC.supported && navigator.permissions && navigator.permissions.query) {
   navigator.permissions.query({ name: 'microphone' }).then(p => { MIC.state = p.state; micRefresh(); p.onchange = () => { MIC.state = p.state; micRefresh(); }; }).catch(() => {});
@@ -12461,60 +12461,217 @@ function ribbon(c, text, cx, cy, size) {
   c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, cx, cy + size * 0.06);
 }
 
+// The title screen is a movie poster: golden-hour light over the real valley (the village's own ground, laid out
+// in perspective as if seen from a hill, with every house, tree and thing in it drawn upright at its own spot),
+// hills along both sides, the stream coming down the right-hand one, Vicky big in the bottom left corner and
+// partly out of the picture, and the painted logo with its red ribbon above it.
+const POSTER = { img: null, map: null, bg: null, key: '', petals: [], stand: [], pending: true, tries: 0, lastQ: -1 };
+{ const im = new Image(); im.onload = () => { POSTER.img = im; POSTER.bg = null; }; im.src = 'portraits/vicky-poster.webp'; }
+// The village's ground from straight above (grass, roads, the pond, the stream, and the flat things), at scale ms.
+// Everything that stands up is kept in POSTER.stand and drawn one by one, upright, in the poster.
+function posterMap(ms) {
+  const mc = document.createElement('canvas'); mc.width = Math.round(MW * T * ms); mc.height = Math.round((MH + GROUND_TOP) * T * ms);
+  const c = mc.getContext('2d'); c.setTransform(ms, 0, 0, ms, 0, 0);
+  c.drawImage(seasonGround(), 0, 0); c.translate(0, GROUND_TOP * T);
+  const sv = [camX, camY, zoom]; camX = -T; camY = -GROUND_TOP * T; zoom = 0.01;   // so the "is it on screen" checks pass
+  try { if (winter()) drawIce(c, 0); else drawWater(c, 0); } catch (e) {}
+  try { drawFalls(c, 0); } catch (e) {}
+  [camX, camY, zoom] = sv;
+  const list = ents.filter(e => !(e.hide && !ready(e)) && !goneNow(e) && !e.vis && !e.cat && e.kind !== 'npc' && e.kind !== 'fly' && e.kind !== 'pond' && e.kind !== 'cc' && e.w !== 'ryba' && e.k !== 'swing');
+  for (const e of list) {
+    if (!e.flat && e.kind !== 'plot') continue;
+    const x = e.x * T, y = e.y * T, s = (e.s || 1) * T;
+    try {
+      if (e.kind === 'plot') { c.save(); c.translate(x, y); c.scale(e.s, e.s); drawIcon(c, '@plot', 0, T * 0.5, T); c.restore(); }
+      else if (e.ic) drawIcon(c, e.ic, x, y, s, { t: 0, v: e.x * 0.37 + e.y * 0.61 });
+    } catch (err) {}
+  }
+  POSTER.stand = list.filter(e => !e.flat && e.kind !== 'plot').sort((a, b) => a.y - b.y);
+  POSTER.map = { cv: mc, ms };
+}
+// Everything that doesn't move, painted once into one picture: sky, the valley, the hills, the hill she stands on, Vicky.
+function posterBackground(W, H) {
+  const land = W > H * 1.15, S = Math.min(W, H), bg = document.createElement('canvas'); bg.width = W; bg.height = H;
+  const c = bg.getContext('2d'), sea = season();
+  const pal = { lito: { grass: ['#6fae3f', '#3f7d2c'], far: '#8fa8c8' }, vesna: { grass: ['#82c25a', '#4d8f38'], far: '#9cb4d4' },
+    osin: { grass: ['#b9a043', '#7a6a2a'], far: '#a89cb8' }, zyma: { grass: ['#e8eef6', '#b8c6d8'], far: '#b4c0d8' } }[sea];
+  // The valley floor is the real map in perspective, seen from up on the hill: near rows big, far rows smaller
+  // (ratio), the ground foreshortened (fs) as it is when you look down on it.
+  const mapW = MW * T, D = MH * T, ms = POSTER.map.ms, mcv = POSTER.map.cv, gt = GROUND_TOP * T;
+  const yNear = H * (land ? 1.12 : 0.94), ratio = land ? 0.62 : 0.78, z0 = D * ratio / (1 - ratio);
+  const s0 = (land ? W * 0.98 : W * 1.25) / mapW, fs = land ? 0.62 : 1.4, A = fs * s0 * z0 * z0, vh = yNear - A / z0;
+  const cxm = 25 * T, cxs = W * (land ? 0.56 : 0.5);
+  const proj = (mx, my) => { const u = D - my, s = s0 * z0 / (z0 + u); return [cxs + (mx - cxm) * s, vh + A / (z0 + u), s]; };
+  const yFar = proj(0, 0)[1], hor = yFar + H * 0.005;
+  // sky at golden hour
+  let g = c.createLinearGradient(0, 0, 0, yFar); g.addColorStop(0, '#2f5d94'); g.addColorStop(0.45, '#7fa9d6'); g.addColorStop(0.8, '#f3c98e'); g.addColorStop(1, '#ffdca0');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const sunX = W * (land ? 0.74 : 0.78), sunY = hor - H * (land ? 0.1 : 0.07);
+  g = c.createRadialGradient(sunX, sunY, 0, sunX, sunY, S * 0.9); g.addColorStop(0, 'rgba(255,244,200,1)'); g.addColorStop(0.08, 'rgba(255,226,150,.9)'); g.addColorStop(0.35, 'rgba(255,190,110,.35)'); g.addColorStop(1, 'rgba(255,170,90,0)');
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  for (let i = 0; i < 5; i++) { const cy = hor * (0.12 + i * 0.13), cx = W * ((i * 0.37 + 0.1) % 1), cw = W * (0.5 + (i % 2) * 0.3);   // long soft clouds, lit from below
+    g = c.createLinearGradient(0, cy - S * 0.02, 0, cy + S * 0.02); g.addColorStop(0, 'rgba(255,255,255,.0)'); g.addColorStop(0.5, `rgba(255,${226 - i * 6},${200 - i * 10},${0.35 + i * 0.06})`); g.addColorStop(1, 'rgba(255,200,150,0)');
+    c.fillStyle = g; ell(c, cx, cy, cw * 0.5, S * 0.022); }
+  // far mountains, hazy, behind the valley
+  const ridge = (base, amp, f, ph, col, jag) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W + 8; x += 8) { const u = x / W; c.lineTo(x, base - amp * (0.55 + 0.45 * Math.sin(u * f + ph)) - (jag ? amp * 0.18 * Math.sin(u * f * 5.3 + ph * 2) : 0)); } c.lineTo(W, H); c.closePath(); c.fill(); };
+  ridge(hor, H * 0.1, 7, 1.2, 'rgba(150,150,196,.8)', true);
+  ridge(hor + H * 0.01, H * 0.065, 9, 0.4, 'rgba(126,146,170,.85)', true);
+  ridge(hor + H * 0.012, H * 0.035, 6, 2.5, pal.far, false);
+  // the valley, on a layer of its own so it can be graded like a miniature
+  const vl = document.createElement('canvas'); vl.width = W; vl.height = H; const v = vl.getContext('2d');
+  const meadow = sea === 'zyma' ? '#e8eef4' : sea === 'osin' ? '#b6a45a' : '#86c560';
+  for (let y = Math.floor(yFar) - 1; y < Math.min(H, yNear); y++) {
+    const u = A / (y + 0.5 - vh) - z0; if (u > D) continue;
+    const my = D - u, s = s0 * z0 / (z0 + u), du = (z0 + u) * (z0 + u) / A + 1, sy = (my + gt) * ms;
+    if (sy < 0 || sy >= mcv.height) continue;
+    v.fillStyle = meadow; v.fillRect(0, y, W, 1.6);   // the meadow carries on past the map's sides
+    v.drawImage(mcv, 0, sy, mcv.width, Math.max(1, du * ms), cxs - cxm * s, y, mapW * s, 1.6);
+  }
+  // past the map's sides the land rises (steeply), wooded; drawn row by row, far to near, with the village's
+  // own standing things in the same rows so nearer things always cover further ones
+  const firCol = sea === 'zyma' ? ['#4f6a68', '#7d9894', '#eef4fa'] : sea === 'osin' ? ['#2f4a2e', '#4d6e3a', null] : ['#24502f', '#3f7a43', null];
+  const leafCol = sea === 'osin' ? ['#b4521f', '#e08a2a', '#f2b43a'] : sea === 'zyma' ? null : sea === 'vesna' ? ['#4f9a48', '#7cc26a', '#f6c6d8'] : ['#2f7a3a', '#4f9a48', '#7cc26a'];
+  const slopeCol = { lito: [104, 170, 74], vesna: [118, 186, 88], osin: [176, 150, 72], zyma: [226, 234, 244] }[sea];
+  const tree = (x, y, h, r) => {
+    if (leafCol && r > 0.6) { v.fillStyle = 'rgba(20,40,20,.25)'; ell(v, x, y, h * 0.3, h * 0.08); v.fillStyle = '#5a3a20'; v.fillRect(x - h * 0.04, y - h * 0.35, h * 0.08, h * 0.35); v.fillStyle = leafCol[0]; circ(v, x, y - h * 0.55, h * 0.32); v.fillStyle = leafCol[1]; circ(v, x - h * 0.08, y - h * 0.62, h * 0.22); v.fillStyle = leafCol[2]; circ(v, x - h * 0.12, y - h * 0.7, h * 0.1); return; }
+    v.fillStyle = 'rgba(20,40,20,.25)'; ell(v, x, y, h * 0.22, h * 0.06);
+    for (let i = 0; i < 3; i++) { const ty = y - h * (0.1 + i * 0.28), tw = h * (0.34 - i * 0.08), th = h * 0.42;
+      v.fillStyle = firCol[0]; v.beginPath(); v.moveTo(x, ty - th); v.lineTo(x - tw, ty); v.lineTo(x + tw, ty); v.closePath(); v.fill();
+      v.fillStyle = firCol[1]; v.beginPath(); v.moveTo(x, ty - th); v.lineTo(x - tw, ty); v.lineTo(x - tw * 0.1, ty); v.closePath(); v.fill();
+      if (firCol[2]) { v.fillStyle = firCol[2]; v.beginPath(); v.moveTo(x, ty - th); v.lineTo(x - tw * 0.5, ty - th * 0.5); v.lineTo(x + tw * 0.3, ty - th * 0.55); v.closePath(); v.fill(); } }
+  };
+  const out = (mx, my) => Math.max(0, -mx, mx - mapW) / T;   // tiles out past the map's side
+  const hOf = (mx, my) => T * 0.75 * Math.pow(out(mx, my), 1.25);
+  const P3 = (mx, my) => { const [x, y, s] = proj(mx, my); return [x, y - hOf(mx, my) * s * 0.85, s]; };
+  const distSeg = (px, py, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy, t = Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / l)); return Math.hypot(px - a[0] - dx * t, py - a[1] - dy * t); };
+  const stand = POSTER.stand; treeBudget = 3; spriteBudget = 40;
+  let sd2 = 17; const rn2 = () => (sd2 = (sd2 * 16807) % 2147483647) / 2147483647;
+  const SIDE = 18, x0 = -SIDE * T, x1 = mapW + SIDE * T, ybot = D + 4 * T;
+  const SPR = [[50.8, 15.3], [51.7, 12.6], [51.2, 9.2], [52.1, 5.6], [51.4, 2.1], [50.7, -1.8]].map(([x, y]) => [x * T, y * T]);
+  for (let my = 0; my < ybot; my += T) {
+    const cells = []; for (let mx = x0; mx < x1; mx += T) if (mx < 0 || mx + T > mapW) cells.push(mx);
+    cells.sort((a, b) => out(b + T / 2, my) - out(a + T / 2, my));
+    for (const mx of cells) {
+      const q = [P3(mx, my), P3(mx + T, my), P3(mx + T, my + T), P3(mx, my + T)];
+      const dl = hOf(mx + T, my) - hOf(mx, my), k = (1 + Math.max(-0.22, Math.min(0.22, dl / T * 0.12))) * (0.94 + rn2() * 0.1);
+      const col = `rgb(${Math.min(255, slopeCol[0] * k) | 0},${Math.min(255, slopeCol[1] * k) | 0},${Math.min(255, slopeCol[2] * k) | 0})`;
+      v.fillStyle = col; v.strokeStyle = col; v.lineWidth = 1; v.beginPath(); q.forEach((p, i) => i ? v.lineTo(p[0], p[1]) : v.moveTo(p[0], p[1])); v.closePath(); v.fill(); v.stroke();
+    }
+    // the village's own things standing in this row, each drawn upright at its spot and scaled for distance
+    for (const e of stand) { const ey = e.y * T; if (ey < my || ey >= my + T) continue; const [x, y, s] = proj(e.x * T, ey); if (x < -200 || x > W + 200) continue;
+      v.save(); v.translate(x, y); v.scale(s, s); const sz = (e.s || 1) * T;
+      try { if (e.ic && e.ic[0] === '@') { v.fillStyle = 'rgba(30,40,10,.2)'; ell(v, 0, 0, sz * 0.36, sz * 0.09); }
+        if (e.an) drawAnimal0(v, 0, 0, e, 0); else if (e.flipX) { v.scale(-1, 1); drawIcon(v, e.ic, 0, 0, sz, { t: 0 }); } else if (e.sleep) drawIcon(v, '@kupka', 0, 0, sz * 1.2, { t: 0 }); else if (e.lift) drawIcon(v, e.ic, 0, -e.lift * T, sz, { t: 0 }); else if (e.ic) drawIcon(v, e.ic, 0, 0, sz, { t: 0, v: e.x * 0.37 + e.y * 0.61 }); } catch (err) {}
+      v.restore(); }
+    // trees on the slopes, in clumps with clearings, and none on the stream
+    for (let mx = x0; mx < x1; mx += T * 0.62) {
+      const tx = mx + rn2() * T * 0.6, ty = my + rn2() * T, d = out(tx, ty), r = rn2();
+      const clump = Math.sin(tx * 0.011 + 1.3) * Math.sin(ty * 0.014 + 0.4) + Math.sin(tx * 0.027 + ty * 0.019) * 0.5;
+      if (d <= 0.15 || (d < 1.2 && r < 0.45) || clump < -0.15 || (clump < 0.25 && r < 0.6)) continue;
+      if (SPR.some((p, i) => i < SPR.length - 1 && distSeg(tx, ty, p, SPR[i + 1]) < T * 0.9)) continue;
+      const [x, y, s] = P3(tx, ty); if (x < -80 || x > W + 80 || y > yNear + 40 || y < -60) continue;
+      tree(x, y, s * T * (1.5 + r * 1.2), rn2());
+    }
+  }
+  POSTER.pending = treeBudget <= 0;   // a tree had to wait to be grown: paint it again soon
+  // graded like a tilt-shift photograph of a model village: richer colour, and the far and near ends out of focus
+  c.save(); c.filter = 'saturate(1.3) contrast(1.06)'; c.drawImage(vl, 0, 0); c.restore();
+  if ('filter' in c) {
+    const bl = document.createElement('canvas'); bl.width = W; bl.height = H; const b = bl.getContext('2d');
+    b.filter = `blur(${Math.max(1.5, S * 0.004).toFixed(1)}px) saturate(1.25)`; b.drawImage(vl, 0, 0); b.filter = 'none';
+    b.globalCompositeOperation = 'destination-out';
+    g = b.createLinearGradient(0, hor, 0, yNear); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.22, 'rgba(0,0,0,1)'); g.addColorStop(0.62, 'rgba(0,0,0,1)'); g.addColorStop(0.9, 'rgba(0,0,0,0)');
+    b.fillStyle = g; b.fillRect(0, hor, W, yNear - hor);
+    c.drawImage(bl, 0, 0);
+  }
+  // a little aerial haze at the far end, warm light over all of it
+  g = c.createLinearGradient(0, hor - H * 0.03, 0, yFar + (yNear - yFar) * 0.4); g.addColorStop(0, 'rgba(240,214,196,.35)'); g.addColorStop(0.3, 'rgba(240,220,200,.1)'); g.addColorStop(1, 'rgba(240,220,200,0)'); c.fillStyle = g; c.fillRect(0, hor - H * 0.03, W, yNear - hor);
+  c.save(); c.globalCompositeOperation = 'soft-light'; g = c.createRadialGradient(sunX, sunY, 0, sunX, sunY, S * 1.4); g.addColorStop(0, 'rgba(255,200,120,.85)'); g.addColorStop(1, 'rgba(255,160,90,.15)'); c.fillStyle = g; c.fillRect(0, hor, W, H); c.restore();
+  // hills along both sides of the picture, so the village plainly sits down in a valley; the stream runs down
+  // the right-hand one to where it enters the village in the game
+  if (!land) {
+    const E = proj(50.8 * T, 15.3 * T), hc = { lito: ['#5f9c48', '#3f7a36'], vesna: ['#6fb052', '#478a3c'], osin: ['#a08a3e', '#74622a'], zyma: ['#dfe7f2', '#b4c2d6'] }[sea];
+    const fir = (x, y, h) => { c.fillStyle = sea === 'zyma' ? '#4f6a68' : '#24502f'; for (let i = 0; i < 3; i++) { const ty = y - h * (0.1 + i * 0.28), tw = h * (0.32 - i * 0.08); c.beginPath(); c.moveTo(x, ty - h * 0.42); c.lineTo(x - tw, ty); c.lineTo(x + tw, ty); c.closePath(); c.fill(); } c.fillStyle = 'rgba(255,230,160,.35)'; c.beginPath(); c.moveTo(x, y - h * 0.98); c.lineTo(x + h * 0.16, y - h * 0.3); c.lineTo(x + h * 0.04, y - h * 0.3); c.closePath(); c.fill(); };
+    const round = (x, y, h) => { c.fillStyle = sea === 'osin' ? '#b4521f' : sea === 'zyma' ? '#8a7a6a' : '#2f7a3a'; circ(c, x, y - h * 0.5, h * 0.36); c.fillStyle = sea === 'osin' ? '#e08a2a' : sea === 'zyma' ? '#a89888' : '#4f9a48'; circ(c, x + h * 0.08, y - h * 0.58, h * 0.24); };
+    const hill = (pts, lit, seed) => {
+      c.save(); c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i + 2 < pts.length; i += 3) c.bezierCurveTo(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], pts[i + 2][0], pts[i + 2][1]); c.closePath();
+      const g2 = c.createLinearGradient(lit < 0 ? W : 0, 0, lit < 0 ? W * 0.7 : W * 0.3, H); g2.addColorStop(0, hc[0]); g2.addColorStop(1, hc[1]); c.fillStyle = g2; c.fill(); c.clip();
+      let r = seed; const rn = () => (r = (r * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 90; i++) { const x = rn() * W, y = H * (0.4 + rn() * 0.5); c.fillStyle = `rgba(${rn() < 0.5 ? '255,240,190' : '20,40,20'},.08)`; ell(c, x, y, S * (0.03 + rn() * 0.05), S * 0.012); }
+      c.restore();
+      c.strokeStyle = sea === 'zyma' ? 'rgba(255,255,255,.9)' : 'rgba(255,226,150,.75)'; c.lineWidth = S * 0.007; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); c.bezierCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1], pts[3][0], pts[3][1]); c.stroke();
+    };
+    // left: a long hill coming down behind Vicky
+    hill([[0, H * 0.5], [W * 0.1, H * 0.48], [W * 0.2, H * 0.52], [W * 0.27, H * 0.6], [W * 0.31, H * 0.65], [W * 0.2, H * 0.72], [W * 0.08, H * 0.78], [W * 0.03, H * 0.8], [0, H * 0.85], [0, H * 0.85], [0, H * 0.7], [0, H * 0.5], [0, H * 0.5]], 1, 3);
+    for (let i = 0; i < 16; i++) { const k = i / 15, x = W * (0.01 + k * 0.24), y = H * (0.49 + k * k * 0.12) + S * 0.01; (i % 3 ? fir : round)(x, y + S * 0.006 * (i % 2), S * (0.05 + k * 0.02)); }
+    // right: a bigger hill, its foot reaching to where the stream comes into the village
+    const ex = Math.min(W * 0.94, E[0] + W * 0.02), ey = E[1];
+    hill([[W, H * 0.44], [W * 0.9, H * 0.45], [W * 0.82, H * 0.48], [W * 0.78, H * 0.53], [W * 0.84, H * 0.58], [ex - W * 0.02, ey - H * 0.03], [ex, ey + H * 0.01], [ex + W * 0.03, ey + H * 0.08], [W * 0.94, H * 0.8], [W, H * 0.84], [W, H * 0.6], [W, H * 0.44], [W, H * 0.44]], -1, 7);
+    for (let i = 0; i < 12; i++) { const k = i / 11, x = W * (0.99 - k * 0.2), y = H * (0.445 + k * k * 0.085) + S * 0.01; (i % 4 === 1 ? round : fir)(x, y, S * (0.048 + k * 0.015)); }
+    for (let i = 0; i < 14; i++) { const k = i / 13, x = W * (0.9 + (i % 3) * 0.035) + k * W * 0.02, y = H * (0.5 + k * 0.28); if (Math.abs(y - (ey - H * 0.05)) < H * 0.03) continue; (i % 2 ? fir : round)(x, y, S * (0.05 + k * 0.03)); }
+    // the stream, from a spring near the top of the right-hand hill down to the village, with little falls
+    const sp = [[W * 1.02, H * 0.465], [W * 0.97, H * 0.49], [W * 0.955, H * 0.52], [W * 0.935, H * 0.555], [W * 0.95, H * 0.585], [ex - W * 0.01, ey - H * 0.02], [E[0], E[1]]];
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    for (const [col, wk] of [[sea === 'zyma' ? '#c9d8ea' : '#2f6f9a', 1.4], [sea === 'zyma' ? '#e8f0fa' : '#4aa3dc', 1], [sea === 'zyma' ? '#ffffff' : 'rgba(210,240,255,.95)', 0.35]])
+      for (let i = 0; i < sp.length - 1; i++) { const m0 = i ? [(sp[i - 1][0] + sp[i][0]) / 2, (sp[i - 1][1] + sp[i][1]) / 2] : sp[0], m1 = i < sp.length - 2 ? [(sp[i][0] + sp[i + 1][0]) / 2, (sp[i][1] + sp[i + 1][1]) / 2] : sp[i + 1];   // a smooth winding line through the points
+        c.strokeStyle = col; c.lineWidth = S * 0.011 * wk * (0.5 + i / sp.length * 0.7); c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(sp[i][0], sp[i][1], m1[0], m1[1]); c.stroke(); }
+    if (sea !== 'zyma') for (let i = 1; i < sp.length - 1; i++) { c.fillStyle = 'rgba(255,255,255,.9)'; ell(c, sp[i][0], sp[i][1], S * 0.012, S * 0.005); }
+  }
+  // the hill she stands on: a grassy crest across the bottom, rim-lit by the low sun
+  const crest = x => H * (land ? 0.84 : 0.86) - Math.sin(x / W * 2.6 + 0.4) * H * 0.04 - (1 - x / W) * H * (land ? 0.02 : 0.05);
+  g = c.createLinearGradient(0, H * 0.72, 0, H); g.addColorStop(0, pal.grass[0]); g.addColorStop(1, pal.grass[1]);
+  c.fillStyle = g; c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W + 6; x += 6) c.lineTo(x, crest(x)); c.lineTo(W, H); c.closePath(); c.fill();
+  c.strokeStyle = 'rgba(255,230,160,.7)'; c.lineWidth = S * 0.006; c.beginPath(); for (let x = 0; x <= W + 6; x += 6) x ? c.lineTo(x, crest(x)) : c.moveTo(x, crest(x)); c.stroke();
+  let sd = 5; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  c.lineCap = 'round';
+  for (let i = 0; i < 260; i++) { const x = rn() * W, y0 = crest(x) + rn() * (H - crest(x)) * 0.5, h = S * (0.02 + rn() * 0.03); c.strokeStyle = rn() < 0.5 ? 'rgba(40,80,30,.55)' : 'rgba(170,210,110,.6)'; c.lineWidth = S * 0.003; c.beginPath(); c.moveTo(x, y0 + h * 0.4); c.quadraticCurveTo(x + h * 0.2, y0 - h * 0.3, x + h * 0.35, y0 - h * 0.6); c.stroke(); }
+  if (sea !== 'zyma') for (let i = 0; i < 46; i++) { const x = rn() * W, y = crest(x) + S * 0.01 + rn() * (H - crest(x)) * 0.35, r = S * (0.006 + rn() * 0.006); c.fillStyle = ['#fff6e0', '#ffd23f', '#ff8fb1', '#e2574c', '#b98cf0'][i % 5]; circ(c, x, y, r); c.fillStyle = 'rgba(120,70,20,.6)'; circ(c, x, y, r * 0.35); }
+  // Vicky, big, in the bottom left corner and partly out of the picture, with the sun on her
+  if (POSTER.img) {
+    const im = POSTER.img, ph = land ? H * 0.86 : Math.min(H * 0.5, W * 1.2), pw = ph * im.width / im.height, px = land ? -pw * 0.22 : -pw * 0.3, py = H - ph;
+    g = c.createRadialGradient(px + pw * 0.5, py + ph * 0.35, 0, px + pw * 0.5, py + ph * 0.35, pw * 0.75); g.addColorStop(0, 'rgba(255,236,180,.55)'); g.addColorStop(1, 'rgba(255,236,180,0)'); c.fillStyle = g; c.fillRect(px - pw * 0.3, py - ph * 0.2, pw * 1.6, ph * 1.4);
+    const pc = document.createElement('canvas'); pc.width = Math.ceil(pw); pc.height = Math.ceil(ph); const k = pc.getContext('2d');
+    k.drawImage(im, 0, 0, pw, ph);
+    k.globalCompositeOperation = 'source-atop'; g = k.createLinearGradient(pw, 0, pw * 0.5, 0); g.addColorStop(0, 'rgba(255,214,140,.55)'); g.addColorStop(0.35, 'rgba(255,214,140,0)'); k.fillStyle = g; k.fillRect(0, 0, pw, ph);   // a warm rim of light down her sunward side
+    g = k.createLinearGradient(0, ph * 0.6, 0, ph); g.addColorStop(0, 'rgba(40,20,40,0)'); g.addColorStop(1, 'rgba(40,20,40,.35)'); k.fillStyle = g; k.fillRect(0, 0, pw, ph);
+    // the shoulder the picture cuts off fades into the grass instead of ending in a hard edge
+    k.globalCompositeOperation = 'destination-out'; g = k.createLinearGradient(pw, 0, pw * 0.84, 0); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); k.fillStyle = g; k.fillRect(pw * 0.84, ph * 0.55, pw * 0.16, ph);
+    c.drawImage(pc, px, py);
+  }
+  // film grading: a vignette
+  g = c.createRadialGradient(W * 0.5, H * 0.45, S * 0.4, W * 0.5, H * 0.5, Math.hypot(W, H) * 0.62); g.addColorStop(0, 'rgba(30,10,30,0)'); g.addColorStop(1, 'rgba(30,10,30,.42)'); c.fillStyle = g; c.fillRect(0, 0, W, H);
+  return { cv: bg, sunX, sunY, hor };
+}
 function drawTitle(t) {
   const c = tctx, W = tcv.width, H = tcv.height, land = W > H * 1.15, S = Math.min(W, H);
-  const gy = H * (land ? 0.68 : 0.6);
-  // sky, sun, clouds
-  let g = c.createLinearGradient(0, 0, 0, gy);
-  g.addColorStop(0, '#8fd3f4'); g.addColorStop(0.75, '#cfeefc'); g.addColorStop(1, '#fff3cf');
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-  const sx = W * (land ? 0.88 : 0.84), sy = gy - H * (land ? 0.3 : 0.2), sr = S * 0.07;
-  c.save(); c.translate(sx, sy); c.rotate(t * 0.15); c.fillStyle = 'rgba(255,214,77,.45)';
-  for (let i = 0; i < 12; i++) { c.rotate(Math.PI / 6); poly(c, [[-sr * 0.25, -sr * 1.15], [0, -sr * 1.75], [sr * 0.25, -sr * 1.15]]); }
-  c.restore(); c.fillStyle = '#ffd34d'; circ(c, sx, sy, sr); c.fillStyle = '#ffe58a'; circ(c, sx - sr * 0.25, sy - sr * 0.25, sr * 0.45);
-  for (let i = 0; i < 4; i++) {
-    const cw = S * (0.16 + i * 0.03), cx = ((t * (12 + i * 5) * (W / 900) + i * W * 0.37) % (W + cw * 2)) - cw, cy = gy * (0.12 + (i % 3) * 0.17);
-    c.fillStyle = 'rgba(255,255,255,.92)'; circ(c, cx, cy, cw * 0.28); circ(c, cx + cw * 0.3, cy + cw * 0.05, cw * 0.22); circ(c, cx - cw * 0.3, cy + cw * 0.06, cw * 0.2); ell(c, cx, cy + cw * 0.14, cw * 0.55, cw * 0.12);
-  }
-  // hills and meadow
-  const hill = (col, base, amp, f, ph) => { c.fillStyle = col; c.beginPath(); c.moveTo(0, H); for (let x = 0; x <= W + 1; x += W / 40) c.lineTo(x, base - Math.sin(x / W * f + ph) * amp - amp); c.lineTo(W, H); c.closePath(); c.fill(); };
-  hill('#bfe59a', gy - S * 0.02, S * 0.05, 5, 0.6);
-  hill('#a6dc7c', gy + S * 0.02, S * 0.035, 7, 2.1);
-  g = c.createLinearGradient(0, gy, 0, H); g.addColorStop(0, '#9bd772'); g.addColorStop(1, '#6fb84f');
-  c.fillStyle = g; c.fillRect(0, gy + S * 0.02, W, H);
-  for (const [a, b, k] of DOTS) { c.fillStyle = k < 0.33 ? '#ffffff' : k < 0.66 ? '#ffe36e' : '#ffb3c7'; circ(c, a * W, gy + S * 0.05 + b * (H - gy), S * 0.006); }
-  // cottage, path, fence, apple tree, stork
-  const hs = Math.min(W * (land ? 0.3 : 0.6), H * (land ? 0.27 : 0.3)), hx = W / 2, hy = gy + S * 0.03;
-  c.fillStyle = '#ecd9a6'; c.beginPath(); c.moveTo(hx - hs * 0.09, hy - hs * 0.02); c.lineTo(hx + hs * 0.09, hy - hs * 0.02); c.lineTo(hx + hs * 0.5, H); c.lineTo(hx - hs * 0.5, H); c.closePath(); c.fill();
-  drawIcon(c, '@appletree', hx - hs * (land ? 1.6 : 0.62), hy - hs * 0.02, hs * 0.85, { fruit: true });
-  drawIcon(c, '@stork', hx + hs * (land ? 1.7 : 0.66), hy - hs * 0.01, hs * 0.8);
-  for (const dir of [-1, 1]) for (let i = 0; i < (land ? 12 : 6); i++) drawIcon(c, '@parkan', hx + dir * (hs * 0.62 + i * hs * 0.28), hy + hs * 0.02, hs * 0.3);
-  drawIcon(c, '@khata', hx, hy, hs);
-  for (let i = 0; i < (land ? 16 : 10); i++) { const side = i % 2 ? 1 : -1, n = Math.floor(i / 2); sunflower(c, hx + side * (hs * 0.62 + n * hs * 0.3), hy + hs * 0.01, hs * (0.42 + (n % 2) * 0.08), t, i); }
-  // the cats: Cleo, Cece (biggest by far) and Baby (smallest), out towards the sides so the buttons
-  // in the middle don't cover them
-  const cs = hs * 0.33, cy = hy + hs * (land ? 0.18 : 0.2), edge = (x, m = 0.6) => Math.max(cs * m, Math.min(W - cs * m, x));
-  const lx = land ? hx - hs * 1.05 : W * 0.2, rx = land ? hx + hs * 1.05 : W * 0.85;
-  cat(c, edge(lx), cy, cs, CATS[0], t, 0, 1);
-  cat(c, edge(rx), cy + hs * 0.02, cs * 1.3, CATS[1], t, 1.7, -1);
-  cat(c, edge(land ? lx + hs * 0.36 : W * 0.07, 0.35), cy + hs * 0.09, cs * 0.7, CATS[2], t, 3.1, 1);
-  // big sunflowers in the corners
-  sunflower(c, W * 0.06, H, hs * (land ? 0.55 : 0.78), t, 9);
-  sunflower(c, W * 0.17, H, hs * (land ? 0.42 : 0.6), t, 10);
-  sunflower(c, W * 0.94, H, hs * (land ? 0.55 : 0.8), t, 11);
-  sunflower(c, W * 0.83, H, hs * (land ? 0.4 : 0.58), t, 12);
-  // butterflies
-  for (let i = 0; i < 2; i++) { const bx = W * (0.3 + 0.4 * i) + Math.sin(t * 0.6 + i * 2) * W * 0.1, by = gy - S * 0.08 + Math.cos(t * 0.9 + i) * S * 0.04; c.save(); c.translate(bx, by); c.scale(1, Math.abs(Math.sin(t * 9 + i)) * 0.6 + 0.4); c.fillStyle = i ? '#ff8fb1' : '#ffd23f'; ell(c, -S * 0.012, 0, S * 0.012, S * 0.016); ell(c, S * 0.012, 0, S * 0.012, S * 0.016); c.restore(); }
-  // the logo: Vickie's Valley in the big painted letters, and its Ukrainian name, «Долина Вікі», on the red sign
-  const top = H * 0.05;
+  // the village picture first, then the poster around it (painted again a few times while the trees grow)
+  const ms = Math.min(0.6, Math.max(0.3, (land ? W * 1.2 : W * 1.5) / (MW * T)));
+  if (!POSTER.map || POSTER.map.ms !== ms) { posterMap(ms); POSTER.bg = null; }
+  { const q = Math.floor(t * 4); if (POSTER.pending && POSTER.tries < 60 && q !== POSTER.lastQ) { POSTER.lastQ = q; POSTER.bg = null; } }
+  const key = W + 'x' + H + season();
+  if (!POSTER.bg || POSTER.key !== key) { if (POSTER.key !== key) POSTER.tries = 0; POSTER.bg = posterBackground(W, H); POSTER.key = key; POSTER.tries++; }
+  const B = POSTER.bg; c.drawImage(B.cv, 0, 0);
+  // slow god rays from the sun
+  c.save(); c.globalCompositeOperation = 'lighter'; c.translate(B.sunX, B.sunY);
+  for (let i = 0; i < 9; i++) { const a = Math.PI * 0.55 + i * 0.13 + Math.sin(t * 0.15 + i) * 0.02, len = Math.hypot(W, H), w = 0.035 + (i % 3) * 0.015, al = 0.05 + 0.03 * Math.sin(t * 0.4 + i * 1.7);
+    const g = c.createLinearGradient(0, 0, Math.cos(a) * len, Math.sin(a) * len); g.addColorStop(0, `rgba(255,220,150,${al})`); g.addColorStop(1, 'rgba(255,220,150,0)'); c.fillStyle = g;
+    c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(a - w) * len, Math.sin(a - w) * len); c.lineTo(Math.cos(a + w) * len, Math.sin(a + w) * len); c.closePath(); c.fill(); }
+  c.restore();
+  // dandelion seeds and petals drifting through the light
+  if (!POSTER.petals.length) for (let i = 0; i < 26; i++) POSTER.petals.push([Math.random(), Math.random(), Math.random()]);
+  for (const [a, b, k] of POSTER.petals) { const x = ((a + t * (0.008 + k * 0.012)) % 1.1 - 0.05) * W, y = ((b + Math.sin(t * 0.3 + k * 9) * 0.03 + t * 0.004) % 1) * H, r = S * (0.003 + k * 0.004);
+    c.fillStyle = k < 0.6 ? `rgba(255,250,230,${0.5 + k * 0.4})` : 'rgba(255,170,190,.8)'; c.beginPath(); c.ellipse(x, y, r * (k < 0.6 ? 1 : 1.6), r, t + k * 6, 0, 7); c.fill(); }
+  // the logo, below the corner buttons: the red ribbon with «Долина Вікі» on top, then Vickie's Valley
+  const top = Math.max(S * 0.11, 64 * (W / innerWidth));
   if (land) {
-    const s1 = fancyText(c, "Vickie's Valley", W / 2, top + H * 0.13, W * 0.66, H * 0.14, t);
-    ribbon(c, 'Долина Вікі', W / 2, top + H * 0.13 + s1 * 0.95, s1 * 0.36);
+    const cx = W * 0.58, big = H * 0.14, rib = big * 0.34;
+    ribbon(c, 'Долина Вікі', cx, top + rib * 0.8, rib);
+    fancyText(c, "Vickie's Valley", cx, top + rib * 1.9 + big * 0.85, W * 0.62, big, t);
   } else {
-    const big = Math.min(W * 0.2, H * 0.1);
-    const s1 = fancyText(c, "Vickie's", W / 2, top + big * 1.05, W * 0.84, big, t);
-    fancyText(c, 'Valley', W / 2, top + big * 1.05 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
-    ribbon(c, 'Долина Вікі', W / 2, top + big * 1.05 + s1 * 1.72, s1 * 0.36);
+    const big = Math.min(W * 0.2, H * 0.1), rib = big * 0.34;
+    ribbon(c, 'Долина Вікі', W / 2, top + rib * 0.8, rib);
+    const y1 = top + rib * 1.9 + big * 0.85, s1 = fancyText(c, "Vickie's", W / 2, y1, W * 0.84, big, t);
+    fancyText(c, 'Valley', W / 2, y1 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
   }
 }
 
