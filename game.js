@@ -2744,11 +2744,14 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   dressTop(c, L, bob, fx, back);
   c.fillStyle = L.skin; circ(c, 0, -63 + bob, 14);
   c.fillStyle = L.hair; c.beginPath(); c.arc(0, -65 + bob, 14.6, Math.PI, 0); c.fill();
+  if (L.detail && back < 0.5) hairShine(c, 0, -65 + bob, 14.6);
   if (L.long) { rr(c, -15.5, -66 + bob, 5, 20, 2.5); rr(c, 10.5, -66 + bob, 5, 20, 2.5); c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
   c.save(); c.translate(fx, 0);   // the face slides toward the way she is looking
+  if (L.detail) faceDetail(c, L, bob, blink, side); else {
   c.fillStyle = '#3b2f2a'; if (blink) { c.fillRect(-7, -62.6 + bob, 4, 1.3); c.fillRect(3, -62.6 + bob, 4, 1.3); } else { circ(c, -5, -62 + bob, 1.8); circ(c, 5, -62 + bob, 1.8); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, -4.4, -62.7 + bob, 0.6); circ(c, 5.6, -62.7 + bob, 0.6); c.fillStyle = '#3b2f2a'; }
   c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.6; c.beginPath(); c.arc(0, -58 + bob, 4.5, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke();
   c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, -9, -58 + bob, 2.8 * (1 - side * 0.6)); circ(c, 9, -58 + bob, 2.8);
+  }
   if (back < 0.5) {
     if (L.beard) { c.fillStyle = L.beard; c.beginPath(); c.moveTo(-12, -60 + bob); c.quadraticCurveTo(-12, -46 + bob, 0, -45 + bob); c.quadraticCurveTo(12, -46 + bob, 12, -60 + bob); c.quadraticCurveTo(6, -54 + bob, 0, -55 + bob); c.quadraticCurveTo(-6, -54 + bob, -12, -60 + bob); c.fill(); }
     if (L.mustache || L.beard) { c.fillStyle = L.mustache || L.beard; c.beginPath(); c.moveTo(0, -59 + bob); c.quadraticCurveTo(-5, -61 + bob, -8, -56.5 + bob); c.quadraticCurveTo(-4, -57.5 + bob, 0, -57 + bob); c.quadraticCurveTo(4, -57.5 + bob, 8, -56.5 + bob); c.quadraticCurveTo(5, -61 + bob, 0, -59 + bob); c.fill(); }
@@ -2808,7 +2811,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   }
   c.restore();
 }
-const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true };
+const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true, detail: true, eye: '#6b4a2a', brow: '#c08a3a' };
 // Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
 // shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
 // apronTrim), vest (+ vestTrim), coat (+ fur), boots, beads, a hat (scarf, wreath) and ribbons on the wreath.
@@ -2927,11 +2930,14 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   c.fillStyle = L.skin; ell(c, 8, hy + 3.5, 9.5, 11.5);                       // ...except the face
   c.fillStyle = L.hair; ell(c, 4, hy - 9.5, 12, 5.5);                          // fringe over the forehead
   c.restore();
+  if (L.detail) hairShine(c, -1, hy - 1, 14);
   c.fillStyle = L.skin; circ(c, 13.6, hy + 1.2, 1.7);                          // nose, just breaking the outline
   if (L.long) { c.fillStyle = L.hair; rr(c, -15, hy - 2, 8, 24, 4); }         // the long hair falling behind
   if (L.long) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.lineCap = 'butt'; c.beginPath(); c.arc(0, hy, 14.2, Math.PI * 1.08, Math.PI * 1.72); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10.5, hy - 9.5, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -7, hy - 12.5, 2.6); }
+  if (L.detail) sideFaceDetail(c, L, hy, blink); else {
   c.fillStyle = '#3b2f2a'; if (blink) c.fillRect(6.5, hy + 0.6, 4, 1.3); else { ell(c, 8.5, hy + 1, 1.7, 2.1); c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, 9.1, hy + 0.2, 0.6); }
   c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, 7, hy + 6, 2.6);
+  }
   if (L.beard) { c.fillStyle = L.beard; c.beginPath(); c.moveTo(1, hy + 3); c.quadraticCurveTo(2, hy + 15, 10, hy + 16); c.quadraticCurveTo(15, hy + 12, 14, hy + 6); c.quadraticCurveTo(9, hy + 8, 1, hy + 3); c.fill(); }
   if (L.mustache || L.beard) { c.fillStyle = L.mustache || L.beard; ell(c, 12, hy + 5.8, 3.6, 1.6); }
   if (L.glasses) { c.strokeStyle = '#3b2f2a'; c.lineWidth = 1.1; c.beginPath(); c.arc(9, hy + 0.8, 3.3, 0, 7); c.moveTo(5.7, hy + 0.5); c.lineTo(-3, hy - 1.5); c.stroke(); }
@@ -4639,6 +4645,156 @@ function smoke(c, x, y, t, k) {
   for (let i = 0; i < 5; i++) { const f = (t * 0.15 + i / 5) % 1; c.fillStyle = `rgba(255,255,255,${0.55 * (1 - f) * Math.min(1, f * 6)})`; circ(c, x + (Math.sin(f * 5 + i) * 7 + f * 26) * k, y - f * 70 * k, (5 + f * 13) * k); }
 }
 
+// ------------------------------------------------------------------ picking things, animated
+// When Vicky picks something she really does it: for a flower or a mushroom she kneels, reaches down, plucks it
+// and stands up holding it (and has a sniff of a flower); for berries she crouches to the bush; for an apple she
+// goes up on tiptoe and tugs it off the branch. At the moment it comes away there's a flash of light, a ring,
+// sparkles and a flurry of petals or leaves; then she lifts it up and it flies off, trailing sparkles, into the
+// basket in the corner, which gives a little bounce. Positions in the pose are in her own pixels, feet at (0, 0),
+// facing right (the drawing is mirrored when she faces left).
+let PICK = null;   // { e, kind, t0, face, ic, contact, flown }
+const JOY = { until: 0 };   // her happy face (eyes closed in a smile) until then
+const PICK_T = { low: 1.3, mid: 1.2, high: 1.35 };
+const ease3 = u => u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u);
+const seg3 = (u, a, b) => ease3((u - a) / (b - a));
+const lerp2 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+function pickKind(e) {
+  if (e.give === 'yabluko' || e.w === 'yablunia' || e.w === 'hrusha' || (e.ic || '').includes('appletree')) return 'high';
+  if (e.w === 'kalyna' || e.w === 'malyna' || e.w === 'ozhyna' || (e.ic || '').includes('bush') || (e.s || 1) >= 1.1) return 'mid';
+  return 'low';
+}
+function pickPose(kind, u) {
+  const rest = [6, -30], chest = [11, -57], high = [13, -82];
+  if (kind === 'high') {
+    const up = seg3(u, 0, 0.32), tug = u > 0.32 && u < 0.56 ? Math.sin((u - 0.32) * 52) * 1.6 : 0, down = seg3(u, 0.56, 0.86), lift = seg3(u, 0.86, 1.0), drop = seg3(u, 1.02, 1.3);
+    let h = lerp2(rest, [12, -99 + tug], up); h = lerp2(h, chest, down); h = lerp2(h, high, lift); h = lerp2(h, rest, drop);
+    return { crouch: 0, lean: -0.07 * up * (1 - down), tip: 4.5 * up * (1 - down), hand: h, hold: u >= 0.45 && u < 1.0, joy: u > 0.5 && u < 1.3, far: 0.5 * up * (1 - down) };
+  }
+  const deep = kind === 'mid' ? 0.55 : 1, target = kind === 'mid' ? [16, -24] : [17, -4];
+  const down = seg3(u, 0, 0.36), up = seg3(u, 0.52, 0.86), lift = seg3(u, 0.86, 1.0), drop = seg3(u, 1.02, 1.28), wig = u > 0.36 && u < 0.52 ? Math.sin((u - 0.36) * 62) * 1.3 : 0, cr = down * (1 - up);
+  let h = lerp2(rest, [target[0], target[1] + wig], down); h = lerp2(h, chest, up); h = lerp2(h, high, lift); h = lerp2(h, rest, drop);
+  return { crouch: 10 * deep * cr, lean: 0.5 * deep * cr, tip: 0, hand: h, hold: u >= 0.45 && u < 1.0, joy: u > 0.5 && u < 1.3, far: 0.35 * cr, knee: cr * deep };
+}
+function pickStart(e) {
+  PICK = { e, kind: pickKind(e), t0: nowT, face: e.x >= P.x ? 1 : -1, ic: W[e.give].ic, contact: false, flown: false };
+  P.path = []; P.goal = null; P.face = PICK.face; P.lookAt = PICK.face > 0 ? Math.PI / 2 : Math.PI * 1.5;
+  sfxTone(420, 560, 0.18, 0.03, 'triangle');
+}
+const pickHandWorld = (K, q) => [P.x + K.face * q.hand[0] / T, P.y + q.hand[1] / T];
+function pickStep() {
+  const K = PICK; if (!K) return;
+  if (mode !== 'world') { if (!K.contact) takeNow(K.e); PICK = null; return; }
+  const u = (nowT - K.t0) / (window.__pickSlow || 1), q = pickPose(K.kind, u);   // (__pickSlow: for looking at it frame by frame)
+  P.face = K.face; P.path = [];
+  if (!K.contact && u >= 0.45) {
+    K.contact = true; const hw = pickHandWorld(K, q);
+    takeNow(K.e, false); fxPick(hw[0], hw[1], K.kind, K.e.give); JOY.until = nowT + 0.95;
+    sfxHit(K.kind === 'high' ? 1500 : 2200, 0.08, 0.05, 'bandpass', 3);   // the snap of the stalk
+    if (K.e.give === 'kvitka') setTimeout(() => { if (mode === 'world') for (let i = 0; i < 3; i++) fxAdd({ k: 'icon', ic: '❤️', x: P.x + K.face * 0.28 + rnd(-0.1, 0.1), y: P.y - 1.15, vx: rnd(-0.2, 0.2), vy: rnd(-1.1, -0.7), life: rnd(0.8, 1.1), s: rnd(10, 14), d: i * 0.12 }); }, 380);   // a sniff of the flower
+  }
+  if (!K.flown && u >= 1.0) { K.flown = true; const hw = pickHandWorld(K, pickPose(K.kind, 0.99)); flyToBag(hw[0], hw[1], K.ic); }
+  if (u >= PICK_T[K.kind]) { const e = K.e; PICK = null; takeCard(e); }
+}
+// the flash, ring, sparkles and petals (or leaves, or berries) at the moment it comes away
+function fxPick(x, y, kind, item) {
+  fxAdd({ k: 'halo', x, y, life: 0.6, s: 0.85 * T });
+  fxAdd({ k: 'ring', x, y: y + 0.05, life: 0.5, s: 42 });
+  for (let i = 0; i < 16; i++) { const a = i / 16 * 6.283 + rnd(-0.15, 0.15), v = rnd(0.9, 2.2); fxAdd({ k: 'star', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.9, g: 2.6, life: rnd(0.5, 0.9), s: rnd(4, 8), col: pick(['#ffd23f', '#fff3b0', '#ff9f43', '#ffffff', '#ffb6c8']) }); }
+  for (let i = 0; i < 8; i++) fxAdd({ k: 'spark', x: x + rnd(-0.35, 0.35), y: y - rnd(0, 0.5), vy: -rnd(0.3, 0.8), life: rnd(0.5, 0.8), s: rnd(3, 6), d: i * 0.05 });
+  const bits = item === 'kvitka' ? ['#ff7aa8', '#ffd23f', '#ffffff', '#b48cff', '#ff5a5a'] : kind === 'high' ? ['#5fae4a', '#7fc45a', '#4a9a3a', '#9ccf6a'] : kind === 'mid' ? ['#d4202a', '#5fae4a', '#a01818', '#7fc45a'] : ['#c8a46a', '#8fbf5a', '#e0c890', '#6fa848'];
+  for (let i = 0; i < 10; i++) fxAdd({ k: 'petal', x: x + rnd(-0.2, 0.2), y: y - rnd(0, 0.3), vx: rnd(-0.9, 0.9), vy: rnd(-1.6, -0.6), g: 1.5, life: rnd(1.0, 1.5), s: rnd(3, 5.5), col: pick(bits), rot: rnd(0, 6), spin: rnd(-8, 8) });
+}
+// the thing itself, flying from her hand into the basket in the corner
+function flyToBag(x, y, ic) {
+  const b = $('#bagBtn'); let x1 = x + 2, y1 = y + 3;
+  if (b && b.offsetParent) { const r = b.getBoundingClientRect(), k = cv.width / innerWidth; x1 = (camX + (r.left + r.width / 2) * k / zoom) / T; y1 = (camY + (r.top + r.height / 2) * k / zoom) / T; }
+  fxAdd({ k: 'fly', ic, x, y, x0: x, y0: y, x1, y1, life: 0.75, s: 26 });
+  sfxTone(700, 1200, 0.3, 0.025, 'sine');
+}
+function bagBump() {
+  const b = $('#bagBtn'); if (b && b.animate) b.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.28) rotate(-9deg)' }, { transform: 'scale(0.94) rotate(4deg)' }, { transform: 'scale(1)' }], { duration: 460, easing: 'ease-out' });
+  blip(1046, 0.07); setTimeout(() => blip(1318, 0.06), 70);
+}
+function pickArm(c, L, sx, sy, tx, ty, far) {   // shoulder to hand, bending at the elbow (down and out)
+  const A = 15, B = 18, dx = tx - sx, dy = ty - sy, d = Math.max(3, Math.min(A + B - 0.05, Math.hypot(dx, dy))), base = Math.atan2(dy, dx);
+  const cA = Math.acos(Math.max(-1, Math.min(1, (A * A + d * d - B * B) / (2 * A * d))));
+  const e1 = [sx + Math.cos(base + cA) * A, sy + Math.sin(base + cA) * A], e2 = [sx + Math.cos(base - cA) * A, sy + Math.sin(base - cA) * A], el = e1[1] > e2[1] ? e1 : e2;
+  const hx = sx + Math.cos(base) * d, hy = sy + Math.sin(base) * d, fa = Math.atan2(hy - el[1], hx - el[0]);
+  c.save(); c.lineCap = 'round'; c.strokeStyle = L.sleeve || L.shirt; c.lineWidth = 7;
+  c.beginPath(); c.moveTo(sx, sy + 2); c.lineTo(el[0], el[1]); c.lineTo(hx - Math.cos(fa) * 3, hy - Math.sin(fa) * 3); c.stroke();
+  c.strokeStyle = L.fur || L.trim; c.lineWidth = 7.4; c.lineCap = 'butt'; c.beginPath(); c.moveTo(hx - Math.cos(fa) * 5.5, hy - Math.sin(fa) * 5.5); c.lineTo(hx - Math.cos(fa) * 3.2, hy - Math.sin(fa) * 3.2); c.stroke();
+  c.fillStyle = L.skin; circ(c, hx, hy, 3.6);
+  if (far) { c.strokeStyle = 'rgba(60,40,30,.22)'; c.lineWidth = 7.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(sx, sy + 2); c.lineTo(el[0], el[1]); c.lineTo(hx, hy); c.stroke(); }
+  c.restore();
+}
+// Vicky in the middle of picking: the skirt pools as she kneels, she bends forward from the waist, and her
+// arm reaches for the thing (drawn in three parts, so nothing tilts that shouldn't)
+function drawPickPose(c, x, y, t) {
+  const K = PICK, u = (nowT - K.t0) / (window.__pickSlow || 1), q = pickPose(K.kind, u), f = K.face, L0 = ME;
+  c.save(); c.translate(x, y); c.scale(f, 1);
+  const kn = q.knee || 0, boot = L0.boots || '#5b4636', bootFar = L0.boots ? '#7a2420' : '#30251d', W0 = -31, d = q.crouch - q.tip, cs = Math.cos(q.lean), sn = Math.sin(q.lean);
+  // legs: the far one stays planted, the near one kneels (its shin swings down onto the grass)
+  c.lineCap = 'round';
+  c.strokeStyle = bootFar; c.lineWidth = 7; c.beginPath(); c.moveTo(-3 + 3 * kn, -13 + 4 * kn - q.tip); c.lineTo(-3 + 3 * kn, -3 - q.tip); c.stroke();
+  c.fillStyle = bootFar; rr(c, -7 + 3 * kn, -3.5 - q.tip, 11, 3.5, 1.7);
+  { const ang = kn * 1.45, ax = -2 * kn, ay = -2 - q.tip, kx = ax + Math.sin(ang) * 13, ky = ay - Math.cos(ang) * 13; c.strokeStyle = boot; c.lineWidth = 7; c.beginPath(); c.moveTo(ax, ay); c.lineTo(kx, ky); c.stroke(); c.fillStyle = L0.boots ? '#962a24' : '#3f3027'; c.save(); c.translate(ax, ay); c.rotate(-kn * 0.5); rr(c, -4, -1.5, 11, 3.5, 1.7); c.restore(); if (L0.boots) { c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(kx - 3 * Math.cos(ang), ky - 3 * Math.sin(ang)); c.lineTo(kx + 3 * Math.cos(ang), ky + 3 * Math.sin(ang)); c.stroke(); } }
+  // the shoulders, where the torso has bent to
+  const shx = sn * 16, shy = d + W0 - cs * 16;
+  // the far arm, a little forward as she balances
+  pickArm(c, L0, shx - 2, shy, shx - 1 + 12 * (q.far || 0), shy + 31 - 10 * (q.far || 0), true);
+  // the skirt and hips: only lowered, and spread a little as she kneels
+  const Lb = Object.assign({}, L0, { noArms: true, joy: q.joy });
+  c.save(); c.translate(0, d); c.translate(0, W0); c.scale(1 + 0.14 * kn, 1 - 0.1 * kn); c.translate(0, -W0); c.beginPath(); c.rect(-60, W0 - 0.5, 120, -9 - W0 + 0.5); c.clip(); personSide(c, 0, 0, Lb, t, 0, 1, 0); c.restore();
+  // the torso and head, bent forward from the waist
+  c.save(); c.translate(0, d); c.translate(0, W0); c.rotate(q.lean); c.translate(0, -W0); c.beginPath(); c.rect(-60, -160, 120, 160 + W0 + 1.5); c.clip(); personSide(c, 0, 0, Lb, t, 0, 1, 0); c.restore();
+  // the near arm, reaching
+  pickArm(c, L0, shx, shy, q.hand[0], q.hand[1], false);
+  // whatever she has just picked, in her hand
+  if (q.hold) { c.save(); c.translate(q.hand[0], q.hand[1]); c.scale(f, 1); c.rotate(Math.sin(t * 9) * 0.06); drawIcon(c, K.ic, 0, 6, 17); c.restore(); }
+  c.restore();
+}
+// her face, drawn finer (Vicky only): eyes with whites, irises, a highlight and lashes; brows; a nose; a mouth
+// that smiles, and opens when she's delighted; blush
+function faceDetail(c, L, bob, blink, side) {
+  const y = -62 + bob, joy = L.joy || nowT < JOY.until, eye = L.eye || '#6b4a2a', lash = '#2a1c14';
+  c.strokeStyle = L.brow || '#b07a3a'; c.lineWidth = 1.2; c.lineCap = 'round';
+  for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 2.6, y - 5.6); c.quadraticCurveTo(s * 5, y - 7.4 - (joy ? 0.7 : 0), s * 7.6, y - 6); c.stroke(); }
+  if (joy) { c.strokeStyle = lash; c.lineWidth = 1.5; for (const s of [-1, 1]) { c.beginPath(); c.arc(s * 5, y + 1.4, 2.5, Math.PI * 1.12, Math.PI * 1.88); c.stroke(); } }
+  else if (blink) { c.strokeStyle = lash; c.lineWidth = 1.3; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 5 - 2.4, y + 0.4); c.quadraticCurveTo(s * 5, y + 1.7, s * 5 + 2.4, y + 0.4); c.stroke(); } }
+  else for (const s of [-1, 1]) {
+    const x = s * 5;
+    c.fillStyle = '#fffaf6'; ell(c, x, y, 2.5, 2.9);
+    c.fillStyle = eye; ell(c, x + s * 0.15, y + 0.35, 1.95, 2.45);
+    c.fillStyle = 'rgba(255,230,180,.35)'; ell(c, x + s * 0.15, y + 1.5, 1.3, 0.85);
+    c.fillStyle = '#1a120c'; ell(c, x + s * 0.15, y + 0.45, 1.0, 1.35);
+    c.fillStyle = '#fff'; circ(c, x - 0.7, y - 0.75, 0.72); circ(c, x + 0.75, y + 1.3, 0.34);
+    c.strokeStyle = lash; c.lineWidth = 1.05; c.beginPath(); c.moveTo(x - 2.7, y - 0.1); c.quadraticCurveTo(x, y - 3.9, x + 2.7, y - 0.1); c.stroke();
+    c.beginPath(); c.moveTo(x + s * 2.5, y - 0.9); c.lineTo(x + s * 3.7, y - 2.3); c.stroke();
+  }
+  c.fillStyle = 'rgba(205,120,100,.45)'; ell(c, 0.4, y + 3.6, 0.9, 0.55);
+  const my = y + 5.8;
+  if (joy) { c.fillStyle = '#8a2e32'; c.beginPath(); c.moveTo(-3, my); c.quadraticCurveTo(0, my + 4.6, 3, my); c.closePath(); c.fill(); c.fillStyle = '#ef8a92'; ell(c, 0, my + 2.3, 1.5, 0.9); c.strokeStyle = '#6e2428'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-3.2, my - 0.2); c.quadraticCurveTo(0, my + 0.5, 3.2, my - 0.2); c.stroke(); }
+  else { c.strokeStyle = '#7a3a34'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-2.7, my); c.quadraticCurveTo(0, my + 2.3, 2.7, my); c.stroke(); c.fillStyle = 'rgba(230,110,120,.35)'; ell(c, 0, my + 1.7, 1.4, 0.6); }
+  c.fillStyle = 'rgba(245,120,125,.42)'; ell(c, -8.6, y + 4.2, 2.9 * (1 - side * 0.6), 1.8); ell(c, 8.6, y + 4.2, 2.9, 1.8);
+  c.strokeStyle = 'rgba(230,90,100,.5)'; c.lineWidth = 0.6; for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(s * 8.6 - 1.6 + i * 1.3, y + 5.2); c.lineTo(s * 8.6 - 0.9 + i * 1.3, y + 3.3); c.stroke(); }
+}
+function sideFaceDetail(c, L, hy, blink) {
+  const joy = L.joy || nowT < JOY.until, eye = L.eye || '#6b4a2a', lash = '#2a1c14';
+  c.strokeStyle = L.brow || '#b07a3a'; c.lineWidth = 1.1; c.lineCap = 'round'; c.beginPath(); c.moveTo(5.5, hy - 4.4); c.quadraticCurveTo(8.5, hy - 6.2 - (joy ? 0.6 : 0), 11.4, hy - 4.6); c.stroke();
+  if (joy) { c.strokeStyle = lash; c.lineWidth = 1.4; c.beginPath(); c.arc(8.7, hy + 2.1, 2.3, Math.PI * 1.12, Math.PI * 1.88); c.stroke(); }
+  else if (blink) { c.strokeStyle = lash; c.lineWidth = 1.2; c.beginPath(); c.moveTo(6.6, hy + 1); c.quadraticCurveTo(8.8, hy + 2.2, 11, hy + 1); c.stroke(); }
+  else { c.fillStyle = '#fffaf6'; ell(c, 8.8, hy + 1, 2.1, 2.6); c.fillStyle = eye; ell(c, 9.4, hy + 1.3, 1.6, 2.2); c.fillStyle = '#1a120c'; ell(c, 9.7, hy + 1.4, 0.85, 1.25); c.fillStyle = '#fff'; circ(c, 9.0, hy + 0.3, 0.62);
+    c.strokeStyle = lash; c.lineWidth = 1; c.beginPath(); c.moveTo(6.6, hy + 0.6); c.quadraticCurveTo(8.8, hy - 2.4, 11.2, hy + 0.4); c.stroke(); c.beginPath(); c.moveTo(6.8, hy + 0.2); c.lineTo(5.6, hy - 1.0); c.stroke(); }
+  if (joy) { c.fillStyle = '#8a2e32'; c.beginPath(); c.moveTo(9.4, hy + 7); c.quadraticCurveTo(11.6, hy + 10.2, 13.3, hy + 7.4); c.closePath(); c.fill(); }
+  else { c.strokeStyle = '#7a3a34'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(10, hy + 7.4); c.quadraticCurveTo(11.6, hy + 8.7, 13, hy + 7.2); c.stroke(); }
+  c.fillStyle = 'rgba(245,120,125,.42)'; ell(c, 6.6, hy + 5.8, 2.7, 1.7);
+}
+function hairShine(c, cx, cy, r) {   // a soft shine across the top of her hair, and a few darker strands
+  c.save(); c.lineCap = 'round';
+  c.strokeStyle = 'rgba(255,250,225,.5)'; c.lineWidth = 1.9; c.beginPath(); c.arc(cx, cy, r * 0.74, Math.PI * 1.2, Math.PI * 1.5); c.stroke();
+  c.strokeStyle = 'rgba(150,100,30,.32)'; c.lineWidth = 0.8; for (const a of [1.12, 1.3, 1.62, 1.8]) { c.beginPath(); c.moveTo(cx + Math.cos(Math.PI * a) * r * 0.3, cy + Math.sin(Math.PI * a) * r * 0.3 - 1); c.quadraticCurveTo(cx + Math.cos(Math.PI * a) * r * 0.7, cy + Math.sin(Math.PI * a) * r * 0.75, cx + Math.cos(Math.PI * a) * r * 0.98, cy + Math.sin(Math.PI * a) * r * 0.92); c.stroke(); }
+  c.restore();
+}
 // ------------------------------------------------------------------ little effects
 // Dust at your feet, sparkles and the thing itself floating up when you pick something, hearts, tap rings.
 // Positions are in tiles.
@@ -4666,7 +4822,12 @@ function fxTap(x, y, hit, e) {
   if (hit) for (let i = 0; i < 3; i++) fxAdd({ k: 'star', x: x + (Math.random() - 0.5) * 0.8, y: y - 0.4 - Math.random() * 0.6, vy: -0.8, life: 0.55, s: 5, col: ['#ffd23f', '#ffffff', '#ffb6c8'][i] });
 }
 function fxUpdate(dt) {
-  for (let i = fx.length - 1; i >= 0; i--) { const p = fx[i]; if (p.d > 0) { p.d -= dt; continue; } p.a += dt; if (p.a >= p.life) { fx.splice(i, 1); continue; } p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
+  for (let i = fx.length - 1; i >= 0; i--) { const p = fx[i]; if (p.d > 0) { p.d -= dt; continue; } p.a += dt;
+    if (p.k === 'fly' && !p.done && p.a >= p.life) { p.done = 1; bagBump(); }
+    if (p.a >= p.life) { fx.splice(i, 1); continue; }
+    if (p.k === 'fly') { const u = ease3(p.a / p.life), cy = Math.min(p.y0, p.y1) - 1.6; p.x = p.x0 + (p.x1 - p.x0) * u; p.y = (1 - u) * (1 - u) * p.y0 + 2 * (1 - u) * u * cy + u * u * p.y1; if (Math.random() < 0.7) fxAdd({ k: 'spark', x: p.x + rnd(-0.12, 0.12), y: p.y + rnd(-0.12, 0.12), life: rnd(0.3, 0.5), s: rnd(2.5, 5) }); continue; }
+    if (p.k === 'petal') { p.vx *= 1 - 1.6 * dt; p.vy = Math.min(p.vy, 0.55); p.x += Math.sin(p.a * 6 + p.rot) * 0.35 * dt; }
+    p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; }
 }
 const star4 = (c, x, y, R) => { c.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4, q = i % 2 ? R * 0.36 : R; c.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); } c.closePath(); c.fill(); };
 function fxDraw(c) {
@@ -4680,6 +4841,8 @@ function fxDraw(c) {
       c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.fillRect(x - p.s * 1.2, y - p.s * 1.2, p.s * 2.4, p.s * 2.4); c.restore(); }
     else if (p.k === 'spark') { const k = Math.sin(f * Math.PI); c.globalAlpha = k; c.fillStyle = '#fff6c8'; star4(c, x, y, p.s * (0.4 + k)); c.fillStyle = '#ffffff'; circ(c, x, y, p.s * 0.22 * k); c.globalAlpha = 1; }
     else if (p.k === 'ring') { c.strokeStyle = `rgba(255,255,255,${0.9 * (1 - f)})`; c.lineWidth = 3.5 * (1 - f) + 0.5; c.beginPath(); c.ellipse(x, y, p.s * (0.3 + f), p.s * (0.3 + f) * 0.55, 0, 0, 7); c.stroke(); }
+    else if (p.k === 'petal') { c.save(); c.globalAlpha = f > 0.7 ? 1 - (f - 0.7) / 0.3 : 1; c.translate(x, y); c.rotate(p.rot + p.spin * p.a); c.scale(1, 0.35 + 0.65 * Math.abs(Math.sin(p.a * 7 + p.rot))); c.fillStyle = p.col; ell(c, 0, 0, p.s, p.s * 0.55); c.fillStyle = 'rgba(255,255,255,.35)'; ell(c, -p.s * 0.3, -p.s * 0.15, p.s * 0.35, p.s * 0.18); c.restore(); }
+    else if (p.k === 'fly') { c.save(); c.translate(x, y); c.rotate(Math.sin(p.a * 14) * 0.25); const g = c.createRadialGradient(0, 0, 0, 0, 0, p.s * 0.9); g.addColorStop(0, 'rgba(255,250,210,.7)'); g.addColorStop(1, 'rgba(255,250,210,0)'); c.fillStyle = g; c.fillRect(-p.s, -p.s, p.s * 2, p.s * 2); drawIcon(c, p.ic, 0, p.s * 0.45, p.s * (1 - 0.45 * f)); c.restore(); }
     else if (p.k === 'icon') { const pop = Math.min(1, p.a / 0.15); c.globalAlpha = f > 0.6 ? 1 - (f - 0.6) / 0.4 : 1; drawIcon(c, p.ic, x, y, p.s * (0.5 + 0.5 * pop)); c.globalAlpha = 1; }
   }
 }
@@ -5462,6 +5625,7 @@ function wellStep() {
 function walkTo(wx, wy, ent) {
   if (WELLFX && WELLFX.phase === 'draw') return;   // busy at the well
   if (SW.rider && SW.phase !== 'walk') return;   // on the swing
+  if (PICK) return;   // picking something
   if (SW.phase === 'walk') SW.phase = '';   // she changed her mind
   if (ent && ent.kind === 'npc') {
     const sp = talkSpot(ent);
@@ -5688,13 +5852,19 @@ function churnCard() {
 function take(e) {
   if (e.owner && !e.stealOk) return caught(e);
   e.stealOk = false;
+  if (mode === 'world' && !PICK && !e.kind && Math.hypot(e.x - P.x, e.y - P.y) < 3.5) { closeSheet(); return pickStart(e); }
+  takeNow(e); takeCard(e);
+}
+function takeNow(e, burst = true) {
   // a clump (the porcini grow in threes): one pick takes every mushroom in it that is still standing, one each
   const head = e.clumpOf || e, grp = ents.some(q => q.clumpOf === head) ? ents.filter(q => (q === head || q.clumpOf === head) && ready(q)) : [e];
   if (!grp.includes(e)) grp.push(e);
   const n = grp.length > 1 ? grp.length : (e.yield || 1);
-  for (const q of grp) { S.cd[q.k] = now() + q.cd * 1000; fxBurst(q.x, q.y - q.s * 0.45, W[e.give].ic); }
+  for (const q of grp) { S.cd[q.k] = now() + q.cd * 1000; if (burst || q !== e) fxBurst(q.x, q.y - q.s * 0.45, burst ? W[e.give].ic : null); }
   give(e.give, n); blip(880);
   toast(`+${n} ${W[e.give].ic[0] === '@' ? '' : W[e.give].ic} ${W[e.give].uk}`);
+}
+function takeCard(e) {
   // Grandma calls out from her cottage that you're welcome to her eggs and milk.
   if (e.give !== e.w) wordCard(e.give, e.olias ? { note: `👵 <b>«${NPC.olia.lines.share.uk}»</b>${xl(`<br>${NPC.olia.lines.share.en}`)}`, clips: ['v_olia_share'] } : {}); else closeSheet();
 }
@@ -11051,7 +11221,7 @@ function update(dt, t, rdt = dt) {
     if (d <= step) { P.x = n.x; P.y = n.y; P.path.shift(); step -= d; P.step += d; if (!P.path.length) { S.x = P.x; S.y = P.y; save(); arrive(); } }
     else { P.x += dx / d * step; P.y += dy / d * step; P.step += step; step = 0; }
   }
-  if (mode === 'world') { peopleApart(dt); forestSounds(t); wellStep(); swingStep(dt); }
+  if (mode === 'world') { peopleApart(dt); forestSounds(t); wellStep(); swingStep(dt); pickStep(); }
   if (P.moving && P.step - P.dust > 0.55) { P.dust = P.step; fxDust(P.rx, P.ry); }
   { const far = Math.hypot(P.x - P.rx, P.y - P.ry) > 2.5, k = far ? 1 : 1 - Math.exp(-rdt * 20);
     P.rx += (P.x - P.rx) * k; P.ry += (P.y - P.ry) * k;
@@ -11235,6 +11405,7 @@ function drawWorld(t) {
     // tapped things give a little squash-and-bounce
     if (e.me) {
       if (SW.hide) continue;   // she is on the swing: it draws her
+      if (PICK) { drawPickPose(c, x, y, t); continue; }   // in the middle of picking something
       // Draw whichever of the four views she is closest to; between views she narrows and lifts a little,
       // so each change of view reads as a turn rather than a swap.
       const q = Math.round((P.va || 0) / (Math.PI / 2)), view = ((q % 4) + 4) % 4, off = (P.va || 0) - q * Math.PI / 2, mid = 1 - Math.abs(Math.cos(2 * off));
@@ -12267,7 +12438,8 @@ cv.addEventListener('pointerup', ev => {
   peeking = false;
   if (mode === 'mill' && MILL.hold) { millUp(); down = null; return; }   // let go of the mill's hand wheel
   if (fishFx) { down = null; return; }   // no walking off mid-cast
-  if (SW.rider && SW.phase === 'ride') { down = null; swingPump(); return; }   // on the swing, a tap is a push
+  if (SW.rider && SW.phase === 'ride') { down = null; swingPump(); return; }
+  if (PICK) { down = null; return; }   // picking: a moment's patience   // on the swing, a tap is a push
   if (!down || !running || sheetOpen()) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
   if (moved > 18) return;
