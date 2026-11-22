@@ -5715,6 +5715,10 @@ let onClose = null, acts = [], cur = {}, sheetAt = 0;
 const PORTRAITS = new Set(['me', 'olia', 'taras', 'andriiko', 'bohdan', 'oksana', 'solomiia', 'petro', 'myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna', 'cat_rudko', 'cat_vuhlyk', 'cat_snizhok', 'cat_dymok', 'cat_smuhastyk', 'cat_murka', 'cat_bublyk', 'cat_zirka']);
 let portraitOn = null, portraitRaf = 0;
 const PORTRAIT_W = 192, PORTRAIT_H = 240, PORTRAIT_OVER = 0.3;
+const pfaceURL = (id, look) => PORTRAITS.has(id) ? 'portraits/' + id + '.webp' : faceURL(look);
+const pfaceImg = (id, look, style = '') => `<img class="${PORTRAITS.has(id) ? 'pface' : ''}" src="${pfaceURL(id, look)}" style="${style}" alt="">`;
+// a talking card's opening: the big portrait rising out of the top, or the little face if there's no portrait
+const talkHead = id => PORTRAITS.has(id) ? portraitHTML : '';
 function portraitEl() {
   let im = document.getElementById('talkPortrait');
   if (!im) { im = document.createElement('img'); im.id = 'talkPortrait'; im.alt = ''; im.style.cssText = 'position:fixed;z-index:11;pointer-events:none;width:' + PORTRAIT_W + 'px;height:' + PORTRAIT_H + 'px;object-fit:contain;display:none;filter:drop-shadow(0 4px 6px rgba(60,30,20,.18));-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent)'; document.body.appendChild(im); }
@@ -6128,7 +6132,7 @@ function helpRound(n) {
   help = { n, target, tries: 0 };
   const w = W[target], hide = stage() >= 2 && known(target) >= 2, keepX = shopTabsX();
   shopShown = 'help';
-  openSheet(shopHead() + `<div class="dlg"><img class="face" src="${faceURL(NPC.oksana.look)}" alt=""><div><div class="who">${NPC.oksana.name} · ${n + 1}/5</div>
+  openSheet(shopHead() + `<div class="dlg">${pfaceImg('oksana', NPC.oksana.look).replace('class="pface"', 'class="face pface"')}<div><div class="who">${NPC.oksana.name} · ${n + 1}/5</div>
     <div class="line">${hide ? '🔊 …' : '«' + cap(w.uk) + ', будь ласка!»'}</div>${stage() < 2 ? `<div class="en">"${cap(w.en)}, please!"</div>` : ''}</div></div>
     <div class="grid" style="margin-top:14px;grid-template-columns:repeat(4,1fr)">${opts.map(k => `<button class="it" data-a="hand" data-v="${k}" style="min-height:76px"><img src="${iconURL(k)}" alt="">${stage() < 2 ? `<div class="e">${W[k].uk}</div>` : ''}</button>`).join('')}</div>
     <div class="row">${btn('hear2', target, '🔊', 'round blue')}</div>`);
@@ -6219,9 +6223,9 @@ function mealScene(R) {
   openSheet(`<div class="card">
     <div class="tag">🍽️ Смачного!${st < 3 ? ' · Enjoy your meal!' : ''}</div>
     <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;margin:4px 0">
-      <img src="${faceURL(npc.look)}" style="width:76px;height:76px;border-radius:18px;background:#e8f4d9" alt="">
+      ${pfaceImg(npc.id, npc.look, 'width:76px;height:76px;border-radius:18px;background:#e8f4d9')}
       <img src="${iconURL(R.dish)}" style="width:150px;height:150px" alt="">
-      <img src="${faceURL(ME)}" style="width:76px;height:76px;border-radius:18px;background:#e8f4d9" alt="">
+      ${pfaceImg('me', ME, 'width:76px;height:76px;border-radius:18px;background:#e8f4d9')}
     </div>
     <div class="word" style="font-size:30px">${npc.lines['ready_' + R.id].uk}</div>
     <div id="en">${st < 3 ? `<div class="en">${npc.lines['ready_' + R.id].en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}${stage() < 3 ? " · " + D.ui.show[1] : ""}</button>`}</div>
@@ -6276,7 +6280,7 @@ function cookStep(first = []) {
   const how = COOK_HOW[kind];
   openSheet(`<div class="card gamecard">
     <div class="tag">👩‍🍳 ${W[R.dish].uk} · ${ck.i + 1}/${R.steps.length}</div>
-    <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:27px">${verbHL(L.uk)}</div>${stg < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
+    <div class="cookline">${pfaceImg(npc.id, npc.look)}<div><div class="word" style="font-size:27px">${verbHL(L.uk)}</div>${stg < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     <div class="vchip"><span class="verb">${W[st.v].uk}</span> ${stg < 3 ? '= ' + W[st.v].en : xl('= ' + W[st.v].en)} <small>· дієслово${stg < 3 ? ' (verb, an action word)' : ''}</small></div>
     <canvas id="cookPad" class="cookpad" style="width:100%;display:block;height:250px"></canvas>
     <div class="cookbar"><i id="ckBar"></i></div>
@@ -6918,8 +6922,10 @@ function mgInvite(npc) {
   S.cd['mg_' + npc.id] = Math.max(S.cd['mg_' + npc.id] || 0, now() + 60e3);
   if (npc.id === 'andriiko' && winter()) S.andSnow = !S.andSnow;
   const pre = preOf(mgKindFor(npc.id)), L = npc.lines[pre + 'invite'], st = stage();
-  openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
+  const hasP = PORTRAITS.has(npc.id);
+  openSheet(`<div class="card"><div class="cookline${hasP ? ' hasp' : ''}">${hasP ? portraitHTML : `<img src="${faceURL(npc.look)}" alt="">`}<div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     <div class="row">${btn('hear', `v_${npc.id}_${pre}invite`, '🔊', 'round blue')}${btn('mgGo', npc.id, lab('mgyes'))}${btn('close', '', lab('mglater'), 'ghost')}</div></div>${subsHTML()}`); subNow = null;
+  if (hasP) portraitShow(npc.id);
   say(`v_${npc.id}_${pre}invite`);
 }
 function mgStart(id, force) {
@@ -6927,7 +6933,7 @@ function mgStart(id, force) {
   mg = { id: kind, npc, G, round: 1, phase: '', t0: nowT, lastT: nowT, puffs: [], down: null, score: 0 };
   for (const v of G.verbs) learn(v);
   openSheet(`<div class="card gamecard"><div class="tag" id="mgTag"></div>
-    <div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" id="mgLine" style="font-size:26px"></div><div class="en" id="mgEn"></div></div></div>
+    <div class="cookline">${pfaceImg(npc.id, npc.look)}<div><div class="word" id="mgLine" style="font-size:26px"></div><div class="en" id="mgEn"></div></div></div>
     <div class="vchip" id="mgChip"></div>
     <canvas id="mgPad" class="cookpad" style="width:100%;display:block;height:240px"></canvas>
     <div class="muted" id="mgHow" style="min-height:2.6em"></div>
@@ -7031,9 +7037,11 @@ function mgFinish() {
   const gift = id === 'bohdan' ? 'med' : id === 'taras' ? 'ryba' : null;
   if (gift) give(gift, id === 'taras' ? 2 : 1); S.hearts += 1; S.cd['mg_' + id] = now() + 120e3; (S.npc[id] || (S.npc[id] = { met: true, q: null, k: 0 })).last = { k: 'game', g: mg.id, day: S.clock.day }; hud(); save();
   const L = npc.lines[done]; mgStopVoice(); mg = null;
-  openSheet(`<div class="card"><div class="cookline"><img src="${faceURL(npc.look)}" alt=""><div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
+  const hasP = PORTRAITS.has(npc.id);
+  openSheet(`<div class="card"><div class="cookline${hasP ? ' hasp' : ''}">${hasP ? portraitHTML : `<img src="${faceURL(npc.look)}" alt="">`}<div><div class="word" style="font-size:26px">${L.uk}</div>${st < 3 ? `<div class="en">${L.en}</div>` : ''}</div></div>
     ${gift ? `<img class="big" src="${iconURL(gift)}" alt=""><div class="hint">+${id === 'taras' ? 2 : 1} ${W[gift].uk} · ❤️ +1</div>` : `<div class="hint">❤️ +1</div>`}
     <div class="row">${btn('close', '', lab('close'))}</div></div>${subsHTML()}`); subNow = null;
+  if (hasP) portraitShow(id);
   say(`v_${id}_${done}`);
 }
 // ------------------------------------------------------------------ Andriiko's fetch, with a slingshot
@@ -11704,7 +11712,7 @@ function startFest() {
   const F = curFest();
   fest = { F, phase: 'greet', ang: 0, boost: 0, lastT: nowT, beats: [], hits: 0, pop: null, t0: nowT, endT: 0, jumpT: 0, done: {} };
   mode = 'fest'; learn(F.id); learn('horovod'); document.body.classList.add('scene');   // the goal line steps aside for the festival
-  const faces = ['olia', 'taras', 'oksana', 'andriiko', 'bohdan'].map(id => `<img src="${faceURL(NPC[id].look)}" style="width:54px;height:54px;border-radius:14px;background:#e8f4d9" alt="">`).join('');
+  const faces = ['olia', 'taras', 'oksana', 'andriiko', 'bohdan'].map(id => pfaceImg(id, NPC[id].look, 'width:54px;height:54px;border-radius:14px;background:#e8f4d9')).join('');
   const me = fest;
   // drawFest opens it again if it's swiped away or tapped off, since only the answer starts the dance
   me.greetCard = () => {
@@ -12508,7 +12516,7 @@ let storyPage = 0;
 function storyShow(i) {
   const pages = D.story, st = pages[i], box = $('#story');
   storyPage = i;
-  const pic = p => p.startsWith('face:') ? `<img class="face" src="${faceURL(NPC[p.slice(5)].look)}" alt="">`
+  const pic = p => p.startsWith('face:') ? pfaceImg(p.slice(5), NPC[p.slice(5)].look).replace('class="pface"', 'class="face pface"')
     : p.startsWith('w:') ? `<img src="${iconURL(p.slice(2))}" alt="">` : `<span class="em">${p}</span>`;
   const last = i === pages.length - 1;
   box.querySelector('.paper').innerHTML = `

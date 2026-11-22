@@ -135,6 +135,9 @@
   .subt.mylang { border:1.5px solid var(--line, #d8cbb0); border-radius:999px; font-size:15px; padding:6px 14px; }
   .dlg img.face { width:84px; height:84px; flex:none; border-radius:20px; background:#e8f4d9; }
   .dlg.hasp { display:block; } .dlg.hasp::after { content:""; display:block; clear:both; } .dlg.hasp > div:not(.pslot) { overflow:visible; }
+  .dlg.hasp #en, .cookline.hasp .en { clear:left; padding-top:6px; }   /* the English always starts below the portrait */
+  .cookline.hasp { display:block; text-align:left; } .cookline.hasp::after { content:""; display:block; clear:both; }
+  img.pface { object-fit:cover; object-position:50% 18%; background:#f6e9dc; }
   .catname { font-weight:800; font-size:22px; color:var(--rose); padding:8px 0 0; text-align:left; } .catname span { font-weight:600; font-size:15px; opacity:.7; }
   .dlg .who { font-weight:800; font-size:15px; color:var(--rose); }
   .dlg .line { font-size:24px; font-weight:800; line-height:1.2; margin-top:2px; }
@@ -313,12 +316,12 @@
     <button class="b ghost letter" id="micBtn" data-a="mic">🎤 Увімкнути мікрофон<small>Enable microphone</small></button>
     <button class="b ghost letter" data-a="story">📜 Лист від баби Олі<small>A letter from Grandma Olia</small></button>
   </div>
-  <div class="ver">v311</div>
+  <div class="ver">v312</div>
   <button class="reset" data-a="reset">start over</button>
 </div>
 
-<script>window.APP_VERSION = '311';</script>
-<script src="data.js?v=311"></script>
-<script src="game.js?v=311"></script>
+<script>window.APP_VERSION = '312';</script>
+<script src="data.js?v=312"></script>
+<script src="game.js?v=312"></script>
 </body>
 </html>
