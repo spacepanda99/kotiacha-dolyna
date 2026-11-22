@@ -2412,12 +2412,174 @@ const DRAW = {
 };
 
 // Draw an icon (emoji or "@drawn") with its bottom centre at (x, y), about s pixels tall.
+// ================================================================== detailed trees
+// Every tree is grown: a trunk, boughs that fork into branches and twigs, and on the twigs hundreds of individual
+// leaves, each with its own colour, angle and midrib. The result is drawn once into a picture (per kind of tree,
+// per variant, per season) and that picture is what appears in the world, so it costs nothing per frame.
+// Units are the same 100-high icon units as the other pictures; (0, 0) is the foot of the trunk.
+const TSPR = {}; let treeBudget = 2;
+const rng32 = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+const TSPEC = {
+  tree:     { box: [-74, -132, 74, 8], ps: 3.2, th: 40, tw: 9, tt: 5, main: 4, bl: 31, md: 3, curve: 0.55, photo: 0.2, sag: 0.25, kidP: 0.5, kl: 0.72, tcurve: 0.1, leafDepth: 1, lpl: 1.7, ls: 5.2, shape: 'pointed', bark: ['#6b4422', '#93602f', '#3f250f'], sum: ['#26702f', '#348a3f', '#4fa650', '#7bc96d'], spr: ['#3f8e3f', '#5aa84c', '#7fc267', '#b5e08a'] },
+  appletree: { box: [-76, -126, 76, 8], ps: 3.2, th: 30, tw: 10, tt: 6, main: 5, bl: 28, md: 3, curve: 0.75, photo: 0.14, sag: 0.45, kidP: 0.55, kl: 0.7, tcurve: 0.18, leafDepth: 1, lpl: 1.8, ls: 4.7, shape: 'pointed', bark: ['#6e4a2a', '#9a6a3c', '#3d2812'], sum: ['#2c7a34', '#3d953f', '#5db04f', '#88cf6c'], spr: ['#4a9a40', '#66b250', '#8acb6c', '#bde592'], fruit: 1 },
+  dub:      { box: [-88, -134, 88, 8], ps: 3.2, th: 34, tw: 14, tt: 8.5, main: 5, bl: 34, md: 3, curve: 0.95, photo: 0.1, sag: 0.12, kidP: 0.58, kl: 0.72, tcurve: 0.14, leafDepth: 1, lpl: 0.95, ls: 6.6, shape: 'lobed', bark: ['#54391e', '#7d5a34', '#2e1c0b'], sum: ['#1f5a28', '#2b7433', '#43914a', '#68ad5e'], spr: ['#3b8a38', '#58a547', '#7dc05f', '#a8d980'] },
+  bereza:   { box: [-70, -142, 70, 8], ps: 3.2, th: 62, tw: 6.5, tt: 3.4, main: 6, bl: 26, md: 3, curve: 0.4, photo: 0.1, sag: 0.8, kidP: 0.55, kl: 0.75, tcurve: 0.07, leafDepth: 1, lpl: 2.0, ls: 3.8, shape: 'heart', birch: 1, bark: ['#f3f0e8', '#ffffff', '#c8c3b6'], sum: ['#3f8a3a', '#56a444', '#78bf5a', '#a3da7e'], spr: ['#6cb14c', '#88c860', '#a8dc80', '#cdef9e'] },
+  bush:     { box: [-56, -72, 56, 4], ps: 3.4, th: 0, tw: 0, tt: 0, main: 12, bl: 22, md: 3, curve: 0.7, photo: 0.25, sag: 0.1, kidP: 0.6, kl: 0.72, tcurve: 0, leafDepth: 0, lpl: 2.6, ls: 4.0, shape: 'pointed', bark: ['#5e3c1e', '#86592c', '#33200d'], sum: ['#2d7c37', '#3e9645', '#5bb258', '#85cf72'], spr: ['#4c9a42', '#68b456', '#8bcc6d', '#bfe697'], berries: 1 },
+  giantoak: { box: [-150, -230, 150, 12], ps: 5, th: 74, tw: 30, tt: 17, main: 6, bl: 50, md: 3, curve: 0.8, photo: 0.1, sag: 0.1, kidP: 0.6, kl: 0.7, tcurve: 0.1, leafDepth: 1, lpl: 1.5, ls: 6.4, shape: 'lobed', bark: ['#52371b', '#7d5a30', '#2b1a0a'], sum: ['#1d5426', '#296f31', '#3f8e47', '#66ab5a'], spr: ['#3a8636', '#56a244', '#7bbd5c', '#a6d77c'], giant: 1 },
+};
+function growTree(S, rnd, bare) {
+  const segs = [], tips = [], leaves = []; let count = 0;
+  const md = S.md + (bare ? 1 : 0), PI2 = Math.PI / 2;
+  const branch = (x, y, ang, len, w, d) => {
+    if (++count > 3200) return;
+    const steps = Math.max(2, Math.round(len / 6.5)), wEnd = w * 0.6; let cx = x, cy = y, a = ang, cw = w;
+    for (let i = 0; i < steps; i++) {
+      const l = len / steps; a += (rnd() - 0.5) * S.curve * 0.5 + S.photo * Math.sin(-PI2 - a) * 0.5 + S.sag * Math.cos(a) * 0.07;
+      const nx = cx + Math.cos(a) * l, ny = cy + Math.sin(a) * l, w2 = cw + (wEnd - cw) / (steps - i);
+      segs.push({ x1: cx, y1: cy, x2: nx, y2: ny, w1: cw, w2, d, a });
+      cx = nx; cy = ny; cw = w2;
+      if (d < md && i >= 1 && i < steps - 1 && rnd() < S.kidP * (d === 0 ? 0.7 : 1) * 0.55) branch(cx, cy, a + (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.65), len * S.kl * (0.7 + rnd() * 0.5), cw * 0.62, d + 1);
+    }
+    if (d < md) { const k = 2 + (rnd() < 0.3 ? 1 : 0); for (let j = 0; j < k; j++) branch(cx, cy, a + (j - (k - 1) / 2) * (0.5 + rnd() * 0.4), len * S.kl * (0.75 + rnd() * 0.4), cw * 0.7, d + 1); }
+    else tips.push({ x: cx, y: cy, a });
+  };
+  // the trunk: leans a little, tapers, and carries the boughs on its upper half
+  let x = 0, y = 0, ang = -PI2 + (rnd() - 0.5) * 0.14, w = S.tw; const trunk = [];
+  if (S.th > 0) {
+    const steps = Math.max(5, Math.round(S.th / 6));
+    for (let i = 0; i < steps; i++) { const l = S.th / steps; ang += (rnd() - 0.5) * S.tcurve; const nx = x + Math.cos(ang) * l, ny = y + Math.sin(ang) * l, w2 = S.tw + (S.tt - S.tw) * (i + 1) / steps; segs.push({ x1: x, y1: y, x2: nx, y2: ny, w1: w, w2, d: 0, a: ang, trunk: 1 }); trunk.push({ x: nx, y: ny, w: w2 }); x = nx; y = ny; w = w2; }
+  }
+  const tx = x, ty = y;
+  if (S.giant) {   // the great limb the swing hangs from: out to the left, thick and almost level, rising a little at its end
+    const pts = [[-6, -66, 14], [-24, -70, 12.5], [-44, -73, 10.5], [-64, -77, 8.5], [-82, -86, 6.5], [-92, -98, 4.5]];
+    for (let i = 1; i < pts.length; i++) segs.push({ x1: pts[i - 1][0], y1: pts[i - 1][1], x2: pts[i][0], y2: pts[i][1], w1: pts[i - 1][2], w2: pts[i][2], d: 1, a: Math.PI, limb: 1 });
+    branch(-82, -86, -2.4, 26, 5, 2); branch(-50, -74, -2.0, 30, 6, 2); branch(-30, -71, -1.7, 34, 6, 2);
+    branch(-92, -98, -2.2, 24, 4, 2);
+  }
+  for (let m = 0; m < S.main; m++) {
+    const f = S.th > 0 ? 0.45 + 0.55 * (m / Math.max(1, S.main - 1)) : 0, ti = S.th > 0 ? Math.min(trunk.length - 1, Math.floor(f * trunk.length)) : -1, px = ti >= 0 ? trunk[ti].x : 0, py = ti >= 0 ? trunk[ti].y : 0, pw = ti >= 0 ? trunk[ti].w : S.tt;
+    const side = (m % 2 ? 1 : -1) * (S.giant && m === 0 ? -1 : 1);
+    branch(px, py, -PI2 + side * (0.4 + rnd() * 0.75), S.bl * (0.75 + rnd() * 0.5), Math.max(2.4, pw * 0.7), 1);
+  }
+  if (S.th > 0) branch(tx, ty, -PI2 + (rnd() - 0.5) * 0.3, S.bl * 0.95, Math.max(2.4, S.tt * 0.8), 1);
+  else for (let i = 0; i < 3; i++) branch((i - 1) * 4, 0, -PI2 + (i - 1) * 0.2, S.bl * 1.05, 2.6, 1);
+  // leaves: along every twig, and in a little cluster at each tip
+  if (!bare) {
+    for (const g of segs) {
+      if (g.trunk || g.d < S.leafDepth || g.limb) continue;
+      const L = Math.hypot(g.x2 - g.x1, g.y2 - g.y1), n = Math.max(1, Math.round(L * S.lpl * (g.d >= 2 ? 1 : 0.6)));
+      for (let k = 0; k < n; k++) { const u = rnd(), px = g.x1 + (g.x2 - g.x1) * u, py = g.y1 + (g.y2 - g.y1) * u, la = g.a + (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 1.1); leaves.push({ x: px, y: py, a: la, l: S.ls * (0.72 + rnd() * 0.6), dk: rnd() }); }
+    }
+    for (const t of tips) for (let k = 0; k < 7; k++) leaves.push({ x: t.x + (rnd() - 0.5) * 4, y: t.y + (rnd() - 0.5) * 4, a: t.a + (rnd() - 0.5) * 2.4, l: S.ls * (0.8 + rnd() * 0.5), dk: rnd() });
+  }
+  return { segs, leaves, tips, tx, ty };
+}
+function leafPath(c, shape, L, W0) {
+  c.beginPath();
+  if (shape === 'lobed') { const n = 14; for (let i = 0; i <= n; i++) { const u = i / n, r = W0 * Math.sin(Math.PI * u) * (1 + 0.38 * Math.sin(u * Math.PI * 6 + 0.6)); c.lineTo(u * L, -r); } for (let i = n; i >= 0; i--) { const u = i / n, r = W0 * Math.sin(Math.PI * u) * (1 + 0.38 * Math.sin(u * Math.PI * 6 + 0.6)); c.lineTo(u * L, r); } }
+  else if (shape === 'heart') { c.moveTo(0, 0); c.bezierCurveTo(L * 0.1, -W0 * 1.25, L * 0.62, -W0 * 1.05, L, 0); c.bezierCurveTo(L * 0.62, W0 * 1.05, L * 0.1, W0 * 1.25, 0, 0); }
+  else { c.moveTo(0, 0); c.quadraticCurveTo(L * 0.42, -W0 * 1.12, L, 0); c.quadraticCurveTo(L * 0.42, W0 * 1.12, 0, 0); }
+  c.closePath();
+}
+function buildTreeSprite(kind, variant, sea) {
+  const S = TSPEC[kind], rnd = rng32(variant * 7919 + kind.length * 101 + (sea === 'zyma' ? 13 : 0) + 17), bare = sea === 'zyma';
+  const [x0, y0, x1, y1] = S.box, ps = S.ps, cv = document.createElement('canvas'); cv.width = Math.ceil((x1 - x0) * ps); cv.height = Math.ceil((y1 - y0) * ps);
+  const c = cv.getContext('2d'); c.scale(ps, ps); c.translate(-x0, -y0); c.lineCap = 'round'; c.lineJoin = 'round';
+  const G = growTree(S, rnd, bare), B = S.bark;
+  let mnx = 0, mxx = 0, mny = 0; for (const g of G.segs) { mnx = Math.min(mnx, g.x1, g.x2); mxx = Math.max(mxx, g.x1, g.x2); mny = Math.min(mny, g.y1, g.y2); } for (const l of G.leaves) { mnx = Math.min(mnx, l.x - l.l); mxx = Math.max(mxx, l.x + l.l); mny = Math.min(mny, l.y - l.l); }
+  const fit = S.giant ? 1 : Math.min(1, (x1 * 0.97) / Math.max(1, mxx), (-x0 * 0.97) / Math.max(1, -mnx), (-y0 * 0.97) / Math.max(1, -mny)); c.scale(fit, fit);
+  // ---- the ground it grows from: a soft shadow and the flare of the roots
+  if (S.th > 0) {
+    c.fillStyle = B[0];
+    const rootN = S.giant ? 6 : 3; for (let i = 0; i < rootN; i++) { const s2 = (i / (rootN - 1) - 0.5) * 2, rw = S.tw * (S.giant ? 0.9 : 0.6), rl = S.tw * (S.giant ? 1.7 : 1.1) * (0.8 + rnd() * 0.4); c.beginPath(); c.moveTo(s2 * S.tw * 0.35 - rw * 0.4, -S.th * 0.14); c.quadraticCurveTo(s2 * rl * 0.6, -3, s2 * rl * 1.05, 2 + rnd() * 2); c.lineTo(s2 * rl * 0.7, 3); c.quadraticCurveTo(s2 * rl * 0.3, -2, s2 * S.tw * 0.35 + rw * 0.4, -S.th * 0.14); c.closePath(); c.fill(); }
+  }
+  // ---- boughs and twigs, thick first
+  const order = G.segs.slice().sort((a, b) => a.d - b.d);
+  const stroke = (g, col, k, dx) => { c.strokeStyle = (S.birch && col === B[0] && (g.w1 + g.w2) / 2 < 2.3) ? '#5d554b' : col; c.lineWidth = Math.max(0.5, (g.w1 + g.w2) / 2 * k); c.beginPath(); c.moveTo(g.x1 + (dx || 0), g.y1); c.lineTo(g.x2 + (dx || 0), g.y2); c.stroke(); };
+  for (const g of order) stroke(g, B[2], 1.12, 0);
+  for (const g of order) stroke(g, B[0], 0.9, 0);
+  for (const g of order) if ((g.w1 + g.w2) / 2 > 2.4) stroke(g, B[1], 0.32, -(g.w1 + g.w2) / 2 * 0.2);
+  // bark: cracks along the trunk and thick limbs, knots, and moss on the shady side
+  for (const g of order) {
+    const w = (g.w1 + g.w2) / 2; if (w < 4) continue;
+    const n = Math.round(Math.hypot(g.x2 - g.x1, g.y2 - g.y1) * w * (S.giant ? 0.22 : 0.16)), dxn = -(g.y2 - g.y1), dyn = g.x2 - g.x1, nl = Math.hypot(dxn, dyn) || 1;
+    for (let i = 0; i < n; i++) { const u = rnd(), off = (rnd() - 0.5) * w * 0.8, px = g.x1 + (g.x2 - g.x1) * u + dxn / nl * off, py = g.y1 + (g.y2 - g.y1) * u + dyn / nl * off, len = 2 + rnd() * (S.giant ? 5 : 3.5), ux = (g.x2 - g.x1) / (Math.hypot(g.x2 - g.x1, g.y2 - g.y1) || 1), uy = (g.y2 - g.y1) / (Math.hypot(g.x2 - g.x1, g.y2 - g.y1) || 1);
+      c.strokeStyle = S.birch ? 'rgba(40,36,32,.8)' : 'rgba(25,14,5,' + (0.35 + rnd() * 0.3) + ')'; c.lineWidth = S.birch ? 0.45 + rnd() * 0.7 : 0.5 + rnd() * 0.7; c.beginPath(); c.moveTo(px, py); c.lineTo(px + (S.birch ? dxn / nl * (0.9 + rnd() * 1.1) : ux * len), py + (S.birch ? dyn / nl * (0.9 + rnd() * 1.1) : uy * len)); c.stroke();
+      if (!S.birch && rnd() < 0.5) { c.strokeStyle = 'rgba(255,225,170,.18)'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(px - 0.7, py); c.lineTo(px - 0.7 + ux * len * 0.8, py + uy * len * 0.8); c.stroke(); } }
+  }
+  if (S.th > 0) {
+    const knots = S.giant ? 5 : 2; for (let i = 0; i < knots; i++) { const ky = -S.th * (0.15 + rnd() * 0.5), kw = (S.tw + (S.tt - S.tw) * (-ky / S.th)) * 0.5, kx = (rnd() - 0.5) * kw * 1.1, kr = S.giant ? 2.2 + rnd() * 2.4 : 1.4 + rnd(); c.fillStyle = 'rgba(30,18,8,.85)'; c.beginPath(); c.ellipse(kx, ky, kr, kr * 1.35, 0, 0, 7); c.fill(); c.strokeStyle = 'rgba(30,18,8,.5)'; c.lineWidth = 0.6; c.beginPath(); c.ellipse(kx, ky, kr * 1.7, kr * 2.3, 0, 0, 7); c.stroke(); }
+    if (!S.birch && (rnd() < 0.7 || S.giant)) { c.fillStyle = 'rgba(96,142,58,.75)'; for (let i = 0; i < (S.giant ? 14 : 5); i++) { const ky = -rnd() * S.th * 0.55, kw = S.tw * 0.5; c.beginPath(); c.ellipse(-kw * (0.55 + rnd() * 0.35), ky, 1 + rnd() * 1.6, 2 + rnd() * 3, 0, 0, 7); c.fill(); } }
+  }
+  if (S.giant) {   // a hollow in the trunk, dark inside with a rim of lighter wood; bracket fungus above it
+    const hx = 2, hy = -22; c.fillStyle = '#c9a56a'; c.beginPath(); c.ellipse(hx, hy, 8.6, 12.4, 0, 0, 7); c.fill(); c.fillStyle = '#0f0904'; c.beginPath(); c.ellipse(hx, hy + 0.8, 6.6, 10.4, 0, 0, 7); c.fill(); const g2 = c.createRadialGradient(hx, hy + 4, 1, hx, hy + 4, 9); g2.addColorStop(0, 'rgba(70,40,15,.55)'); g2.addColorStop(1, 'rgba(70,40,15,0)'); c.fillStyle = g2; c.beginPath(); c.ellipse(hx, hy + 1, 6.4, 10, 0, 0, 7); c.fill();
+    c.fillStyle = '#d8a86a'; for (const [bx, by, bw] of [[11, -44, 6], [13, -48.5, 4.6], [-12, -33, 5]]) { c.beginPath(); c.ellipse(bx, by, bw, bw * 0.45, 0, Math.PI, 0); c.fill(); c.fillStyle = '#a97a44'; c.fillRect(bx - bw, by, bw * 2, 1.1); c.fillStyle = '#d8a86a'; }
+  }
+  // ---- foliage: three passes, the shaded inner leaves first, the sunlit outer ones last
+  const fruitSpots = [];
+  if (!bare) {
+    const P = sea === 'osin' ? AUTUMN_PALS[variant % 3] : sea === 'vesna' ? S.spr : S.sum, L = G.leaves;
+    let sx = 0, sy = 0; for (const l of L) { sx += l.x; sy += l.y; } const cx = sx / (L.length || 1), cy = sy / (L.length || 1), RX = (x1 - x0) / 2, RY = (y1 - y0) / 2;
+    const autumnMix = sea === 'osin' ? [P[0], P[1], P[2], P[3], '#9a6a2a', '#c5792a'] : null;
+    for (let pass = 0; pass < 3; pass++) {
+      for (const l of L) {
+        if (Math.min(2, Math.floor(l.dk * 3)) !== pass) continue;
+        if (S.giant && l.y > -62 && l.x < -34 && l.x > -96) continue;   // keep the space under the swing's limb clear
+        if (sea === 'osin' && rnd() < 0.1) continue;
+        const lf = Math.max(0, Math.min(1, 0.5 - (l.x - cx) / RX * 0.32 - (l.y - cy) / RY * 0.42 + (rnd() - 0.5) * 0.34)), idx = Math.max(0, Math.min(3, Math.floor(lf * 3.2 + (pass - 1) * 1.0)));
+        const col = autumnMix ? (rnd() < 0.12 ? autumnMix[4 + (rnd() < 0.5 ? 1 : 0)] : P[idx]) : P[idx];
+        const W0 = l.l * 0.34, tw = Math.max(0, Math.min(1, 0.5 + (rnd() - 0.5) * 0.5));
+        c.save(); c.translate(l.x, l.y); c.rotate(l.a); c.fillStyle = col; leafPath(c, S.shape, l.l, W0); c.fill();
+        c.strokeStyle = 'rgba(0,0,0,' + (0.13 + 0.07 * (2 - pass)) + ')'; c.lineWidth = 0.35; c.stroke();
+        if (pass === 2 || ps * l.l > 18) { c.strokeStyle = 'rgba(255,255,235,' + (pass === 2 ? 0.17 : 0.08) + ')'; c.lineWidth = 0.35; c.beginPath(); c.moveTo(0, 0); c.lineTo(l.l * 0.92, 0); c.stroke(); if (S.giant) { c.lineWidth = 0.22; c.beginPath(); for (let v = 1; v < 5; v++) { c.moveTo(l.l * v * 0.18, 0); c.lineTo(l.l * v * 0.18 + 1.4, -W0 * 0.7); c.moveTo(l.l * v * 0.18, 0); c.lineTo(l.l * v * 0.18 + 1.4, W0 * 0.7); } c.stroke(); } }
+        c.restore();
+      }
+      if (pass === 1) { c.save(); c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(10,30,10,.16)'; c.beginPath(); c.ellipse(cx, cy + RY * 0.2, RX * 0.55, RY * 0.32, 0, 0, 7); c.fill(); c.restore(); }   // the deep shade inside the crown
+    }
+    // blossom in spring (apple and ordinary trees)
+    if (sea === 'vesna' && (S.fruit || kind === 'tree')) { for (const l of L) { if (rnd() > (S.fruit ? 0.34 : 0.1)) continue; const px = l.x + Math.cos(l.a) * l.l * 0.7, py = l.y + Math.sin(l.a) * l.l * 0.7, r = 2.3 + rnd() * 1.1, pink = rnd() < 0.45; for (let k = 0; k < 5; k++) { const a = k * 1.2566 + rnd() * 0.3; c.fillStyle = pink ? '#f6b7cc' : '#ffffff'; c.beginPath(); c.ellipse(px + Math.cos(a) * r * 0.7, py + Math.sin(a) * r * 0.7, r * 0.62, r * 0.46, a, 0, 7); c.fill(); } c.fillStyle = '#f1d04a'; c.beginPath(); c.arc(px, py, r * 0.28, 0, 7); c.fill(); } }
+    // acorns on the oaks, berries on the bushes
+    if (S.giant || kind === 'dub') { if (sea !== 'vesna') for (let i = 0; i < (S.giant ? 26 : 8); i++) { const l = L[Math.floor(rnd() * L.length)]; if (!l || (S.giant && l.y > -62 && l.x < -34)) continue; const px = l.x + Math.cos(l.a) * l.l * 0.5, py = l.y + Math.sin(l.a) * l.l * 0.5 + 2; c.fillStyle = '#b0813f'; c.beginPath(); c.ellipse(px, py + 1, 1.2, 1.7, 0, 0, 7); c.fill(); c.fillStyle = '#5e3f1e'; c.beginPath(); c.ellipse(px, py - 0.4, 1.4, 0.9, 0, Math.PI, 0); c.fill(); } }
+    if (S.berries) { const bc = [['#e2574c', '#fff'], ['#3d4fa0', '#bcd'], ['#e8789a', '#fff']][variant % 3]; if (sea === 'lito' || sea === 'osin') for (let i = 0; i < 9 + (variant % 5); i++) { const l = L[Math.floor(rnd() * L.length)]; if (!l) continue; const px = l.x + Math.cos(l.a) * l.l * 0.6, py = l.y + Math.sin(l.a) * l.l * 0.6; c.fillStyle = bc[0]; c.beginPath(); c.arc(px, py, 1.9 + rnd() * 0.8, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(px - 0.6, py - 0.7, 0.6, 0, 7); c.fill(); } }
+    if (S.fruit) { const outer = L.filter(l => l.y > cy - RY * 0.3 && l.y < cy + RY * 0.55); for (let i = 0; i < 16 && outer.length; i++) { const l = outer[Math.floor(rnd() * outer.length)]; fruitSpots.push([l.x + Math.cos(l.a) * l.l * 0.4, l.y + Math.sin(l.a) * l.l * 0.4 + 3.5]); } }
+  } else {
+    // snow along the bare boughs and in the forks
+    for (const g of order) { const w = (g.w1 + g.w2) / 2, flat = Math.abs(Math.cos(g.a)); if (w < 1.1 || flat < 0.4) continue; c.strokeStyle = '#ffffff'; c.lineWidth = Math.max(0.7, w * 0.62); c.beginPath(); c.moveTo(g.x1, g.y1 - w * 0.34); c.lineTo(g.x2, g.y2 - w * 0.34); c.stroke(); c.strokeStyle = 'rgba(190,210,235,.55)'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(g.x1, g.y1 - w * 0.05); c.lineTo(g.x2, g.y2 - w * 0.05); c.stroke(); }
+    c.fillStyle = '#ffffff'; for (const g of order) if (g.d >= 1 && (g.w1 + g.w2) / 2 > 1.6 && rnd() < 0.5) { c.beginPath(); c.ellipse(g.x1, g.y1 - 1.4, 1.6, 1, 0, 0, 7); c.fill(); }
+  }
+  return { cv, x0, y0, w: x1 - x0, h: y1 - y0, fruit: fruitSpots.map(p => [p[0] * fit, p[1] * fit]), ext: [mnx, mxx, mny] };
+}
+let _tsea = null;
+function treeSprite(kind, o, sea) {
+  if (sea !== _tsea) { for (const k in TSPR) delete TSPR[k]; _tsea = sea; }   // only this season's pictures are kept
+  const variant = Math.floor(vh(o, 300) * 6), key = kind + '|' + variant + '|' + sea;
+  let s = TSPR[key]; if (s) return s;
+  if (treeBudget <= 0) return null;
+  treeBudget--; try { s = TSPR[key] = buildTreeSprite(kind, variant, sea); } catch (e) { s = TSPR[key] = null; }
+  return s;
+}
+// draws a grown tree sprite (and, for the apple tree, the fruit that is ready); false if it is not built yet
+function drawTreeSprite(c, kind, o) {
+  const sea = treeSeason(o), spr = treeSprite(kind, o, sea); if (!spr) return false;
+  const S = TSPEC[kind];
+  if (sea === 'osin') fallenLeaves(c, o, kind === 'bush' ? 30 : kind === 'giantoak' ? 120 : 48);
+  c.save(); if (kind === 'giantoak') { /* the great oak does not sway: the swing hangs from it */ } else if (kind !== 'bush') { c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40); } else c.rotate(((o && o.sway) || 0) * 0.6);
+  c.drawImage(spr.cv, spr.x0, spr.y0, spr.w, spr.h);
+  if (S.fruit && sea !== 'zyma' && sea !== 'vesna' && (!o || o.fruit !== false) && spr.fruit.length) {
+    const hv = k => vh(o, k), n = Math.min(spr.fruit.length, 3 + Math.floor(hv(240) * 7)), kind2 = hv(241), cols = kind2 < 0.55 ? ['#a81b1b', '#e04535', '#f06a55'] : kind2 < 0.8 ? ['#b98f1f', '#e8cb48', '#f6e27a'] : ['#b8403a', '#ee8068', '#f8b09a'];
+    const order = spr.fruit.map((p, i) => [hv(300 + i), p]).sort((a, b) => a[0] - b[0]);
+    for (let i = 0; i < n; i++) { const [x, y] = order[i][1], r = 4.4 + hv(320 + i) * 1.6; c.strokeStyle = '#4a3418'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(x, y - r); c.lineTo(x + 0.5, y - r - 2.6); c.stroke(); c.fillStyle = cols[0]; circ(c, x, y + 0.5, r + 0.3); c.fillStyle = cols[1]; circ(c, x - 0.3, y - 0.2, r); c.fillStyle = cols[2]; c.globalAlpha = 0.55; circ(c, x - r * 0.25, y + r * 0.1, r * 0.55); c.globalAlpha = 1; c.fillStyle = 'rgba(255,255,255,.7)'; circ(c, x - r * 0.38, y - r * 0.42, r * 0.26); c.fillStyle = 'rgba(0,0,0,.25)'; circ(c, x, y - r * 0.85, r * 0.22); }
+  }
+  c.restore(); return true;
+}
+DRAW.giantoak = (c, o) => { drawTreeSprite(c, 'giantoak', o); };
+DRAW.swing = () => {};
 for (const nm of ['tree', 'appletree', 'bush', 'dub', 'bereza', 'yalyna', 'kalyna']) {
   const f0 = DRAW[nm]; if (!f0) continue;
   DRAW[nm] = function (c, o) {
     if (!o || o.v == null) return f0.call(DRAW, c, o);
     const sx = 0.86 + vh(o, 211) * 0.28, sy = 0.88 + vh(o, 212) * 0.26, lean = (vh(o, 213) - 0.5) * 0.05, fl = vh(o, 214) < 0.5 ? -1 : 1;
-    c.save(); c.rotate(lean); c.scale(sx * fl, sy); f0.call(DRAW, c, o); c.restore();
+    c.save(); c.rotate(lean); c.scale(sx * fl, sy); if (!TSPEC[nm] || !drawTreeSprite(c, nm, o)) f0.call(DRAW, c, o); c.restore();
   };
 }
 function drawIcon(c, ic, x, y, s, o) {
@@ -2874,7 +3036,7 @@ function wellPose(a) {
   return { ang: 30, L: 1, full: a < 3.9, tilt: Math.min(1, (a - 3.3) / 0.3) * (a < 4.0 ? 1 : Math.max(0, 1 - (a - 4.0) / 0.3)) };
 }
 // The corn maze (bottom left). The formal gardens that used to be there are kept in the code, switched off.
-const GARDEN_ON = false, MAZE_ON = false;   // (both kept, switched off: the field is now an orchard, a pumpkin patch and a cornfield)
+const GARDEN_ON = false, MAZE_ON = false, FARM_ON = false;   // (both kept, switched off: the field is now an orchard, a pumpkin patch and a cornfield)
 const MAZE = { x0: 1, y0: 31, w: 13, h: 9 };   // in tiles: the maze fills 13 x 9 tiles; cells sit on the odd tiles, corn on the rest
 // true where there is corn. A perfect maze (one way between any two places), laid out the same every time:
 // the way in is a gap in the top row, straight down from the road; the way out is a gap in the bottom row.
@@ -2992,6 +3154,7 @@ function add(e) {
     ends.sort((a, b) => b[2] - a[2]); for (const [gx, gy] of ends.slice(0, 6)) add({ w: 'harbuz', x: MAZE.x0 + gx + 0.5, y: MAZE.y0 + gy + 0.8, s: 0.8, give: 'harbuz', cd: 150, hide: true, quiet: true });
   }
   }
+  if (FARM_ON) {
   // the farm in the bottom-left field: an apple orchard (west), a pumpkin patch (east), a cornfield (south), a dirt
   // path down the middle, and bushes and flowers all round
   [[2.3, 33.0], [4.1, 33.0], [5.9, 33.0], [3.2, 35.3], [5.0, 35.3]].forEach(([x, y], i) => add({ w: 'yablunia', k: 'farmapple' + i, x, y, s: 2.0, solid: true, give: 'yabluko', cd: 60 }));
@@ -3003,6 +3166,18 @@ function add(e) {
   [[6.3, 32.6], [6.3, 34.2], [6.3, 35.8], [8.15, 32.6], [8.15, 34.2], [8.15, 35.8]].forEach(([x, y], i) => add({ w: 'kvitka', ic: '@lavclump', k: 'flav' + i, x, y, s: 0.8, quiet: true }));
   [[2.0, 34.4], [4.2, 34.1], [5.7, 36.2], [3.0, 36.1], [8.6, 36.15], [10.0, 36.2], [12.4, 36.15], [13.4, 35.0], [9.2, 31.6], [11.4, 31.6]].forEach(([x, y]) => add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true }));
   [[1.7, 32.3], [1.7, 35.4]].forEach(([x, y]) => add({ w: 'malva', x, y, s: 1.0 }));
+  }
+  // the great oak, bottom left: the biggest tree in the game, with a rope swing hanging from its low limb, and a
+  // meadow of flowers all round it (the orchard, pumpkin patch and cornfield that were here are switched off above)
+  add({ w: 'dub', ic: '@giantoak', k: 'giantoak', x: 7.6, y: 38.6, s: 5.6, solid: true, quiet: true });
+  rect(7, 38, 8, 38);
+  add({ w: 'kushch', ic: '@swing', k: 'swing', x: 4.7, y: 38.95, s: 4.2, quiet: true });
+  { let sd = 77; const rn = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+    for (let c0 = 0; c0 < 13; c0++) { const cx = 2 + rn() * 11.5, cy = 32.3 + rn() * 8.2, n = 3 + Math.floor(rn() * 5);
+      for (let i = 0; i < n; i++) { const x = cx + (rn() - 0.5) * 2.2, y = cy + (rn() - 0.5) * 1.6;
+        if (x < 1.5 || x > 13.7 || y < 31.6 || y > 40.7) continue; if (Math.hypot(x - 7.6, (y - 38.6) * 1.3) < 2.0) continue; if (x > 3.3 && x < 6.2 && y > 36.2) continue;
+        add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true }); } }
+    for (const [x, y] of [[2.0, 32.4], [12.9, 33.0], [13.2, 38.2], [1.9, 39.0]]) add({ w: 'malva', x, y, s: 1.0 }); }
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [26.4, 11.15], [29.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
@@ -3826,6 +4001,7 @@ function farmPaint(sea) {
 }
 function rr2f(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r); c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath(); c.stroke(); }
 function farmDraw(c) {
+  if (!FARM_ON) return;
   const vw = cv.width / zoom, vh = cv.height / zoom; if (FARM.x1 * T < camX || FARM.x0 * T > camX + vw || FARM.y1 * T < camY || FARM.y0 * T > camY + vh) return;
   const sea = season(); c.drawImage(FARM_CV[sea] || (FARM_CV[sea] = farmPaint(sea)), FARM.x0 * T, FARM.y0 * T);
 }
@@ -5140,6 +5316,108 @@ function talkSpot(e) {
 // handle and winds up a bucketful. The crank (in the well's own drawing units, 100 = its height) is at waist
 // height for her, so her hand stays on the grip all the way round.
 const WELL_SPOT = { x: WELL_X + (WELL_CRANK.x * WELL_S) / 100 + 26 / T, y: WELL_Y + 0.05 };
+// ================================================================== the rope swing under the great oak
+// Two ropes tied round the oak's low limb, a plank seat between them. Tap it: she walks over, hops on and sits.
+// Then tap anywhere to push (each tap adds a swing, higher and higher), and «Злізти» gets her off again. The seat
+// is a real pendulum, so an empty swing keeps swinging a while after she hops off. Seen from the front, the swing
+// goes toward and away from you: it rises, grows a little and drops lower on the screen as it comes forward.
+const SW = { x: 4.7, y: 38.95, s: 4.2, th: 0, w: 0, phase: '', t0: 0, rider: false, sign: 1, hide: false, hint: 0 };
+const SW_SPOT = { x: 4.7, y: 39.2 };
+function swingBtn() {
+  let b = document.getElementById('swingOff');
+  if (!b) {
+    b = document.createElement('button'); b.id = 'swingOff'; b.type = 'button';
+    b.style.cssText = 'position:fixed;right:14px;bottom:calc(300px + env(safe-area-inset-bottom,0px));z-index:30;display:none;padding:13px 26px;border:0;border-radius:999px;background:#ff705d;color:#fff;font:700 19px system-ui,sans-serif;box-shadow:0 6px 0 #c9483a,0 10px 20px rgba(0,0,0,.25);touch-action:manipulation';
+    b.addEventListener('pointerdown', e => { e.stopPropagation(); }); b.addEventListener('click', e => { e.stopPropagation(); swingOff(); });
+    document.body.appendChild(b);
+  }
+  b.textContent = 'Злізти' + (stage() < 3 ? ' · Get off' : '');
+  return b;
+}
+function swingStart() {
+  if (SW.rider || SW.phase === 'walk' || mode !== 'world') return;
+  SW.phase = 'walk'; SW.t0 = nowT;
+  const path = findPath(SW_SPOT.x, SW_SPOT.y, null);
+  P.goal = null; P.path = path.length ? path : [];
+  if (Math.hypot(P.x - SW_SPOT.x, P.y - SW_SPOT.y) > 0.05) P.path = (path.length ? path : []).concat([{ x: SW_SPOT.x, y: SW_SPOT.y }]);
+}
+function swingPump() {
+  if (!SW.rider || SW.phase !== 'ride') return;
+  const dir = Math.abs(SW.w) < 0.12 ? (SW.th >= 0 ? -1 : 1) : Math.sign(SW.w);
+  SW.w += dir * (0.62 - Math.min(0.4, Math.abs(SW.th) * 0.32)); if (Math.abs(SW.th) > 1.1) SW.w *= 0.8;
+  blip(520 + Math.abs(SW.th) * 120, 0.04); SW.hint = 1;
+}
+function swingOff() {
+  if (!SW.rider || SW.phase !== 'ride') return;
+  SW.phase = 'dismount'; SW.t0 = nowT; swingBtn().style.display = 'none'; sfxHit(300, 0.12, 0.06, 'lowpass', 1);
+}
+function swingStep(dt) {
+  dt = Math.min(0.05, Math.max(0, dt || 0));
+  // the pendulum (an empty swing slows soon, one with someone on it hardly at all)
+  const damp = SW.rider ? 0.1 : 0.3, om = 2.15;
+  SW.w += (-om * om * Math.sin(SW.th) - damp * SW.w) * dt; SW.th += SW.w * dt;
+  if (!SW.rider && Math.abs(SW.th) < 0.004 && Math.abs(SW.w) < 0.02) { SW.th = 0; SW.w = 0; }
+  const sg = SW.th >= 0 ? 1 : -1; if (sg !== SW.sign && Math.abs(SW.w) > 0.5) { sfxHit(360 + (Math.abs(SW.w) * 40) % 90, 0.1, 0.035, 'bandpass', 6); } SW.sign = sg;
+  if (SW.phase === 'walk') {
+    if (mode !== 'world' || nowT - SW.t0 > 14) { SW.phase = ''; return; }
+    if (!P.path.length) { if (Math.hypot(P.x - SW_SPOT.x, P.y - SW_SPOT.y) < 0.7) { SW.phase = 'mount'; SW.t0 = nowT; SW.hide = true; blip(600, 0.06); } else SW.phase = ''; }
+  } else if (SW.phase === 'mount') {
+    if (nowT - SW.t0 > 0.6) { SW.phase = 'ride'; SW.rider = true; SW.w = 0.9; SW.th = 0; SW.t0 = nowT; swingBtn().style.display = 'block'; toast('🪢 Гойдалка!' + (stage() < 3 ? ' Tap to swing higher.' : ' Торкайся, щоб розгойдатись.'), 3200); }
+  } else if (SW.phase === 'ride') {
+    if (mode !== 'world' || sheetOpen()) { SW.phase = 'dismount'; SW.t0 = nowT; swingBtn().style.display = 'none'; }
+  } else if (SW.phase === 'dismount') {
+    if (nowT - SW.t0 > 0.55) { SW.phase = ''; SW.rider = false; SW.hide = false; P.x = SW_SPOT.x; P.y = SW_SPOT.y; P.rx = P.x; P.ry = P.y; S.x = P.x; S.y = P.y; save(); }
+  }
+}
+function swingRope(c, x1, y1, x2, y2) {
+  c.lineCap = 'round'; c.strokeStyle = '#6e4e28'; c.lineWidth = 5; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+  c.strokeStyle = '#c7a066'; c.lineWidth = 3.6; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+  const L = Math.hypot(x2 - x1, y2 - y1), ux = (x2 - x1) / L, uy = (y2 - y1) / L; c.strokeStyle = 'rgba(80,50,20,.55)'; c.lineWidth = 1.1;
+  for (let d = 2; d < L - 2; d += 4.2) { const px = x1 + ux * d, py = y1 + uy * d; c.beginPath(); c.moveTo(px - 1.9 + uy * 0.5, py - 0.5 - ux * 0.5); c.lineTo(px + 1.9 - uy * 0.5, py + 1.7 + ux * 0.5); c.stroke(); }   // the twist of the strands
+  c.strokeStyle = 'rgba(255,238,200,.55)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(x1 - 1, y1); c.lineTo(x2 - 1, y2); c.stroke();
+}
+function swingSeated(c, t, kick) {
+  // her torso and skirt, with the arms reaching up to the ropes, and her shins hanging below the plank (origin: where she sits)
+  const L = Object.assign({}, ME, { noArms: true });
+  c.save(); c.beginPath(); c.rect(-60, -140, 120, 131); c.clip(); person(c, 0, 0, L, t, 0, 1, 0, { back: 0 }); c.restore();
+  for (const sd of [-1, 1]) {   // arms
+    c.strokeStyle = ME.sleeve || ME.shirt; c.lineWidth = 7; c.lineCap = 'round'; c.beginPath(); c.moveTo(sd * 14, -46); c.quadraticCurveTo(sd * 26, -50, sd * 25, -66); c.stroke();
+    c.fillStyle = ME.skin; circ(c, sd * 25, -69, 3.8);
+  }
+  // shins and shoes
+  for (const sd of [-1, 1]) { c.save(); c.translate(sd * 7.5, -8); c.rotate(kick * (sd > 0 ? 1 : 0.85)); c.fillStyle = ME.skin; rr(c, -3, 0, 6, 15, 2.5); c.fillStyle = ME.boots || '#5b4636'; rr(c, -3.6, 9, 7.2, 8.5, 2.8); c.fillStyle = ME.boots ? 'rgba(255,255,255,.3)' : '#3f3027'; c.fillRect(-3.6, 9, 7.2, 1.5); c.restore(); }
+}
+function drawSwing(c, e, x, y, t) {
+  const th = SW.th, sn = Math.sin(th), cs = Math.cos(th), topY = y - e.s * T, Lp = (e.s - 0.82) * T, rw = 25;
+  const sc = 1 + 0.1 * sn, sy = topY + Lp * cs + Lp * sn * 0.42;   // the plank's top edge, on screen
+  // a shadow on the grass under it, sliding with the seat
+  c.fillStyle = 'rgba(0,0,0,' + (0.2 - Math.abs(sn) * 0.05) + ')'; ell(c, x, y + 6 + Lp * sn * 0.5, 34 * sc, 7 * sc);
+  const px = x, pw = 58 * sc, ph = 9 * sc;
+  // the ropes: round the limb at the top (wraps and a knot), then down to holes at each end of the plank
+  for (const sd of [-1, 1]) {
+    const tx = x + sd * rw, bx = x + sd * (pw / 2 - 6 * sc);
+    swingRope(c, tx, topY - 6, bx, sy + ph * 0.55);
+    c.fillStyle = '#6e4e28'; for (let i = 0; i < 3; i++) { ell(c, tx, topY - 25 + i * 7, 7.2, 3.8); } c.fillStyle = '#c7a066'; for (let i = 0; i < 3; i++) ell(c, tx - 0.5, topY - 25.8 + i * 7, 6.2, 2.6);
+    c.fillStyle = '#6e4e28'; circ(c, tx, topY - 3, 4.4); c.fillStyle = '#c7a066'; circ(c, tx - 0.6, topY - 3.6, 3.3);   // the knot
+  }
+  // the plank: a thick board with rounded ends, its top face catching the light, grain, two rope holes and knots beneath
+  c.fillStyle = 'rgba(0,0,0,.18)'; rr(c, px - pw / 2 + 1, sy + 3, pw, ph + 1, 3);
+  const g = c.createLinearGradient(0, sy, 0, sy + ph); g.addColorStop(0, '#d9ad72'); g.addColorStop(0.35, '#c08c4e'); g.addColorStop(1, '#8e6130'); c.fillStyle = g; rr(c, px - pw / 2, sy, pw, ph, 3.4);
+  c.fillStyle = 'rgba(255,235,190,.5)'; rr(c, px - pw / 2 + 2, sy + 0.8, pw - 4, 2.2, 1);
+  c.strokeStyle = 'rgba(70,40,15,.4)'; c.lineWidth = 0.7; for (let i = 0; i < 4; i++) { const yy = sy + 2.6 + i * 1.6 * sc; c.beginPath(); c.moveTo(px - pw / 2 + 5, yy); c.quadraticCurveTo(px, yy + (i % 2 ? 1 : -0.8), px + pw / 2 - 5, yy + 0.4); c.stroke(); }
+  c.fillStyle = 'rgba(60,35,12,.55)'; ell(c, px - 9 * sc, sy + 5.6 * sc, 2.6, 1.7); c.fillStyle = 'rgba(40,22,8,.8)'; for (const sd of [-1, 1]) circ(c, px + sd * (pw / 2 - 6 * sc), sy + 3.4 * sc, 2);
+  c.fillStyle = '#c7a066'; for (const sd of [-1, 1]) { circ(c, px + sd * (pw / 2 - 6 * sc), sy + ph + 2, 3.6); c.fillStyle = '#6e4e28'; circ(c, px + sd * (pw / 2 - 6 * sc) + 0.6, sy + ph + 2.6, 2); c.fillStyle = '#c7a066'; }
+  c.strokeStyle = 'rgba(40,22,8,.5)'; c.lineWidth = 1; c.beginPath(); c.moveTo(px - pw / 2 + 3, sy + ph - 0.5); c.lineTo(px + pw / 2 - 3, sy + ph - 0.5); c.stroke();
+  // the rider
+  const u = (nowT - SW.t0), kick = 0.14 * Math.sin(th * 1.3 + 0.9) - 0.1 * Math.abs(sn);
+  if (SW.phase === 'ride') { c.save(); c.translate(px, sy + 5); c.scale(sc, sc); c.rotate(-th * 0.07); swingSeated(c, t, kick); c.restore(); }
+  else if (SW.phase === 'mount' || SW.phase === 'dismount') {
+    const q = Math.min(1, u / (SW.phase === 'mount' ? 0.6 : 0.55)), a = SW.phase === 'mount' ? q : 1 - q, ease = a * a * (3 - 2 * a);
+    const fx = x, fy = y + 13, tx = px, ty = sy + 5, hx = fx + (tx - fx) * ease, hy = fy + (ty - fy) * ease - Math.sin(Math.PI * a) * 16;
+    if (SW.phase === 'mount' ? q > 0.85 : q < 0.15) { c.save(); c.translate(hx, hy); c.scale(sc, sc); swingSeated(c, t, 0); c.restore(); }
+    else person(c, hx, hy, ME, t, 0, 1, 0, { back: 0 });
+  }
+}
 let WELLFX = null;   // { phase: 'walk' | 'draw', t0, add }
 function wellStart(add) { WELLFX = { phase: 'walk', add, t0: nowT }; walkTo(WELL_SPOT.x, WELL_SPOT.y, null); if (!P.path.length && Math.hypot(P.x - WELL_SPOT.x, P.y - WELL_SPOT.y) > 0.04) P.path = [{ x: WELL_SPOT.x, y: WELL_SPOT.y }]; }   // (a step over even when she's already beside it)
 function wellStep() {
@@ -5162,6 +5440,8 @@ function wellStep() {
 }
 function walkTo(wx, wy, ent) {
   if (WELLFX && WELLFX.phase === 'draw') return;   // busy at the well
+  if (SW.rider && SW.phase !== 'walk') return;   // on the swing
+  if (SW.phase === 'walk') SW.phase = '';   // she changed her mind
   if (ent && ent.kind === 'npc') {
     const sp = talkSpot(ent);
     if (sp) {
@@ -5471,6 +5751,7 @@ function drawFishing(c, t) {
   }
 }
 function interact(e) {
+  if (e.k === 'swing') return swingStart();
   if (e.k === 'scarecrow') return mazeReward();
   if (e.kind === 'cc') return ccExamine();
   if (e.w === 'ryba' || e.kind === 'pond') return fishCard(e);
@@ -10749,7 +11030,7 @@ function update(dt, t, rdt = dt) {
     if (d <= step) { P.x = n.x; P.y = n.y; P.path.shift(); step -= d; P.step += d; if (!P.path.length) { S.x = P.x; S.y = P.y; save(); arrive(); } }
     else { P.x += dx / d * step; P.y += dy / d * step; P.step += step; step = 0; }
   }
-  if (mode === 'world') { peopleApart(dt); forestSounds(t); wellStep(); }
+  if (mode === 'world') { peopleApart(dt); forestSounds(t); wellStep(); swingStep(dt); }
   if (P.moving && P.step - P.dust > 0.55) { P.dust = P.step; fxDust(P.rx, P.ry); }
   { const far = Math.hypot(P.x - P.rx, P.y - P.ry) > 2.5, k = far ? 1 : 1 - Math.exp(-rdt * 20);
     P.rx += (P.x - P.rx) * k; P.ry += (P.y - P.ry) * k;
@@ -10907,6 +11188,7 @@ function homeSign(c, x, y, t) {
   c.restore();
 }
 function drawWorld(t) {
+  treeBudget = 2;   // at most two new tree pictures are grown per frame
   const c = ctx;
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#8fd169'; c.fillRect(0, 0, cv.width, cv.height);   // never leave an old frame showing
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
@@ -10928,9 +11210,10 @@ function drawWorld(t) {
     if (bounced) { c.restore(); bounced = false; }
     const x = e.x * T, y = e.y * T;
     // a soft shadow on the grass, thrown away from the sun: long in the morning and evening, short at noon
-    if (!e.flat && !e.lift && e.kind !== 'pond' && e.kind !== 'fly' && e.kind !== 'plot' && shA > 0.02) { const s0 = (e.me ? 1 : e.s || 1) * T, rx = s0 * (0.34 + Math.abs(sunDx) * 0.3); c.globalAlpha = shA; c.drawImage(SOFT_SHADOW, x - rx + sunDx * s0 * 0.3, y - s0 * 0.1, rx * 2, s0 * 0.2); c.globalAlpha = 1; }
+    if (!e.flat && !e.lift && e.kind !== 'pond' && e.kind !== 'fly' && e.kind !== 'plot' && e.k !== 'swing' && shA > 0.02) { const s0 = (e.me ? 1 : e.s || 1) * T, rx = s0 * (0.34 + Math.abs(sunDx) * 0.3); c.globalAlpha = shA; c.drawImage(SOFT_SHADOW, x - rx + sunDx * s0 * 0.3, y - s0 * 0.1, rx * 2, s0 * 0.2); c.globalAlpha = 1; }
     // tapped things give a little squash-and-bounce
     if (e.me) {
+      if (SW.hide) continue;   // she is on the swing: it draws her
       // Draw whichever of the four views she is closest to; between views she narrows and lifts a little,
       // so each change of view reads as a turn rather than a swap.
       const q = Math.round((P.va || 0) / (Math.PI / 2)), view = ((q % 4) + 4) % 4, off = (P.va || 0) - q * Math.PI / 2, mid = 1 - Math.abs(Math.cos(2 * off));
@@ -10995,7 +11278,8 @@ function drawWorld(t) {
     if (e.lift) { drawIcon(c, e.ic, x, y - e.lift * T, s, { t }); continue; }   // resting on top of something, so no ground shadow
     if (!e.flat && e.kind !== 'fly') { c.fillStyle = 'rgba(0,0,0,.13)'; ell(c, x, y, s * (e.ic[0] === '@' ? 0.36 : 0.28), s * 0.09); }
     const hop = e.kind === 'animal' && e.walk ? Math.abs(Math.sin(t * 9 + e.x)) * 3 : e.kind === 'fly' ? Math.sin(t * 9 + e.ph) * 4 : 0;
-    if (e.swoop) { c.save(); c.translate(x, y); turnDepth(c, e); c.scale(turnX(e), 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
+    if (e.k === 'swing') drawSwing(c, e, x, y, t);
+    else if (e.swoop) { c.save(); c.translate(x, y); turnDepth(c, e); c.scale(turnX(e), 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
     else if (e.w === 'metelyk') drawIcon(c, e.ic, x, y - hop, s, { t: t + e.ph });   // each butterfly flaps on its own beat
     else if (e.lean) { c.save(); c.translate(x, y); c.rotate(e.lean); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }   // propped against something
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
@@ -11961,6 +12245,7 @@ cv.addEventListener('pointerup', ev => {
   peeking = false;
   if (mode === 'mill' && MILL.hold) { millUp(); down = null; return; }   // let go of the mill's hand wheel
   if (fishFx) { down = null; return; }   // no walking off mid-cast
+  if (SW.rider && SW.phase === 'ride') { down = null; swingPump(); return; }   // on the swing, a tap is a push
   if (!down || !running || sheetOpen()) return;
   const moved = Math.hypot(ev.clientX - down.x, ev.clientY - down.y); down = null;
   if (moved > 18) return;
