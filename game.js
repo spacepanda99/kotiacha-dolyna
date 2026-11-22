@@ -2811,7 +2811,9 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   }
   c.restore();
 }
-const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true, detail: true, eye: '#6b4a2a', brow: '#c08a3a' };
+const OLIA_FACE = { detail: true, eye: '#6b4426', brow: '#cfcfcf', eyeK: 0.82, age: 1, lashes: false };   // Grandma indoors: kind eyes, smile lines
+const SOLOMIIA_FACE = { detail: true, eye: '#5a3418', brow: '#3a2416', eyeK: 0.86 };   // Mrs. Solomiia in her café
+const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true, detail: true, eye: '#8a5426', brow: '#c08a3a' };
 // Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
 // shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
 // apronTrim), vest (+ vestTrim), coat (+ fur), boots, beads, a hat (scarf, wreath) and ribbons on the wreath.
@@ -4164,8 +4166,10 @@ function myDialog(id, text, choices) {
   myLast = [id, text, choices]; MYC = choices;
   const npc = NPC[id], uk = MY_LANG === 'uk';
   const body = myL(text), long = body.replace(/<[^>]+>/g, '').length > 230;   // a long card (a first hello with the news and the hint) gets smaller type, so it all fits
-  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npcLook(npc.id)) + '" alt=""' + (long ? ' style="width:64px;height:64px"' : '') + '><div style="flex:1"><div class="who" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">' + (uk ? npc.name : npc.nameEn) + '</span><button class="subt mylang" data-a="myLang" style="font-size:13px;padding:3px 10px">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div><div class="line" style="font-size:' + (long ? 16.5 : 19) + 'px;line-height:1.3">' + body + '</div></div></div>' +
-    '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>');   // (the language button sits up by their name, where it can't scroll out of sight)
+  const hasP = PORTRAITS.has(npc.id);
+  openSheet('<div class="dlg mydlg">' + (hasP ? portraitHTML : '<img class="face" src="' + faceURL(npcLook(npc.id)) + '" alt=""' + (long ? ' style="width:64px;height:64px"' : '') + '>') + '<div style="flex:1"><div class="who" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">' + (uk ? npc.name : npc.nameEn) + '</span><button class="subt mylang" data-a="myLang" style="font-size:13px;padding:3px 10px">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div><div class="line" style="font-size:' + (long ? 16.5 : 19) + 'px;line-height:1.3">' + body + '</div></div></div>' +
+    '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>');
+  if (hasP) portraitShow(npc.id);   // (the language button sits up by their name, where it can't scroll out of sight)
 }
 function myTalk(id) {
   if (S.mystery && S.mystery.t === 'vinok') return ccTalk(id);
@@ -4756,22 +4760,25 @@ function drawPickPose(c, x, y, t) {
 // her face, drawn finer (Vicky only): eyes with whites, irises, a highlight and lashes; brows; a nose; a mouth
 // that smiles, and opens when she's delighted; blush
 function faceDetail(c, L, bob, blink, side) {
-  const y = -62 + bob, joy = L.joy || nowT < JOY.until, eye = L.eye || '#6b4a2a', lash = '#2a1c14';
+  const y = -62 + bob, joy = L.joy || (L === ME || L.me) && nowT < JOY.until, eye = L.eye || '#6b4a2a', lash = '#2a1c14', k = L.eyeK || 1;
   c.strokeStyle = L.brow || '#b07a3a'; c.lineWidth = 1.2; c.lineCap = 'round';
   for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 2.6, y - 5.6); c.quadraticCurveTo(s * 5, y - 7.4 - (joy ? 0.7 : 0), s * 7.6, y - 6); c.stroke(); }
   if (joy) { c.strokeStyle = lash; c.lineWidth = 1.5; for (const s of [-1, 1]) { c.beginPath(); c.arc(s * 5, y + 1.4, 2.5, Math.PI * 1.12, Math.PI * 1.88); c.stroke(); } }
   else if (blink) { c.strokeStyle = lash; c.lineWidth = 1.3; for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 5 - 2.4, y + 0.4); c.quadraticCurveTo(s * 5, y + 1.7, s * 5 + 2.4, y + 0.4); c.stroke(); } }
   else for (const s of [-1, 1]) {
     const x = s * 5;
-    c.fillStyle = '#fffaf6'; ell(c, x, y, 2.5, 2.9);
-    c.fillStyle = eye; ell(c, x + s * 0.15, y + 0.35, 1.95, 2.45);
-    c.fillStyle = 'rgba(255,230,180,.35)'; ell(c, x + s * 0.15, y + 1.5, 1.3, 0.85);
-    c.fillStyle = '#1a120c'; ell(c, x + s * 0.15, y + 0.45, 1.0, 1.35);
-    c.fillStyle = '#fff'; circ(c, x - 0.7, y - 0.75, 0.72); circ(c, x + 0.75, y + 1.3, 0.34);
-    c.strokeStyle = lash; c.lineWidth = 1.05; c.beginPath(); c.moveTo(x - 2.7, y - 0.1); c.quadraticCurveTo(x, y - 3.9, x + 2.7, y - 0.1); c.stroke();
-    c.beginPath(); c.moveTo(x + s * 2.5, y - 0.9); c.lineTo(x + s * 3.7, y - 2.3); c.stroke();
+    c.save(); c.translate(x, y); c.scale(k, k);
+    c.fillStyle = '#fffaf6'; ell(c, 0, 0, 2.5, 2.9 * (L.age ? 0.8 : 1));
+    c.fillStyle = eye; ell(c, s * 0.15, 0.35, 1.95, 2.45 * (L.age ? 0.8 : 1));
+    c.fillStyle = 'rgba(255,230,180,.4)'; ell(c, s * 0.15, 1.5, 1.3, 0.85);
+    c.fillStyle = '#1a120c'; ell(c, s * 0.15, 0.45, 1.0, 1.35 * (L.age ? 0.8 : 1));
+    c.fillStyle = '#fff'; circ(c, -0.7, -0.75, 0.72); circ(c, 0.75, 1.3, 0.34);
+    c.strokeStyle = lash; c.lineWidth = 1.05 / k; c.beginPath(); c.moveTo(-2.7, -0.1); c.quadraticCurveTo(0, -3.9 * (L.age ? 0.75 : 1), 2.7, -0.1); c.stroke();
+    if (L.lashes !== false) { c.beginPath(); c.moveTo(s * 2.5, -0.9); c.lineTo(s * 3.7, -2.3); c.stroke(); }
+    c.restore();
   }
   c.fillStyle = 'rgba(205,120,100,.45)'; ell(c, 0.4, y + 3.6, 0.9, 0.55);
+  if (L.age) { c.strokeStyle = 'rgba(160,100,80,.45)'; c.lineWidth = 0.7; for (const s2 of [-1, 1]) { for (let i = 0; i < 2; i++) { c.beginPath(); c.moveTo(s2 * (8 + i * 0.6), y - 0.8 + i * 1.6); c.lineTo(s2 * (9.6 + i * 0.6), y - 1.6 + i * 2.2); c.stroke(); } c.beginPath(); c.moveTo(s2 * 3.6, y + 4.4); c.quadraticCurveTo(s2 * 4.6, y + 6.4, s2 * 4, y + 7.6); c.stroke(); } }
   const my = y + 5.8;
   if (joy) { c.fillStyle = '#8a2e32'; c.beginPath(); c.moveTo(-3, my); c.quadraticCurveTo(0, my + 4.6, 3, my); c.closePath(); c.fill(); c.fillStyle = '#ef8a92'; ell(c, 0, my + 2.3, 1.5, 0.9); c.strokeStyle = '#6e2428'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-3.2, my - 0.2); c.quadraticCurveTo(0, my + 0.5, 3.2, my - 0.2); c.stroke(); }
   else { c.strokeStyle = '#7a3a34'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-2.7, my); c.quadraticCurveTo(0, my + 2.3, 2.7, my); c.stroke(); c.fillStyle = 'rgba(230,110,120,.35)'; ell(c, 0, my + 1.7, 1.4, 0.6); }
@@ -5375,7 +5382,7 @@ function purr(name) {
 }
 function catSheet(e) {
   const ct = D.cats.find(x => x.id === e.cat);
-  if (S.cats[ct.id]) return wordCard(ct.word, { note: `❤️ ${ct.name} · ${PH.mur.uk}`, clips: ['p_mur'] });
+  if (S.cats[ct.id]) { wordCard(ct.word, { note: `❤️ ${ct.name} · ${PH.mur.uk}`, clips: ['p_mur'] }); return catPortrait(ct.id); }
   const has = (S.bag[ct.wants] || 0) > 0, st = stage();
   wordCard(ct.word, {
     note: `<b>${ct.line}</b>${st < 3 ? `<br>${ct.lineEn}` : `<span class="xl"><br>${ct.lineEn}</span>`}<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0 2px"><img src="${iconURL(ct.wants)}" style="width:44px;height:44px" alt=""><span style="text-align:left"><b>${W[ct.wants].uk}</b>${st < 3 ? `<br><span style="font-size:14px;opacity:.8">${W[ct.wants].en}${has ? ' · you have some!' : ''}</span>` : ''}</span></div>${!has ? xl(`<small>${sourceHint(ct.wants)}</small>`) : ''}`,
@@ -5385,7 +5392,9 @@ function catSheet(e) {
       hud(); save(); closeSheet(); toast(`❤️ ${ct.name}!  +2 ❤️${stage() < 3 ? ' · Take it home 🏠' : ''}`, 3200); say('p_mur'); purr(ct.name);
     } }] : [],
   });
+  catPortrait(ct.id);
 }
+function catPortrait(id) { const pid = 'cat_' + id; if (!PORTRAITS.has(pid) || !sheet.classList.contains('show')) return; const card = sheet.querySelector('.card') || sheet.firstElementChild; if (!card) return; card.insertAdjacentHTML('afterbegin', portraitHTML); portraitShow(pid); }
 const catFriends = () => D.cats.filter(ct => S.cats[ct.id]).length;
 
 // ------------------------------------------------------------------ walking
@@ -5693,7 +5702,35 @@ const known = id => S.words[id] ? S.words[id].l : 0;
 // ------------------------------------------------------------------ sheets (the pop-up panels)
 const sheet = $('#sheet'), veil = $('#veil');
 let onClose = null, acts = [], cur = {}, sheetAt = 0;
+// ------------------------------------------------------------------ portraits on the talking cards
+// Each villager and cat has a painted portrait (portraits/<id>.webp). On a talking card it sits at the top left
+// and rises out of the card by about a third of its height. It's a separate picture over the page, kept lined up
+// with the card's top edge every frame (the card slides up when it opens), and hidden as soon as the card shows
+// anything else.
+const PORTRAITS = new Set(['me', 'olia', 'taras', 'andriiko', 'bohdan', 'oksana', 'solomiia', 'petro', 'myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna', 'cat_rudko', 'cat_vuhlyk', 'cat_snizhok', 'cat_dymok', 'cat_smuhastyk', 'cat_murka', 'cat_bublyk', 'cat_zirka']);
+let portraitOn = null, portraitRaf = 0;
+const PORTRAIT_W = 128, PORTRAIT_H = 160, PORTRAIT_OVER = 0.3;
+function portraitEl() {
+  let im = document.getElementById('talkPortrait');
+  if (!im) { im = document.createElement('img'); im.id = 'talkPortrait'; im.alt = ''; im.style.cssText = 'position:fixed;z-index:11;pointer-events:none;width:' + PORTRAIT_W + 'px;height:' + PORTRAIT_H + 'px;object-fit:cover;border-radius:22px;box-shadow:0 8px 22px rgba(60,30,20,.28);border:3px solid #fffaf0;display:none;background:#f3e6dc'; document.body.appendChild(im); }
+  return im;
+}
+const portraitHTML = '<div class="pslot" style="width:' + (PORTRAIT_W - 6) + 'px;height:' + Math.round(PORTRAIT_H * (1 - PORTRAIT_OVER) - 6) + 'px;flex:none;float:left;margin:0 10px 6px 0"></div>';
+function portraitShow(id) {
+  if (!PORTRAITS.has(id)) return false;
+  const im = portraitEl(), src = 'portraits/' + id + '.webp'; if (!im.src.endsWith(src)) im.src = src;
+  portraitOn = id; im.style.display = 'block'; cancelAnimationFrame(portraitRaf);
+  const follow = () => {
+    if (!portraitOn || !(sheet.classList.contains('show') || sheet.classList.contains('closing'))) { im.style.display = 'none'; portraitOn = null; return; }
+    const slot = sheet.querySelector('.pslot'); if (!slot) { im.style.display = 'none'; portraitOn = null; return; }
+    const r = slot.getBoundingClientRect(), sr = sheet.getBoundingClientRect();
+    im.style.left = Math.round(r.left - 3) + 'px'; im.style.top = Math.round(sr.top - PORTRAIT_H * PORTRAIT_OVER) + 'px';
+    portraitRaf = requestAnimationFrame(follow);
+  };
+  follow(); return true;
+}
 function openSheet(html, closer) {
+  portraitOn = null;
   if (onClose) { const f = onClose; onClose = null; f(); }
   sheet.classList.remove('fixed'); clearTimeout(closeT); sheet.classList.remove('closing'); veil.classList.remove('closing');
   if (html.includes('class="dlg"')) { html += subsHTML(); subNow = null; }
@@ -5702,6 +5739,7 @@ function openSheet(html, closer) {
 }
 let closeT = 0;
 function closeSheet() {
+  setTimeout(() => { if (!sheet.classList.contains('show')) { portraitOn = null; const im = document.getElementById('talkPortrait'); if (im) im.style.display = 'none'; } }, 200);   // the portrait goes with the card
   if (cardPr) { cardPr.stop = true; cardPr = null; }   // a practice still listening stops with the card
   if (sheet.classList.contains('show')) { sheet.classList.add('closing'); veil.classList.add('closing'); clearTimeout(closeT); closeT = setTimeout(() => { sheet.classList.remove('closing'); veil.classList.remove('closing'); }, 190); }
   sheet.classList.remove('show'); veil.classList.remove('show');
@@ -6116,10 +6154,12 @@ function dialog(npc, steps, i = 0) {
   const who = st.me ? (s < 3 ? 'Ти · You' : 'Ти') : npc.name + (s < 2 ? ` · ${npc.nameEn}` : '');
   const en = s < 2 ? `<div class="en">${st.en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}${stage() < 3 ? " · " + D.ui.show[1] : ""}</button>`;
   const choices = st.choices ? `<div class="choices">${st.choices.map((c, k) => `<button class="b ghost" data-a="choose" data-v="${k}">${c.uk}<small class="cen"${s < 2 ? '' : ' style="display:none"'}>${c.en}</small></button>`).join('')}</div>` : '';
-  openSheet(`<div class="dlg"><img class="face" src="${face}" alt=""><div style="flex:1"><div class="who">${who}</div>
+  const pid = st.me ? 'me' : npc.id, hasP = PORTRAITS.has(pid);
+  openSheet(`<div class="dlg">${hasP ? portraitHTML : `<img class="face" src="${face}" alt="">`}<div style="flex:1"><div class="who">${who}</div>
     <div class="line">${st.uk}</div>${s < 2 ? `<div class="tr">${translit(st.uk)}</div>` : ''}<div id="en">${en}</div></div></div>
     ${st.hint ? `<div class="hint">${st.hint}</div>` : ''}${choices}
     <div class="row">${btn('hear', st.clip, '🔊', 'round blue')}${st.choices ? '' : btn('next', '', lab('next'))}</div>`);
+  if (hasP) portraitShow(pid);
   cur = { en: st.en };
   if (st.clip) say(st.clip);
 }
@@ -9022,8 +9062,9 @@ function inDraw(c, t) {
   const sc = inScale(IN.y), x = IN.x, y = IN.y;
   c.fillStyle = 'rgba(60,40,20,.2)'; ell(c, x, y, 17 * sc, 4.5 * sc);
   c.save(); c.translate(x, y);
-  if (IN.dir === 'side') { c.scale(IN.face, 1); personSide(c, 0, 0, ME, t, IN.wk, sc, IN.step); }
-  else person(c, 0, 0, ME, t, IN.wk, sc, IN.step, { back: IN.dir === 'back' ? 1 : 0 });
+  const MEi = Object.assign({}, ME, { eyeK: 0.84 });
+  if (IN.dir === 'side') { c.scale(IN.face, 1); personSide(c, 0, 0, MEi, t, IN.wk, sc, IN.step); }
+  else person(c, 0, 0, MEi, t, IN.wk, sc, IN.step, { back: IN.dir === 'back' ? 1 : 0 });
   c.restore();
 }
 
@@ -9866,7 +9907,7 @@ function drawCafe(t) {
     hit(x - sw / 2, y - u * 0.06, sw, u * 0.06, word('med'), x); }
   // ---- Solomiia behind the counter, wiping it with a cloth (drawn before the counter front, so it hides her legs)
   const ox = CF.owner * RW, oy = h * 0.6 + u * 0.06, osc = inScale(oy),   /* the same scale as everyone else at her depth (it was a fixed, larger one) */ wipe = Math.sin(t * 2.4);
-  { const L2 = Object.assign({}, NPC.solomiia.look, { armR: 0.9 + wipe * 0.35, armL: 0.4 }); person(c, ox, oy - u * 0.05, L2, t, false, osc); }   // on the step behind the counter
+  { const L2 = Object.assign({}, NPC.solomiia.look, SOLOMIIA_FACE, { armR: 0.9 + wipe * 0.35, armL: 0.4 }); person(c, ox, oy - u * 0.05, L2, t, false, osc); }   // on the step behind the counter
   // ---- the counter: a wooden top over a front of blue-and-white painted tiles
   { const x = CF.counter * RW, cw = u * 0.7, top = fy - h * 0.085;
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, x, fy + h * 0.01, cw * 0.55, h * 0.015);
@@ -10727,7 +10768,7 @@ function drawOlia(t) {
 
   // ---- Grandma Olia at her counter, in her apron
   const ox = OX.olia * RW, oy = h * 0.6 + u * 0.055, sc = u * 0.0046, npcS = S.npc.olia;
-  person(c, ox, oy, Object.assign({ noArms: true }, NPC.olia.look), t, false, sc);
+  person(c, ox, oy, Object.assign({ noArms: true }, NPC.olia.look, OLIA_FACE), t, false, sc);
   c.save(); c.translate(ox, oy); c.scale(sc, sc);
   c.fillStyle = '#fffdf5'; rr(c, -9.5, -31, 19, 22, 3); c.fillStyle = '#d43a3a'; c.fillRect(-9.5, -13, 19, 2); c.fillRect(-9.5, -31, 19, 1.6);
   flower(0, -19, 2.4, '#d43a3a'); c.fillStyle = '#4f8f3a'; ell(c, -4.2, -16.5, 2, 0.9); ell(c, 4.2, -16.5, 2, 0.9);

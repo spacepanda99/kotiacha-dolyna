@@ -3,7 +3,7 @@
 // the saved copy is only used when there's no connection.
 // Voice clips, music and icons: saved after first use. The whole cache is renamed each release
 // (tools/release.mjs), so a new version starts clean.
-const CACHE = 'kotiacha-dolyna-307';
+const CACHE = 'kotiacha-dolyna-308';
 const CORE = ['./', 'index.html', 'game.js', 'data.js', 'manifest.webmanifest', 'version.json', 'icons/icon-192.png?v=2', 'icons/icon-512.png?v=2', 'icons/apple-touch-icon.png?v=2'];
 
 self.addEventListener('install', e => {
@@ -23,7 +23,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   // Audio may be requested in ranges; let the browser handle those directly.
   if (req.headers.has('range')) return;
-  if (/\/(audio|music|icons|fonts)\//.test(url.pathname)) {
+  if (/\/(audio|music|icons|fonts|portraits)\//.test(url.pathname)) {
     e.respondWith(caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).then(res => {
       if (res.ok && res.status === 200) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)).catch(() => {}); }
       return res;
