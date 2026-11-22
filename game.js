@@ -2425,6 +2425,7 @@ const TSPEC = {
   dub:      { box: [-88, -134, 88, 8], ps: 3.2, th: 34, tw: 14, tt: 8.5, main: 5, bl: 34, md: 3, curve: 0.95, photo: 0.1, sag: 0.12, kidP: 0.58, kl: 0.72, tcurve: 0.14, leafDepth: 1, lpl: 0.95, ls: 6.6, shape: 'lobed', bark: ['#54391e', '#7d5a34', '#2e1c0b'], sum: ['#1f5a28', '#2b7433', '#43914a', '#68ad5e'], spr: ['#3b8a38', '#58a547', '#7dc05f', '#a8d980'] },
   bereza:   { box: [-70, -142, 70, 8], ps: 3.2, th: 62, tw: 6.5, tt: 3.4, main: 6, bl: 26, md: 3, curve: 0.4, photo: 0.1, sag: 0.8, kidP: 0.55, kl: 0.75, tcurve: 0.07, leafDepth: 1, lpl: 2.0, ls: 3.8, shape: 'heart', birch: 1, bark: ['#f3f0e8', '#ffffff', '#c8c3b6'], sum: ['#3f8a3a', '#56a444', '#78bf5a', '#a3da7e'], spr: ['#6cb14c', '#88c860', '#a8dc80', '#cdef9e'] },
   bush:     { box: [-56, -72, 56, 4], ps: 3.4, th: 0, tw: 0, tt: 0, main: 12, bl: 22, md: 3, curve: 0.7, photo: 0.25, sag: 0.1, kidP: 0.6, kl: 0.72, tcurve: 0, leafDepth: 0, lpl: 2.6, ls: 4.0, shape: 'pointed', bark: ['#5e3c1e', '#86592c', '#33200d'], sum: ['#2d7c37', '#3e9645', '#5bb258', '#85cf72'], spr: ['#4c9a42', '#68b456', '#8bcc6d', '#bfe697'], berries: 1 },
+  kalyna:   { box: [-58, -78, 58, 4], ps: 3.4, th: 0, tw: 0, tt: 0, main: 9, bl: 24, md: 3, curve: 0.62, photo: 0.3, sag: 0.18, kidP: 0.58, kl: 0.72, tcurve: 0, leafDepth: 0, lpl: 2.0, ls: 5.2, shape: 'lobed', bark: ['#6a4a32', '#93704e', '#3a2616'], sum: ['#2a6e34', '#3a8a40', '#57a84e', '#80c466'], spr: ['#4a9440', '#66ae52', '#8ac86a', '#b8e090'], kalyna: 1 },
   giantoak: { box: [-150, -230, 150, 12], ps: 5, th: 74, tw: 30, tt: 17, main: 6, bl: 50, md: 3, curve: 0.8, photo: 0.1, sag: 0.1, kidP: 0.6, kl: 0.7, tcurve: 0.1, leafDepth: 1, lpl: 1.5, ls: 6.4, shape: 'lobed', bark: ['#52371b', '#7d5a30', '#2b1a0a'], sum: ['#1d5426', '#296f31', '#3f8e47', '#66ab5a'], spr: ['#3a8636', '#56a244', '#7bbd5c', '#a6d77c'], giant: 1 },
 };
 function growTree(S, rnd, bare) {
@@ -2477,9 +2478,34 @@ function growTree(S, rnd, bare) {
 function leafPath(c, shape, L, W0) {
   c.beginPath();
   if (shape === 'lobed') { const n = 14; for (let i = 0; i <= n; i++) { const u = i / n, r = W0 * Math.sin(Math.PI * u) * (1 + 0.38 * Math.sin(u * Math.PI * 6 + 0.6)); c.lineTo(u * L, -r); } for (let i = n; i >= 0; i--) { const u = i / n, r = W0 * Math.sin(Math.PI * u) * (1 + 0.38 * Math.sin(u * Math.PI * 6 + 0.6)); c.lineTo(u * L, r); } }
+  else if (shape === 'lobed') {   // kalyna (guelder rose): three pointed lobes, like a small maple leaf
+    c.moveTo(0, 0); c.quadraticCurveTo(L * 0.18, -W0 * 0.9, L * 0.36, -W0 * 1.75); c.lineTo(L * 0.48, -W0 * 0.75); c.quadraticCurveTo(L * 0.7, -W0 * 1.3, L, 0); c.quadraticCurveTo(L * 0.7, W0 * 1.3, L * 0.48, W0 * 0.75); c.lineTo(L * 0.36, W0 * 1.75); c.quadraticCurveTo(L * 0.18, W0 * 0.9, 0, 0); }
   else if (shape === 'heart') { c.moveTo(0, 0); c.bezierCurveTo(L * 0.1, -W0 * 1.25, L * 0.62, -W0 * 1.05, L, 0); c.bezierCurveTo(L * 0.62, W0 * 1.05, L * 0.1, W0 * 1.25, 0, 0); }
   else { c.moveTo(0, 0); c.quadraticCurveTo(L * 0.42, -W0 * 1.12, L, 0); c.quadraticCurveTo(L * 0.42, W0 * 1.12, 0, 0); }
   c.closePath();
+}
+// Kalyna's fruit: hanging bunches of glossy red berries (white snowball blossom in spring), on short stalks from the
+// leaves, or from the bare twig ends in winter with a cap of snow
+function kalynaClusters(c, pts, rnd, sea, bare) {
+  for (const [px, py] of pts) {
+    const dx = (rnd() - 0.5) * 3, hy = py + 3 + rnd() * 2.5;
+    c.strokeStyle = sea === 'vesna' ? '#5a8a3a' : '#7a3a22'; c.lineWidth = 0.55;
+    for (let k = -1; k <= 1; k++) { c.beginPath(); c.moveTo(px, py); c.quadraticCurveTo(px + k * 1.6, py + 1.4, px + dx + k * 2.2, hy); c.stroke(); }
+    if (sea === 'vesna') {   // a flat white flower head: big outer florets round a creamy middle
+      for (let i = 0; i < 12; i++) { const a = rnd() * 6.283, r = 2 + rnd() * 3.6; c.fillStyle = r > 4 ? '#ffffff' : '#f4f1dc'; circ(c, px + dx + Math.cos(a) * r, hy + 1 + Math.sin(a) * r * 0.55, r > 4 ? 1.35 : 0.9); }
+      continue;
+    }
+    const n = 7 + Math.floor(rnd() * 6), dark = bare ? '#9c1420' : '#8e1220';
+    const bs = []; for (let i = 0; i < n; i++) { const a = rnd() * 6.283, r = rnd() * 3.4; bs.push([px + dx + Math.cos(a) * r, hy + 1.6 + Math.sin(a) * r * 0.8 + r * 0.35]); }
+    bs.sort((a, b) => a[1] - b[1]);
+    for (const [bx, by] of bs) {
+      c.fillStyle = dark; circ(c, bx, by, 1.95);
+      c.fillStyle = sea === 'lito' && rnd() < 0.18 ? '#e8782a' : '#d42232'; circ(c, bx - 0.15, by - 0.15, 1.65);
+      c.fillStyle = 'rgba(255,190,190,.85)'; circ(c, bx - 0.6, by - 0.65, 0.55);
+      c.fillStyle = 'rgba(60,10,10,.55)'; circ(c, bx + 0.3, by + 1.2, 0.3);
+    }
+    if (bare) { c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(px + dx, hy - 0.4, 3.4, 1.4, 0, Math.PI, 0); c.fill(); }
+  }
 }
 function buildTreeSprite(kind, variant, sea) {
   const S = TSPEC[kind], rnd = rng32(variant * 7919 + kind.length * 101 + (sea === 'zyma' ? 13 : 0) + 17), bare = sea === 'zyma';
@@ -2541,11 +2567,13 @@ function buildTreeSprite(kind, variant, sea) {
     // acorns on the oaks, berries on the bushes
     if (S.giant || kind === 'dub') { if (sea !== 'vesna') for (let i = 0; i < (S.giant ? 26 : 8); i++) { const l = L[Math.floor(rnd() * L.length)]; if (!l || (S.giant && l.y > -62 && l.x < -34)) continue; const px = l.x + Math.cos(l.a) * l.l * 0.5, py = l.y + Math.sin(l.a) * l.l * 0.5 + 2; c.fillStyle = '#b0813f'; c.beginPath(); c.ellipse(px, py + 1, 1.2, 1.7, 0, 0, 7); c.fill(); c.fillStyle = '#5e3f1e'; c.beginPath(); c.ellipse(px, py - 0.4, 1.4, 0.9, 0, Math.PI, 0); c.fill(); } }
     if (S.berries) { const bc = [['#e2574c', '#fff'], ['#3d4fa0', '#bcd'], ['#e8789a', '#fff']][variant % 3]; if (sea === 'lito' || sea === 'osin') for (let i = 0; i < 9 + (variant % 5); i++) { const l = L[Math.floor(rnd() * L.length)]; if (!l) continue; const px = l.x + Math.cos(l.a) * l.l * 0.6, py = l.y + Math.sin(l.a) * l.l * 0.6; c.fillStyle = bc[0]; c.beginPath(); c.arc(px, py, 1.9 + rnd() * 0.8, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.arc(px - 0.6, py - 0.7, 0.6, 0, 7); c.fill(); } }
+    if (S.kalyna) { const low = L.filter(l => l.y > cy - RY * 0.45), pts = []; for (let i = 0; i < 11 + (variant % 4) && low.length; i++) { const l = low[Math.floor(rnd() * low.length)]; pts.push([l.x + Math.cos(l.a) * l.l * 0.3, l.y + Math.sin(l.a) * l.l * 0.3]); } kalynaClusters(c, pts, rnd, sea, false); }
     if (S.fruit) { const outer = L.filter(l => l.y > cy - RY * 0.3 && l.y < cy + RY * 0.55); for (let i = 0; i < 16 && outer.length; i++) { const l = outer[Math.floor(rnd() * outer.length)]; fruitSpots.push([l.x + Math.cos(l.a) * l.l * 0.4, l.y + Math.sin(l.a) * l.l * 0.4 + 3.5]); } }
   } else {
     // snow along the bare boughs and in the forks
     for (const g of order) { const w = (g.w1 + g.w2) / 2, flat = Math.abs(Math.cos(g.a)); if (w < 1.1 || flat < 0.4) continue; c.strokeStyle = '#ffffff'; c.lineWidth = Math.max(0.7, w * 0.62); c.beginPath(); c.moveTo(g.x1, g.y1 - w * 0.34); c.lineTo(g.x2, g.y2 - w * 0.34); c.stroke(); c.strokeStyle = 'rgba(190,210,235,.55)'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(g.x1, g.y1 - w * 0.05); c.lineTo(g.x2, g.y2 - w * 0.05); c.stroke(); }
     c.fillStyle = '#ffffff'; for (const g of order) if (g.d >= 1 && (g.w1 + g.w2) / 2 > 1.6 && rnd() < 0.5) { c.beginPath(); c.ellipse(g.x1, g.y1 - 1.4, 1.6, 1, 0, 0, 7); c.fill(); }
+    if (S.kalyna) { const ends = order.filter(g => g.d >= 2 && g.y2 > -70), pts = []; for (let i = 0; i < 10 && ends.length; i++) { const g = ends[Math.floor(rnd() * ends.length)]; pts.push([g.x2, g.y2]); } kalynaClusters(c, pts, rnd, sea, true); }   // the red berries stay on all winter
   }
   return { cv, x0, y0, w: x1 - x0, h: y1 - y0, fruit: fruitSpots.map(p => [p[0] * fit, p[1] * fit]), ext: [mnx, mxx, mny] };
 }
@@ -2562,8 +2590,8 @@ function treeSprite(kind, o, sea) {
 function drawTreeSprite(c, kind, o) {
   const sea = treeSeason(o), spr = treeSprite(kind, o, sea); if (!spr) return false;
   const S = TSPEC[kind];
-  if (sea === 'osin') fallenLeaves(c, o, kind === 'bush' ? 30 : kind === 'giantoak' ? 120 : 48);
-  c.save(); if (kind === 'giantoak') { /* the great oak does not sway: the swing hangs from it */ } else if (kind !== 'bush') { c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40); } else c.rotate(((o && o.sway) || 0) * 0.6);
+  if (sea === 'osin') fallenLeaves(c, o, kind === 'bush' || kind === 'kalyna' ? 30 : kind === 'giantoak' ? 120 : 48);
+  c.save(); if (kind === 'giantoak') { /* the great oak does not sway: the swing hangs from it */ } else if (kind !== 'bush' && kind !== 'kalyna') { c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40); } else c.rotate(((o && o.sway) || 0) * 0.6);
   c.drawImage(spr.cv, spr.x0, spr.y0, spr.w, spr.h);
   if (S.fruit && sea !== 'zyma' && sea !== 'vesna' && (!o || o.fruit !== false) && spr.fruit.length) {
     const hv = k => vh(o, k), n = Math.min(spr.fruit.length, 3 + Math.floor(hv(240) * 7)), kind2 = hv(241), cols = kind2 < 0.55 ? ['#a81b1b', '#e04535', '#f06a55'] : kind2 < 0.8 ? ['#b98f1f', '#e8cb48', '#f6e27a'] : ['#b8403a', '#ee8068', '#f8b09a'];
