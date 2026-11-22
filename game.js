@@ -2187,6 +2187,102 @@ const DRAW = {
     c.fillStyle = '#b8322b'; rr(c, -15, -34, 30, 5.5, 2); c.fillStyle = '#d94a40'; c.fillRect(-15, -34, 30, 1.6);
     c.fillStyle = '#b8322b'; poly(c, [[0, -31], [-10, -22], [-6, -20]]); poly(c, [[0, -31], [10, -22], [6, -20]]);
   },
+  // ---- the garden's standing things -------------------------------------------------------------------
+  // A tiered fountain of dark cast iron (like the one in the photograph): a scalloped lower bowl on a fluted
+  // stem, a smaller bowl above it, a crowning urn and a jet; water curtains over each rim, a petal floating.
+  gfountain(c, o) {
+    const t = (o && o.t) || 0, ice = treeSeason(o) === 'zyma', dark = '#2c3a34', mid = '#3d4f46', hi = '#8fa38a';
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 1, 56, 9);
+    // the plinth and the lower stem
+    c.fillStyle = dark; rr(c, -16, -10, 32, 10, 3); c.fillStyle = mid; ell(c, 0, -10, 15, 4); c.fillStyle = dark; poly(c, [[-9, -12], [9, -12], [6, -34], [-6, -34]]);
+    c.fillStyle = hi; c.fillRect(-1.5, -33, 3, 20); for (const y of [-18, -26]) { c.fillStyle = mid; ell(c, 0, y, 9, 2.6); c.fillStyle = hi; ell(c, 0, y - 0.8, 8, 1.2); }
+    // the lower bowl: a wide scalloped dish
+    const bowl = (y, rx, ry, depth) => {
+      c.fillStyle = dark; c.beginPath(); c.ellipse(0, y, rx, ry, 0, 0, Math.PI); c.lineTo(rx - depth * 0.55, y + depth); c.quadraticCurveTo(0, y + depth * 1.35, -rx + depth * 0.55, y + depth); c.closePath(); c.fill();
+      c.fillStyle = mid; c.beginPath(); c.ellipse(0, y, rx, ry, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = hi; for (let a = 0; a < Math.PI; a += Math.PI / 14) { c.beginPath(); c.ellipse(Math.cos(a) * rx * 0.97, y + Math.sin(a) * ry * 0.97 + 0.5, rx * 0.075, ry * 0.2, 0, 0, 7); c.fill(); }   // the scalloped rim
+      c.fillStyle = ice ? '#dcecf5' : '#6fb4d8'; c.beginPath(); c.ellipse(0, y + 0.8, rx * 0.84, ry * 0.7, 0, 0, Math.PI * 2); c.fill(); c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-rx * 0.2, y - 0.4, rx * 0.4, ry * 0.2, 0, 0, 7); c.fill(); };
+    bowl(-40, 40, 11, 12);
+    c.fillStyle = '#f06aa4'; c.beginPath(); c.ellipse(14, -39.5, 6, 2.2, 0.3, 0, 7); c.fill(); c.fillStyle = '#c93f82'; c.beginPath(); c.ellipse(15, -38.8, 3, 1, 0.3, 0, 7); c.fill();   // a pink petal on the water
+    // the upper stem and bowl
+    c.fillStyle = dark; poly(c, [[-6, -44], [6, -44], [4, -64], [-4, -64]]); for (const y of [-50, -58]) { c.fillStyle = mid; ell(c, 0, y, 7, 2.2); c.fillStyle = hi; ell(c, 0, y - 0.7, 6, 1); }
+    bowl(-67, 24, 7, 8);
+    // the crown: a little urn and its jet
+    c.fillStyle = dark; poly(c, [[-4, -71], [4, -71], [2.5, -84], [-2.5, -84]]); c.fillStyle = mid; ell(c, 0, -84, 5, 1.8); c.fillStyle = hi; ell(c, 0, -86, 2.2, 3.2);
+    if (!ice) {
+      // water: a jet from the top, and thin curtains spilling over each rim, running (dashes slide down them)
+      c.strokeStyle = 'rgba(210,238,255,.85)'; c.lineWidth = 1.5; c.lineCap = 'round';
+      for (const sx of [-1, 1]) { c.beginPath(); c.moveTo(0, -88); c.quadraticCurveTo(sx * 9, -100 + Math.sin(t * 3) * 1.5, sx * 14, -76); c.stroke(); }
+      c.beginPath(); c.moveTo(0, -88); c.lineTo(0, -97 - Math.sin(t * 5) * 2); c.stroke();
+      c.lineWidth = 1.3; c.setLineDash([3, 3]); c.lineDashOffset = -t * 20;
+      for (let k = -4; k <= 4; k++) { const x = k * 5.3; c.beginPath(); c.moveTo(x, -66 + Math.abs(k) * 0.35); c.lineTo(x * 1.12, -50); c.stroke(); }
+      for (let k = -7; k <= 7; k++) { const x = k * 5.1; c.beginPath(); c.moveTo(x, -39 + Math.abs(k) * 0.2); c.lineTo(x * 1.1, -27 + Math.abs(k) * 0.3); c.stroke(); }
+      c.setLineDash([]);
+      c.fillStyle = 'rgba(220,242,255,.7)'; for (let k = 0; k < 6; k++) { const q = (t * 1.6 + k / 6) % 1; circ(c, (k - 2.5) * 11 * (1 + q * 0.2), -26 + q * 25, 1.1); }
+    }
+  },
+  // A rose arch like a garden-centre pergola: an angular iron arch with a pitched top, climbing roses and
+  // hanging wisteria all over it, and a planter box of flowers at the foot of each post.
+  rosearch(c, o) {
+    const v = (o && o.v) || 0, t = (o && o.t) || 0, sea = treeSeason(o), bare = sea === 'zyma';
+    const h = k => { const q = Math.sin((v + k) * 91.31) * 43758.5; return q - Math.floor(q); };
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 1, 62, 8);
+    // the frame: two posts and a pitched top
+    c.strokeStyle = '#2a2724'; c.lineWidth = 3.2; c.lineCap = 'round'; c.lineJoin = 'round';
+    c.beginPath(); c.moveTo(-50, -4); c.lineTo(-50, -78); c.lineTo(0, -108); c.lineTo(50, -78); c.lineTo(50, -4); c.stroke();
+    c.lineWidth = 1.6; c.beginPath(); c.moveTo(-50, -60); c.lineTo(-24, -90); c.moveTo(50, -60); c.lineTo(24, -90); c.moveTo(-50, -30); c.lineTo(-50, -78); c.stroke();
+    if (!bare) {
+      // foliage and roses running up both posts and over the top
+      const leaf = (x, y, s2, col) => { c.fillStyle = col; c.beginPath(); c.ellipse(x, y, s2, s2 * 0.55, h(x + y) * 3, 0, 7); c.fill(); };
+      const pts = []; for (let i = 0; i <= 46; i++) { const q = i / 46; let x, y; if (q < 0.3) { x = -50; y = -4 - (q / 0.3) * 74; } else if (q < 0.5) { const u = (q - 0.3) / 0.2; x = -50 + u * 50; y = -78 - u * 30; } else if (q < 0.7) { const u = (q - 0.5) / 0.2; x = u * 50; y = -108 + u * 30; } else { x = 50; y = -78 + ((q - 0.7) / 0.3) * 74; } pts.push([x, y]); }
+      pts.forEach(([x, y], i) => { for (let k = 0; k < 4; k++) leaf(x + (h(i * 4 + k) - 0.5) * 12, y + (h(i * 4 + k + 50) - 0.5) * 12, 4 + h(i + k) * 3, ['#2f7a3a', '#3f9a48', '#58b45a', '#276a32'][(i + k) % 4]); });
+      pts.forEach(([x, y], i) => { if (i % 2) return; const col = [['#e8527a', '#b81f4a'], ['#f6a8c0', '#d86a94'], ['#d8283a', '#8e1426'], ['#ffd0dc', '#e89ab0']][(i / 2 | 0) % 4], X = x + (h(i + 90) - 0.5) * 9, Y = y + (h(i + 120) - 0.5) * 9;
+        c.fillStyle = col[1]; circ(c, X, Y, 5.6); c.fillStyle = col[0]; circ(c, X - 0.4, Y - 0.5, 4.6); c.strokeStyle = col[1]; c.lineWidth = 0.9; c.beginPath(); c.arc(X, Y, 2.4, 0.5, 4.8); c.stroke(); c.fillStyle = 'rgba(255,255,255,.35)'; circ(c, X - 1.6, Y - 1.8, 1.2); });
+      // wisteria: long drooping racemes of lilac, swaying a little, hanging from the top
+      for (let i = 0; i < 17; i++) { const x = -44 + i * 5.5 + (h(i) - 0.5) * 3, top = x < 0 ? -78 - (x + 50) * 0.6 : -78 - (50 - x) * 0.6, len = 16 + h(i + 7) * 24, sw = Math.sin(t * 1.1 + i * 0.9) * 1.6;
+        for (let j = 0; j < len; j += 3) { const w2 = 4.2 * (1 - j / len * 0.75), px = x + sw * (j / len) + (h(i * 9 + j) - 0.5) * 1.5; c.fillStyle = ['#a07ad8', '#b896e8', '#8a5cc8', '#c9b0f0'][(i + (j / 3 | 0)) % 4]; circ(c, px - w2 * 0.4, top + j, w2 * 0.7); circ(c, px + w2 * 0.4, top + j + 1.5, w2 * 0.7); } }
+    }
+    // the planter boxes at the foot of each post, full of flowers
+    for (const sx of [-1, 1]) { const x = sx * 50; c.fillStyle = '#6b4a30'; rr(c, x - 14, -17, 28, 15, 2); c.fillStyle = '#85603e'; rr(c, x - 14, -17, 28, 4, 2); c.strokeStyle = 'rgba(40,25,10,.4)'; c.lineWidth = 0.8; for (let k = -9; k <= 9; k += 6) { c.beginPath(); c.moveTo(x + k, -17); c.lineTo(x + k, -2); c.stroke(); }
+      if (!bare) for (let k = 0; k < 7; k++) { const px = x - 11 + k * 3.7, py = -20 - h(k + sx * 7) * 7; c.fillStyle = '#3f8a3a'; c.fillRect(px - 0.6, py, 1.2, 5); c.fillStyle = ['#e2403a', '#f6cf3a', '#ff8fb3', '#fff', '#9b5bd6', '#ff8a2a', '#e2403a'][k]; ell(c, px, py - 1, 2.4, 3); } }
+  },
+  // A clipped topiary: a perfect ball of boxwood on a short stem, in a terracotta pot.
+  topiary(c) {
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 1, 24, 5);
+    c.fillStyle = '#b8643a'; poly(c, [[-13, -2], [13, -2], [16, -22], [-16, -22]]); c.fillStyle = '#d27a4a'; c.fillRect(-17, -26, 34, 6); c.fillStyle = 'rgba(0,0,0,.14)'; poly(c, [[6, -2], [13, -2], [16, -22], [9, -22]]);
+    c.fillStyle = '#6b4a2a'; c.fillRect(-2, -42, 4, 18);
+    const g = c.createRadialGradient(-7, -58, 3, 0, -52, 28); g.addColorStop(0, '#6cc060'); g.addColorStop(0.55, '#35863c'); g.addColorStop(1, '#1f5226'); c.fillStyle = g; circ(c, 0, -52, 25);
+    for (let i = 0; i < 40; i++) { const a = i * 2.39, q = Math.sqrt((i + 1) / 40) * 22; c.fillStyle = i % 3 ? 'rgba(130,210,100,.45)' : 'rgba(15,60,25,.4)'; circ(c, Math.cos(a) * q, -52 + Math.sin(a) * q, 1.9); }
+    c.fillStyle = 'rgba(255,255,255,.22)'; ell(c, -9, -64, 7, 4);
+  },
+  // A rhododendron in full bloom: a dome of glossy dark leaves studded with rosettes of pink or crimson flowers.
+  rhodo(c, o) {
+    const v = (o && o.v) || 0, h = k => { const q = Math.sin((v + k) * 78.23) * 43758.5; return q - Math.floor(q); }, red = h(1) > 0.5, sea = treeSeason(o);
+    const bl = red ? [['#e03a4e', '#b81f34'], ['#f0586a', '#c92a40']] : [['#f070a8', '#d04a86'], ['#ff9ac0', '#e0649a']];
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 1, 40, 8);
+    const g = c.createRadialGradient(-10, -50, 4, 0, -38, 48); g.addColorStop(0, '#4f9a4c'); g.addColorStop(0.6, '#2c6a34'); g.addColorStop(1, '#1d4a26'); c.fillStyle = g; c.beginPath(); c.ellipse(0, -34, 44, 34, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(15,55,25,.5)'; for (let i = 0; i < 26; i++) ell(c, (h(i) - 0.5) * 78, -34 + (h(i + 30) - 0.5) * 56, 6, 2.4);
+    if (sea === 'zyma') { c.fillStyle = 'rgba(255,255,255,.85)'; c.beginPath(); c.ellipse(0, -58, 36, 11, 0, 0, Math.PI * 2); c.fill(); return; }
+    if (sea === 'osin') { c.fillStyle = 'rgba(200,140,50,.5)'; for (let i = 0; i < 8; i++) ell(c, (h(i + 60) - 0.5) * 60, -34 + (h(i + 70) - 0.5) * 40, 5, 2.4); return; }
+    for (let i = 0; i < 11; i++) { const a = h(i + 5) * 6.28, q = Math.sqrt(h(i + 15)) * 30, x = Math.cos(a) * q, y = -38 + Math.sin(a) * q * 0.75, cl = bl[i % 2];
+      for (let k = 0; k < 7; k++) { const aa = k / 7 * 6.28 + i; c.fillStyle = cl[k % 2]; circ(c, x + Math.cos(aa) * 5.2, y + Math.sin(aa) * 4.2, 3.6); } c.fillStyle = '#ffe9a8'; circ(c, x, y, 1.8); }
+  },
+  // A clump of lavender: grey-green leaves and slender purple spikes, leaning a little in the breeze.
+  lavclump(c, o) {
+    const t = (o && o.t) || 0, v = (o && o.v) || 0;
+    c.fillStyle = 'rgba(0,0,0,.12)'; ell(c, 0, 1, 24, 4);
+    for (let i = -6; i <= 6; i++) { const lean = i * 0.045 + Math.sin(t * 1.3 + i) * 0.02, hgt = 52 + ((i * 7 + v * 3) % 9) + 3; c.save(); c.translate(i * 3.4, 0); c.rotate(lean); c.strokeStyle = '#7d9a72'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -hgt); c.stroke();
+      for (let k = 0; k < 9; k++) { c.fillStyle = k % 2 ? '#9a78d0' : '#8a62c4'; ell(c, (k % 2 ? 1.3 : -1.3), -hgt + 2 + k * 3.2, 2.2, 2.4); } c.restore(); }
+    c.fillStyle = '#8fae82'; for (let i = -5; i <= 5; i++) { c.beginPath(); c.moveTo(i * 3.8, 0); c.quadraticCurveTo(i * 5.5, -12, i * 7.5 + 2, -22); c.quadraticCurveTo(i * 4.5, -10, i * 3.8 + 1.5, 0); c.fill(); }
+  },
+  // A clipped evergreen column (a cypress), for the back of the garden.
+  cypress(c) {
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 1, 20, 5); c.fillStyle = '#5a3a1e'; c.fillRect(-2.5, -10, 5, 10);
+    const g = c.createLinearGradient(-16, 0, 16, 0); g.addColorStop(0, '#3a8a46'); g.addColorStop(0.5, '#2c6e3a'); g.addColorStop(1, '#1d4a28'); c.fillStyle = g;
+    c.beginPath(); c.moveTo(-14, -8); c.bezierCurveTo(-18, -50, -10, -100, 0, -128); c.bezierCurveTo(10, -100, 18, -50, 14, -8); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(10,50,20,.35)'; c.lineWidth = 1.1; for (let i = 0; i < 18; i++) { const y = -14 - i * 6.2, w2 = 14 * Math.sin(Math.min(1, (-y) / 130) * 2.6 + 0.3); c.beginPath(); c.moveTo(-w2 * 0.8, y); c.quadraticCurveTo(0, y - 3, w2 * 0.8, y); c.stroke(); }
+    c.fillStyle = 'rgba(160,230,130,.25)'; c.beginPath(); c.ellipse(-5, -70, 3.5, 40, -0.05, 0, 7); c.fill();
+  },
   // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
   // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
   bilyhryb(c) {
@@ -2741,6 +2837,17 @@ function add(e) {
   add({ w: 'kurka', x: 30.6, y: 38.3, kind: 'animal', r: 1.0, give: 'yaitse', cd: 90 });
   add({ w: 'kurka', x: 32.9, y: 38.6, kind: 'animal', r: 1.0, give: 'yaitse', cd: 90 });
   add({ w: 'piven', x: 31.7, y: 39.0, kind: 'animal', r: 1.1 });
+  // the formal gardens, bottom left (the lawn, paths, beds and walls are painted by gardenPaint)
+  rect(2, 32, 5, 33); rect(9, 32, 12, 33); rect(2, 37, 5, 38); rect(9, 37, 12, 38);   // the four beds can't be walked on
+  add({ w: 'kushch', ic: '@rosearch', k: 'garch1', x: 7.5, y: 31.95, s: 2.2, quiet: true });   // the rose-and-wisteria arch at the entrance
+  add({ w: 'kushch', ic: '@rosearch', k: 'garch2', x: 7.5, y: 39.55, s: 2.0, quiet: true });   // and another at the far end
+  add({ w: 'fontan', ic: '@gfountain', k: 'gfountain', x: 7.5, y: 36.05, s: 2.5, solid: true });
+  for (const [x, y, k] of [[4.0, 34.55, 0], [11.0, 34.55, 1]]) add({ w: 'lavka', ic: '@bench', k: 'gbench' + k, x, y, s: 1.05, solid: true });
+  [[4.1, 33.4], [10.9, 33.4], [4.1, 38.3], [10.9, 38.3]].forEach(([x, y], i) => add({ w: 'kushch', ic: '@topiary', k: 'gtop' + i, x, y, s: 1.25, solid: true, quiet: true }));
+  [[2.4, 32.7], [12.6, 32.7], [2.4, 38.7], [12.6, 38.7], [1.95, 35.5], [13.15, 35.5]].forEach(([x, y], i) => add({ w: 'kushch', ic: '@rhodo', k: 'grhodo' + i, x, y, s: 1.55, solid: true, quiet: true }));
+  [[6.4, 32.6], [6.4, 33.7], [8.6, 32.6], [8.6, 33.7], [6.4, 37.5], [6.4, 38.6], [8.6, 37.5], [8.6, 38.6]].forEach(([x, y], i) => add({ w: 'kvitka', ic: '@lavclump', k: 'glav' + i, x, y, s: 0.8, quiet: true }));
+  [[6.15, 34.5], [8.85, 34.5], [6.15, 36.75], [8.85, 36.75]].forEach(([x, y], i) => add({ w: 'lampa', ic: '@lihtar', k: 'glamp' + i, x, y, s: 2.2, quiet: true, street: true }));
+  [[2.2, 40.25], [4.6, 40.3], [10.0, 40.3], [12.4, 40.25], [1.5, 36.0]].forEach(([x, y], i) => add({ w: 'yalyna', ic: '@cypress', k: 'gcyp' + i, x, y, s: 2.5, quiet: true, solid: y > 40 }));   // evergreen columns round the back
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [26.4, 11.15], [29.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
@@ -3419,6 +3526,90 @@ function myMaybeStart() {
   S.mystery = myNewCase(); save();   // (an older case, from before the dialogue was rewritten, starts afresh)
 }
 // ---- the pattern in the field
+// =====================================================================================================
+// THE GARDENS (bottom left of the map): a formal garden in the manner of a great estate. A gravel allée runs
+// down from the road through a rose-and-wisteria arch to a round brick plaza with a tiered iron fountain; a
+// cross-promenade of gravel and brick; four parterre beds, each framed in clipped boxwood and planted in
+// bands of colour that change with the season (tulips, roses, chrysanthemums, snow), a topiary at the heart of
+// each; rhododendrons, lavender, benches and lamps; a stone wall round the back and tall evergreens behind it.
+// The flat part (lawn, gravel, brick, hedges, beds, walls) is painted once per season into its own canvas; the
+// standing things are ordinary pictures that people walk among.
+// =====================================================================================================
+const GARDEN = { x0: 1.4, y0: 31.15, x1: 13.8, y1: 40.3 };
+const GARDEN_BEDS = [[1.9, 31.7, 6.2, 34.4, 0], [8.8, 31.7, 13.1, 34.4, 1], [1.9, 36.6, 6.2, 39.5, 2], [8.8, 36.6, 13.1, 39.5, 3]];   // x0, y0, x1, y1, which colour scheme
+const GARDEN_CV = {};
+function gardenPaint(sea) {
+  const W = Math.ceil((GARDEN.x1 - GARDEN.x0) * T), H = Math.ceil((GARDEN.y1 - GARDEN.y0) * T), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const c = cv.getContext('2d'), X = x => (x - GARDEN.x0) * T, Y = y => (y - GARDEN.y0) * T, snow = sea === 'zyma';
+  let r = 17; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  // the lawn, mown in broad diagonal stripes
+  { const lawn = snow ? ['#e8eef0', '#dfe8ec'] : sea === 'osin' ? ['#8fb85a', '#83ad52'] : ['#86c862', '#7cc058'];
+    c.fillStyle = lawn[0]; c.fillRect(0, 0, W, H); c.fillStyle = lawn[1]; for (let k = -H; k < W; k += 56) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k + 28, 0); c.lineTo(k + 28 + H, H); c.lineTo(k + H, H); c.closePath(); c.fill(); } }
+  // gravel: the allée (x 6.2-8.8) and the cross-promenade (y 34.4-36.6), swept and raked, with a brick edging
+  const gravel = snow ? '#f1f4f5' : sea === 'osin' ? '#cbbf9f' : '#d6ccb4', speck = snow ? ['#d6dde0', '#ffffff'] : ['#b8ae94', '#e6dfcb', '#a59b82'];
+  const paths = [[6.2, 31.15, 8.8, 40.0], [GARDEN.x0 + 0.5, 34.4, GARDEN.x1 - 0.5, 36.6]];
+  for (const [x0, y0, x1, y1] of paths) { c.fillStyle = gravel; c.fillRect(X(x0), Y(y0), X(x1) - X(x0), Y(y1) - Y(y0));
+    for (let i = 0; i < ((x1 - x0) * (y1 - y0) * 70) | 0; i++) { c.fillStyle = speck[i % 3]; c.fillRect(X(x0) + rnd() * (X(x1) - X(x0)), Y(y0) + rnd() * (Y(y1) - Y(y0)), 1.6, 1.4); }
+    c.strokeStyle = 'rgba(120,100,70,.16)'; c.lineWidth = 1; for (let x = X(x0) + 6; x < X(x1); x += 9) { c.beginPath(); c.moveTo(x, Y(y0)); c.lineTo(x, Y(y1)); c.stroke(); } }   // the rake lines
+  // the plaza: a ring of laid brick round the fountain, with a bright gravel ring inside it
+  { const px = X(7.5), py = Y(35.5), R1 = 2.25 * T, R0 = 1.55 * T;
+    c.fillStyle = snow ? '#e9d8d0' : '#b4624a'; c.beginPath(); c.arc(px, py, R1, 0, 7); c.fill();
+    c.strokeStyle = snow ? 'rgba(150,110,100,.5)' : 'rgba(110,50,35,.55)'; c.lineWidth = 1.2;
+    for (let q = R0 + 7; q < R1; q += 9) { c.beginPath(); c.arc(px, py, q, 0, 7); c.stroke(); }
+    for (let a = 0; a < Math.PI * 2; a += 0.075) for (let q = R0; q < R1; q += 18) { const o = ((q / 9) % 2) * 0.035; c.beginPath(); c.moveTo(px + Math.cos(a + o) * q, py + Math.sin(a + o) * q); c.lineTo(px + Math.cos(a + o) * (q + 9), py + Math.sin(a + o) * (q + 9)); c.stroke(); }
+    c.fillStyle = gravel; c.beginPath(); c.arc(px, py, R0 - 2, 0, 7); c.fill(); for (let i = 0; i < 160; i++) { const a = rnd() * 7, q = Math.sqrt(rnd()) * (R0 - 4); c.fillStyle = speck[i % 3]; c.fillRect(px + Math.cos(a) * q, py + Math.sin(a) * q, 1.6, 1.4); }
+    c.strokeStyle = '#8e4a36'; c.lineWidth = 3; c.beginPath(); c.arc(px, py, R1, 0, 7); c.stroke(); c.beginPath(); c.arc(px, py, R0 - 2, 0, 7); c.stroke();
+    // the fountain's basin: a brick rim and still water
+    const BR = 1.16 * T; c.fillStyle = snow ? '#d8d0c4' : '#a8553c'; c.beginPath(); c.arc(px, py + 4, BR + 7, 0, 7); c.fill(); c.fillStyle = snow ? '#e8e0d4' : '#c8735a'; c.beginPath(); c.arc(px, py, BR + 7, 0, 7); c.fill();
+    for (let a = 0; a < Math.PI * 2; a += Math.PI / 20) { c.strokeStyle = 'rgba(110,50,35,.5)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(px + Math.cos(a) * BR, py + Math.sin(a) * BR); c.lineTo(px + Math.cos(a) * (BR + 7), py + Math.sin(a) * (BR + 7)); c.stroke(); }
+    const wg = c.createRadialGradient(px, py - 6, 4, px, py, BR); wg.addColorStop(0, snow ? '#e6f2f8' : '#8fcdea'); wg.addColorStop(1, snow ? '#cfe2ec' : '#3f94c8'); c.fillStyle = wg; c.beginPath(); c.arc(px, py, BR, 0, 7); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,.4)'; c.lineWidth = 1.2; for (const q of [0.45, 0.72]) { c.beginPath(); c.arc(px, py, BR * q, 0.3, 2.2); c.stroke(); } }
+  // brick edging along the gravel
+  c.strokeStyle = snow ? '#d9c3b8' : '#a65f48'; c.lineWidth = 5; for (const [x0, y0, x1, y1] of paths) c.strokeRect(X(x0), Y(y0), X(x1) - X(x0), Y(y1) - Y(y0));
+  // the beds: boxwood frames, soil, and bands of planting
+  const PAL = { vesna: [['#e2403a', '#f6cf3a', '#ff8fb3', '#ffffff', '#9b5bd6'], 'tulip'], lito: [['#e84a6a', '#f6a8c0', '#ffffff', '#d8283a', '#f6cf3a'], 'rose'], osin: [['#d9702a', '#b8452a', '#f2b43a', '#8a4a9a', '#e8d6a0'], 'mum'], zyma: [[], 'none'] }[sea];
+  const bloom = (x, y, col, kind) => {
+    if (kind === 'tulip') { c.fillStyle = '#3f8a3a'; c.fillRect(x - 0.6, y, 1.2, 5); c.fillStyle = col; c.beginPath(); c.moveTo(x - 3.2, y - 1); c.quadraticCurveTo(x - 3.4, y + 3.5, x, y + 3.5); c.quadraticCurveTo(x + 3.4, y + 3.5, x + 3.2, y - 1); c.lineTo(x + 1.6, y - 3.2); c.lineTo(x, y - 1); c.lineTo(x - 1.6, y - 3.2); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,.3)'; c.fillRect(x - 2, y - 0.5, 1, 2.5); }
+    else if (kind === 'rose') { c.fillStyle = '#2f7a38'; circ(c, x, y + 0.5, 4.6); c.fillStyle = col; circ(c, x, y, 3.8); c.fillStyle = 'rgba(0,0,0,.18)'; circ(c, x, y, 2.2); c.fillStyle = col; circ(c, x - 0.4, y - 0.4, 1.4); c.fillStyle = 'rgba(255,255,255,.35)'; circ(c, x - 1.4, y - 1.6, 1); }
+    else { c.fillStyle = '#4a7a30'; circ(c, x, y + 0.6, 4.4); c.fillStyle = col; for (let k = 0; k < 7; k++) { const a = k / 7 * 6.283; ell(c, x + Math.cos(a) * 2.4, y + Math.sin(a) * 2.4, 1.7, 1.2); } c.fillStyle = '#f6d46a'; circ(c, x, y, 1.3); } };
+  for (const [x0, y0, x1, y1, sch] of GARDEN_BEDS) {
+    const bx = X(x0), by = Y(y0), bw = X(x1) - bx, bh = Y(y1) - by;
+    c.fillStyle = 'rgba(30,45,20,.25)'; rr(c, bx + 3, by + 5, bw, bh, 12);
+    c.fillStyle = snow ? '#e6eef1' : '#4a3426'; rr(c, bx, by, bw, bh, 12);
+    // planted bands: an outer ring, a middle ring, and a heart (where the topiary stands)
+    if (!snow) { const bands = [[0.17, 0.0], [0.36, 1.0], [0.5, 2.0]];
+      const ink = (inset, col) => { const ix = bx + inset * T * 0.5, iy = by + inset * T * 0.5; return [ix, iy, bw - inset * T, bh - inset * T]; };
+      const cols = PAL[0];
+      for (let b = 0; b < 3; b++) { const inset = [0.55, 1.0, 1.55][b], ix = bx + inset * T * 0.5 + 6, iy = by + inset * T * 0.5 + 6, iw = bw - inset * T - 12, ih = bh - inset * T - 12; if (iw < 10 || ih < 10) continue;
+        const col = cols[(sch + b * 2) % cols.length], col2 = cols[(sch + b * 2 + 1) % cols.length], step = PAL[1] === 'tulip' ? 10 : 11;
+        c.save(); c.beginPath(); c.rect(ix, iy, iw, ih); if (b < 2) { const j2 = [1.0, 1.55][b], jx = bx + j2 * T * 0.5 + 6 + 3, jy = by + j2 * T * 0.5 + 6 + 3, jw = bw - j2 * T - 12 - 6, jh = bh - j2 * T - 12 - 6; c.rect(jx, jy, jw, jh); c.clip('evenodd'); } else c.clip();
+        c.fillStyle = 'rgba(60,40,25,.6)'; c.fillRect(ix, iy, iw, ih);
+        let row = 0; for (let yy = iy + 5; yy < iy + ih; yy += step * 0.85, row++) for (let xx = ix + 5 + (row % 2) * step / 2; xx < ix + iw; xx += step) bloom(xx + (rnd() - 0.5) * 2, yy + (rnd() - 0.5) * 2, b === 0 && (((xx / step) | 0) % 6) < 2 ? col2 : b === 1 && row % 5 === 0 ? col2 : col, PAL[1]);
+        c.restore(); } }
+    else { c.fillStyle = '#fff'; for (let i = 0; i < 60; i++) { const q = rnd(); ell(c, bx + 10 + rnd() * (bw - 20), by + 10 + rnd() * (bh - 20), 8 + q * 10, 3 + q * 4); } c.fillStyle = 'rgba(160,185,200,.4)'; for (let i = 0; i < 40; i++) ell(c, bx + 10 + rnd() * (bw - 20), by + 14 + rnd() * (bh - 20), 5 + rnd() * 6, 1.6); }
+    // the boxwood frame: dark, then lit along its top, with clipped leaf texture; a little ball at each corner
+    c.lineJoin = 'round'; c.strokeStyle = snow ? '#9fb3b0' : '#1f5226'; c.lineWidth = 17; rr2(c, bx + 4, by + 4, bw - 8, bh - 8, 12);
+    c.strokeStyle = snow ? '#c3d3d2' : '#2f7a36'; c.lineWidth = 12; rr2(c, bx + 4, by + 3, bw - 8, bh - 8, 12);
+    c.strokeStyle = snow ? '#ffffff' : '#58a84c'; c.lineWidth = 4; rr2(c, bx + 4, by + 1, bw - 8, bh - 8, 12);
+    for (let i = 0; i < 160; i++) { const side = i % 4, t = rnd(), px = side < 2 ? bx + 4 + t * (bw - 8) : bx + (side === 2 ? 4 : bw - 4), py = side < 2 ? by + (side === 0 ? 4 : bh - 4) : by + 4 + t * (bh - 8); c.fillStyle = snow ? 'rgba(255,255,255,.7)' : rnd() < 0.5 ? 'rgba(140,210,110,.55)' : 'rgba(20,70,28,.5)'; circ(c, px + (rnd() - 0.5) * 9, py + (rnd() - 0.5) * 9, 1.6); }
+    for (const [cx2, cy2] of [[bx + 4, by + 4], [bx + bw - 4, by + 4], [bx + 4, by + bh - 4], [bx + bw - 4, by + bh - 4]]) { c.fillStyle = snow ? '#aebfbd' : '#245f2b'; circ(c, cx2, cy2, 11); c.fillStyle = snow ? '#f6fafa' : '#3f8f3f'; circ(c, cx2 - 1.5, cy2 - 2, 8); c.fillStyle = 'rgba(255,255,255,.3)'; circ(c, cx2 - 3.5, cy2 - 4.5, 3); } }
+  // the stone wall round the back and the sides (looked at from above: a broad band of coursed stone)
+  const wall = (x0, y0, x1, y1) => { c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(X(x0) + 2, Y(y0) + 4, X(x1) - X(x0), Y(y1) - Y(y0)); c.fillStyle = '#8f8a7e'; c.fillRect(X(x0), Y(y0), X(x1) - X(x0), Y(y1) - Y(y0));
+    const horiz = (x1 - x0) > (y1 - y0), len = horiz ? X(x1) - X(x0) : Y(y1) - Y(y0), th = horiz ? Y(y1) - Y(y0) : X(x1) - X(x0);
+    for (let k = 0; k < len; k += 13 + rnd() * 9) { const w2 = 11 + rnd() * 9; c.fillStyle = ['#a29d90', '#7c776c', '#948f82', '#b0ab9d'][(rnd() * 4) | 0]; if (horiz) rr(c, X(x0) + k + 1, Y(y0) + 2, w2, th - 4, 3); else rr(c, X(x0) + 2, Y(y0) + k + 1, th - 4, w2, 3); }
+    c.fillStyle = snow ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.14)'; if (horiz) c.fillRect(X(x0), Y(y0), X(x1) - X(x0), 3); else c.fillRect(X(x0), Y(y0), 3, Y(y1) - Y(y0));
+    if (!snow) { c.fillStyle = 'rgba(70,130,50,.35)'; for (let i = 0; i < 14; i++) circ(c, horiz ? X(x0) + rnd() * len : X(x0) + rnd() * th, horiz ? Y(y0) + rnd() * th : Y(y0) + rnd() * len, 2 + rnd() * 3); } };
+  wall(GARDEN.x0, 39.85, GARDEN.x1, 40.3); wall(GARDEN.x0, 31.45, GARDEN.x0 + 0.32, 39.85); wall(GARDEN.x1 - 0.32, 31.45, GARDEN.x1, 39.85);
+  // pale petals blown onto the gravel (in the seasons with flowers)
+  if (!snow) for (let i = 0; i < 40; i++) { c.fillStyle = (PAL[0][(rnd() * 5) | 0]) + 'cc'; ell(c, X(6.3 + rnd() * 2.4), Y(31.6 + rnd() * 8), 1.8, 1.2); }
+  return cv;
+}
+// a rounded rectangle as a stroked path
+function rr2(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r); c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath(); c.stroke(); }
+function gardenDraw(c) {
+  const vw = cv.width / zoom, vh = cv.height / zoom; if (GARDEN.x1 * T < camX || GARDEN.x0 * T > camX + vw || GARDEN.y1 * T < camY || GARDEN.y0 * T > camY + vh) return;
+  const sea = season(); c.drawImage(GARDEN_CV[sea] || (GARDEN_CV[sea] = gardenPaint(sea)), GARDEN.x0 * T, GARDEN.y0 * T);
+}
 const CC = { x: 38.07, y: 5.45, R: 1.5 };
 const ccShown = () => { const M = ccCase(); return !!(M && season() === 'osin'); };
 const ccSpriteCache = {};
@@ -10447,6 +10638,7 @@ function drawWorld(t) {
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#8fd169'; c.fillRect(0, 0, cv.width, cv.height);   // never leave an old frame showing
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
   c.drawImage(seasonGround(), 0, -GROUND_TOP * T);
+  gardenDraw(c);   // the formal gardens, bottom left
   if (winter()) { drawIce(c, t); drawPrints(c, t); } else if (GFX.water) drawWater(c, t);
   ccDraw(c);   // the crop circle in the wheat, flat on the ground
   drawFalls(c, t);
