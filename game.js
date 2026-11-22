@@ -2641,12 +2641,42 @@ for (const nm of ['tree', 'appletree', 'bush', 'dub', 'bereza', 'yalyna', 'kalyn
     c.save(); c.rotate(lean); c.scale(sx * fl, sy); if (!TSPEC[nm] || !drawTreeSprite(c, nm, o)) f0.call(DRAW, c, o); c.restore();
   };
 }
+// ------------------------------------------------------------------ cached pictures of small things
+// Flowers and low plants are drawn stroke by stroke, and the meadow has hundreds of them, so each one is painted
+// once into its own small picture (at the size it is shown) and that picture is drawn every frame instead. The wind
+// still moves them: the picture is turned about its foot, just as the drawing turned itself. SWAY_K is how far each
+// kind turns (the same factor its drawing uses); 0 for things that never sway. Remade when the size or season changes.
+const SWAY_K = { kvitka: 3, mak: 1.2, malva: 0.8, chornobryvtsi: 0.8, rhodo: 0, corn: 0 };
+let spriteBudget = 0;
+function cachedIcon(c, e, x, y, s, sway) {
+  const nm = e.ic.slice(1), K = SWAY_K[nm]; if (K === undefined) return false;
+  const sc = Math.abs(c.getTransform().a) || 1, px = Math.max(8, Math.round(s * sc / 6) * 6), key = px + season();
+  let sp = e._spr;
+  if (!sp || sp.key !== key) {
+    if (spriteBudget <= 0) return false; spriteBudget--;
+    const r = px / 100, W0 = 200, H0 = 250, OX = 100, OY = 215, cv = document.createElement('canvas'); cv.width = Math.ceil(W0 * r); cv.height = Math.ceil(H0 * r);
+    const k = cv.getContext('2d'); k.scale(r, r); k.translate(OX, OY); DRAW[nm](k, { v: e.x * 0.37 + e.y * 0.61, fruit: true, sway: 0 });
+    // trim it to what was drawn
+    const d = k.getImageData(0, 0, cv.width, cv.height).data; let x0 = cv.width, y0 = cv.height, x1 = -1, y1 = -1;
+    for (let yy = 0; yy < cv.height; yy++) for (let xx = 0; xx < cv.width; xx++) if (d[(yy * cv.width + xx) * 4 + 3] > 3) { if (xx < x0) x0 = xx; if (xx > x1) x1 = xx; if (yy < y0) y0 = yy; if (yy > y1) y1 = yy; }
+    if (x1 < 0) { x0 = y0 = 0; x1 = y1 = 0; }
+    x0 = Math.max(0, x0 - 1); y0 = Math.max(0, y0 - 1); x1 = Math.min(cv.width - 1, x1 + 1); y1 = Math.min(cv.height - 1, y1 + 1);
+    const t2 = document.createElement('canvas'); t2.width = x1 - x0 + 1; t2.height = y1 - y0 + 1; t2.getContext('2d').drawImage(cv, -x0, -y0);
+    sp = e._spr = { key, cv: t2, ox: x0 / r - OX, oy: y0 / r - OY, w: t2.width / r, h: t2.height / r };
+  }
+  const q = s / 100;
+  if (K && sway) { c.save(); c.translate(x, y); c.rotate(sway * K); c.drawImage(sp.cv, sp.ox * q, sp.oy * q, sp.w * q, sp.h * q); c.restore(); }
+  else c.drawImage(sp.cv, x + sp.ox * q, y + sp.oy * q, sp.w * q, sp.h * q);
+  return true;
+}
 function drawIcon(c, ic, x, y, s, o) {
   if (ic[0] === '@') {
     c.save(); c.translate(x, y); c.scale(s / 100, s / 100); DRAW[ic.slice(1)](c, o); c.restore();
   } else {
-    c.font = `${Math.round(s * 0.86)}px ${EMOJI}`; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
-    c.fillStyle = '#000'; c.fillText(ic, x, y - s * 0.1);
+    const px = Math.ceil(s * (Math.abs(c.getTransform().a) || 1) / 8) * 8, key = ic + px;
+    let sp = emojiSpr[key];
+    if (!sp) { sp = emojiSpr[key] = document.createElement('canvas'); sp.width = sp.height = Math.ceil(px * 1.2); const k = sp.getContext('2d'); k.font = `${Math.round(px * 0.86)}px ${EMOJI}`; k.textAlign = 'center'; k.textBaseline = 'alphabetic'; k.fillStyle = '#000'; k.fillText(ic, sp.width / 2, sp.height * 0.85); }
+    const B = s * 1.2; c.drawImage(sp, x - B / 2, y - s * 0.1 - B * 0.85, B, B);
   }
 }
 // An emoji painted once into its own little canvas, so it can be turned and drawn every frame cheaply
@@ -4658,6 +4688,7 @@ function drawIce(c, t) {
   c.strokeStyle = 'rgba(150,180,205,.5)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x - rx * 0.4, y); c.lineTo(x - rx * 0.1, y + ry * 0.2); c.lineTo(x + rx * 0.2, y + ry * 0.05); c.stroke();
 }
 function drawWater(c, t) {
+  { const vw = cv.width / zoom, vh = cv.height / zoom, m = 2 * T; if ((POND.x + POND.rx) * T + m < camX || (POND.x - POND.rx) * T - m > camX + vw || (POND.y + POND.ry) * T + m < camY || (POND.y - POND.ry) * T - m > camY + vh) return; }   // the pond is off screen
   c.lineCap = 'round'; c.lineWidth = 2.2;
   for (let i = 0; i < GLINTS.length; i++) {
     const a = 0.5 + 0.5 * Math.sin(t * 1.4 + i * 1.9); if (a < 0.15) continue;
@@ -5478,7 +5509,7 @@ function catSheet(e) {
   catPortrait(ct.id);
 }
 const CAT_LAT = { rudko: 'Rudko', vuhlyk: 'Vuhlyk', snizhok: 'Snizhok', dymok: 'Dymok', smuhastyk: 'Smuhastyk', murka: 'Murka', bublyk: 'Bublyk', zirka: 'Zirka' };
-function catPortrait(id) { const pid = 'cat_' + id; if (!PORTRAITS.has(pid) || !sheet.classList.contains('show')) return; const card = sheet.querySelector('.card') || sheet.firstElementChild; if (!card) return; const ct = D.cats.find(x => x.id === id); card.insertAdjacentHTML('afterbegin', portraitHTML + (ct ? '<div class="catname">' + ct.name + ' <span>' + (CAT_LAT[id] || '') + '</span></div>' : '')); portraitShow(pid); }
+function catPortrait(id) { const pid = 'cat_' + id; if (!PORTRAITS.has(pid) || !sheet.classList.contains('show')) return; const card = sheet.querySelector('.card') || sheet.firstElementChild; if (!card) return; const ct = D.cats.find(x => x.id === id); const big = card.querySelector('img.big'); if (big) big.remove(); card.insertAdjacentHTML('afterbegin', portraitHTML + (ct ? '<div class="catname">' + (CAT_LAT[id] || ct.name) + '<span>' + ct.name + '</span></div>' : '')); portraitShow(pid); }
 const catFriends = () => D.cats.filter(ct => S.cats[ct.id]).length;
 
 // ------------------------------------------------------------------ walking
@@ -11513,10 +11544,13 @@ function homeSign(c, x, y, t) {
 }
 function drawWorld(t) {
   treeBudget = 2;   // at most two new tree pictures are grown per frame
+  spriteBudget = 24;   // and at most this many small plants painted into their cached pictures
   const c = ctx;
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#8fd169'; c.fillRect(0, 0, cv.width, cv.height);   // never leave an old frame showing
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
-  c.drawImage(seasonGround(), 0, -GROUND_TOP * T);
+  { const g = seasonGround(), vw0 = cv.width / zoom, vh0 = cv.height / zoom, gy = GROUND_TOP * T;   // only the part of the ground that is on screen (it is a very big picture)
+    const sx = Math.max(0, Math.floor(camX) - 2), sy = Math.max(0, Math.floor(camY + gy) - 2), sw = Math.min(g.width - sx, Math.ceil(vw0) + 4), sh = Math.min(g.height - sy, Math.ceil(vh0) + 4);
+    if (sw > 0 && sh > 0) c.drawImage(g, sx, sy, sw, sh, sx, sy - gy, sw, sh); }
   gardenDraw(c);   // the formal gardens (switched off)
   mazeDraw(c);   // the corn maze's floor (switched off)
   farmDraw(c);   // the orchard, pumpkin patch and cornfield's floor, bottom left
@@ -11611,7 +11645,7 @@ function drawWorld(t) {
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
     else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0, zoom);   // flowers nod in the breeze
     else if (e.w === 'krynytsia') drawIcon(c, e.ic, x, y, s, { t, fx: WELLFX && WELLFX.phase === 'draw' ? t - WELLFX.t0 : null });
-    else drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway: GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0 });
+    else { const sway = GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0; if (hop || e.ic[0] !== '@' || !cachedIcon(c, e, x, y, s, sway)) drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway }); }
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 1.0, t, s / 220);
   }
   // those behind the market stall: their heads and shoulders show above the counter, through the gap
