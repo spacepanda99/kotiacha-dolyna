@@ -2277,7 +2277,7 @@ function chore(c, x, y, id, t, layer) {
   } else if (id === 'oksana') {
     if (layer === 1) {
       // the broom in both hands, bristles swishing over the ground ahead of her
-      const p = oksPose(t), L = NPC.oksana.look;
+      const p = oksPose(t), L = npcLook('oksana');
       c.save(); c.scale(OKS.dir, 1);
       const bl = 15, hx = p.B[0] - p.ux * bl, hy = p.B[1] - p.uy * bl;   // where the bristles start
       c.strokeStyle = '#9b6b3c'; c.lineWidth = 3; c.beginPath(); c.moveTo(p.HL[0] - p.ux * 2.5, p.HL[1] - p.uy * 2.5); c.lineTo(hx, hy); c.stroke();
@@ -2406,6 +2406,16 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   } else if (L.hat === 'flatcap') {   // a fisherman's flat cap
     c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(1, -75 + bob, 16.5, 7, 0, Math.PI, 0); c.fill(); if (back < 0.5) { c.beginPath(); c.ellipse(1, -73 + bob, 15, 3.4, 0, 0, Math.PI); c.fill(); }
     c.fillStyle = 'rgba(0,0,0,.18)'; c.fillRect(-15, -75.5 + bob, 32, 1.2); circ(c, 1, -81.5 + bob, 1.3);
+  } else if (L.hat === 'ushanka') {   // a fur ushanka: a rounded crown, a thick fur band and two ear flaps
+    c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(0, -76 + bob, 17, 11.5, 0, Math.PI, 0); c.lineTo(17, -75 + bob); c.lineTo(-17, -75 + bob); c.closePath(); c.fill();
+    c.fillStyle = L.hatFur || '#8a7a68'; rr(c, -19, -78 + bob, 38, 9, 4.5); rr(c, -20.5, -73 + bob, 8.5, 21, 4.2); rr(c, 12, -73 + bob, 8.5, 21, 4.2);
+    c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 0.8; for (let k = -16; k <= 16; k += 4) { c.beginPath(); c.moveTo(k, -77 + bob); c.lineTo(k + 1, -71 + bob); c.stroke(); } for (const sx of [-16.5, 16.5]) for (let yy = -70; yy < -54; yy += 4) { c.beginPath(); c.moveTo(sx - 2, yy + bob); c.lineTo(sx + 2, yy + 1.5 + bob); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,.22)'; ell(c, -6, -83 + bob, 6, 2.4);
+  } else if (L.hat === 'knit') {   // a knitted bobble hat with a striped turn-up
+    c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(0, -76 + bob, 16.5, 12.5, 0, Math.PI, 0); c.lineTo(16.5, -75 + bob); c.lineTo(-16.5, -75 + bob); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.16)'; c.lineWidth = 0.9; for (let k = -12; k <= 12; k += 4) { c.beginPath(); c.moveTo(k, -88 + bob); c.lineTo(k * 1.2, -76 + bob); c.stroke(); }
+    c.fillStyle = L.hatFur || '#ffffff'; rr(c, -18, -78 + bob, 36, 8, 3.5); c.fillStyle = 'rgba(0,0,0,.14)'; for (let k = -15; k < 17; k += 4.5) c.fillRect(k, -77 + bob, 1.4, 6);
+    circ(c, 0, -90.5 + bob, 4.6); c.fillStyle = 'rgba(255,255,255,.4)'; circ(c, -1.2, -91.6 + bob, 1.5);
   } else if (L.hat === 'hood') {
     c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(0, -62 + bob, 18.5, 19.5, 0, 0, Math.PI * 2);
     if (back < 0.5) { c.ellipse(0, -60 + bob, 12, 13.5, 0, 0, Math.PI * 2); c.fill('evenodd'); if (L.hoodFur) { c.strokeStyle = L.fur || '#fff'; c.lineWidth = 4; c.beginPath(); c.ellipse(0, -60 + bob, 13.5, 15, 0, 0, Math.PI * 2); c.stroke(); } }
@@ -2433,6 +2443,30 @@ const OUTFITS = {
   puhovyk: { skirt: '#2b2b3a', coat: '#d43a3a', fur: '#f4efe2', sleeve: '#d43a3a', boots: '#5b4636', hat: 'hood', hatCol: '#d43a3a', hoodFur: true, quilt: true },   // a quilted red winter parka with a fur-trimmed hood
   sarafan: { trim: '#3d7cc2', skirt: '#f2b51d', vest: '#f2b51d', vestTrim: '#d43a3a', hat: 'wreath', hatCol: '#ffd23f', beads: true },   // a sunflower-yellow sarafan over the blouse
 };
+// What everyone wears in winter (outside only): a coat, boots and a warm hat, each keeping the personality of
+// their summer look. Olia a sheepskin coat and her red headscarf; Taras a navy coat and a grey fur ushanka for
+// the ice; Andriiko a quilted green jacket and a bobble hat; Mr. Bohdan honey-coloured with a brown fur hat;
+// Oksana burgundy under her red scarf; Petro navy with a dark fur hat; Myron grey-blue; the poet Yaroslava
+// purple with a cream muffler and her beret; Ostap rust-red under his Hutsul hat; Lesia blue with a yellow
+// bobble hat and scarf; Zakhar olive with a fur hat; Halyna green under her red scarf.
+const WINTER_OF = {
+  olia: { coat: '#9a6a3a', fur: '#fbf6ea', sleeve: '#9a6a3a', boots: '#8a8f96' },
+  taras: { coat: '#3d5a80', fur: '#d9d2c2', sleeve: '#3d5a80', boots: '#2b2b2b', hat: 'ushanka', hatCol: '#6b5d52', hatFur: '#8a7a68' },
+  andriiko: { coat: '#2e9e5b', fur: '#f4efe2', sleeve: '#2e9e5b', quilt: true, boots: '#b8322b', hat: 'knit', hatCol: '#2e9e5b', hatFur: '#ffffff' },
+  bohdan: { coat: '#b8862b', fur: '#f1ead8', sleeve: '#b8862b', boots: '#4a3020', hat: 'ushanka', hatCol: '#7a5230', hatFur: '#a07a50' },
+  oksana: { coat: '#8a2a3a', fur: '#fbf6ea', sleeve: '#8a2a3a', boots: '#5b4636', hat: 'scarf', hatCol: '#d43a3a' },
+  petro: { coat: '#1f3a6b', fur: '#cfcfcf', sleeve: '#1f3a6b', boots: '#222222', hat: 'ushanka', hatCol: '#26324d', hatFur: '#8e8e96' },
+  myron: { coat: '#4a4f5a', fur: '#e8e4da', sleeve: '#4a4f5a', boots: '#3a3a3a', hat: 'ushanka', hatCol: '#1f3a6b', hatFur: '#9a9aa4' },
+  yaroslava: { coat: '#6b3d8a', fur: '#f4efe2', sleeve: '#6b3d8a', boots: '#3a2a4a', muffler: '#f0e6d0' },
+  ostap: { coat: '#7a3b2a', fur: '#f4efe2', sleeve: '#7a3b2a', boots: '#4a3020' },
+  lesia: { coat: '#2f6fb0', fur: '#ffffff', sleeve: '#2f6fb0', boots: '#8a1f2b', hat: 'knit', hatCol: '#e86fa0', hatFur: '#f2c230', muffler: '#f2c230' },
+  zakhar: { coat: '#5a6a3a', fur: '#d8d0bc', sleeve: '#5a6a3a', boots: '#2b3a20', hat: 'ushanka', hatCol: '#5a4630', hatFur: '#9a9a9a' },
+  halyna: { coat: '#2e7d4f', fur: '#fbf6ea', sleeve: '#2e7d4f', boots: '#8a1f2b', hat: 'scarf', hatCol: '#d43a3a' },
+};
+// A villager's look as drawn outdoors: the winter one in winter, while the world is on screen (indoors, in the
+// café, in games and at festivals they keep what they wear in the house). A fresh copy, so animation values set
+// on the base look (an arm swinging) still show.
+const npcLook = id => { const b = NPC[id] && NPC[id].look; return b && WINTER_OF[id] && mode === 'world' && winter() ? Object.assign({}, b, WINTER_OF[id]) : b; };
 const OUTFIT_KEYS = ['hoodFur', 'quilt', 'sleeve', 'skirtPat', 'skirt2', 'belt', 'apron', 'apronTrim', 'vest', 'vestTrim', 'coat', 'fur', 'boots', 'beads', 'ribbons', 'hatCol', 'band'];
 const lookFor = id => Object.assign({}, ME_BASE, OUTFITS[id] || {});
 wearOutfit(S.outfit);   // dressed as she was last time
@@ -2448,6 +2482,7 @@ function wearOutfit(id) {
 function dressTop(c, L, bob, fx, back) {
   if (L.vest) { c.fillStyle = L.vest; rr(c, -14, -51 + bob, 10, 24, 6); rr(c, 4, -51 + bob, 10, 24, 6); c.fillStyle = L.vestTrim; c.fillRect(-5, -50 + bob, 1.6, 22); c.fillRect(3.4, -50 + bob, 1.6, 22); c.fillRect(-14, -29 + bob, 28, 2); for (let i = 0; i < 3; i++) { circ(c, -9, -44 + i * 6 + bob, 1.1); circ(c, 9, -44 + i * 6 + bob, 1.1); } }
   if (L.coat) { c.fillStyle = L.coat; rr(c, -15, -52 + bob, 30, 40, 8); if (L.quilt) { c.strokeStyle = 'rgba(0,0,0,.15)'; c.lineWidth = 1.2; for (const yy of [-44, -36, -28, -20]) { c.beginPath(); c.moveTo(-14, yy + bob); c.quadraticCurveTo(0, yy + 2 + bob, 14, yy + bob); c.stroke(); } } c.fillStyle = L.fur; ell(c, 0, -50 + bob, 11, 4); c.fillRect(-1.8 + fx * 0.5, -50 + bob, 3.6, 36); c.fillRect(-15, -16 + bob, 30, 4); c.fillStyle = 'rgba(80,50,20,.35)'; for (const yy of [-44, -36, -28]) circ(c, 4 + fx * 0.5, yy + bob, 1.3); }
+  if (L.muffler && back < 0.5) { c.fillStyle = L.muffler; rr(c, -12.5, -55 + bob, 25, 7.5, 3.5); rr(c, 4, -50 + bob, 7, 17, 2.5); c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(4, -42 + bob, 7, 2); c.fillRect(4, -37 + bob, 7, 2); c.fillStyle = 'rgba(0,0,0,.12)'; c.fillRect(-12.5, -49 + bob, 25, 1.4); }   // a wound woollen scarf, one end hanging down
   if (L.belt) { c.fillStyle = L.belt; c.fillRect(-14, -31 + bob, 28, 4); c.fillRect(7, -29 + bob, 3, 9); c.fillRect(10, -29 + bob, 3, 7); }
   if (L.beads && back < 0.5) { const cols = ['#d43a3a', '#b8322b']; for (let r = 0; r < 3; r++) for (let i = 0; i <= 8; i++) { const a = Math.PI * (0.15 + i / 8 * 0.7); c.fillStyle = cols[(i + r) % 2]; circ(c, Math.cos(a) * (8 + r * 2), -51 + Math.sin(a) * (4 + r * 2.5) + bob, 1.6); } }
   if (L.ribbons && back < 0.5) L.ribbons.slice(0, 2).forEach((col, i) => { c.fillStyle = col; c.fillRect(i ? 11 : -14, -60 + bob, 3, 22); });   // two ribbon ends over her shoulders
@@ -2499,6 +2534,7 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   for (let i = 0; i < 3; i++) c.fillRect(-4 + i * 4, -27 + bob, 2, 1.5);
   if (L.vest) { c.fillStyle = L.vest; rr(c, -9, -51 + bob, 14, 24, 6); c.fillStyle = L.vestTrim; c.fillRect(4, -50 + bob, 1.6, 22); c.fillRect(-9, -29 + bob, 14, 2); }
   if (L.coat) { c.fillStyle = L.coat; rr(c, -10, -52 + bob, 21, 40, 8); c.fillStyle = L.fur; c.fillRect(8, -50 + bob, 3.5, 36); c.fillRect(-10, -16 + bob, 21, 4); ell(c, 2, -50 + bob, 8, 3.5); }
+  if (L.muffler) { c.fillStyle = L.muffler; rr(c, -8, -55 + bob, 17, 7.5, 3.5); rr(c, -11, -52 + bob, 6, 16, 2.5); c.fillStyle = 'rgba(255,255,255,.4)'; c.fillRect(-11, -43 + bob, 6, 2); c.fillRect(-11, -38 + bob, 6, 2); }
   if (L.belt) { c.fillStyle = L.belt; c.fillRect(-9, -31 + bob, 18, 4); c.fillRect(-11, -29 + bob, 3, 9); }
   if (L.beads) { for (let i = 0; i < 6; i++) { c.fillStyle = i % 2 ? '#b8322b' : '#d43a3a'; circ(c, 3 + i * 1.4, -50 + i * 1.2 + bob, 1.5); } }
   // The head, storybook-style: a round head that is mostly hair, with the face as a soft oval on the front
@@ -2529,6 +2565,14 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   } else if (L.hat === 'straw') {
     c.fillStyle = L.hatCol; ell(c, 2, hy - 10, 22, 5.5); rr(c, -9, hy - 23, 20, 14, 6);
     c.fillStyle = '#8a5a2b'; c.fillRect(-9, hy - 13, 20, 2.5);
+  } else if (L.hat === 'ushanka') {
+    c.fillStyle = L.hatCol; c.beginPath(); c.arc(1, hy - 3, 16, Math.PI * 0.95, Math.PI * 2.05); c.closePath(); c.fill();
+    c.fillStyle = L.hatFur || '#8a7a68'; c.beginPath(); c.ellipse(1.5, hy - 8.5, 17.5, 5.6, 0, 0, Math.PI * 2); c.fill(); rr(c, -9, hy - 7, 10, 20, 4.5);
+    c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 0.8; for (let yy = hy - 4; yy < hy + 10; yy += 4) { c.beginPath(); c.moveTo(-8, yy); c.lineTo(-1, yy + 1.5); c.stroke(); } c.fillStyle = 'rgba(255,255,255,.2)'; ell(c, -3, hy - 17, 5, 2);
+  } else if (L.hat === 'knit') {
+    c.fillStyle = L.hatCol; c.beginPath(); c.arc(1, hy - 4, 15.5, Math.PI, Math.PI * 2); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,.16)'; c.lineWidth = 0.9; for (let k = -10; k <= 10; k += 4) { c.beginPath(); c.moveTo(1 + k, hy - 19); c.lineTo(1 + k * 1.15, hy - 5); c.stroke(); }
+    c.fillStyle = L.hatFur || '#ffffff'; rr(c, -14.5, hy - 9, 31, 7.5, 3.5); circ(c, -3, hy - 21, 4.6);
   } else if (L.hat === 'hood') {
     c.fillStyle = L.hatCol; c.beginPath(); c.arc(0, hy, 17.5, 0, Math.PI * 2); c.ellipse(8.5, hy + 3.5, 8.5, 11, 0, 0, Math.PI * 2); c.fill('evenodd');
     if (L.hoodFur) { c.strokeStyle = L.fur || '#fff'; c.lineWidth = 4; c.beginPath(); c.ellipse(8.5, hy + 3.5, 9.5, 12, 0, -Math.PI * 0.6, Math.PI * 0.6); c.stroke(); }
@@ -2992,7 +3036,7 @@ function visitorsStep(dt) {
 // Drawing one in the village: walking (side on), standing about (facing out, with a little something of their
 // own: Lesia's sketchbook, Zakhar's rod at the lake), or crouched beside a cat, stroking it.
 function drawVisitor(c, x, y, e, t) {
-  const L = NPC[e.npc].look;
+  const L = npcLook(e.npc);
   if (e.pet) {   // bent at the waist beside the cat: the body leans in and shortens, the arm reaches down to the cat's back
     const ct = e.pet.cat, cx = ct ? ct.x * T : x + e.vface * 22, cy = ct ? ct.y * T : y, st = Math.sin(t * 4.5), b = e.pet.bend || 0;
     const dir = cx > x ? 1 : -1, lean = b * 0.55, sy = 1 - b * 0.22;   // the upper body tips forward, and the figure is a little lower
@@ -3024,7 +3068,7 @@ function drawVisitor(c, x, y, e, t) {
 // In the café: each visitor inside sits at a chair, half turned to their table, with a cup in front of them.
 function cafeVisitorAt(key) { return ents.find(v => v.inside === 'cafe' && v.seat === key); }
 function drawSeated(c, e, chx, seatY, sg, sc, t) {
-  const L = NPC[e.npc].look;
+  const L = npcLook(e.npc);
   c.save(); c.beginPath(); c.rect(chx - 60 * sc, seatY - 120 * sc, 120 * sc, 120 * sc + 3 * sc); c.clip();
   c.translate(chx, seatY + 16 * sc); c.scale(-sg, 1); personSide(c, 0, 0, L, t + chx, 0, sc); c.restore();   // side on, facing across the table
 }
@@ -3209,7 +3253,7 @@ function myDialog(id, text, choices) {
   myLast = [id, text, choices]; MYC = choices;
   const npc = NPC[id], uk = MY_LANG === 'uk';
   const body = myL(text), long = body.replace(/<[^>]+>/g, '').length > 230;   // a long card (a first hello with the news and the hint) gets smaller type, so it all fits
-  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npc.look) + '" alt=""' + (long ? ' style="width:64px;height:64px"' : '') + '><div style="flex:1"><div class="who" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">' + (uk ? npc.name : npc.nameEn) + '</span><button class="subt mylang" data-a="myLang" style="font-size:13px;padding:3px 10px">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div><div class="line" style="font-size:' + (long ? 16.5 : 19) + 'px;line-height:1.3">' + body + '</div></div></div>' +
+  openSheet('<div class="dlg mydlg"><img class="face" src="' + faceURL(npcLook(npc.id)) + '" alt=""' + (long ? ' style="width:64px;height:64px"' : '') + '><div style="flex:1"><div class="who" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">' + (uk ? npc.name : npc.nameEn) + '</span><button class="subt mylang" data-a="myLang" style="font-size:13px;padding:3px 10px">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div><div class="line" style="font-size:' + (long ? 16.5 : 19) + 'px;line-height:1.3">' + body + '</div></div></div>' +
     '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>');   // (the language button sits up by their name, where it can't scroll out of sight)
 }
 function myTalk(id) {
@@ -4883,7 +4927,7 @@ function dialog(npc, steps, i = 0) {
   if (!st) { dlg = null; return closeSheet(); }
   dlg = { npc, steps, i };
   const s = stage();
-  const face = st.me ? faceURL(ME) : faceURL(npc.look);
+  const face = st.me ? faceURL(ME) : faceURL(npcLook(npc.id) || npc.look);
   const who = st.me ? (s < 3 ? 'Ти · You' : 'Ти') : npc.name + (s < 2 ? ` · ${npc.nameEn}` : '');
   const en = s < 2 ? `<div class="en">${st.en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}${stage() < 3 ? " · " + D.ui.show[1] : ""}</button>`;
   const choices = st.choices ? `<div class="choices">${st.choices.map((c, k) => `<button class="b ghost" data-a="choose" data-v="${k}">${c.uk}<small class="cen"${s < 2 ? '' : ' style="display:none"'}>${c.en}</small></button>`).join('')}</div>` : '';
@@ -10133,12 +10177,12 @@ function drawWorld(t) {
       const cf = ents.find(q => q.k === 'cafe'), k = cf.s * T / 100, cx = cf.x * T, cy = cf.y * T;
       c.save(); c.beginPath(); c.rect(cx - 9 * k, cy - 40 * k, 18 * k, 34 * k); c.rect(cx - 2000, cy - 6 * k, 4000, 2000); c.clip();
       c.globalAlpha = 1 - (e.door.fade || 0);
-      const Lw = Object.assign({}, NPC[e.npc].look, { armR: undefined, armL: undefined }); person(c, x, y, Lw, t, e.vwalk || 0, 1, (e.vstep || 0) * 3.7, { back: e.door.dir === 'in' ? 1 : 0 });
+      const Lw = Object.assign({}, npcLook(e.npc), { armR: undefined, armL: undefined }); person(c, x, y, Lw, t, e.vwalk || 0, 1, (e.vstep || 0) * 3.7, { back: e.door.dir === 'in' ? 1 : 0 });
       c.restore(); continue; }
     if (e.vis) { drawVisitor(c, x, y, e, t); continue; }
-    if (e.kind === 'npc' && e.route2) { const L = Object.assign({}, NPC[e.npc].look, { armR: undefined, armL: undefined }); c.save(); c.translate(x, y); c.scale(e.wface || 1, 1); personSide(c, 0, 0, L, t, 1, 1, e.homeGo * 3.7); c.restore(); continue; }
+    if (e.kind === 'npc' && e.route2) { const L = Object.assign({}, npcLook(e.npc), { armR: undefined, armL: undefined }); c.save(); c.translate(x, y); c.scale(e.wface || 1, 1); personSide(c, 0, 0, L, t, 1, 1, e.homeGo * 3.7); c.restore(); continue; }
     if (e.kind === 'npc') {
-      const ok = e.npc === 'oksana', a = Math.abs(e.tv || 0), L = NPC[e.npc].look, tt = ok ? t + 19.5 : t + e.x;
+      const ok = e.npc === 'oksana', a = Math.abs(e.tv || 0), L = npcLook(e.npc), tt = ok ? t + 19.5 : t + e.x;
       chore(c, x, y, e.npc, t, 0);
       if (a < 0.02) { person(c, x, y, L, tt, ok ? OKS.walk : false, 1, ok ? OKS.legs : undefined); chore(c, x, y, e.npc, t, 1); continue; }
       // turning: things in their hands are put down while they talk
