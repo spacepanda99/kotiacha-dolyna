@@ -210,7 +210,7 @@ addEventListener('load', () => { musicBtn(); startMusic(); });
 // Each interior has its own theme (music/room-<mode>.mp3, made with tools/music.mjs). Going in or out fades the
 // music down, swaps the track and fades back up; the village theme picks up where it left off. A room whose file
 // is missing (not made yet) just keeps the village theme.
-const ROOM_TUNES = { home: 'room-home2', olia: 'room-olia', mill: 'room-mill', church: 'room-church', school: 'room-school', cafe: 'room-cafe' };
+const ROOM_TUNES = { home: 'room-home3', olia: 'room-olia', mill: 'room-mill2', church: 'room-church', school: 'room-school', cafe: 'room-cafe' };
 const tuneBad = {};
 let curTune = 'theme', themePos = 0, seekTo = 0;
 // The market has its own tune while its card is open (it's a card over the village, not a room).
@@ -2895,7 +2895,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   if (L.hat === 'scarf' && L.scarfFine && back < 0.5) {   // indoors, as in Grandma's portrait: the khustka frames her face and is knotted under her chin
     c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(0, -64 + bob, 17.2, 18.6, 0, 0, Math.PI * 2); c.ellipse(fx * 0.3, -59.6 + bob, 12.2, 11.9, 0, 0, Math.PI * 2); c.fill('evenodd');
     c.fillStyle = 'rgba(0,0,0,.14)'; c.beginPath(); c.ellipse(fx * 0.3, -59.6 + bob, 13.4, 13.1, 0, Math.PI * 1.05, Math.PI * 1.95); c.ellipse(fx * 0.3, -59.6 + bob, 12.2, 11.9, 0, Math.PI * 1.95, Math.PI * 1.05, true); c.fill();   // the fold round her face
-    c.fillStyle = L.skin; c.beginPath(); c.ellipse(fx * 0.3, -59.6 + bob, 12.2, 11.9, 0, Math.PI, 0); c.fill(); c.fillStyle = L.hair; c.beginPath(); c.ellipse(fx * 0.3, -71.2 + bob, 8, 2.6, 0, 0, Math.PI); c.fill();   // her forehead, with just a little grey hair showing at the front
+    c.save(); c.beginPath(); c.rect(-20, -90 + bob, 40, 20.2); c.clip(); c.fillStyle = L.skin; c.beginPath(); c.ellipse(fx * 0.3, -59.6 + bob, 12.2, 11.9, 0, Math.PI, 0); c.fill(); c.restore();   /* only above her brows, so her eyes show */ c.fillStyle = L.hair; c.beginPath(); c.ellipse(fx * 0.3, -71.2 + bob, 8, 2.6, 0, 0, Math.PI); c.fill();   // her forehead, with just a little grey hair showing at the front
     c.fillStyle = L.hatCol; circ(c, 0, -46 + bob, 3.4); poly(c, [[-1, -46 + bob], [-7, -38 + bob], [-3, -37 + bob]]); poly(c, [[1, -46 + bob], [7, -39 + bob], [3.5, -37.5 + bob]]);   // the knot and its two ends
     c.fillStyle = 'rgba(0,0,0,.18)'; circ(c, 0.8, -45.2 + bob, 1.6);
     c.fillStyle = '#fffdf5'; for (const [dx, dy] of [[-12, -72], [-6, -78], [0, -80], [6, -78], [12, -72], [-15, -63], [15, -63], [-14, -54], [14, -54], [-9, -79.5], [9, -79.5], [-3, -75.5], [3, -75.5], [-5, -39], [5, -40]]) circ(c, dx, dy + bob, 1.05);
@@ -2950,7 +2950,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
 }
 const OLIA_FACE = { detail: true, eye: '#6b4426', brow: '#cfcfcf', eyeK: 0.82, age: 1, lashes: false, scarfFine: true };   // Grandma indoors: kind eyes, smile lines
 const SOLOMIIA_FACE = { detail: true, eye: '#5a3418', brow: '#3a2416', eyeK: 0.86, noBand: true, hairLen: 34, wreathFine: { flowers: ['#f5b800', '#ffffff', '#ffd23f'], ribbons: ['#f2c230', '#c0392b'] } };   // Mrs. Solomiia in her café
-const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#8a5426', brow: '#c08a3a' };   // (no headband: the user's choice)
+const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#5f8a3c', brow: '#c08a3a' };   // (no headband: the user's choice)
 // Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
 // shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
 // apronTrim), vest (+ vestTrim), coat (+ fur), boots, beads, a hat (scarf, wreath) and ribbons on the wreath.
@@ -4998,7 +4998,7 @@ function gardenStep(K) {
     }
   }
   if (!K.flown && K.job === 'harvest' && u >= 1.0) { K.flown = true; const hw = pickHandWorld(K, pickPose('low', 0.99)); flyToBag(hw[0], hw[1], K.ic); }
-  if (u >= PICK_T.low) { PICK = null; gardenDone(K); }
+  if (u >= PICK_T.low) { PICK = null; if (K.job === 'harvest') setTimeout(() => gardenDone(K), Math.max(0, 1.85 - u) * 1000); else gardenDone(K); }
 }
 function gardenDone(K) {
   const p = S.plots[K.i], v = K.crop;
@@ -5018,7 +5018,7 @@ function pickStep() {
     if (K.e.give === 'kvitka') setTimeout(() => { if (mode === 'world') for (let i = 0; i < 3; i++) fxAdd({ k: 'icon', ic: '❤️', x: P.x + K.face * 0.28 + rnd(-0.1, 0.1), y: P.y - 1.15, vx: rnd(-0.2, 0.2), vy: rnd(-1.1, -0.7), life: rnd(0.8, 1.1), s: rnd(10, 14), d: i * 0.12 }); }, 380);   // a sniff of the flower
   }
   if (!K.flown && u >= 1.0) { K.flown = true; const hw = pickHandWorld(K, pickPose(K.kind, 0.99)); flyToBag(hw[0], hw[1], K.ic); }
-  if (u >= PICK_T[K.kind]) { const e = K.e; PICK = null; takeCard(e); }
+  if (u >= PICK_T[K.kind]) { const e = K.e; PICK = null; setTimeout(() => { if (!sheetOpen()) takeCard(e); }, Math.max(0, 1.85 - u) * 1000); }   // the card waits until it has landed in the basket
 }
 // the flash, ring, sparkles and petals (or leaves, or berries) at the moment it comes away
 function fxPick(x, y, kind, item) {
@@ -5668,7 +5668,7 @@ function drawAnimal0(c, x, y, e, t) {
     if (e._lx !== undefined) { const dx = e.x - e._lx, dy = e.y - e._ly; e.mvx = (e.mvx || 0) * 0.8 + dx * 0.2; e.mvy = (e.mvy || 0) * 0.8 + dy * 0.2; }
     e._lx = e.x; e._ly = e.y;
     const ax = Math.abs(e.mvx || 0), ay = Math.abs(e.mvy || 0), moving = (e.wk || 0) > 0.15 && ay + ax > 0.0004;
-    if (!moving) e.view = 'side';
+    if (!moving) { if (!e.view || (e.rest || 0) > 0.05) e.view = 'side'; }   // a cat that stops keeps facing the way it was walking (it only turns side-on to lie down)
     else if (e.view === 'side' || !e.view) { if (ay > ax * 1.4) e.view = e.mvy > 0 ? 'front' : 'back'; }
     else if (ax > ay * 1.1) e.view = 'side';
     else e.view = e.mvy > 0 ? 'front' : 'back';
@@ -9519,6 +9519,35 @@ const MILL_STEPS = {
   take: ['🥣', 'Візьми борошно', 'Tap the sack to take your flour.'],
 };
 // A sack of flour, tied at the neck.
+// A white cotton flour sack: plump, folds in the cloth, two blue stripes and БОРОШНО printed across it, a dusting of
+// flour; tied at the neck with twine, or open at the top (under the mill's spout) with the flour showing inside.
+function flourSack(c, x, y, w, h, full, open) {
+  const b = 0.86 + full * 0.18, top = y - h, nk = open ? 0.46 : 0.3;
+  c.save();
+  c.fillStyle = 'rgba(40,25,10,.22)'; ell(c, x + w * 0.04, y, w * 0.56 * b, w * 0.1);
+  const body = () => { c.beginPath(); c.moveTo(x - w * nk, top + h * 0.12); c.bezierCurveTo(x - w * 0.62 * b, top + h * 0.3, x - w * 0.66 * b, y - h * 0.12, x - w * 0.5 * b, y - h * 0.02); c.quadraticCurveTo(x, y + h * 0.04, x + w * 0.5 * b, y - h * 0.02); c.bezierCurveTo(x + w * 0.66 * b, y - h * 0.12, x + w * 0.62 * b, top + h * 0.3, x + w * nk, top + h * 0.12); c.closePath(); };
+  let g = c.createLinearGradient(x - w * 0.6, 0, x + w * 0.6, 0); g.addColorStop(0, '#fbf9f3'); g.addColorStop(0.45, '#f4f0e6'); g.addColorStop(1, '#d9d2c2');
+  body(); c.fillStyle = g; c.fill(); c.strokeStyle = 'rgba(120,105,80,.45)'; c.lineWidth = Math.max(1, w * 0.012); c.stroke();
+  c.save(); body(); c.clip();
+  c.strokeStyle = 'rgba(150,135,110,.12)'; c.lineWidth = 0.6; for (let yy = top; yy < y; yy += Math.max(2, h * 0.025)) { c.beginPath(); c.moveTo(x - w, yy); c.lineTo(x + w, yy); c.stroke(); }   // the weave
+  c.strokeStyle = 'rgba(150,135,110,.3)'; c.lineWidth = Math.max(1, w * 0.014); for (const [dx, k] of [[-0.3, 1], [0.05, -1], [0.32, 1]]) { c.beginPath(); c.moveTo(x + dx * w, top + h * 0.15); c.quadraticCurveTo(x + (dx + k * 0.06) * w, y - h * 0.5, x + (dx - k * 0.02) * w, y - h * 0.3); c.stroke(); }   // folds in the cloth
+  const sy = y - h * 0.58; c.fillStyle = '#3d6fa8'; c.fillRect(x - w, sy - h * 0.14, w * 2, h * 0.025); c.fillRect(x - w, sy + h * 0.12, w * 2, h * 0.025);   // two blue stripes
+  c.fillStyle = '#2f4f78'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '700 ' + Math.max(6, Math.round(w * 0.2)) + 'px Georgia, serif';
+  { const tw = c.measureText('БОРОШНО').width, k = Math.min(1, w * 0.74 / tw); c.save(); c.translate(x, sy); c.scale(k, k * 1.15); c.fillText('БОРОШНО', 0, 0); c.restore(); }   // fitted to the sack
+  if (stage() < 3) { c.font = 'italic 600 ' + Math.max(5, Math.round(w * 0.11)) + 'px Georgia, serif'; c.fillStyle = 'rgba(47,79,120,.85)'; c.fillText('flour', x, sy + h * 0.22); }
+  c.fillStyle = 'rgba(255,255,255,.55)'; for (let i = 0; i < 7; i++) ell(c, x - w * 0.4 + ((i * 0.37) % 1) * w * 0.8, y - h * (0.05 + ((i * 0.61) % 1) * 0.25), w * 0.08, w * 0.03);   // a dusting of flour
+  g = c.createRadialGradient(x - w * 0.2, y - h * 0.65, 0, x - w * 0.2, y - h * 0.65, w * 0.5); g.addColorStop(0, 'rgba(255,255,255,.4)'); g.addColorStop(1, 'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(x - w, top, w * 2, h);
+  c.restore();
+  if (open) {   // the mouth, rolled back, and the flour heaped inside
+    c.fillStyle = '#e8e2d4'; ell(c, x, top + h * 0.12, w * nk * 1.05, h * 0.07); c.strokeStyle = 'rgba(120,105,80,.5)'; c.lineWidth = Math.max(1, w * 0.012); c.stroke();
+    c.fillStyle = '#8a7a62'; ell(c, x, top + h * 0.125, w * nk * 0.85, h * 0.045);
+    if (full > 0.02) { c.fillStyle = '#fffdf6'; c.beginPath(); c.ellipse(x, top + h * 0.13, w * nk * 0.84, h * 0.044, 0, 0, Math.PI * 2); c.fill(); c.beginPath(); c.ellipse(x, top + h * 0.12, w * nk * 0.6 * Math.min(1, full * 1.5), h * 0.05 * Math.min(1, full * 1.5), 0, Math.PI, 0); c.fill(); }
+  } else {   // gathered at the neck, tied with twine, the ends of the cloth standing up
+    c.fillStyle = '#f1ede3'; c.beginPath(); c.moveTo(x - w * 0.3, top + h * 0.13); c.quadraticCurveTo(x - w * 0.2, top - h * 0.02, x - w * 0.26, top - h * 0.1); c.lineTo(x - w * 0.08, top - h * 0.04); c.lineTo(x + w * 0.04, top - h * 0.12); c.lineTo(x + w * 0.14, top - h * 0.03); c.lineTo(x + w * 0.27, top - h * 0.09); c.quadraticCurveTo(x + w * 0.2, top + h * 0.02, x + w * 0.3, top + h * 0.13); c.closePath(); c.fill(); c.strokeStyle = 'rgba(120,105,80,.45)'; c.lineWidth = Math.max(1, w * 0.012); c.stroke();
+    c.strokeStyle = '#b08a4a'; c.lineWidth = Math.max(1.4, w * 0.035); c.beginPath(); c.moveTo(x - w * 0.2, top + h * 0.06); c.quadraticCurveTo(x, top + h * 0.1, x + w * 0.2, top + h * 0.06); c.stroke(); c.lineWidth = Math.max(1, w * 0.02); c.beginPath(); c.moveTo(x + w * 0.05, top + h * 0.08); c.quadraticCurveTo(x + w * 0.16, top + h * 0.2, x + w * 0.1, top + h * 0.28); c.stroke();
+  }
+  c.restore();
+}
 function sackArt(c, x, y, w2, h2, full, col) {
   const bulge = 0.8 + full * 0.25;
   c.fillStyle = col || '#d9c08a'; c.beginPath(); c.moveTo(x - w2 * 0.3, y - h2); c.quadraticCurveTo(x - w2 * 0.62 * bulge, y - h2 * 0.55, x - w2 * 0.5 * bulge, y); c.lineTo(x + w2 * 0.5 * bulge, y); c.quadraticCurveTo(x + w2 * 0.62 * bulge, y - h2 * 0.55, x + w2 * 0.3, y - h2); c.closePath(); c.fill();
@@ -9640,16 +9669,24 @@ function drawMill(t) {
   { let r = 3; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
     for (let i = 0; i < 26; i++) { c.fillStyle = 'rgba(250,246,232,' + (0.12 + rnd() * 0.18) + ')'; ell(c, rnd() * RW, fy + (h - fy) * (0.1 + rnd() * 0.85), u * (0.03 + rnd() * 0.08), u * (0.008 + rnd() * 0.014)); }
     for (let i = 0; i < 40; i++) { c.fillStyle = rnd() < 0.5 ? '#d9b25a' : '#c49a45'; ell(c, rnd() * RW, fy + (h - fy) * (0.05 + rnd() * 0.9), u * 0.006, u * 0.003); }
-    c.fillStyle = 'rgba(70,40,15,.35)'; for (let i = 0; i < 10; i++) ell(c, rnd() * RW, fy + (h - fy) * (0.1 + rnd() * 0.8), u * 0.012, u * 0.006); }
+    c.fillStyle = 'rgba(70,40,15,.35)'; for (let i = 0; i < 10; i++) ell(c, rnd() * RW, fy + (h - fy) * (0.1 + rnd() * 0.8), u * 0.012, u * 0.006);
+    // where the work is done the floor is white with it: drifts round the stones and the spout and the sacks, a
+    // trodden trail of floury footprints, a spilt scoopful with its wooden scoop, dust settled along the skirting
+    for (const [fx, fw] of [[cx, 0.5], [cx - u * 0.35, 0.3], [cx + u * 0.3, 0.25], [MX.sacks * RW, 0.3]]) for (let k = 0; k < 9; k++) { const ex = fx + (rnd() - 0.5) * u * fw, ey = fy + (h - fy) * (0.06 + rnd() * 0.5), ew = u * (0.05 + rnd() * 0.1);
+      const g2 = c.createRadialGradient(ex, ey, 0, ex, ey, ew); g2.addColorStop(0, 'rgba(255,253,245,' + (0.35 + rnd() * 0.3) + ')'); g2.addColorStop(1, 'rgba(255,253,245,0)'); c.fillStyle = g2; c.save(); c.translate(ex, ey); c.scale(1, 0.28); c.translate(-ex, -ey); c.fillRect(ex - ew, ey - ew, ew * 2, ew * 2); c.restore(); }
+    c.fillStyle = 'rgba(255,252,242,.5)'; for (let i = 0; i < 16; i++) { const q = i / 16, px = cx - u * 0.6 + q * u * 1.2 + (i % 2) * u * 0.02, py = fy + (h - fy) * (0.25 + Math.sin(q * 5) * 0.12) + (i % 2 ? u * 0.012 : 0); c.save(); c.translate(px, py); c.rotate(0.1); ell(c, 0, 0, u * 0.011, u * 0.005); ell(c, u * 0.012, -u * 0.001, u * 0.005, u * 0.004); c.restore(); }   // floury footprints
+    { const px = cx + u * 0.55, py = fy + (h - fy) * 0.18; c.fillStyle = 'rgba(255,253,246,.9)'; c.beginPath(); c.ellipse(px, py, u * 0.06, u * 0.016, 0, 0, 7); c.fill(); c.beginPath(); c.ellipse(px - u * 0.01, py - u * 0.006, u * 0.03, u * 0.014, 0, Math.PI, 0); c.fill(); for (let i = 0; i < 12; i++) circ(c, px + (rnd() - 0.3) * u * 0.14, py + (rnd() - 0.5) * u * 0.03, u * 0.003);
+      c.save(); c.translate(px + u * 0.08, py - u * 0.004); c.rotate(-0.25); c.fillStyle = '#a07a4a'; c.beginPath(); c.ellipse(0, 0, u * 0.03, u * 0.014, 0, 0, Math.PI); c.fill(); c.fillRect(u * 0.025, -u * 0.004, u * 0.05, u * 0.008); c.restore(); }
+    c.fillStyle = 'rgba(255,252,242,.35)'; c.fillRect(0, fy - h * 0.004, RW, h * 0.006); }
   // the frame of the tower: a wall plate and braces between the posts
   c.fillStyle = '#7a4e26'; c.fillRect(0, h * 0.42, RW, u * 0.03); c.fillStyle = 'rgba(255,230,180,.15)'; c.fillRect(0, h * 0.42, RW, u * 0.006);
-  for (const [a, b] of [[0.2, 0.34], [0.58, 0.69]]) { c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.03; c.lineCap = 'butt'; c.beginPath(); c.moveTo(a * RW, h * 0.42 + u * 0.03); c.lineTo(b * RW, fy - u * 0.02); c.stroke(); c.strokeStyle = 'rgba(255,230,180,.12)'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(a * RW, h * 0.42 + u * 0.024); c.lineTo(b * RW, fy - u * 0.026); c.stroke(); }
+  /* (the brace on the left ran right beside the ladder and read as a second one) */ for (const [a, b] of [[0.58, 0.69]]) { c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.03; c.lineCap = 'butt'; c.beginPath(); c.moveTo(a * RW, h * 0.42 + u * 0.03); c.lineTo(b * RW, fy - u * 0.02); c.stroke(); c.strokeStyle = 'rgba(255,230,180,.12)'; c.lineWidth = u * 0.006; c.beginPath(); c.moveTo(a * RW, h * 0.42 + u * 0.024); c.lineTo(b * RW, fy - u * 0.026); c.stroke(); }
   // cobwebs up in the corners by the posts
   for (const [x0, sx] of [[0.05 * RW, 1], [0.95 * RW, -1]]) { const y0 = h * 0.105, L = u * 0.16; c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = Math.max(1, u * 0.002);
     for (let k = 0; k < 5; k++) { const a = (k / 4) * Math.PI / 2; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + sx * Math.cos(a) * L, y0 + Math.sin(a) * L); c.stroke(); }
     for (let r2 = 1; r2 <= 3; r2++) { c.beginPath(); for (let k = 0; k <= 4; k++) { const a = (k / 4) * Math.PI / 2, rr2 = L * r2 / 3.4; const px = x0 + sx * Math.cos(a) * rr2, py = y0 + Math.sin(a) * rr2; if (k) c.quadraticCurveTo(x0 + sx * Math.cos(a - 0.2) * rr2 * 0.85, y0 + Math.sin(a - 0.2) * rr2 * 0.85, px, py); else c.moveTo(px, py); } c.stroke(); } }
-  // a ladder up to the cap, leaning on the wall
-  { const lx = 0.255 * RW, top = h * 0.1, w2 = u * 0.075; c.strokeStyle = '#8a5a2b'; c.lineWidth = u * 0.016; c.beginPath(); c.moveTo(lx - w2, fy); c.lineTo(lx - w2 * 0.6, top); c.moveTo(lx + w2, fy); c.lineTo(lx + w2 * 0.6 + u * 0.01, top); c.stroke();
+  // (the tall ladder up the wall to the cap is gone: beside the landing ladder it looked like a muddle)
+  if (false) { const lx = 0.255 * RW, top = h * 0.1, w2 = u * 0.075; c.strokeStyle = '#8a5a2b'; c.lineWidth = u * 0.016; c.beginPath(); c.moveTo(lx - w2, fy); c.lineTo(lx - w2 * 0.6, top); c.moveTo(lx + w2, fy); c.lineTo(lx + w2 * 0.6 + u * 0.01, top); c.stroke();
     c.lineWidth = u * 0.011; for (let y = fy - u * 0.08; y > top + u * 0.04; y -= u * 0.085) { const q = (fy - y) / (fy - top), ww = w2 * (1 - q * 0.4); c.beginPath(); c.moveTo(lx - ww, y); c.lineTo(lx + ww, y); c.stroke(); } }
   // tools hung on pegs: a scythe, a wooden rake, a sickle, a coil of rope, and a lantern that glows after dark
   { const peg = (x, y) => { c.fillStyle = '#5a381b'; circ(c, x, y, u * 0.008); };
@@ -9785,13 +9822,12 @@ function drawMill(t) {
   { const lx = (spX + spEx) / 2 + u * 0.1, ly = (spY + spEy) / 2 + u * 0.05; c.fillStyle = '#e9d3a8'; c.strokeStyle = '#7a4e26'; c.lineWidth = u * 0.004; c.beginPath(); c.roundRect(lx - u * 0.07, ly - u * 0.022, u * 0.14, u * 0.044, u * 0.01); c.fill(); c.stroke();
     c.font = `700 ${Math.round(u * 0.024)}px system-ui`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#4a2c1a'; c.fillText('🌾→' + W.boroshno.uk, lx, ly); }
   const sackW = u * 0.17, full = Math.min(1, M.flour / 6);
-  if (M.sack) sackArt(c, spEx, fy, sackW, fy - mouthBot - u * 0.01, full);
+  if (M.sack) flourSack(c, spEx, fy, sackW, fy - mouthBot - u * 0.01, full, true);
   else {   // where a sack goes: a pale ghost sack in a dashed box, and an arrow bouncing from the mouth down into it
     const pulse = 0.5 + 0.5 * Math.sin(t * 4);
-    c.globalAlpha = 0.25 + 0.15 * pulse; sackArt(c, spEx, fy, sackW, fy - mouthBot - u * 0.01, 0, '#f4ecd8'); c.globalAlpha = 1;
+    c.globalAlpha = 0.25 + 0.15 * pulse; flourSack(c, spEx, fy, sackW, fy - mouthBot - u * 0.01, 0, true); c.globalAlpha = 1;
     c.strokeStyle = `rgba(255,210,63,${0.6 + 0.4 * pulse})`; c.setLineDash([u * 0.012, u * 0.012]); c.lineWidth = 2.5; c.strokeRect(spEx - sackW / 2, mouthBot + u * 0.01, sackW, fy - mouthBot - u * 0.01); c.setLineDash([]);
     const ay = mouthBot + u * 0.03 + pulse * u * 0.03; c.fillStyle = '#ffd23f'; c.strokeStyle = '#4a2c1a'; c.lineWidth = u * 0.004; c.beginPath(); c.moveTo(spEx - u * 0.025, ay); c.lineTo(spEx + u * 0.025, ay); c.lineTo(spEx, ay + u * 0.035); c.closePath(); c.fill(); c.stroke();
-    drawIcon(c, '🛍️', spEx, fy - (fy - mouthBot) * 0.3, u * 0.05);
   }
   if (M.spill > 0) { c.fillStyle = 'rgba(255,252,240,.95)'; ell(c, spEx, fy + u * 0.01, u * (0.04 + Math.min(0.12, M.spill * 0.05)), u * (0.012 + Math.min(0.03, M.spill * 0.012))); }   // flour spilt on the floor
   if (out) { c.fillStyle = out === 'flour' ? 'rgba(255,252,240,.9)' : '#e0b84a'; for (let i = 0; i < 10; i++) { const q = ((t * 2.5 + i / 10) % 1); circ(c, spEx + Math.sin(i * 3 + t) * u * 0.008, mouthBot + q * (M.sack ? u * 0.04 : fy - mouthBot), u * (out === 'flour' ? 0.007 : 0.005)); } }
@@ -9810,7 +9846,7 @@ function drawMill(t) {
     hit(gx - gr * 2, dY - dr, gr * 4, gy - dY + dr + gr * 1.5, () => { if (!M.hold) toast('🔄 ' + W.kruty.uk + xlT(' · Hold the hand wheel and let go when the needle is on the green.'), 2600); }, gx, fy, { wheel: true }); }
   // ---- sacks of flour you've made, and the miller's table: bread, a mug, and a mouse after the crumbs
   { const sx = MX.sacks * RW, n = Math.min(4, S.bag.boroshno || 0);
-    for (let i = 0; i < Math.max(1, n); i++) sackArt(c, sx + (i % 2 ? 1 : -1) * u * 0.07 * (i > 1 ? 0.5 : 1), fy - (i > 1 ? u * 0.13 : 0), u * 0.13, u * 0.15, 0.9, i < n ? '#f1ead8' : 'rgba(241,234,216,.35)');
+    for (let i = 0; i < Math.max(1, n); i++) { if (i >= n) c.globalAlpha = 0.35; flourSack(c, sx + (i % 2 ? 1 : -1) * u * 0.07 * (i > 1 ? 0.5 : 1), fy - (i > 1 ? u * 0.13 : 0), u * 0.13, u * 0.15, 0.9, false); c.globalAlpha = 1; }
     hit(sx - u * 0.15, fy - u * 0.3, u * 0.3, u * 0.3, word('boroshno'), sx, fy); }
   { const tx = MX.table * RW, ty = fy - u * 0.2;
     c.fillStyle = '#7a4e26'; c.fillRect(tx - u * 0.15, ty, u * 0.3, u * 0.03); c.fillRect(tx - u * 0.13, ty, u * 0.025, fy - ty); c.fillRect(tx + u * 0.105, ty, u * 0.025, fy - ty);
@@ -10867,7 +10903,7 @@ function enterOliaNow() {
   $('#exit').innerHTML = lab('exit'); $('#decorBtn').style.display = 'none'; $('#wardBtn').style.display = 'none'; $('#homebar').style.display = 'flex';
   // Open on the counter and Grandma; once the dish is ready, on the table.
   const mid = (recipeReady(curRecipe()) ? OX.table : 0.385) * roomW() - cv.width / 2;
-  roomX = mid; clampPan(); inStart(0.4);
+  roomX = mid; clampPan(); inStart(0.4); IN.dir = 'back';   // she comes in facing Grandma, so we see her back
   tour = null; blip(520);
   setTimeout(() => { if (mode === 'olia' && !sheetOpen()) talk(NPC.olia); }, 500);
   oliaTip = S.oliaTip ? 0 : 1;
@@ -11740,6 +11776,25 @@ function drawWatering(c, a) {
     }
   }
 }
+// Watering, done by Vicky: she lifts the can (sized to her) by its handle, tips it, and the water arcs from the spout
+// onto the bed in a stream of drops with little splashes, then she lowers it again. a = seconds since she started.
+function drawWaterPose(c, x, y, t) {
+  const a = t - waterFx.t0; if (a > 2.1) { waterFx = null; return false; } P.path = [];   // she stays put while she waters
+  const pe = ents.find(q => q.k === 'plot' + waterFx.i); if (!pe) { waterFx = null; return false; }
+  const f = waterFx.face, up = seg3(a, 0, 0.3) * (1 - seg3(a, 1.8, 2.1)), tilt = seg3(a, 0.28, 0.6) * (1 - seg3(a, 1.7, 1.95));
+  const hx = 6 + 11 * up, hy = -30 - 12 * up;   // her hand: from her side out in front of her, at chest height
+  c.save(); c.translate(x, y); c.scale(f, 1);
+  personSide(c, 0, 0, Object.assign({}, ME, { reach: [hx, hy] }), t, false, 1);
+  const k = 0.36, ang = -0.1 + tilt * 0.75;   // the can, hanging from her hand by its handle
+  c.save(); c.translate(hx, hy); c.rotate(ang); drawIcon(c, '@can', 40 * k, 26 * k, 100 * k); c.restore();
+  if (tilt > 0.55) {   // water from the spout to the soil
+    const sl = [40 * k + 46 * k, 26 * k - 52 * k], sx = hx + sl[0] * Math.cos(ang) - sl[1] * Math.sin(ang), sy = hy + sl[0] * Math.sin(ang) + sl[1] * Math.cos(ang);
+    const tx = f * (pe.x * T - x) * 0.85, ty = pe.y * T - y + T * 0.32 * pe.s;   // onto the near rows of the bed
+    for (let i = 0; i < 16; i++) { const ph = ((a * 2.2) + i / 16) % 1, px = sx + (tx - sx) * ph + Math.sin(i * 7.1) * 2.5 * ph, py = sy + (ty - sy) * ph - Math.sin(ph * Math.PI) * 10 + ph * ph * 6;   // out of the spout, a little arc, then down onto the soil
+      c.fillStyle = 'rgba(90,169,230,' + (0.9 - ph * 0.3) + ')'; ell(c, px, py, 1.4, 2.1);
+      if (ph > 0.86) { c.strokeStyle = 'rgba(120,190,240,.7)'; c.lineWidth = 1.1; c.beginPath(); c.ellipse(px, ty, (ph - 0.86) * 30, (ph - 0.86) * 9, 0, 0, 7); c.stroke(); } } }
+  c.restore(); return true;
+}
 // A small, quiet house badge over your cottage (the name shows as a label when you're close).
 function homeSign(c, x, y, t) {
   c.save(); c.translate(x, y + Math.sin(t * 1.4) * 1.5); c.globalAlpha = 0.78;
@@ -11779,6 +11834,7 @@ function drawWorld(t) {
     if (!e.flat && !e.lift && e.kind !== 'pond' && e.kind !== 'fly' && e.kind !== 'plot' && e.k !== 'swing' && shA > 0.02) { const s0 = (e.me ? 1 : e.s || 1) * T, rx = s0 * (0.34 + Math.abs(sunDx) * 0.3); c.globalAlpha = shA; c.drawImage(SOFT_SHADOW, x - rx + sunDx * s0 * 0.3, y - s0 * 0.1, rx * 2, s0 * 0.2); c.globalAlpha = 1; }
     // tapped things give a little squash-and-bounce
     if (e.me) {
+      if (waterFx && waterFx.me && drawWaterPose(c, x, y, t)) continue;   // watering the garden
       if (SW.hide) continue;   // she is on the swing: it draws her
       if (PICK) { drawPickPose(c, x, y, t); continue; }   // in the middle of picking something
       // Draw whichever of the four views she is closest to; between views she narrows and lifts a little,
@@ -11864,7 +11920,7 @@ function drawWorld(t) {
   fetchDraw(c);
   fxDraw(c);
   if (fishFx) drawFishing(c, t);
-  if (waterFx) { const pe = ents.find(x => x.k === 'plot' + waterFx.i); if (pe) { c.save(); c.translate(pe.x * T, pe.y * T); c.scale(pe.s, pe.s); drawWatering(c, t - waterFx.t0); c.restore(); } }
+  if (waterFx && !waterFx.me) { const pe = ents.find(x => x.k === 'plot' + waterFx.i); if (pe) { c.save(); c.translate(pe.x * T, pe.y * T); c.scale(pe.s, pe.s); drawWatering(c, t - waterFx.t0); c.restore(); } }
   // Name labels are rare: at most one at a time, for the thing you are standing right next to, and only
   // while it is still new to you (a word you have just learned, a villager or cat you have barely got to
   // know, Grandma's cottage before you have been in). Words due for review sparkle instead; tap to recall.
@@ -13157,7 +13213,7 @@ const A = {
   next() { const d = dlg; if (!d) return closeSheet(); const st = d.steps[d.i]; dialog(d.npc, d.steps, d.i + 1); if (st.after) st.after(); },
   choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg !== d) return; if (c.fn) { closeSheet(); c.fn(); } else if (c.then) dialog(d.npc, [...d.steps.slice(0, d.i + 1), ...c.then], d.i + 1); else dialog(d.npc, d.steps, d.i + 1); }, 1500); },
   plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0) || PICK) return; S.seeds[v]--; closeSheet(); if (gardenStart('plant', cur.plot, v)) return; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); say('w_' + v); blip(600); tutEvent('plant'); save(); },
-  water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
+  water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; { const pe = ents.find(q => q.k === 'plot' + cur.plot); waterFx = { i: cur.plot, t0: nowT, me: mode === 'world' && !!pe, face: pe && pe.x < P.x ? -1 : 1 }; P.path = []; P.goal = null; if (pe) P.face = waterFx.face; } closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
   harvest() { const p = S.plots[cur.plot], c = p.c; if (!c || PICK) return; closeSheet(); if (gardenStart('harvest', cur.plot)) return; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].en}`); tutEvent('harvest'); wordCard(c); save(); },
   tab(v) { shopTab = v; shopSel = null; shop(); },
   pick(v) { shopSel = owned(v) ? null : v; learn(v); shop(); say('w_' + v); if (owned(v)) toast(`✓ ${D.ui.have[0]}${stage() < 3 ? ' · ' + D.ui.have[1] : ''}`); },
