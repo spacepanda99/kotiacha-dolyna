@@ -2801,7 +2801,7 @@ function add(e) {
   add({ w: 'khata', k: 'n_taras', x: 25.3, y: 21.2, kind: 'npc', npc: 'taras', s: 1.3 });
   add({ w: 'khata', k: 'n_andriiko', x: 14.5, y: 20.7, kind: 'npc', npc: 'andriiko', s: 1.1 });
   add({ w: 'sobaka', x: 15.4, y: 20.78, kind: 'animal', r: 1.0, fetch: true });   // plays fetch with Andriiko
-  add({ w: 'khata', k: 'n_bohdan', x: 9.1, y: 20.4, kind: 'npc', npc: 'bohdan', s: 1.3 });
+  add({ w: 'khata', k: 'n_bohdan', x: 2.9, y: 20.4, kind: 'npc', npc: 'bohdan', s: 1.3 });
   for (let i = ents.length - 1; i >= 0; i--) if (ents[i].w === 'kit') ents.splice(i, 1);
   for (const ct of D.cats) if (S.cats[ct.id] !== 1) add({ w: ct.word, k: 'cat_' + ct.id, kind: 'animal', an: 'cat', cat: ct.id, v: ct.v, x: ct.x, y: ct.y, r: 1.3 });
   let ducks = 0;
@@ -4374,7 +4374,7 @@ function findPath(tx, ty, ent, from) {
 }
 // When you go to talk to someone, stand beside them (not on top of them), facing them.
 // Some villagers have a side that is free of their work (Olia's flowers, Bohdan's hives).
-const TALK_SIDE = { olia: 1, bohdan: 1, taras: -1 };
+const TALK_SIDE = { olia: 1, bohdan: -1, taras: -1 };
 function talkSpot(e) {
   const free = (x, y) => x > 0.5 && x < MW - 0.5 && !solid[Math.floor(y)][Math.floor(x)];
   const pref = TALK_SIDE[e.npc] || (P.x <= e.x ? -1 : 1);
