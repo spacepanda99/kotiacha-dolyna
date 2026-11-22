@@ -774,7 +774,7 @@ const DRAW = {
   // The festival bell's post: a carved wooden post on a stone base, an iron arm, and a hook. The bell hangs from
   // the hook, except while it's missing (then the hook is bare and the rope cut).
   bellpost(c, o) {
-    const t = (o && o.t) || 0, gone = typeof myOpen === 'function' && myOpen();
+    const t = (o && o.t) || 0, gone = typeof myOpen === 'function' && myOpen() && !S.mystery.t;   // (only the bell mystery takes the bell)
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 4, 0, 16, 4);
     c.fillStyle = '#8d8a84'; poly(c, [[-10, 0], [-8, -8], [8, -8], [10, 0]]); c.fillStyle = '#a8a59e'; ell(c, -3, -4, 3.5, 2); ell(c, 4, -3, 3, 1.8);
     const pg = c.createLinearGradient(-4, 0, 4, 0); pg.addColorStop(0, '#5d3b1f'); pg.addColorStop(0.45, '#8a5c33'); pg.addColorStop(1, '#4e3118'); c.fillStyle = pg; c.fillRect(-4, -96, 8, 88);
@@ -2217,7 +2217,7 @@ const DRAW = {
     c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.4; for (const y of [-26, -50]) { c.beginPath(); c.moveTo(-30 + (y + 50) * 0.1, y); c.quadraticCurveTo(0, y + 4, 30 - (y + 50) * 0.1, y); c.stroke(); }   // ropes round it
     c.fillStyle = '#d9b25a'; c.beginPath(); c.ellipse(26, -3, 14, 4, 0, 0, 7); c.fill(); c.strokeStyle = '#b8902f'; c.lineWidth = 0.8; for (let k = 0; k < 6; k++) { c.beginPath(); c.moveTo(16 + k * 4, -3); c.lineTo(18 + k * 4, -8); c.stroke(); }   // a pile pulled out for the cows
   },
-  // A sheaf of wheat (сніп), tied with a red ribbon: the trophy for the crop circle mystery.
+  // A sheaf of wheat (сніп), tied with a red ribbon: the trophy for the harvest wreath mystery.
   snip(c) {
     c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 26, 5);
     for (let i = -8; i <= 8; i++) { c.save(); c.translate(i * 1.6, -3); c.rotate(i * 0.075); c.fillStyle = i % 2 ? '#d9a64a' : '#c99a3a'; c.fillRect(-1.1, -66, 2.2, 66);
@@ -3184,7 +3184,7 @@ function add(e) {
   add({ w: 'pysanka', x: STALL.x + 0.8, y: STALL.y + 0.1, s: 0.6 });   // a basket of pysanky on the ground in front of the stall, by the right-hand crate
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
   for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) add({ w: 'pshenytsia', x: 33.35 + k * 0.72, y: 21.7 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 34.1 });   // a square little field of wheat by the pond
-  add({ w: 'pshenytsia', k: 'cc_field', ic: '@pshenytsia', x: 38.07, y: 5.45, s: 1, kind: 'cc', flat: true, quiet: true });   // the crop circle (when there is one): tap it to look
+  add({ w: 'vinok', k: 'cc_field', x: 15.95, y: 17.74, s: 1, kind: 'cc', flat: true, quiet: true });   // the harvest wreath on the festival post (autumn, when there is one): tap it to look
   for (let r = 0; r < 6; r++) for (let k = 0; k < 8; k++) add({ w: 'pshenytsia', x: 35.4 + k * 0.72 + (r % 2) * 0.3, y: 3.75 + r * 0.72, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 38.1 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
@@ -3533,9 +3533,9 @@ const MY_WHO = ['myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna'];
 const MY_SEX = { myron: 'm', yaroslava: 'f', ostap: 'm', lesia: 'f', zakhar: 'm', halyna: 'f' };
 const MY_NAME = { myron: ['Myron', 'Мирон', 'Мирона'], yaroslava: ['Yaroslava', 'Ярослава', 'Ярослави'], ostap: ['Ostap', 'Остап', 'Остапа'], lesia: ['Lesia', 'Леся', 'Лесі'], zakhar: ['Zakhar', 'Захар', 'Захара'], halyna: ['Halyna', 'Галина', 'Галини'] };
 // places: English, Ukrainian (as a name), Ukrainian (where: "in/at it")
-const MY_WHERE = { mill: ['the windmill', 'вітряк', 'у вітряку'], station: ['the train station', 'вокзал', 'на вокзалі'], church: ['the church', 'церква', 'у церкві'], reeds: ['the reeds by the lake', 'очерет біля озера', 'в очереті біля озера'], wheat: ['the wheat field', 'пшеничне поле', 'у пшеничному полі'], bridge: ['under the bridge', 'під мостом', 'під мостом'] };
+const MY_WHERE = { mill: ['the mlyn', 'млин', 'у млині'], station: ['the vokzal', 'вокзал', 'на вокзалі'], church: ['the tserkva', 'церква', 'у церкві'], reeds: ['the ocheret by the lake', 'очерет біля озера', 'в очереті біля озера'], wheat: ['the pshenytsia', 'пшеничне поле', 'у пшеничному полі'], bridge: ['pid mostom', 'під мостом', 'під мостом'] };
 // ways to move it: English, Ukrainian (as a name), Ukrainian ("with it")
-const MY_WITH = { wheelbarrow: ['the wheelbarrow', 'тачка', 'тачкою'], cart: ['the horse and cart', 'кінь із возом', 'конем і возом'], mule: ['the mule', 'мул', 'мулом'], sled: ['the pull sled', 'санчата', 'санчатами'], ox: ['the ox', 'віл', 'волом'], haywagon: ['the hay wagon', 'віз із сіном', 'возом із сіном'] };
+const MY_WITH = { wheelbarrow: ['the tachka', 'тачка', 'тачкою'], cart: ['kin iz vozom', 'кінь із возом', 'конем і возом'], mule: ['the mul', 'мул', 'мулом'], sled: ['sanchata', 'санчата', 'санчатами'], ox: ['the vil', 'віл', 'волом'], haywagon: ['viz iz sinom', 'віз із сіном', 'возом із сіном'] };
 let MY_LANG = 'en';   // 'en' or 'uk': which the conversations show
 const myL = pr => Array.isArray(pr) ? pr[MY_LANG === 'uk' ? 1 : 0] : pr;
 const mySex = (str, sex) => str.replace(/\{([^|}]*)\|([^}]*)\}/g, (_, m, f) => sex === 'f' ? f : m);
@@ -3545,65 +3545,65 @@ const myCard = c => c.k === 'who' ? myName(c.v) : c.k === 'where' ? [MY_WHERE[c.
 // What clears each card: something about yesterday evening, as someone who was there might put it (two ways each).
 const MY_CLEAR = {
   who: {
-    myron: [["Mr. Myron? He spent the whole of yesterday evening on the station platform, timing the trains with that pocket watch of his. He didn't look up once.", "Пан Мирон? Він увесь учорашній вечір простояв на пероні, засікаючи потяги своїм кишеньковим годинником. Ні разу не підвів очей."],
-      ["Myron spent yesterday evening arguing with the station clock. Two minutes slow, he said. Two! He wouldn't leave until it was put right.", "Мирон учора ввечері сперечався з вокзальним годинником. Каже, відстає на дві хвилини. На дві! Не пішов, доки його не підкрутили."]],
+    myron: [["Mr. Myron? He spent the whole of yesterday evening on the vokzal platform, timing the trains with that pocket watch of his. He didn't look up once.", "Пан Мирон? Він увесь учорашній вечір простояв на пероні, засікаючи потяги своїм кишеньковим годинником. Ні разу не підвів очей."],
+      ["Myron spent yesterday evening arguing with the vokzal clock. Two minutes slow, he said. Two! He wouldn't leave until it was put right.", "Мирон учора ввечері сперечався з вокзальним годинником. Каже, відстає на дві хвилини. На дві! Не пішов, доки його не підкрутили."]],
     yaroslava: [["Pani Yaroslava sat in the café all yesterday evening, reading poems to the café cat. The cat never left her lap, so neither did she.", "Пані Ярослава весь учорашній вечір сиділа в кав'ярні й читала вірші кав'ярняному котові. Кіт не злазив із її колін, тож і вона не вставала."],
       ["Yaroslava? She was writing at the café table by the window right up to the last train. Her candle had burned down to the saucer.", "Ярослава? Вона писала за столиком біля вікна в кав'ярні аж до останнього потяга. Її свічка догоріла до самого блюдця."]],
     ostap: [["Ostap was up on the hill yesterday evening, playing his flute to nobody in particular. Half the valley heard him. The other half wished they hadn't.", "Остап учора ввечері сидів на пагорбі й грав на сопілці невідомо для кого. Пів долини його чуло. Друга половина воліла б не чути."],
       ["Ostap was down by the lake with me yesterday evening, splashing about and frightening every fish in the water.", "Остап учора ввечері був зі мною біля озера: хлюпався й розлякав усю рибу."]],
     lesia: [["Lesia was painting the sunset by the fountain yesterday. She still has a streak of pink on her nose from it.", "Леся вчора малювала захід сонця біля фонтана. У неї досі рожева смужка на носі."],
-      ["Lesia sat sketching the church roof all yesterday evening. Her sky's only half finished, if you want proof.", "Леся весь учорашній вечір замальовувала дах церкви. Небо в неї ще не домальоване, якщо треба доказ."]],
+      ["Lesia sat sketching the tserkva roof all yesterday evening. Her sky's only half finished, if you want proof.", "Леся весь учорашній вечір замальовувала дах церкви. Небо в неї ще не домальоване, якщо треба доказ."]],
     zakhar: [["Zakhar was out on the lake all yesterday evening. He came back with three carp and not a single word.", "Захар увесь учорашній вечір був на озері. Повернувся з трьома коропами й без жодного слова."],
       ["Zakhar? He was first in line at Oksana's stall for her last loaves yesterday evening, as always. You could set your watch by his stomach.", "Захар? Він учора ввечері, як завжди, першим стояв біля прилавка Оксани по останній хліб. За його шлунком можна звіряти годинник."]],
     halyna: [["Pani Halyna was at the market all yesterday evening, telling Oksana everyone's news. Loudly. For hours.", "Пані Галина весь учорашній вечір провела на ринку, переказуючи Оксані всі новини. Голосно. Годинами."],
       ["Halyna never left the market stall yesterday evening. I could hear her laughing from the other end of the village.", "Галина вчора ввечері не відходила від ринкового прилавка. Її сміх було чути з іншого кінця села."]],
   },
   where: {
-    mill: [["I went up to the windmill yesterday evening. Flour dust on every step, smooth as fresh snow, and the only footprints in it were mine.", "Учора ввечері я {заходив|заходила} до вітряка. На кожній сходинці борошняний пил, рівний, як свіжий сніг, і в ньому тільки мої сліди."],
-      ["The windmill was full of sacks and spiders yesterday evening. I looked in. You couldn't hide a teacup in there, let alone a bell.", "Учора ввечері у вітряку були самі мішки й павуки. Я {зазирнув|зазирнула} туди. Там і чашку не сховаєш, не те що дзвін."]],
-    station: [["I was at the station yesterday evening, waiting for the train. Swept clean, every bench empty. You couldn't hide a teaspoon on that platform.", "Учора ввечері я {чекав|чекала} потяга на вокзалі. Чисто, всі лавки порожні. На тому пероні й ложечки не сховаєш."],
-      ["The station? Nothing on that platform yesterday evening but pigeons and Mr. Myron's opinions.", "Вокзал? Учора ввечері на пероні не було нічого, крім голубів і думок пана Мирона."]],
-    church: [["I lit a candle in the church yesterday evening. Every bench and icon in its place, and the floor freshly swept.", "Учора ввечері я {поставив|поставила} свічку в церкві. Кожна лавка й ікона на своєму місці, підлога щойно підметена."],
-      ["The church? I sat in there for an hour yesterday evening, listening to the quiet. Nobody came in, and nothing came in with them.", "Церква? Я {просидів|просиділа} там годину вчора ввечері, слухаючи тишу. Ніхто не заходив і нічого не заносив."]],
-    reeds: [["I walked along the lake shore yesterday evening. The reeds stood straight and untouched, every one of them.", "Учора ввечері я {гуляв|гуляла} берегом озера. Очерет стояв рівно, ніким не займаний."],
-      ["The ducks are nesting in the reeds. If anyone had pushed anything heavy in there, they'd still be complaining about it.", "В очереті гніздяться качки. Якби хтось запхав туди щось важке, вони б досі обурювалися."]],
-    wheat: [["I walked through the wheat field yesterday evening. Not a stalk bent anywhere. You'd see a path if anything had been dragged through.", "Учора ввечері я {пройшов|пройшла} пшеничним полем. Жоден колосок не зламаний. Якби там щось тягли, лишилася б стежка."],
-      ["The wheat field? Smooth as a combed beard. Nothing's been through it but the wind.", "Пшеничне поле? Рівне, як розчесана борода. Крізь нього пройшов лише вітер."]],
-    bridge: [["I sat under the bridge with my feet in the stream yesterday evening. Nothing down there but frogs and one lost sock.", "Учора ввечері я {сидів|сиділа} під мостом, опустивши ноги в струмок. Там тільки жаби й одна загублена шкарпетка."],
-      ["The water under the bridge is running clear as glass. Drop anything heavy in there and it would be muddy for hours.", "Вода під мостом чиста, як скло. Кинь туди щось важке, і вона годинами була б каламутна."]],
+    mill: [["I went up to the mlyn yesterday evening. Flour dust on every step, smooth as fresh snow, and the only footprints in it were mine.", "Учора ввечері я {заходив|заходила} до млина. На кожній сходинці борошняний пил, рівний, як свіжий сніг, і в ньому тільки мої сліди."],
+      ["The mlyn was full of sacks and spiders yesterday evening. I looked in. You couldn't hide a teacup in there, let alone a bell.", "Учора ввечері у млині були самі мішки й павуки. Я {зазирнув|зазирнула} туди. Там і чашку не сховаєш, не те що дзвін."]],
+    station: [["I was at the vokzal yesterday evening, waiting for the train. Swept clean, every bench empty. You couldn't hide a teaspoon on that platform.", "Учора ввечері я {чекав|чекала} потяга на вокзалі. Чисто, всі лавки порожні. На тому пероні й ложечки не сховаєш."],
+      ["The vokzal? Nothing on that platform yesterday evening but pigeons and Mr. Myron's opinions.", "Вокзал? Учора ввечері на пероні не було нічого, крім голубів і думок пана Мирона."]],
+    church: [["I lit a candle in the tserkva yesterday evening. Every bench and icon in its place, and the floor freshly swept.", "Учора ввечері я {поставив|поставила} свічку в церкві. Кожна лавка й ікона на своєму місці, підлога щойно підметена."],
+      ["The tserkva? I sat in there for an hour yesterday evening, listening to the quiet. Nobody came in, and nothing came in with them.", "Церква? Я {просидів|просиділа} там годину вчора ввечері, слухаючи тишу. Ніхто не заходив і нічого не заносив."]],
+    reeds: [["I walked along the lake shore yesterday evening. The ocheret stood straight and untouched, every one of them.", "Учора ввечері я {гуляв|гуляла} берегом озера. Очерет стояв рівно, ніким не займаний."],
+      ["The ducks are nesting in the ocheret. If anyone had pushed anything heavy in there, they'd still be complaining about it.", "В очереті гніздяться качки. Якби хтось запхав туди щось важке, вони б досі обурювалися."]],
+    wheat: [["I walked through the pshenytsia yesterday evening. Not a stalk bent anywhere. You'd see a path if anything had been dragged through.", "Учора ввечері я {пройшов|пройшла} пшеничним полем. Жоден колосок не зламаний. Якби там щось тягли, лишилася б стежка."],
+      ["The pshenytsia? Smooth as a combed beard. Nothing's been through it but the wind.", "Пшеничне поле? Рівне, як розчесана борода. Крізь нього пройшов лише вітер."]],
+    bridge: [["I sat pid mostom with my feet in the stream yesterday evening. Nothing down there but frogs and one lost sock.", "Учора ввечері я {сидів|сиділа} під мостом, опустивши ноги в струмок. Там тільки жаби й одна загублена шкарпетка."],
+      ["The water pid mostom is running clear as glass. Drop anything heavy in there and it would be muddy for hours.", "Вода під мостом чиста, як скло. Кинь туди щось важке, і вона годинами була б каламутна."]],
   },
   with: {
-    wheelbarrow: [["Grandma Olia's wheelbarrow is still by her garden, with a spider's web strung across the handles. Nobody's touched it in days.", "Тачка баби Олі досі стоїть біля її городу, а на ручках натягнуте павутиння. Ніхто її не чіпав уже кілька днів."],
-      ["The wheelbarrow? Its wheel squeaks like an angry goose. The whole valley would have heard it, and nobody did.", "Тачка? Її колесо скрипить, як сердитий гусак. Уся долина почула б, а ніхто не чув."]],
-    cart: [["Grandma Olia's horse was grazing beside her cottage all yesterday evening, and the cart never moved. There's a hen nesting in it.", "Кінь баби Олі весь учорашній вечір пасся біля її хати, а віз так і не рушив. У ньому сидить курка на яйцях."],
-      ["The cart has a wheel off for mending. It's propped up on a log behind Grandma Olia's cottage.", "Віз стоїть без колеса, його лагодять. Він підпертий колодою за хатою баби Олі."]],
-    mule: [["The mule from the farm across the stream? Asleep in its stall all evening, snoring like a kettle on the boil.", "Мул із хутора за струмком? Увесь вечір спав у стійлі й хропів, як чайник на вогні."],
-      ["That mule won't pull anything after supper. It wouldn't pull for a king.", "Той мул нічого не тягне після вечері. Навіть для короля не потягне."]],
-    sled: [["The pull sled is under a stack of firewood behind Mr. Bohdan's cottage. Nobody's dug it out since winter.", "Санчата лежать під купою дров за хатою пана Богдана. Ніхто не діставав їх із зими."],
-      ["A sled, on dry roads? You'd hear it scraping a mile away. And nobody heard a thing.", "Санчата сухою дорогою? Їхній скрегіт було б чути за версту. А ніхто нічого не чув."]],
-    ox: [["The ox from the next farm was pulling the plough in the far field all yesterday evening, with the farmer beside it.", "Віл із сусіднього хутора весь учорашній вечір тягнув плуг на дальньому полі, а поруч ішов господар."],
-      ["The ox? Lying in the mud by the farm pond, chewing. It hasn't stood up since yesterday afternoon.", "Віл? Лежить у болоті біля ставка на хуторі й жує. Не вставав від учорашнього обіду."]],
-    haywagon: [["The hay wagon is still piled high by the farm gate and roped down tight. Not one knot undone.", "Віз із сіном досі стоїть біля воріт хутора, високо навантажений і туго перев'язаний. Жоден вузол не розв'язаний."],
-      ["The hay wagon has had a broken axle all week. It's going nowhere.", "У воза з сіном уже тиждень зламана вісь. Він нікуди не поїде."]],
+    wheelbarrow: [["Grandma Olia's tachka is still by her garden, with a spider's web strung across the handles. Nobody's touched it in days.", "Тачка баби Олі досі стоїть біля її городу, а на ручках натягнуте павутиння. Ніхто її не чіпав уже кілька днів."],
+      ["The tachka? Its wheel squeaks like an angry goose. The whole valley would have heard it, and nobody did.", "Тачка? Її колесо скрипить, як сердитий гусак. Уся долина почула б, а ніхто не чув."]],
+    cart: [["Grandma Olia's kin was grazing beside her cottage all yesterday evening, and the viz never moved. There's a hen nesting in it.", "Кінь баби Олі весь учорашній вечір пасся біля її хати, а віз так і не рушив. У ньому сидить курка на яйцях."],
+      ["The viz has a wheel off for mending. It's propped up on a log behind Grandma Olia's cottage.", "Віз стоїть без колеса, його лагодять. Він підпертий колодою за хатою баби Олі."]],
+    mule: [["The mul from the farm across the stream? Asleep in its stall all evening, snoring like a kettle on the boil.", "Мул із хутора за струмком? Увесь вечір спав у стійлі й хропів, як чайник на вогні."],
+      ["That mul won't pull anything after supper. It wouldn't pull for a king.", "Той мул нічого не тягне після вечері. Навіть для короля не потягне."]],
+    sled: [["Sanchata is under a stack of firewood behind Mr. Bohdan's cottage. Nobody's dug it out since winter.", "Санчата лежать під купою дров за хатою пана Богдана. Ніхто не діставав їх із зими."],
+      ["Sanchata, on dry roads? You'd hear it scraping a mile away. And nobody heard a thing.", "Санчата сухою дорогою? Їхній скрегіт було б чути за версту. А ніхто нічого не чув."]],
+    ox: [["The vil from the next farm was pulling the plough in the far field all yesterday evening, with the farmer beside it.", "Віл із сусіднього хутора весь учорашній вечір тягнув плуг на дальньому полі, а поруч ішов господар."],
+      ["The vil? Lying in the mud by the farm pond, chewing. It hasn't stood up since yesterday afternoon.", "Віл? Лежить у болоті біля ставка на хуторі й жує. Не вставав від учорашнього обіду."]],
+    haywagon: [["Viz iz sinom is still piled high by the farm gate and roped down tight. Not one knot undone.", "Віз із сіном досі стоїть біля воріт хутора, високо навантажений і туго перев'язаний. Жоден вузол не розв'язаний."],
+      ["Viz iz sinom has had a broken axle all week. It's going nowhere.", "У воза з сіном уже тиждень зламана вісь. Він нікуди не поїде."]],
   },
 };
 // Traces of the real answer, noticed this morning on the way from the train. They point; Vicky has to see where.
 const MY_TRACE = {
   with: {
     wheelbarrow: ["When I got off the train this morning, there was a single narrow wheel track in the mud by the road, pressed deep, as if it had carried something heavy.", "Коли я {зійшов|зійшла} з потяга сьогодні вранці, біля дороги в багнюці був один вузький слід колеса, глибокий, ніби везли щось важке."],
-    cart: ["Two wheel ruts and horseshoe prints in the mud this morning, and fresh ones. Somebody had a horse out late last night.", "Сьогодні вранці в багнюці були дві колії від коліс і сліди підків, зовсім свіжі. Хтось пізно ввечері виводив коня."],
-    mule: ["Small, neat hoof prints going down the lane this morning. Too small for a horse, too tidy for a cow.", "Сьогодні вранці провулком тягнулися маленькі акуратні сліди копит. Замалі для коня, заохайні для корови."],
+    cart: ["Two wheel ruts and horseshoe prints in the mud this morning, and fresh ones. Somebody had a kin out late last night.", "Сьогодні вранці в багнюці були дві колії від коліс і сліди підків, зовсім свіжі. Хтось пізно ввечері виводив коня."],
+    mule: ["Small, neat hoof prints going down the lane this morning. Too small for a kin, too tidy for a cow.", "Сьогодні вранці провулком тягнулися маленькі акуратні сліди копит. Замалі для коня, заохайні для корови."],
     sled: ["Two long, straight scrape marks along the road this morning, side by side, as if something had been dragged on runners.", "Сьогодні вранці вздовж дороги тяглися дві довгі рівні подряпини, поруч одна з одною, ніби щось тягли на полозах."],
     ox: ["Deep, split hoof prints in the mud this morning. Big ones, far bigger than any cow's, and the ground all churned up.", "Сьогодні вранці в багнюці були глибокі роздвоєні сліди копит. Великі, набагато більші за коров'ячі, і земля вся перекопана."],
-    haywagon: ["There was hay scattered all along the road this morning. And nobody's been making hay this week.", "Сьогодні вранці вздовж усієї дороги було розсипане сіно. А цього тижня ніхто не косив."],
+    haywagon: ["There was sino scattered all along the road this morning. And nobody's been making sino this week.", "Сьогодні вранці вздовж усієї дороги було розсипане сіно. А цього тижня ніхто не косив."],
   },
   where: {
-    mill: ["The windmill's door was standing open this morning, and there were drag marks in the flour on the step.", "Сьогодні вранці двері вітряка стояли відчинені, а на сходинці в борошні були сліди, ніби щось тягли."],
+    mill: ["The mlyn's door was standing open this morning, and there were drag marks in the flour on the step.", "Сьогодні вранці двері млина стояли відчинені, а на сходинці в борошні були сліди, ніби щось тягли."],
     station: ["Something heavy is sitting under a tarpaulin at the far end of the platform. Luggage, I suppose. Odd shape for luggage.", "У кінці перону під брезентом стоїть щось важке. Мабуть, багаж. Дивної форми багаж."],
-    church: ["The church door was open a crack this morning. It's never open that early.", "Сьогодні вранці двері церкви були трохи прочинені. Так рано вони ніколи не відчинені."],
-    reeds: ["There was a flash of gold among the reeds when the sun came up. A fish, probably. A very large, very still fish.", "Коли зійшло сонце, в очереті щось блиснуло золотом. Мабуть, риба. Дуже велика й дуже нерухома риба."],
-    wheat: ["The crows were all circling one spot in the middle of the wheat field this morning, cawing at something.", "Сьогодні вранці ворони кружляли над одним місцем посеред пшеничного поля й на щось каркали."],
-    bridge: ["The frogs under the bridge have gone quiet. They only go quiet when something's bothering them.", "Жаби під мостом замовкли. Вони замовкають, тільки коли їх щось турбує."],
+    church: ["The tserkva door was open a crack this morning. It's never open that early.", "Сьогодні вранці двері церкви були трохи прочинені. Так рано вони ніколи не відчинені."],
+    reeds: ["There was a flash of gold among the ocheret when the sun came up. A fish, probably. A very large, very still fish.", "Коли зійшло сонце, в очереті щось блиснуло золотом. Мабуть, риба. Дуже велика й дуже нерухома риба."],
+    wheat: ["The crows were all circling one spot in the middle of the pshenytsia this morning, cawing at something.", "Сьогодні вранці ворони кружляли над одним місцем посеред пшеничного поля й на щось каркали."],
+    bridge: ["The frogs pid mostom have gone quiet. They only go quiet when something's bothering them.", "Жаби під мостом замовкли. Вони замовкають, тільки коли їх щось турбує."],
   },
   who: [   // %s: their name; %g: their name, Ukrainian "of" form; {a|b}: the culprit's forms
     ["%s yawned all the way here on the train this morning, like somebody who'd been up half the night.", "%s сьогодні вранці всю дорогу в потязі {позіхав|позіхала}, ніби півночі не {спав|спала}."],
@@ -3632,7 +3632,7 @@ const MY_WHY = {
   yaroslava: ["I wanted to hear it ring alone, at dusk, far from everyone. I was writing a poem about it. Forgive an old woman her small adventure.", "Я хотіла почути, як він дзвенить сам, у сутінках, далеко від усіх. Я писала про нього вірш. Пробачте старій жінці її маленьку пригоду."],
   ostap: ["I wanted to teach it a Carpathian tune! A bell that only knows one song is a sad bell. I was going to give it back, honest!", "Я хотів навчити його карпатської мелодії! Дзвін, що знає лише одну пісню, — сумний дзвін. Я б його повернув, чесно!"],
   lesia: ["I wanted to paint it in the evening light, just once, without anyone watching. Look, I finished the picture! Isn't it lovely?", "Я хотіла намалювати його у вечірньому світлі, хоч раз, щоб ніхто не бачив. Дивись, я закінчила картину! Правда, гарна?"],
-  zakhar: ["Wanted to see if it'd scare the big carp out of the reeds. It didn't. Sorry.", "Хотів подивитися, чи вижене він великого коропа з очерету. Не вигнав. Вибачте."],
+  zakhar: ["Wanted to see if it'd scare the big carp out of the ocheret. It didn't. Sorry.", "Хотів подивитися, чи вижене він великого коропа з очерету. Не вигнав. Вибачте."],
   halyna: ["I was going to tie it with ribbons and flowers and surprise the whole village! Oh, sonechko, you've spoiled my surprise. But well done!", "Я хотіла прикрасити його стрічками й квітами та здивувати все село! Ой, сонечко, ти зіпсувала мені сюрприз. Але молодець!"],
 };
 // What Vicky can say, each in several wordings: a button never says the same thing twice running (the same
@@ -3686,50 +3686,58 @@ function myNewCase() {
   return { v: 2, day: S.clock.day, who, where, what, hands, traces, met: {}, notes: {}, heard: [], acc: 0, solved: false };
 }
 // =====================================================================================================
-// THE CROP CIRCLE (autumn). Someone trampled a pattern into the wheat field behind the church yesterday evening.
-// Who (one of the six visitors), why (a motive that suits them) and how (a tool borrowed from somewhere in the
-// village) are chosen at random, and every statement is then GENERATED FROM THAT TRUTH, so nothing can contradict:
+// THE HARVEST WREATH (autumn, the harvest festival). On the first morning of autumn a beautiful harvest wreath
+// (обжинковий вінок), plaited from wheat and decorated, is found hanging on the festival post by the fountain with
+// a card tied to it: «Для Долини» (For Dolyna). Nobody owns up. The village wants to thank its maker at the festival,
+// so Vicky finds out WHO wove it (one of the six visitors), WHERE they wove it in secret, and WHAT it's decorated with.
+// Nothing is stolen: it's a shy gift.
 //
-//   The village that evening, after Oksana shut the stall and before the last train. Everybody has a fixed place:
-//     Myron on the station platform (he can see the mill yard, and down the road the fountain's lantern)
-//     Lesia at the fountain, painting by the lantern (she can see the platform lantern and the log by the fountain)
-//     Yaroslava and Halyna in the café, at the window table and the counter (they can see the pickle barrel on the terrace)
-//     Zakhar and Ostap on the lake shore, side by side (they can see the plank footbridge by the reeds)
-//   So each person can vouch for one other: Myron and Lesia (the lanterns), Yaroslava and Halyna (the café), Zakhar and
-//   Ostap (the shore). The culprit slipped away from their place while the light went. Their partner saw them go (and
-//   can't clear them), and every other pair vouches for each other.
-//   The tool was borrowed in the afternoon from one of four places: whoever watches that place says it was gone when
-//   they sat down and came back crooked and covered in chaff; whoever watches a place whose tool never moved says so.
-//   The pattern itself shows the motive (and Yaroslava's morning poem describes how the wheat was pressed).
+// The key things (the places and the decorations) are only ever named in Ukrainian, written in Latin letters in
+// the English lines and in Cyrillic in the Ukrainian ones, and never translated: knowing the word is the puzzle.
+// They are all words the game teaches (млин, церква, дуб, човен; калина, соняшник, яблуко, мак, жолудь).
+//
+// Every statement is GENERATED FROM THE TRUTH, so nothing can contradict:
+//   Yesterday evening, after Oksana shut the stall and before the last train, everybody had a fixed place:
+//     Myron on the station platform (he can see the mlyn across the yard)
+//     Lesia at the fountain, painting (she can see the tserkva windows)
+//     Yaroslava and Halyna in the café, at the window table and the counter (the window looks down to the great dub)
+//     Zakhar and Ostap on the lake shore, side by side (they can see the choven tied up by the reeds)
+//   So each person can vouch for one other: Myron and Lesia (each other's lanterns), Yaroslava and Halyna (the café),
+//   Zakhar and Ostap (the shore). The maker slipped away to weave; their partner saw them go and come back with straw
+//   on them (and can't clear them), and every other pair vouches for each other.
+//   They wove it at one of four places: whoever watches that place saw a little light there all evening; whoever
+//   watches a place that stayed dark says so (which rules it out). The maker says nothing about their own place.
+//   Looking at the wreath shows what it's decorated with (which rules the other four out).
 // =====================================================================================================
 const CC_PARTNER = { myron: 'lesia', lesia: 'myron', yaroslava: 'halyna', halyna: 'yaroslava', zakhar: 'ostap', ostap: 'zakhar' };
-const CC_WATCH = { myron: 'roller', lesia: 'log', yaroslava: 'barrel', halyna: 'barrel', zakhar: 'plank', ostap: 'plank' };
-const CC_MOTIVE = { myron: ['arrow', 'smiley'], yaroslava: ['spiral', 'sun'], ostap: ['smiley', 'arrow'], lesia: ['sun', 'spiral'], zakhar: ['carp', 'smiley'], halyna: ['sun', 'arrow'] };
-// why: English (lower case), Ukrainian (lower case), and the shape drawn in the field
+const CC_WATCH = { myron: 'mlyn', lesia: 'tserkva', yaroslava: 'dub', halyna: 'dub', zakhar: 'choven', ostap: 'choven' };
+// what each of them would decorate a wreath with (the wreath shows which; it leaves two or three makers)
+const CC_MOTIVE = { myron: ['zholud', 'yabluko'], yaroslava: ['kalyna', 'mak'], ostap: ['zholud', 'kalyna'], lesia: ['mak', 'soniashnyk'], zakhar: ['yabluko', 'zholud'], halyna: ['soniashnyk', 'yabluko'] };
+// decorations: the word (Latin letters), the word (Cyrillic), Ukrainian "with them"
 const CC_WHY = {
-  sun: ['to surprise the village for the harvest festival', 'щоб здивувати село до свята врожаю'],
-  smiley: ['for a joke, to make the village laugh', 'для жарту, щоб розсмішити село'],
-  spiral: ['to write a poem right across the field', 'щоб написати вірш через усе поле'],
-  arrow: ['to show visitors the way to the village', 'щоб показати гостям дорогу до села'],
-  carp: ['to prove a fish story', 'щоб довести рибацьку байку'],
+  kalyna: ['kalyna', 'калина', 'калиною'],
+  soniashnyk: ['soniashnyk', 'соняшник', 'соняшниками'],
+  yabluko: ['yabluko', 'яблуко', 'яблучками'],
+  mak: ['mak', 'мак', 'маками'],
+  zholud: ['zholud', 'жолудь', 'жолудями'],
 };
-// how: English name, Ukrainian name, Ukrainian "with it"
+// places: the word, the word in Cyrillic, English "where", Ukrainian "where"
 const CC_HOW = {
-  plank: ['a plank on a rope', 'дошка на мотузці', 'дошкою на мотузці'],
-  roller: ['the garden roller', 'садовий каток', 'садовим катком'],
-  barrel: ['a barrel', 'бочка', 'бочкою'],
-  log: ['a heavy log', 'важка колода', 'важкою колодою'],
+  mlyn: ['mlyn', 'млин', 'in the mlyn', 'у млині'],
+  tserkva: ['tserkva', 'церква', 'in the tserkva', 'у церкві'],
+  dub: ['dub', 'дуб', 'under the great dub', 'під великим дубом'],
+  choven: ['choven', 'човен', 'in the choven', 'у човні'],
 };
-const CC_LOOK = {   // what Vicky sees when she looks at the pattern
-  sun: ['A great golden sun, trampled flat into the wheat, with rays reaching out all round it.', 'Величезне золоте сонце, витоптане в пшениці, з променями на всі боки.'],
-  smiley: ['A giant smiling face: two round eyes and a wide grin, pressed flat in the wheat.', 'Велетенське усміхнене обличчя: два круглі очі й широка посмішка, притоптані в пшениці.'],
-  spiral: ['One long line, winding round and round from the middle, as if someone wrote a single endless sentence.', 'Одна довга лінія, що звивається від середини, наче хтось написав одне нескінченне речення.'],
-  arrow: ['A huge arrow, pointing straight down the hill toward the village.', 'Величезна стрілка, що вказує просто вниз із пагорба до села.'],
-  carp: ['An enormous fish! A body, a tail, a fin and a round eye, all pressed into the wheat.', 'Величезна риба! Тулуб, хвіст, плавець і кругле око, усе притоптане в пшениці.'],
+const CC_LOOK = {   // what Vicky sees when she looks at the wreath
+  kalyna: ['A round harvest wreath, plaited from golden ears of wheat, with bunches of kalyna tucked in all the way round and long ribbons hanging down. A little card is tied to it: «Для Долини».', 'Круглий обжинковий вінок, сплетений із золотих пшеничних колосків, увесь прикрашений китицями калини, з довгими стрічками. До нього прив\'язана картка: «Для Долини».'],
+  soniashnyk: ['A round harvest wreath, plaited from golden ears of wheat, with small soniashnyk heads tucked in all the way round and long ribbons hanging down. A little card is tied to it: «Для Долини».', 'Круглий обжинковий вінок, сплетений із золотих пшеничних колосків, увесь прикрашений маленькими соняшниками, з довгими стрічками. До нього прив\'язана картка: «Для Долини».'],
+  yabluko: ['A round harvest wreath, plaited from golden ears of wheat, with little yabluko tied in all the way round and long ribbons hanging down. A little card is tied to it: «Для Долини».', 'Круглий обжинковий вінок, сплетений із золотих пшеничних колосків, увесь прикрашений маленькими яблучками, з довгими стрічками. До нього прив\'язана картка: «Для Долини».'],
+  mak: ['A round harvest wreath, plaited from golden ears of wheat, with mak flowers tucked in all the way round and long ribbons hanging down. A little card is tied to it: «Для Долини».', 'Круглий обжинковий вінок, сплетений із золотих пшеничних колосків, увесь прикрашений маками, з довгими стрічками. До нього прив\'язана картка: «Для Долини».'],
+  zholud: ['A round harvest wreath, plaited from golden ears of wheat, with clusters of zholud tied in all the way round and long ribbons hanging down. A little card is tied to it: «Для Долини».', 'Круглий обжинковий вінок, сплетений із золотих пшеничних колосків, увесь прикрашений гронами жолудів, з довгими стрічками. До нього прив\'язана картка: «Для Долини».'],
 };
 const CC_SPOT = {
   myron: ['I stood on the station platform all evening with my pocket watch, timing the last trains. The evening one was a minute late. A minute!', 'Я весь вечір стояв на пероні з кишеньковим годинником і засікав останні потяги. Вечірній спізнився на хвилину. На цілу хвилину!'],
-  lesia: ['I was at the fountain, painting it by lantern light. Water and lamplight: the hardest thing in the world to paint.', 'Я була біля фонтана й малювала його при ліхтарі. Вода й світло лампи: найважче, що можна намалювати.'],
+  lesia: ['I was at the fountain, painting the tserkva by lantern light. Windows at dusk: the hardest thing in the world to paint.', 'Я була біля фонтана й малювала церкву при ліхтарі. Вікна в сутінках: найважче, що можна намалювати.'],
   yaroslava: ['I sat at my window table in the café with my notebook until Solomiia began washing the cups.', 'Я сиділа за своїм столиком біля вікна в кав\'ярні з зошитом, аж доки Соломія не взялася мити чашки.'],
   halyna: ['When Oksana shut the stall I went to the café for tea and cake, and sat at the counter with Solomiia, putting the village to rights.', 'Коли Оксана зачинила ринок, я пішла до кав\'ярні на чай і торт та сиділа за прилавком із Соломією, наводячи в селі лад.'],
   zakhar: ['On the lake shore, with my rod. The big carp wasn\'t biting.', 'На березі озера з вудкою. Великий короп не клював.'],
@@ -3754,12 +3762,12 @@ const CC_CLEAR = {
 };
 // ...and what they say when that person is the one who slipped away (it doesn't clear them)
 const CC_OUT = {
-  myron: ['The easel stood alone in the lantern light for a good while at dusk, nobody painting. Then she was back, as if nothing had happened.', 'Мольберт довго стояв сам у світлі ліхтаря в сутінках, ніхто не малював. Потім вона повернулася, ніби нічого не сталося.'],
-  lesia: ['Mr. Myron\'s end of the road went dark for a while at dusk: the lantern, and no man under it. Then he was back, a little out of breath.', 'У сутінках кінець дороги, де стояв пан Мирон, на деякий час потемнів: ліхтар є, а під ним нікого. Потім він повернувся, трохи засапаний.'],
+  myron: ['The easel stood alone in the lantern light for a good while at dusk, nobody painting. Then she was back, as if nothing had happened, picking straw off her sleeves.', 'Мольберт довго стояв сам у світлі ліхтаря в сутінках, ніхто не малював. Потім вона повернулася, ніби нічого не сталося, і знімала солому з рукавів.'],
+  lesia: ['Mr. Myron\'s end of the road went dark for a while at dusk: the lantern, and no man under it. Then he was back, a little out of breath, with straw on his coat.', 'У сутінках кінець дороги, де стояв пан Мирон, на деякий час потемнів: ліхтар є, а під ним нікого. Потім він повернувся, трохи засапаний, із соломою на куртці.'],
   yaroslava: ['Halyna\'s tea went cold on the counter. She slipped out for a breath of air as the sun went down, and came back with straw on her shawl.', 'Чай Галини холонув на прилавку. Вона вислизнула на свіже повітря, коли сонце сідало, і повернулася з соломою на хустці.'],
   halyna: ['Yaroslava\'s window seat sat empty for a good while, her pen still lying on the page. Then she was back with a very pleased face and straw on her skirt.', 'Місце Ярослави біля вікна довго стояло порожнє, а ручка так і лежала на сторінці. Потім вона повернулася дуже задоволена, з соломою на спідниці.'],
-  zakhar: ['The flute stopped. Lovely and quiet, I\'ll admit. He turned up later with wheat chaff in his hair.', 'Сопілка замовкла. Чудова тиша, визнаю. Потім він з\'явився з половою від пшениці у волоссі.'],
-  ostap: ['Zakhar\'s rod stood in the mud with the line just floating, and he was gone. He came back later, wet to the knees and smelling of wheat.', 'Вудка Захара стояла в багнюці, а волосінь просто пливла, а його самого не було. Потім він повернувся мокрий по коліна й пахнув пшеницею.'],
+  zakhar: ['The flute stopped. Lovely and quiet, I\'ll admit. He turned up later with straw in his hair.', 'Сопілка замовкла. Чудова тиша, визнаю. Потім він з\'явився з соломою у волоссі.'],
+  ostap: ['Zakhar\'s rod stood in the mud with the line just floating, and he was gone. He came back later with straw all down his jumper, and wouldn\'t say a word.', 'Вудка Захара стояла в багнюці, а волосінь просто пливла, а його самого не було. Потім він повернувся з соломою на светрі й не сказав ні слова.'],
 };
 const CC_SEES_C = {   // what the one who slipped away says about the other (true, and clears nobody)
   myron: ['Lesia? Her easel was at the fountain when I last looked. I wasn\'t counting minutes. For once.', 'Леся? Її мольберт стояв біля фонтана, коли я востаннє дивився. Хвилин я не рахував. Уперше в житті.'],
@@ -3769,58 +3777,58 @@ const CC_SEES_C = {   // what the one who slipped away says about the other (tru
   zakhar: ['Ostap? Playing the flute, last I heard. You can hear him a long way off.', 'Остап? Грав на сопілці, коли я востаннє чув. Його чути здалеку.'],
   ostap: ['Zakhar? Fishing, last time I looked. He never moves, that man.', 'Захар? Ловив рибу, коли я востаннє дивився. Він ніколи не рухається, ця людина.'],
 };
-// the four tools: where each belongs, and what the people who can see that place say about it
+// the four places: what the people who can see each one say about it ("dark": it stayed empty; "lit": someone was there)
 const CC_TOOLSAY = {
-  plank: { stay: [['The plank footbridge by the reeds hasn\'t moved all evening. I rest my boots on it. I\'d notice.', 'Дощана кладка біля очерету не рухалася весь вечір. Я кладу на неї чоботи. Я б помітив.'], ['The plank by the reeds lay right where it always does, with frogs sunning themselves on it.', 'Дошка біля очерету лежала там, де завжди, і на ній грілися жаби.']],
-    gone: [['When I sat down at the lake the plank footbridge by the reeds was already gone. This morning it\'s back, but crooked, with wheat chaff stuck to it.', 'Коли я сів біля озера, дощаної кладки біля очерету вже не було. Сьогодні вранці вона на місці, але криво й уся в полові від пшениці.'], ['The plank by the reeds was gone when we got to the shore. This morning it\'s back, but crooked, and covered in wheat chaff.', 'Дошки біля очерету не було, коли ми прийшли на берег. Сьогодні вранці вона знову там, але криво й уся в полові від пшениці.']] },
-  roller: { stay: [['The mill\'s stone roller sat in the yard all evening. I can see it from the platform, and it didn\'t go anywhere. Rollers don\'t.', 'Кам\'яний каток біля млина стояв на подвір\'ї весь вечір. Я бачу його з перону, і він нікуди не ділся. Котки не діляться.'], ['The roller in the mill yard never moved.', 'Каток на подвір\'ї млина не рухався.']],
-    gone: [['The mill\'s stone roller wasn\'t in the yard when I took my place on the platform. This morning it\'s back, but crooked, with wheat chaff all over it.', 'Кам\'яного котка на подвір\'ї млина не було, коли я став на пероні. Сьогодні вранці він на місці, але криво й увесь у полові від пшениці.'], ['The mill roller was gone all evening, and back this morning, crooked, with chaff on it.', 'Котка біля млина не було весь вечір, а вранці він повернувся, кривий, у полові.']] },
-  barrel: { stay: [['The pickle barrel on the café terrace never moved. I looked at it through the window every time I couldn\'t find a rhyme.', 'Бочка з огірками на терасі кав\'ярні не рухалася. Я дивилася на неї крізь вікно щоразу, коли не могла дібрати риму.'], ['That big pickle barrel stood on the terrace all evening. Solomiia would have shrieked if anybody had touched it.', 'Та велика бочка з огірками стояла на терасі весь вечір. Соломія б закричала, якби хтось її торкнувся.']],
-    gone: [['The pickle barrel was gone from the terrace when we sat down. This morning it\'s back, but on its side, with wheat chaff stuck to it.', 'Бочки з огірками на терасі не було, коли ми сіли. Сьогодні вранці вона на місці, але лежить на боці й уся в полові від пшениці.'], ['The terrace barrel was missing all evening. It\'s back this morning, rolled crooked, with chaff on it. Solomiia is furious.', 'Бочки на терасі не було весь вечір. Сьогодні вранці вона повернулася, закочена криво, у полові. Соломія в люті.']] },
-  log: { stay: [['The old log by the fountain, where the children sit, was right there all evening. I painted it into the corner of my picture.', 'Стара колода біля фонтана, де сидять діти, була на місці весь вечір. Я намалювала її в кутку своєї картини.']],
-    gone: [['The old log by the fountain was already gone when I set up my easel. This morning it\'s back, but turned round, with wheat chaff on it.', 'Старої колоди біля фонтана вже не було, коли я поставила мольберт. Сьогодні вранці вона на місці, але повернута, у полові від пшениці.']] },
+  mlyn: { stay: [['The mlyn stood dark against the sky all evening. Not a lamp, not a creak. I\'d have seen it from the platform.', 'Млин увесь вечір стояв темний на тлі неба. Ні лампи, ні скрипу. Я б побачив це з перону.'], ['The mlyn was dark all evening, every window.', 'Млин був темний увесь вечір, кожне вікно.']],
+    gone: [['There was a little light in the mlyn window from dusk until the last train. A mlyn doesn\'t work at night! I thought: flour thieves! But nobody came out carrying any.', 'Від сутінків до останнього потяга у вікні млина світився вогник. Млин уночі не працює! Я подумав: злодії борошна! Але ніхто нічого не виніс.'], ['A lamp burned in the mlyn all evening, and nobody grinding.', 'У млині весь вечір горіла лампа, а ніхто не молов.']] },
+  tserkva: { stay: [['The tserkva windows were dark all evening. I was painting them, so I\'d know: deep blue, the whole time.', 'Вікна церкви були темні весь вечір. Я їх малювала, тож знаю напевно: темно-сині, увесь час.']],
+    gone: [['A little light was moving behind the tserkva windows all evening, low down, like a candle on the floor. I painted it in. It looked lovely.', 'За вікнами церкви весь вечір рухався вогник, низенько, ніби свічка на підлозі. Я його домалювала. Вийшло гарно.']] },
+  dub: { stay: [['The great dub stood black at the bottom of the meadow all evening, the swing hanging still. I looked up from my poem a hundred times.', 'Великий дуб увесь вечір стояв чорний унизу луки, гойдалка висіла нерухомо. Я сто разів підводила очі від вірша.'], ['Down the meadow the great dub was dark all evening. Solomiia and I remarked on how still it was.', 'Унизу луки великий дуб увесь вечір був темний. Ми з Соломією ще казали, який він тихий.']],
+    gone: [['There was a lantern under the great dub all evening, right by the swing, and a shadow bent over something. Very busy, whoever it was.', 'Увесь вечір під великим дубом горів ліхтар, біля самої гойдалки, і чиясь тінь над чимось схилилася. Дуже зайнята, хто б то не був.'], ['A little lamp glowed under the great dub all evening, by the swing. Courting, I thought! But I could only ever see one shadow.', 'Увесь вечір під великим дубом, біля гойдалки, світився маленький ліхтарик. Побачення, подумала я! Але тінь там була лише одна.']] },
+  choven: { stay: [['The choven stayed tied up by the reeds all evening, empty. I\'d have heard anyone climb in.', 'Човен увесь вечір стояв прив\'язаний біля очерету, порожній. Я б почув, якби хтось у нього сів.'], ['The choven bobbed by the reeds all evening with nobody in it. Just a frog on the seat.', 'Човен цілий вечір гойдався біля очерету, і в ньому нікого. Лише жаба на лавці.']],
+    gone: [['Somebody took the choven out at dusk with a little lamp. You could see the light out on the water all evening. This morning there\'s straw all over its seat.', 'Хтось у сутінках вивів човен із ліхтариком. Вогник видно було на воді весь вечір. А сьогодні вранці на лавці повно соломи.'], ['The choven drifted out past the reeds at dusk with a lantern in it, and came back after dark. There\'s wheat straw in it this morning.', 'Човен у сутінках виплив за очерет із ліхтарем і повернувся, коли стемніло. Сьогодні вранці в ньому пшенична солома.']] },
 };
-const CC_POEM = {   // Yaroslava wrote this at breakfast: it describes how the wheat was pressed
-  plank: ['I wrote this at breakfast: \'Someone ironed the wheat in broad, straight bands, as if the field were a bedsheet.\' Is it a clue? Who knows, I\'m only a poet.', 'Я записала це за сніданком: «Хтось випрасував пшеницю широкими прямими смугами, ніби поле — простирадло». Це підказка? Хто знає, я лише поетеса.'],
-  roller: ['I wrote this at breakfast: \'The wheat lies ridged, line after line, like corduroy.\' Does it help? I\'m only a poet.', 'Я записала це за сніданком: «Пшениця лежить рубцями, рядок за рядком, мов вельвет». Це допоможе? Я ж лише поетеса.'],
-  barrel: ['I wrote this at breakfast: \'Round dents press the wheat, like the footprints of a giant sleepy bear.\' A clue? I\'m only a poet.', 'Я записала це за сніданком: «Круглі вм\'ятини на пшениці, мов сліди велетенського сонного ведмедя». Підказка? Я лише поетеса.'],
-  log: ['I wrote this at breakfast: \'One thick stripe, round and round, like a ribbon on a loaf.\' Does it mean anything? I\'m only a poet.', 'Я записала це за сніданком: «Одна товста смуга, раз по раз по колу, мов стрічка на короваї». Чи щось це означає? Я лише поетеса.'],
+const CC_POEM = {   // Yaroslava wrote this at breakfast: it hints where the wreath was woven
+  mlyn: ['I wrote this at breakfast: \'Woven where the wind turns stone, and stone turns wheat to bread.\' Is it a clue? Who knows, I\'m only a poet.', 'Я записала це за сніданком: «Сплетений там, де вітер крутить камінь, а камінь робить із пшениці хліб». Це підказка? Хто знає, я лише поетеса.'],
+  tserkva: ['I wrote this at breakfast: \'Woven where the candles keep the quiet.\' Does it help? I\'m only a poet.', 'Я записала це за сніданком: «Сплетений там, де свічки бережуть тишу». Це допоможе? Я ж лише поетеса.'],
+  dub: ['I wrote this at breakfast: \'Woven beneath the oldest of us all, where the swing waits for morning.\' A clue? I\'m only a poet.', 'Я записала це за сніданком: «Сплетений під найстаршим із нас, де гойдалка чекає ранку». Підказка? Я лише поетеса.'],
+  choven: ['I wrote this at breakfast: \'Woven on the water, rocked like a cradle.\' Does it mean anything? I\'m only a poet.', 'Я записала це за сніданком: «Сплетений на воді, колисаний, мов у колисці». Чи щось це означає? Я лише поетеса.'],
 };
-// things that are just things people noticed (they clear nothing)
+// things people noticed that clear nobody (and a couple of red herrings)
 const CC_EXTRA = {
-  myron: [{ notC: 1, line: ['Late in the evening, from the platform, I saw a lantern bobbing about up behind the church, where the wheat is. I thought: poachers! Of wheat. Is that a thing?', 'Пізно ввечері з перону я бачив ліхтар, що погойдувався за церквою, там, де пшениця. Я подумав: браконьєри! Пшеничні. Чи це бува?']}],
-  halyna: [{ line: ['Sonechko, it was aliens! They float, you see, so they leave no footprints. Oksana agrees with me, and she isn\'t even here.', 'Сонечко, це були інопланетяни! Вони, бачиш, пливуть над землею, тож слідів не лишають. Оксана зі мною згодна, а її тут навіть нема.']}, { line: ['And did you see that boy\'s dog tearing through the wheat at lunchtime? Brovko! I said to Solomiia: mark my words.', 'А ти бачила, як той хлопчиків пес гасав пшеницею в обід? Бровко! Я сказала Соломії: запам\'ятай мої слова.']}],
+  myron: [{ notC: 1, line: ['Long after the last train I heard footsteps going down to the fountain, quick and light, as if someone didn\'t want to be heard. Make of it what you will.', 'Довго після останнього потяга я чув кроки до фонтана, швидкі й легкі, ніби хтось не хотів, щоб його почули. Думай що хочеш.'] }],
+  halyna: [{ line: ['Sonechko, it was the domovyk! The house spirit! They do little kindnesses at night and never let you see them. Oksana agrees with me, and she isn\'t even here.', 'Сонечко, це домовик! Вони роблять маленькі добрі справи вночі й ніколи не показуються. Оксана зі мною згодна, а її тут навіть нема.'] }, { line: ['And did you see that boy\'s dog trotting about with a mouthful of wheat at lunchtime? Brovko! I said to Solomiia: mark my words.', 'А ти бачила, як той хлопчиків пес бігав у обід із повним ротом пшениці? Бровко! Я сказала Соломії: запам\'ятай мої слова.'] }],
 };
-const CC_NEWS = {   // how each of them greets the news the first time (written to say nothing that isn\'t true for any of them)
-  myron: ['Have you seen the wheat field behind the church? A great big picture trampled into it! Forty years on the railways and I never saw the like.', 'Ти бачила пшеничне поле за церквою? У ньому витоптана величезна картина! Сорок років на залізниці, а такого не бачив.'],
-  yaroslava: ['My dear, the wheat has been written upon! A picture in the field behind the church. I composed three lines before breakfast.', 'Люба, на пшениці щось написали! Картина в полі за церквою. Я склала три рядки ще до сніданку.'],
-  ostap: ['A picture in the wheat! Come on, we must look! It\'s like a map from a treasure hunt!', 'Картина на пшениці! Ходімо, треба глянути! Наче карта зі скарбами!'],
-  lesia: ['Did you see the field behind the church? From the steps it looks like... well. I won\'t say. Go and see!', 'Ти бачила поле за церквою? Зі сходів воно виглядає як... ну. Не скажу. Піди й подивись!'],
-  zakhar: ['Field behind the church. Something in the wheat. A pattern. Don\'t know. The carp is more interesting.', 'Поле за церквою. Щось у пшениці. Візерунок. Не знаю. Короп цікавіший.'],
-  halyna: ['Sonechko! Have you seen the wheat?! Someone has trampled a great picture into it overnight! Everyone is talking about it, and I mean everyone!', 'Сонечко! Ти бачила пшеницю?! Хтось за ніч витоптав у ній велику картину! Усі про це говорять, геть усі!'],
+const CC_NEWS = {   // how each of them greets the news the first time (true for any of them)
+  myron: ['Have you seen the festival post by the fountain? Somebody hung a harvest wreath on it in the night! Forty years on the railways and I never saw one finer. And no name on it!', 'Ти бачила святковий стовп біля фонтана? Хтось уночі повісив на нього обжинковий вінок! Сорок років на залізниці, а кращого не бачив. І жодного імені!'],
+  yaroslava: ['My dear, someone has left the village a harvest wreath, on the festival post, with a card: «Для Долини». A gift with no name is a poem with no author. I adore it.', 'Люба, хтось залишив селу обжинковий вінок, на святковому стовпі, з карткою: «Для Долини». Подарунок без імені — як вірш без автора. Я в захваті.'],
+  ostap: ['A wreath! On the festival post! Nobody knows who made it! It\'s a mystery, a real one! Come on, we must find out who, so we can thank them!', 'Вінок! На святковому стовпі! Ніхто не знає, хто його зробив! Це загадка, справжня! Ходімо, треба дізнатися хто, щоб подякувати!'],
+  lesia: ['Did you see the wreath on the festival post? It\'s so beautiful I could cry. Whoever made it is far too shy. Go and look!', 'Ти бачила вінок на святковому стовпі? Він такий гарний, що я ледь не плачу. Хто б його не сплів, він надто сором\'язливий. Піди подивись!'],
+  zakhar: ['Wreath on the post by the fountain. Good work. No name. Somebody\'s shy.', 'На стовпі біля фонтана вінок. Гарна робота. Без імені. Хтось сором\'язливий.'],
+  halyna: ['Sonechko! Have you seen it?! A harvest wreath on the festival post, hung up in the night, and nobody will say who made it! Everyone is talking about it, and I mean everyone!', 'Сонечко! Ти бачила?! Обжинковий вінок на святковому стовпі, повісили вночі, і ніхто не каже, хто його сплів! Усі про це говорять, геть усі!'],
 };
-const CC_HINT = ['🔍 A mystery! Someone has trampled a pattern into the wheat behind the church. Ask the visitors what they saw. When you know <b>who</b> did it, <b>why</b> and <b>how</b>, tell Officer Petro by the fountain. Tap the pattern in the field to look at it. Your notes are in the 📖 book, under 🔍 The mystery.', '🔍 Загадка! Хтось витоптав візерунок у пшениці за церквою. Розпитай гостей, що вони бачили. Коли дізнаєшся, <b>хто</b> це зробив, <b>чому</b> і <b>як</b>, розкажи офіцеру Петру біля фонтана. Торкнися візерунка в полі, щоб його роздивитися. Твої нотатки в 📖 книзі, у розділі 🔍 Загадка.'];
-// the confession, by who and why: %w = how (English), %u = how (Ukrainian "with it")
+const CC_HINT = ['🔍 A mystery! Somebody wove a harvest wreath for the village and hung it on the festival post by the fountain, without a name. Find out <b>who</b> made it, <b>what</b> it\'s decorated with and <b>where</b> they wove it in secret, and tell Officer Petro, so the village can thank them at the festival. Tap the wreath to look at it. Your notes are in the 📖 book, under 🔍 The mystery.', '🔍 Загадка! Хтось сплів для села обжинковий вінок і повісив його на святковий стовп біля фонтана, без імені. Дізнайся, <b>хто</b> його зробив, <b>чим</b> він прикрашений і <b>де</b> його таємно плели, і скажи офіцеру Петру, щоб село могло подякувати на святі. Торкнися вінка, щоб роздивитися. Твої нотатки в 📖 книзі, у розділі 🔍 Загадка.'];
+// the maker owns up, by who and what: %p = the place (English), %u = the place (Ukrainian)
 const CC_WHYTXT = {
-  myron: { arrow: ['I wanted a great arrow pointing the way to our station! Visitors step off the train and walk straight past the village. Now they\'ll see it from the carriage window! I used %w, and I was back before the next train.', 'Я хотів величезну стрілку, що вказує дорогу до нашого вокзалу! Гості виходять із потяга й проходять повз село. Тепер вони побачать її з вікна вагона! Я використав %w і повернувся до наступного потяга.'],
-    smiley: ['A joke, that\'s all! Forty years on the railways and not once did I make a whole station laugh. I used %w. Forgive an old man his fun.', 'Жарт, і все! Сорок років на залізниці, а жодного разу не розсмішив цілий вокзал. Я використав %w. Пробачте старому його розвагу.'] },
-  yaroslava: { spiral: ['The poem was too big for paper, my dear. So I wrote it in the wheat: one long line, round and round. I used %w. Forgive an old woman her adventure.', 'Вірш був завеликий для паперу, люба. Тож я написала його в пшениці: одна довга лінія, раз по раз по колу. Я використала %w. Пробачте старій жінці її пригоду.'],
-    sun: ['The harvest festival needed a sun, my dear, a great golden one. I drew it the only way I could, with %w. Surprise!', 'Святу врожаю потрібне було сонце, люба, велике золоте. Я намалювала його єдиним способом, що знала: %w. Сюрприз!'] },
-  ostap: { smiley: ['I only wanted to make someone smile! A giant face in the wheat, to cheer up the whole village. I used %w and a great deal of running about.', 'Я лише хотів когось розсмішити! Велетенське обличчя в пшениці, щоб розвеселити все село. Я використав %w і дуже багато бігав.'],
-    arrow: ['Hikers! A trail marker! I wanted an arrow big enough to see from the mountains. I used %w. Is that so wrong?', 'Мандрівники! Покажчик стежки! Я хотів стрілку, достатньо велику, щоб її видно було з гір. Я використав %w. Це так погано?'] },
-  lesia: { sun: ['A sun for the festival! I saw the wheat from the church steps and thought: what a canvas! I used %w. I wanted it to be a surprise. Isn\'t it beautiful?', 'Сонце для свята! Я побачила пшеницю зі сходів церкви й подумала: яке полотно! Я використала %w. Я хотіла, щоб це був сюрприз. Правда, гарно?'],
-    spiral: ['I wanted to paint one line that never ends, a picture only the birds can see! I used %w. Do you like it?', 'Я хотіла намалювати одну лінію, що не закінчується, картину, яку бачать лише птахи! Я використала %w. Тобі подобається?'] },
-  zakhar: { carp: ['Nobody believes me about the carp. So I drew it: exactly this size, in the wheat. I used %w. Now they\'ll believe me.', 'Ніхто не вірить мені про коропа. Тож я намалював його: саме такого розміру, в пшениці. Я використав %w. Тепер повірять.'],
-    smiley: ['A joke. The carp laughs at me every morning, so I thought the village could laugh too. I used %w. Sorry.', 'Жарт. Короп сміється з мене щоранку, тож я подумав, нехай і село посміється. Я використав %w. Вибачте.'] },
-  halyna: { sun: ['I was going to surprise the whole village with a great golden sun for the festival! Oh sonechko, you\'ve spoiled my surprise. I used %w, and Solomiia kept my cake warm.', 'Я збиралася здивувати все село великим золотим сонцем до свята! Ой, сонечко, ти зіпсувала мені сюрприз. Я використала %w, а Соломія тримала мій торт теплим.'],
-    arrow: ['I wanted people to come to the village, and to the café! Everyone hurries past. An arrow points straight at us. I used %w. It\'s business, sonechko!', 'Я хотіла, щоб люди приходили в село й до кав\'ярні! Усі пробігають повз. Стрілка вказує просто на нас. Я використала %w. Це бізнес, сонечко!'] },
+  myron: { zholud: ['Guilty! Every autumn I pick up the zholud from the old tree by the line and polish them like brass on a locomotive. I wove it %p, between trains. I didn\'t want a fuss. A railwayman does his work and goes home.', 'Винен! Щоосені я збираю жолуді під старим деревом біля колії й начищаю їх, як мідь на паротязі. Я сплів його %u, між потягами. Не хотів метушні. Залізничник робить свою справу й іде додому.'],
+    yabluko: ['Caught, by a young lady with sharp eyes! The yabluko came from the tree by the line, the sweetest in the valley. I wove it %p. Forty years I\'ve wanted to give this village something. Now I have.', 'Попався, і кому — панночці з гострим оком! Яблучка з дерева біля колії, найсолодші в долині. Я сплів його %u. Сорок років хотів щось подарувати цьому селу. Тепер подарував.'] },
+  yaroslava: { kalyna: ['Kalyna is in every song my mother sang, my dear. I wanted the village to have a wreath like the ones from my childhood. I wove it %p, by candlelight. Forgive an old woman her shyness.', 'Калина є в кожній пісні, яку співала моя мати, люба. Я хотіла, щоб у села був вінок, як у моєму дитинстві. Я сплела його %u, при свічці. Пробачте старій жінці її сором\'язливість.'],
+    mak: ['Mak for remembering, my dear: for everyone who brought in a harvest before us. I wove it %p, and wrote a poem into every knot. I did not want my name on it. The poem is enough.', 'Мак — на пам\'ять, люба: про всіх, хто збирав урожай до нас. Я сплела його %u й вплела вірш у кожен вузлик. Я не хотіла свого імені на ньому. Досить і вірша.'] },
+  ostap: { zholud: ['Zholud from the mountain oaks! I carried them all the way down in my hat. I wove it %p, and it took ages, my fingers are all scratches. I just wanted to say thank you, Dolyna, for having me!', 'Жолуді з гірських дубів! Я ніс їх аж донизу в капелюсі. Я сплів його %u, і це було так довго, пальці всі подряпані. Я лише хотів сказати: дякую, Долино, що прийняла мене!'],
+    kalyna: ['In the Carpathians every girl wears kalyna at the harvest, and every boy brings some! So I made a wreath for the whole village instead. I wove it %p. Don\'t tell anyone I was shy!', 'У Карпатах на обжинки кожна дівчина вдягає калину, а кожен хлопець її приносить! Тож я сплів вінок для цілого села. Я сплів його %u. Тільки не кажи нікому, що я соромився!'] },
+  lesia: { mak: ['The mak are the reddest red there is! I couldn\'t paint them right, so I wove them instead. I made it %p. I wanted it to be a surprise for the festival. Do you like it?', 'Маки — найчервоніший червоний на світі! Я не змогла їх як слід намалювати, тож вплела. Я сплела його %u. Хотіла, щоб це був сюрприз до свята. Тобі подобається?'],
+    soniashnyk: ['Soniashnyk, because they follow the sun all day, like I follow the light! I wove it %p, by the light of one little lamp. I was going to tell everyone at the festival. Probably.', 'Соняшники, бо вони цілий день дивляться за сонцем, як я за світлом! Я сплела його %u, при одному маленькому ліхтарику. Я збиралася всім розповісти на святі. Мабуть.'] },
+  zakhar: { yabluko: ['Hm. The yabluko are from the wild tree by the lake. Nobody picks them. I wove it %p. My grandmother taught me. Didn\'t want anyone making a fuss.', 'Гм. Яблучка з дички біля озера. Їх ніхто не збирає. Я сплів його %u. Бабуся навчила. Не хотів, щоб здіймали галас.'],
+    zholud: ['Zholud. Picked them up on the way to the lake. I wove it %p. Had to do something while the carp sulked. Don\'t tell people.', 'Жолуді. Назбирав дорогою до озера. Я сплів його %u. Треба ж було щось робити, поки короп дувся. Не кажи людям.'] },
+  halyna: { soniashnyk: ['Oh, sonechko, you\'ve found me out! I wanted one person in this village to keep a secret, and I thought, why not me? The soniashnyk are from Oksana\'s stall. I wove it %p. It\'s the hardest thing I\'ve ever done: I didn\'t tell a soul!', 'Ой, сонечко, ти мене викрила! Я хотіла, щоб хоч хтось у цьому селі зберіг таємницю, і подумала: а чом би не я? Соняшники з прилавка Оксани. Я сплела його %u. Це найважче, що я робила: я нікому не сказала!'],
+    yabluko: ['Caught! The yabluko are from Oksana\'s stall, the little red ones. I wove it %p, and oh, sonechko, keeping it quiet nearly killed me! Now, can I tell everyone?', 'Попалася! Яблучка з прилавка Оксани, маленькі червоні. Я сплела його %u, і ой, сонечко, мовчати мені було так важко! Тепер можна всім розповісти?'] },
 };
 Object.assign(MY_VAR, {
   cc_spot: [['Where were you yesterday evening?', 'Де ви були вчора ввечері?'], ['And last night, where did you spend it?', 'А де ви провели вчорашній вечір?'], ['What were you doing yesterday at dusk?', 'Що ви робили вчора в сутінках?'], ['Tell me where you were as the light went.', 'Розкажіть, де ви були, коли смеркалося.']],
   cc_sees: [['Did you see anyone yesterday evening?', 'Ви бачили когось учора ввечері?'], ['Who was near you last night?', 'Хто був поруч із вами вчора ввечері?'], ['Was there anyone about when it got dark?', 'Хтось був поруч, коли смеркалося?'], ['Did you notice anybody else?', 'Ви помітили когось іще?']],
-  cc_tool: [['Did you notice anything odd nearby?', 'Ви помітили поруч щось дивне?'], ['Was anything out of place?', 'Щось було не на своєму місці?'], ['Did anything strike you as strange?', 'Вам щось здалося дивним?'], ['What could you see from where you sat?', 'Що ви бачили з того місця, де сиділи?']],
+  cc_tool: [['Did you see any lights last night?', 'Ви бачили вчора ввечері якесь світло?'], ['What could you see from where you sat?', 'Що ви бачили з того місця, де сиділи?'], ['Was anything going on nearby?', 'Поруч щось відбувалося?'], ['Did anything look different last night?', 'Учора ввечері щось виглядало інакше?']],
 });
-Object.assign(MY_VAR, { cc_why: [['And why did they do it?', 'А чому вони це зробили?']], cc_how: [['And how did they do it?', 'А як вони це зробили?']] });
+Object.assign(MY_VAR, { cc_why: [['And what is it decorated with?', 'А чим він прикрашений?']], cc_how: [['And where did they weave it?', 'А де його плели?']] });
 
 // ---- the case, built from the truth
 const ccYear = () => Math.floor(((S.clock.day || 1) - 1) / (SEASON_DAYS * 4));
@@ -3840,14 +3848,15 @@ function ccNewCase() {
   }
   add('yaroslava', { t: 'extra', line: CC_POEM[how] });
   S.ccYear = ccYear();
-  return { v: 3, t: 'circle', started: 1, day: S.clock.day || 1, endDay: Math.floor(((S.clock.day || 1) - 1) / (SEASON_DAYS * 4)) * SEASON_DAYS * 4 + SEASON_DAYS * 2, who, where: why, what: how, why, how, hands, met: {}, notes: {}, heard: [], acc: 0, solved: false, examined: false };
+  return { v: 4, t: 'vinok', started: 1, day: S.clock.day || 1, endDay: Math.floor(((S.clock.day || 1) - 1) / (SEASON_DAYS * 4)) * SEASON_DAYS * 4 + SEASON_DAYS * 2, who, where: why, what: how, why, how, hands, met: {}, notes: {}, heard: [], acc: 0, solved: false, examined: false };
 }
 // ---- when it's on
-const ccCase = () => S.mystery && S.mystery.t === 'circle' ? S.mystery : null;
+const ccCase = () => S.mystery && S.mystery.t === 'vinok' ? S.mystery : null;
 const ccExpired = () => { const M = ccCase(); return !!(M && !M.solved && !seasonForce && (S.clock.day || 1) > M.endDay); };
 const myOpen = () => S.mystery && !S.mystery.solved && !(S.mystery.t && ccExpired());
 const ccWanted = () => season() === 'osin' && S.ccYear !== ccYear();
-function ccKick() { if (ccWanted() && !myOpen()) { S.mystery = ccNewCase(); save(); myBtnShow(); setGuide(); toast('🌾 ' + (stage() < 3 ? 'A strange pattern has appeared in the wheat field behind the church!' : 'Дивний візерунок у пшеничному полі за церквою!'), 4200); } }
+function ccKick() { if (S.mystery && S.mystery.t === 'circle') { S.mystery = null; S.ccYear = null; } if (ccWanted() && !myOpen()) { S.mystery = ccNewCase(); save(); myBtnShow(); setGuide(); toast('🌾 ' + (stage() < 3 ? 'Somebody has hung a beautiful harvest wreath on the festival post by the fountain, with no name on it!' : 'Хтось повісив на святковий стовп біля фонтана гарний обжинковий вінок, без імені!'), 4600); } }
+if (S.mystery && S.mystery.t === 'circle') { S.mystery = null; S.ccYear = null; }   // (the old crop circle case is gone)
 function myMaybeStart() {
   if (myOpen()) return;
   if (ccWanted()) return ccKick();
@@ -3855,7 +3864,6 @@ function myMaybeStart() {
   if (S.bellDone || (M && M.solved && !M.t)) { S.bellDone = 1; return; }   // the bell mystery is told once; the other seasons have their own
   S.mystery = myNewCase(); save();   // (an older case, from before the dialogue was rewritten, starts afresh)
 }
-// ---- the pattern in the field
 // =====================================================================================================
 // THE GARDENS (bottom left of the map): a formal garden in the manner of a great estate. A gravel allée runs
 // down from the road through a rose-and-wisteria arch to a round brick plaza with a tiered iron fountain; a
@@ -4005,53 +4013,65 @@ function farmDraw(c) {
   const vw = cv.width / zoom, vh = cv.height / zoom; if (FARM.x1 * T < camX || FARM.x0 * T > camX + vw || FARM.y1 * T < camY || FARM.y0 * T > camY + vh) return;
   const sea = season(); c.drawImage(FARM_CV[sea] || (FARM_CV[sea] = farmPaint(sea)), FARM.x0 * T, FARM.y0 * T);
 }
-const CC = { x: 38.07, y: 5.45, R: 1.5 };
+// ---- the wreath on the festival post by the fountain (it hangs there all autumn while the case is open or solved)
+const CC = { x: 15.95, y: 17.74, R: 1.3, up: 1.2 };
 const ccShown = () => { const M = ccCase(); return !!(M && season() === 'osin'); };
 const ccSpriteCache = {};
-function ccSprite(shape, how) {
-  const key = shape + '/' + how; if (ccSpriteCache[key]) return ccSpriteCache[key];
-  const N = 380, R = 170, cv = document.createElement('canvas'); cv.width = cv.height = N; const c = cv.getContext('2d'); c.translate(N / 2, N / 2);
-  let r = 13; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
-  // 1. the trampled disc, ragged at the edge
-  c.save(); c.beginPath(); for (let i = 0; i <= 90; i++) { const a = i / 90 * Math.PI * 2, rr = R * (0.965 + rnd() * 0.05); i ? c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.closePath(); c.clip();
-  let g = c.createRadialGradient(0, 0, 0, 0, 0, R); g.addColorStop(0, '#d8b45a'); g.addColorStop(1, '#bf9638'); c.fillStyle = g; c.fillRect(-R, -R, 2 * R, 2 * R);
-  c.lineCap = 'round'; for (let i = 0; i < 1100; i++) { const a = rnd() * 7, rr = Math.sqrt(rnd()) * R, x = Math.cos(a) * rr, y = Math.sin(a) * rr, ang = a + Math.PI / 2 + 0.3, len = 9 + rnd() * 10; c.strokeStyle = ['#e2c26a', '#b48b34', '#cfa94a', '#a67f2c'][i % 4]; c.globalAlpha = 0.55; c.lineWidth = 1.6 + rnd() * 1.4; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len); c.stroke(); }
-  c.globalAlpha = 1;
-  // 2. the pattern: the same stalks laid the other way, paler, on a mask of the shape
-  const M = document.createElement('canvas'); M.width = M.height = N; const m = M.getContext('2d'); m.translate(N / 2, N / 2); m.fillStyle = m.strokeStyle = '#fff'; m.lineCap = m.lineJoin = 'round';
-  if (shape === 'sun') { m.beginPath(); m.arc(0, 0, 0.36 * R, 0, 7); m.fill(); for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2; m.beginPath(); m.moveTo(Math.cos(a - 0.17) * 0.5 * R, Math.sin(a - 0.17) * 0.5 * R); m.lineTo(Math.cos(a) * 0.9 * R, Math.sin(a) * 0.9 * R); m.lineTo(Math.cos(a + 0.17) * 0.5 * R, Math.sin(a + 0.17) * 0.5 * R); m.closePath(); m.fill(); } }
-  else if (shape === 'smiley') { m.lineWidth = 0.13 * R; m.beginPath(); m.arc(0, 0, 0.8 * R, 0, 7); m.stroke(); m.beginPath(); m.arc(-0.28 * R, -0.22 * R, 0.1 * R, 0, 7); m.fill(); m.beginPath(); m.arc(0.28 * R, -0.22 * R, 0.1 * R, 0, 7); m.fill(); m.lineWidth = 0.11 * R; m.beginPath(); m.arc(0, 0.02 * R, 0.46 * R, 0.18 * Math.PI, 0.82 * Math.PI); m.stroke(); }
-  else if (shape === 'spiral') { m.lineWidth = 0.1 * R; m.beginPath(); for (let a = 0; a < Math.PI * 7.2; a += 0.08) { const rr = (0.06 + a / (Math.PI * 7.2) * 0.84) * R; a ? m.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : m.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } m.stroke(); }
-  else if (shape === 'arrow') { m.beginPath(); m.rect(-0.17 * R, -0.78 * R, 0.34 * R, 0.9 * R); m.fill(); m.beginPath(); m.moveTo(-0.56 * R, 0.05 * R); m.lineTo(0.56 * R, 0.05 * R); m.lineTo(0, 0.86 * R); m.closePath(); m.fill(); }
-  else { m.beginPath(); m.ellipse(0.08 * R, 0, 0.6 * R, 0.3 * R, 0, 0, 7); m.fill(); m.beginPath(); m.moveTo(-0.5 * R, 0); m.lineTo(-0.92 * R, -0.34 * R); m.lineTo(-0.92 * R, 0.34 * R); m.closePath(); m.fill(); m.beginPath(); m.moveTo(-0.1 * R, -0.26 * R); m.lineTo(0.18 * R, -0.58 * R); m.lineTo(0.34 * R, -0.24 * R); m.closePath(); m.fill(); m.beginPath(); m.moveTo(-0.05 * R, 0.26 * R); m.lineTo(0.12 * R, 0.5 * R); m.lineTo(0.28 * R, 0.26 * R); m.closePath(); m.fill(); }
-  const P = document.createElement('canvas'); P.width = P.height = N; const p = P.getContext('2d'); p.translate(N / 2, N / 2); p.fillStyle = '#f0dc92'; p.fillRect(-R, -R, 2 * R, 2 * R); p.lineCap = 'round';
-  for (let i = 0; i < 1300; i++) { const a = rnd() * 7, rr = Math.sqrt(rnd()) * R, x = Math.cos(a) * rr, y = Math.sin(a) * rr, ang = a - Math.PI / 2 - 0.35, len = 8 + rnd() * 9; p.strokeStyle = ['#fbefb4', '#e6cf78', '#f5e49a', '#d9bf62'][i % 4]; p.globalAlpha = 0.6; p.lineWidth = 1.6 + rnd() * 1.2; p.beginPath(); p.moveTo(x, y); p.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len); p.stroke(); }
-  p.globalAlpha = 1; p.globalCompositeOperation = 'destination-in'; p.setTransform(1, 0, 0, 1, 0, 0); p.drawImage(M, 0, 0);
-  c.save(); c.globalAlpha = 0.5; c.filter = 'blur(2px)'; const D = document.createElement('canvas'); D.width = D.height = N; const d = D.getContext('2d'); d.drawImage(M, 0, 0); d.globalCompositeOperation = 'source-in'; d.fillStyle = '#7a5a1c'; d.fillRect(0, 0, N, N); c.drawImage(D, -N / 2 + 2.5, -N / 2 + 3.5); c.restore();   // a soft shadow along the pattern's edge
-  c.drawImage(P, -N / 2, -N / 2);
-  if (shape === 'carp') { c.fillStyle = '#b08430'; c.beginPath(); c.arc(0.4 * R, -0.06 * R, 0.065 * R, 0, 7); c.fill(); }   // the carp's eye
-  // 3. what the tool did to the stalks (the poem describes this)
-  c.strokeStyle = 'rgba(110,80,25,.4)'; c.lineWidth = 1.2;
-  if (how === 'plank') { for (const q of [0.2, 0.38, 0.56, 0.74, 0.92]) { c.beginPath(); c.arc(0, 0, q * R, 0, 7); c.stroke(); } c.fillStyle = 'rgba(80,55,15,.6)'; c.beginPath(); c.arc(0, 0, 5, 0, 7); c.fill(); }
-  else if (how === 'roller') { for (let x = -R; x < R; x += 11) { c.beginPath(); c.moveTo(x, -R); c.lineTo(x, R); c.stroke(); } }
-  else if (how === 'barrel') { for (let i = 0; i < 46; i++) { const a = rnd() * 7, rr = Math.sqrt(rnd()) * R * 0.88; c.beginPath(); c.arc(Math.cos(a) * rr, Math.sin(a) * rr, 13, 0, 7); c.stroke(); } }
-  else { c.lineWidth = 6; c.strokeStyle = 'rgba(110,80,25,.32)'; c.beginPath(); for (let a = 0; a < Math.PI * 9; a += 0.1) { const rr = a / (Math.PI * 9) * R * 0.96; a ? c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.stroke(); }
-  c.restore();
+// A harvest wreath: a thick ring of plaited wheat ears, the decoration tucked in all round, a bow and ribbons.
+function ccSprite(decor, big) {
+  const key = decor + (big ? '/big' : ''); if (ccSpriteCache[key]) return ccSpriteCache[key];
+  const N = 360, R = 118, cv = document.createElement('canvas'); cv.width = N; cv.height = Math.round(N * 1.5); const c = cv.getContext('2d'); c.translate(N / 2, N / 2);
+  let r = 29; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  // ribbons hanging below
+  const RIB = ['#c0392b', '#f2c230', '#2f6fb0', '#3f9248', '#e86fa0'];
+  RIB.forEach((col, i) => { const x0 = (i - 2) * 14, len = 170 + (i % 2) * 60; c.fillStyle = col; c.beginPath(); c.moveTo(x0 - 7, R * 0.7); c.bezierCurveTo(x0 - 20 + i * 6, R + len * 0.4, x0 + 22 - i * 4, R + len * 0.7, x0 - 4 + (i - 2) * 10, R + len); c.lineTo(x0 + 8 + (i - 2) * 10, R + len - 8); c.bezierCurveTo(x0 + 34 - i * 4, R + len * 0.7, x0 - 6 + i * 6, R + len * 0.4, x0 + 7, R * 0.7); c.closePath(); c.fill(); c.fillStyle = 'rgba(255,255,255,.25)'; c.fillRect(x0 - 2, R * 0.75, 3, len * 0.6); });
+  // the plaited ring: many wheat ears laid round, overlapping like a braid
+  c.fillStyle = 'rgba(80,50,10,.35)'; c.beginPath(); c.arc(4, 6, R + 10, 0, 7); c.arc(4, 6, R - 36, 0, 7, true); c.fill();
+  c.fillStyle = '#c8962e'; c.beginPath(); c.arc(0, 0, R + 6, 0, 7); c.arc(0, 0, R - 40, 0, 7, true); c.fill();
+  for (let layer = 0; layer < 3; layer++) for (let i = 0; i < 70; i++) {
+    const a = i / 70 * Math.PI * 2 + layer * 0.03, rad = R - 17 + (layer - 1) * 15 + (rnd() - 0.5) * 6, x = Math.cos(a) * rad, y = Math.sin(a) * rad, ang = a + Math.PI / 2 + 0.55;
+    c.save(); c.translate(x, y); c.rotate(ang);
+    c.strokeStyle = '#a77a26'; c.lineWidth = 2; c.beginPath(); c.moveTo(-26, 0); c.lineTo(0, 0); c.stroke();   // stem
+    const cols = ['#e6c25e', '#f2d77a', '#d6ab45', '#efcb66'];
+    for (let k = 0; k < 6; k++) { c.fillStyle = cols[(k + i + layer) % 4]; c.beginPath(); c.ellipse(4 + k * 4.6, (k % 2 ? 3 : -3), 4.4, 2.7, k % 2 ? 0.4 : -0.4, 0, 7); c.fill(); }   // the grains
+    c.strokeStyle = 'rgba(220,180,90,.9)'; c.lineWidth = 0.8; for (let k = 0; k < 5; k++) { c.beginPath(); c.moveTo(6 + k * 4.6, k % 2 ? 4 : -4); c.lineTo(14 + k * 4.6, (k % 2 ? 1 : -1) * 12); c.stroke(); }   // the whiskers
+    c.restore();
+  }
+  c.strokeStyle = 'rgba(255,240,190,.5)'; c.lineWidth = 3; c.beginPath(); c.arc(0, 0, R - 2, 3.6, 5.4); c.stroke();
+  // the decoration, tucked in all the way round
+  const spots = 14;
+  for (let i = 0; i < spots; i++) {
+    const a = i / spots * Math.PI * 2 + 0.2, rad = R - 18, x = Math.cos(a) * rad, y = Math.sin(a) * rad;
+    c.save(); c.translate(x, y);
+    if (decor === 'kalyna') { c.fillStyle = '#3f8a3a'; c.beginPath(); c.ellipse(-8, -6, 9, 4, -0.6, 0, 7); c.fill(); for (let k = 0; k < 7; k++) { const bx = (k % 3 - 1) * 6 + (rnd() - 0.5) * 3, by = Math.floor(k / 3) * 6 - 4; c.fillStyle = '#a3141a'; c.beginPath(); c.arc(bx, by + 1, 5, 0, 7); c.fill(); c.fillStyle = '#e0242e'; c.beginPath(); c.arc(bx - 0.5, by, 4.4, 0, 7); c.fill(); c.fillStyle = 'rgba(255,255,255,.65)'; c.beginPath(); c.arc(bx - 1.8, by - 1.6, 1.3, 0, 7); c.fill(); } }
+    else if (decor === 'soniashnyk') { for (let k = 0; k < 12; k++) { const pa = k / 12 * Math.PI * 2; c.fillStyle = k % 2 ? '#f5c518' : '#f9d548'; c.save(); c.rotate(pa); c.beginPath(); c.ellipse(0, -11, 3.6, 7, 0, 0, 7); c.fill(); c.restore(); } c.fillStyle = '#5a3416'; c.beginPath(); c.arc(0, 0, 7, 0, 7); c.fill(); c.fillStyle = 'rgba(255,220,120,.35)'; for (let k = 0; k < 8; k++) { c.beginPath(); c.arc((rnd() - 0.5) * 9, (rnd() - 0.5) * 9, 1, 0, 7); c.fill(); } }
+    else if (decor === 'yabluko') { c.fillStyle = '#3f8a3a'; c.beginPath(); c.ellipse(5, -10, 7, 3, 0.5, 0, 7); c.fill(); c.fillStyle = '#9a1a1a'; c.beginPath(); c.arc(0, 1, 9.5, 0, 7); c.fill(); c.fillStyle = '#d7362b'; c.beginPath(); c.arc(-0.6, 0, 8.6, 0, 7); c.fill(); c.fillStyle = '#f0a040'; c.globalAlpha = 0.5; c.beginPath(); c.arc(3, 3, 5, 0, 7); c.fill(); c.globalAlpha = 1; c.fillStyle = 'rgba(255,255,255,.7)'; c.beginPath(); c.arc(-3.5, -3.5, 2.2, 0, 7); c.fill(); c.strokeStyle = '#4a3418'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, -8); c.lineTo(1, -12); c.stroke(); }
+    else if (decor === 'mak') { c.rotate(rnd() * 6); for (let k = 0; k < 4; k++) { c.save(); c.rotate(k * Math.PI / 2); c.fillStyle = k % 2 ? '#c8141e' : '#e0242a'; c.beginPath(); c.ellipse(0, -7, 8, 7, 0, 0, 7); c.fill(); c.restore(); } c.fillStyle = '#1a1414'; c.beginPath(); c.arc(0, 0, 4, 0, 7); c.fill(); c.fillStyle = '#4a3a30'; for (let k = 0; k < 6; k++) { const pa = k / 6 * 6.28; c.beginPath(); c.arc(Math.cos(pa) * 5.4, Math.sin(pa) * 5.4, 1, 0, 7); c.fill(); } }
+    else { for (let k = 0; k < 3; k++) { const ax = (k - 1) * 7, ay = (k % 2) * 4; c.fillStyle = '#9a6a2a'; c.beginPath(); c.ellipse(ax, ay + 3, 4.6, 6.4, 0, 0, 7); c.fill(); c.fillStyle = 'rgba(255,230,170,.45)'; c.beginPath(); c.ellipse(ax - 1.4, ay + 2, 1.4, 3, 0, 0, 7); c.fill(); c.fillStyle = '#5e3f1e'; c.beginPath(); c.ellipse(ax, ay - 2, 5.2, 3.4, 0, Math.PI, 0); c.fill(); c.fillStyle = 'rgba(0,0,0,.25)'; for (let q = 0; q < 4; q++) { c.beginPath(); c.arc(ax - 3 + q * 2, ay - 3, 0.6, 0, 7); c.fill(); } } c.fillStyle = '#4f8a3a'; c.beginPath(); c.ellipse(10, -8, 9, 4, -0.5, 0, 7); c.fill(); }
+    c.restore();
+  }
+  // the bow at the bottom and the little card
+  c.fillStyle = '#c0392b'; for (const s2 of [-1, 1]) { c.beginPath(); c.moveTo(0, R - 6); c.quadraticCurveTo(s2 * 34, R - 34, s2 * 40, R - 4); c.quadraticCurveTo(s2 * 30, R + 12, 0, R - 6); c.fill(); }
+  c.fillStyle = '#a02a20'; c.beginPath(); c.arc(0, R - 6, 8, 0, 7); c.fill();
+  c.save(); c.translate(-R * 0.55, R * 0.05); c.rotate(-0.18); c.fillStyle = '#fffaf0'; c.fillRect(-26, -15, 52, 30); c.strokeStyle = '#c9a25a'; c.lineWidth = 1.5; c.strokeRect(-26, -15, 52, 30); c.fillStyle = '#5a3a22'; c.font = 'italic 11px Georgia, serif'; c.textAlign = 'center'; c.fillText('Для', 0, -2); c.fillText('Долини', 0, 11); c.restore();
   return (ccSpriteCache[key] = cv);
 }
-function ccDraw(c) {
-  if (!ccShown()) return; const M = ccCase(), s = ccSprite(M.why, M.how), W = CC.R * 2 * T * (380 / 340);
-  c.drawImage(s, CC.x * T - W / 2, CC.y * T - W / 2, W, W);
+function ccDraw(c) { }   // (the wreath is drawn with the other standing things, so it hangs in front of the post)
+function ccDrawWreath(c, x, y, t) {
+  if (!ccShown()) return;
+  const s = ccSprite(ccCase().why), w = 1.18 * T, h = w * 1.5, sw = Math.sin(t * 1.3) * 0.03;
+  c.save(); c.translate(x, y - CC.up * T); c.rotate(sw); c.drawImage(s, -w / 2, -w / 2, w, h); c.restore();
 }
 function ccExamine() {
   const M = ccCase(); if (!M) return;
   const first = !M.examined; M.examined = true;
   if (first) { for (const k of Object.keys(CC_WHY)) if (k !== M.why) { const key = 'where:' + k; if (!M.notes[key] || M.notes[key] === '?') M.notes[key] = 'x:field'; } M.heard.push({ id: 'field', txt: CC_LOOK[M.why] }); save(); }
+  learn('vinok');
   const uk = MY_LANG === 'uk', st = stage();
-  openSheet(`<div class="card" style="text-align:center"><div class="tag">🌾 ${uk ? 'Витоптане коло' : 'The pattern in the wheat'}</div>
-    <img src="${ccSprite(M.why, M.how).toDataURL()}" alt="" style="width:78%;max-width:300px;margin:6px auto;display:block;border-radius:50%">
+  openSheet(`<div class="card" style="text-align:center"><div class="tag">🌾 ${uk ? 'Обжинковий вінок' : 'The harvest wreath'}</div>
+    <img src="${ccSprite(M.why).toDataURL()}" alt="" style="width:62%;max-width:240px;margin:6px auto;display:block">
     <div class="word" style="font-size:19px;line-height:1.3">${CC_LOOK[M.why][1]}</div>${st < 3 ? `<div class="en" style="font-size:15px">${CC_LOOK[M.why][0]}</div>` : ''}
-    ${first ? `<div class="hint" style="margin-top:8px;font-size:14px">${uk ? '📖 Мотив записано в нотатки.' : '📖 That tells you why. It is in your notes.'}</div>` : ''}
+    ${first ? `<div class="hint" style="margin-top:8px;font-size:14px">${uk ? '📖 Записано в нотатки.' : '📖 That tells you what it\'s decorated with. It is in your notes.'}</div>` : ''}
     <div class="row" style="margin-top:10px">${btn('close', '', lab('close'), 'ghost')}</div></div>`);
 }
 // ---- talking to a visitor
@@ -4072,10 +4092,11 @@ function ccMenu(id, said) {
   const left = hand.some(c => !c.said);
   myDialog(id, said || (left ? myPick(MY_T.menu) : v.none), ch);
 }
+// the choices: who (names), what (the decoration, in Ukrainian only) and where (the place, in Ukrainian only)
 function ccCards(k) { return k === 'who' ? MY_WHO.map(x => [x, myName(x)]) : k === 'why' ? Object.keys(CC_WHY).map(x => [x, [cap(CC_WHY[x][0]), cap(CC_WHY[x][1])]]) : Object.keys(CC_HOW).map(x => [x, [cap(CC_HOW[x][0]), cap(CC_HOW[x][1])]]); }
-const ccTheory = p => ['<i>"' + NPC[p.who].nameEn + ', ' + CC_WHY[p.why][0] + ', with ' + CC_HOW[p.how][0] + '."</i><br>', '<i>«' + MY_NAME[p.who][1] + ', ' + CC_WHY[p.why][1] + ', ' + CC_HOW[p.how][2] + '.»</i><br>'];
+const ccTheory = p => ['<i>"' + NPC[p.who].nameEn + ', with ' + CC_WHY[p.why][0] + ', ' + CC_HOW[p.how][2] + '."</i><br>', '<i>«' + MY_NAME[p.who][1] + ', ' + CC_WHY[p.why][2] + ', ' + CC_HOW[p.how][3] + '.»</i><br>'];
 function ccSuggest(id, pick = {}) {
-  if (!pick.who) return myDialog(id, MY_T.whoQ, ccCards('who').map(([x, l]) => ({ label: l, fn: () => ccSuggest(id, { who: x }) })).concat([{ label: myV('never'), fn: () => ccMenu(id) }]));
+  if (!pick.who) return myDialog(id, ['Who do you think made it?', 'Хто, на твою думку, його сплів?'], ccCards('who').map(([x, l]) => ({ label: l, fn: () => ccSuggest(id, { who: x }) })).concat([{ label: myV('never'), fn: () => ccMenu(id) }]));
   if (!pick.why) return myDialog(id, MY_VAR.cc_why[0], ccCards('why').map(([x, l]) => ({ label: l, fn: () => ccSuggest(id, Object.assign(pick, { why: x })) })));
   if (!pick.how) return myDialog(id, MY_VAR.cc_how[0], ccCards('how').map(([x, l]) => ({ label: l, fn: () => ccSuggest(id, Object.assign(pick, { how: x })) })));
   const M = ccCase(), hand = M.hands[id], hits = hand.filter(c => c.card && ((c.card.k === 'who' && c.card.v === pick.who) || (c.card.k === 'how' && c.card.v === pick.how)));
@@ -4089,22 +4110,22 @@ function ccNotebook() {
   const M = ccCase(); if (!M) return toast('🔍 No mystery right now.', 2000);
   const uk = MY_LANG === 'uk';
   const key = (k, v) => (k === 'how' ? 'with' : k === 'why' ? 'where' : k) + ':' + v;
-  const row = (k, v, name) => { const n = M.notes[key(k, v)] || '', out = n.startsWith('x:'), srcId = out ? n.slice(2) : '', src = out ? (srcId === 'field' ? (uk ? 'поле' : 'the field') : MY_NAME[srcId][uk ? 1 : 0]) : '';
+  const row = (k, v, name) => { const n = M.notes[key(k, v)] || '', out = n.startsWith('x:'), srcId = out ? n.slice(2) : '', src = out ? (srcId === 'field' ? (uk ? 'вінок' : 'the wreath') : MY_NAME[srcId][uk ? 1 : 0]) : '';
     return '<button class="mynb' + (out ? ' out' : n === '?' ? ' hunch' : '') + '" data-a="myMark" data-v="' + key(k, v) + '"><span>' + (out ? '✗' : n === '?' ? '★' : '·') + '</span><b>' + name + '</b>' + (src ? '<small>' + src + '</small>' : '') + '</button>'; };
   const sec = (title, k) => '<div class="mysec"><div class="mysech">' + title + '</div>' + ccCards(k).map(([v, nm]) => row(k, v, k === 'who' ? (uk ? NPC[v].name : NPC[v].nameEn) : nm[uk ? 1 : 0])).join('') + '</div>';
-  const heard = M.heard.slice().reverse().map(h => '<div class="myheard"><b>' + (h.id === 'field' ? (uk ? 'Поле' : 'The field') : MY_NAME[h.id][uk ? 1 : 0]) + ':</b> ' + myL(h.txt) + '</div>').join('') || '<div class="myheard">' + (uk ? 'Поки нічого. Поговори з гостями й подивися на поле.' : 'Nothing yet. Talk to the visitors and look at the field.') + '</div>';
-  openSheet(bookTabs('my') + '<div class="card" style="text-align:left"><div class="tag">🔍 ' + (uk ? 'Детективний блокнот' : 'Detective notebook') + '</div><div class="word" style="font-size:22px">' + (uk ? 'Коло на пшеничному полі' : 'The crop circle') + '</div><div class="en" style="font-size:14px">' + (uk ? '✗ виключено (і хто сказав) · торкнися рядка, щоб позначити здогадку ★' : '✗ ruled out (and who said so) · tap a line to mark a hunch ★') + '</div>' +
-    '<div class="mygrid">' + sec(uk ? 'Хто?' : 'Who?', 'who') + sec(uk ? 'Чому?' : 'Why?', 'why') + sec(uk ? 'Як?' : 'How?', 'how') + '</div>' +
+  const heard = M.heard.slice().reverse().map(h => '<div class="myheard"><b>' + (h.id === 'field' ? (uk ? 'Вінок' : 'The wreath') : MY_NAME[h.id][uk ? 1 : 0]) + ':</b> ' + myL(h.txt) + '</div>').join('') || '<div class="myheard">' + (uk ? 'Поки нічого. Поговори з гостями й роздивися вінок.' : 'Nothing yet. Talk to the visitors and look at the wreath.') + '</div>';
+  openSheet(bookTabs('my') + '<div class="card" style="text-align:left"><div class="tag">🔍 ' + (uk ? 'Детективний блокнот' : 'Detective notebook') + '</div><div class="word" style="font-size:22px">' + (uk ? 'Таємниця обжинкового вінка' : 'The secret harvest wreath') + '</div><div class="en" style="font-size:14px">' + (uk ? '✗ виключено (і хто сказав) · торкнися рядка, щоб позначити здогадку ★' : '✗ ruled out (and who said so) · tap a line to mark a hunch ★') + '</div>' +
+    '<div class="mygrid">' + sec(uk ? 'Хто сплів?' : 'Who made it?', 'who') + sec(uk ? 'Чим прикрашений?' : 'Decorated with?', 'why') + sec(uk ? 'Де плели?' : 'Woven where?', 'how') + '</div>' +
     '<details class="myclues"><summary>' + (uk ? 'Усе, що ти чула' : 'Everything you\'ve heard') + ' (' + M.heard.length + ')</summary>' + heard + '</details>' +
     '<div class="row"><button class="subt mylang" data-a="myLangNb">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button>' + btn('close', '', lab('close'), 'ghost') + '</div></div>');
 }
 // ---- Officer Petro
 const CC_PETRO = {
-  ask: ['Ah, the pattern in the church field. A queer business! Have you worked out who did it, and why, and how, detective?', 'А, візерунок на полі за церквою. Дивна справа! Ти вже з\'ясувала, хто це зробив, чому й як, детективко?'],
-  solved: ['That pattern is the talk of the valley, thanks to you. I\'ll see you at the harvest festival, detective!', 'Про той візерунок говорить уся долина, і все завдяки тобі. До зустрічі на святі врожаю, детективко!'],
-  pWho: ['Who made it?', 'Хто його зробив?'], pWhy: ['And why did they do it?', 'А чому вони це зробили?'], pHow: ['And how did they do it?', 'А як вони це зробили?'],
-  right: ['Hmm. Hmm! Ah, I have a hunch you\'re right, young lady. I\'ll go and have a word.', 'Гм. Гм! А, маю передчуття, що ти маєш рацію, панночко. Піду поговорю.'],
-  toast: ['🌾 The pattern will be shown off at the harvest festival! A golden sheaf is waiting on your bookshelf at home.', '🌾 Візерунок покажуть на святі врожаю! На твоїй книжковій полиці вдома чекає золотий сніп.'],
+  ask: ['Ah, the wreath on the festival post. A fine piece of work, and nobody to thank for it! Have you found out who made it, detective?', 'А, вінок на святковому стовпі. Гарна робота, а дякувати нікому! Ти вже з\'ясувала, хто його сплів, детективко?'],
+  solved: ['The whole valley knows who to thank for that wreath now, thanks to you. I\'ll see you at the harvest festival, detective!', 'Тепер уся долина знає, кому дякувати за той вінок, і все завдяки тобі. До зустрічі на святі врожаю, детективко!'],
+  pWho: ['Who made it?', 'Хто його сплів?'], pWhy: ['And what is it decorated with?', 'А чим він прикрашений?'], pHow: ['And where did they weave it?', 'А де його плели?'],
+  right: ['Hmm. Hmm! Ah, I have a hunch you\'re right, young lady. I\'ll go and have a word. A friendly one.', 'Гм. Гм! А, маю передчуття, що ти маєш рацію, панночко. Піду поговорю. По-дружньому.'],
+  toast: ['🌾 The wreath will be carried at the head of the harvest festival, and everyone knows who to thank! A golden sheaf is waiting on your bookshelf at home.', '🌾 Вінок понесуть попереду на святі врожаю, і всі знають, кому дякувати! На твоїй книжковій полиці вдома чекає золотий сніп.'],
 };
 function ccPetroTalk() {
   const M = ccCase(), id = 'petro';
@@ -4123,8 +4144,8 @@ function ccAccuse(pick) {
   const M = ccCase(), sum = ccTheory(pick);
   if (pick.who === M.who && pick.why === M.why && pick.how === M.how) {
     M.solved = true; M.solvedDay = S.clock.day || 1; S.decor.snip = 1; save(); myBtnShow(); blip(880, 0.1); setTimeout(() => blip(1320, 0.14), 120);
-    const conf = CC_WHYTXT[M.who][M.why], H = CC_HOW[M.how], sub = (t, i) => t.replace('%w', i ? H[2] : H[0]);
-    return myDialog(id, myCat(sum, CC_PETRO.right), [{ label: MY_T.goOn, fn: () => myDialog(M.who, [mySex(sub(conf[0], 0), MY_SEX[M.who]), mySex(sub(conf[1], 1), MY_SEX[M.who])], [{ label: ['Wonderful!', 'Чудово!'], fn: () => { closeSheet(); toast(MY_LANG === 'uk' ? CC_PETRO.toast[1] : CC_PETRO.toast[0], 5200); } }]) }]);
+    const conf = CC_WHYTXT[M.who][M.why], H = CC_HOW[M.how], sub = (t, i) => t.replace(i ? '%u' : '%p', i ? H[3] : H[2]);
+    return myDialog(id, myCat(sum, CC_PETRO.right), [{ label: MY_T.goOn, fn: () => myDialog(M.who, [mySex(sub(conf[0], 0), MY_SEX[M.who]), mySex(sub(conf[1], 1), MY_SEX[M.who])], [{ label: ['Thank you for the wreath!', 'Дякуємо за вінок!'], fn: () => { closeSheet(); toast(MY_LANG === 'uk' ? CC_PETRO.toast[1] : CC_PETRO.toast[0], 5200); } }]) }]);
   }
   M.acc = S.clock.day || 1; save();
   myDialog(id, myCat(sum, MY_T.wrong), [{ label: MY_T.keep, fn: closeSheet }]);
@@ -4141,7 +4162,7 @@ function myDialog(id, text, choices) {
     '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>');   // (the language button sits up by their name, where it can't scroll out of sight)
 }
 function myTalk(id) {
-  if (S.mystery && S.mystery.t === 'circle') return ccTalk(id);
+  if (S.mystery && S.mystery.t === 'vinok') return ccTalk(id);
   // every conversation opens with their spoken hello: their name the first time, nice to see you again after
   const M = S.mystery, n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hello = [L.en, L.uk];
   n0.met = true; say('v_' + id + '_' + (first ? 'intro' : 'again'));
@@ -4170,7 +4191,7 @@ function mySuggest(id, pick = {}) {
   myDialog(id, myCat(myTheory(pick), [MY_T.notIt[0].replace('%s', nm[0]), MY_T.notIt[1].replace('%s', nm[1])], ' ', c.line), [{ label: myV('isee'), fn: () => myMenu(id) }]);
 }
 function myNotebook() {
-  if (S.mystery && S.mystery.t === 'circle') return ccNotebook();
+  if (S.mystery && S.mystery.t === 'vinok') return ccNotebook();
   const M = S.mystery; if (!M) return toast('🔍 No mystery right now.', 2000);
   const uk = MY_LANG === 'uk';
   const row = (k, v, name) => { const n = M.notes[k + ':' + v] || '', out = n.startsWith('x:'), src = out ? MY_NAME[n.slice(2)][uk ? 1 : 0] : '';
@@ -4184,7 +4205,7 @@ function myNotebook() {
 }
 function myMark(key) { const M = S.mystery; if (!M) return; const n = M.notes[key] || ''; if (n.startsWith('x:')) return; M.notes[key] = n === '?' ? '' : '?'; save(); myNotebook(); }
 function petroTalk() {
-  if (S.mystery && S.mystery.t === 'circle') return ccPetroTalk();
+  if (S.mystery && S.mystery.t === 'vinok') return ccPetroTalk();
   const M = S.mystery, id = 'petro';
   // his spoken hello first: who he is the first time, how are you after that
   const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], rs = rainSay(id), hi = [(rs ? rs[0] + '<br><br>' : '') + L.en + '<br><br>', (rs ? rs[1] + '<br><br>' : '') + L.uk + '<br><br>'];
@@ -8151,7 +8172,7 @@ function talk(npc) {
     const L = n.last; n.last = null;
     if (L && L.k === 'gift' && W[L.item]) steps.push({ uk: D.thankLine.uk.replace('%s', W[L.item].acc || W[L.item].uk), en: D.thankLine.en.replace('%s', 'the ' + W[L.item].en), clip: `tq_${npc.id}_${L.item}` });
     else if (L && L.k === 'game' && npc.lines['again_' + L.g]) steps.push(line(npc, 'again_' + L.g));
-    else if (npc.id === 'andriiko' && ccCase() && myOpen() && !n.ccSaid) { n.ccSaid = 1; steps.push({ en: 'It wasn\'t me or Brovko! We only chased a hare through the wheat at lunchtime, honest. Somebody made the picture later, in the evening!', uk: 'Це не я й не Бровко! Ми лише ганяли зайця пшеницею в обід, чесно. Картину хтось зробив пізніше, ввечері!' }); }
+    else if (npc.id === 'andriiko' && ccCase() && myOpen() && !n.ccSaid) { n.ccSaid = 1; steps.push({ en: 'It wasn\'t me who made the wreath! Brovko did bring home a mouthful of wheat at lunchtime, but he only chews it. He can\'t plait!', uk: 'Це не я сплів вінок! Бровко, правда, приніс в обід повний рот пшениці, але він її лише жує. Плести він не вміє!' }); }
     // small talk about the day, the season, the weather or the family, never the same twice running
     else if (n.met && Math.random() < 0.7) {
       const pool = ['chat_1', 'chat_2', 'chat_3', 'chat_' + season(), wet(S.wx) ? 'chat_rain' : null].filter(key => key && npc.lines[key] && key !== n.chat);
@@ -11197,7 +11218,7 @@ function drawWorld(t) {
   mazeDraw(c);   // the corn maze's floor (switched off)
   farmDraw(c);   // the orchard, pumpkin patch and cornfield's floor, bottom left
   if (winter()) { drawIce(c, t); drawPrints(c, t); } else if (GFX.water) drawWater(c, t);
-  ccDraw(c);   // the crop circle in the wheat, flat on the ground
+  ccDraw(c);   // (nothing on the ground: the harvest wreath hangs on its post)
   drawFalls(c, t);
   drawTrain(c, t);   // the train runs behind everything standing in the village
   const vw = cv.width / zoom, vh = cv.height / zoom;
@@ -11246,7 +11267,8 @@ function drawWorld(t) {
       if (a >= 0.5) personSide(c, 0, 0, Lt, tt, false, 1); else person(c, 0, 0, Lt, tt, false, 1, undefined, { side: a * 2 });
       c.restore(); continue;
     }
-    if (e.kind === 'pond' || e.kind === 'cc') continue;
+    if (e.kind === 'cc') { ccDrawWreath(c, x, y, t); continue; }   // the harvest wreath, hanging on the festival post
+    if (e.kind === 'pond') continue;
     if (e.kind === 'plot') {
       // Everything in a bed is drawn at bed scale, so bigger beds get bigger crops too.
       c.save(); c.translate(x, y); c.scale(e.s, e.s);
@@ -11596,8 +11618,8 @@ function festScenery(c, w, h, u, t, F, layer, pulse) {
     }
   } else if (F.id === 'obzhynky') {
     if (layer === 'back') {
-      // the pattern from the mystery, shown off across the field (if the case was solved)
-      { const M2 = ccCase(); if (M2 && M2.solved) { const sp = ccSprite(M2.why, M2.how), pw = w * 0.8; c.save(); c.globalAlpha = 0.97; c.drawImage(sp, w * 0.5 - pw / 2, h * 0.72, pw, pw * 0.42); c.restore(); } }
+      // the harvest wreath from the mystery, carried at the head of the festival (if the case was solved)
+      { const M2 = ccCase(); if (M2 && M2.solved) { const sp = ccSprite(M2.why), pw = Math.min(w * 0.3, h * 0.26); c.save(); c.translate(w * 0.5, h * 0.12 + pw * 0.5); c.rotate(Math.sin(t * 1.2) * 0.03); c.drawImage(sp, -pw / 2, -pw / 2, pw, pw * 1.5); c.restore(); } }
       // the reaped field: golden stubble rows and stooks of sheaves
       c.strokeStyle = 'rgba(200,150,60,.5)'; c.lineWidth = 1.2 * k; for (let r = 0; r < 6; r++) { const y = h * (0.5 + r * 0.025); c.beginPath(); c.moveTo(0, y); c.lineTo(w, y + 2 * k); c.stroke(); }
       for (const [x, y, s] of [[0.06, 0.58, 1], [0.2, 0.54, 0.8], [0.8, 0.54, 0.8], [0.94, 0.58, 1]]) { const X = x * w, Y = y * h, S = s * k;
@@ -11867,7 +11889,7 @@ function devMenu() {
   const ic = id => (W[id].ic[0] === '@' ? '' : W[id].ic + ' ');
   openSheet(`<div class="card" style="text-align:left"><h3><span>🛠️ Developer</span><small>${SEASON_IC[season()]} ${W[season()].en}${seasonForce ? ' (set here)' : ''} · ${['day', 'evening', 'night'][S.clock.t >= 0.86 ? 2 : S.clock.t >= 0.78 ? 1 : 0]}</small></h3>
     ${sec('Players', [['devPlayers', '', '👥 Who has played']])}
-    ${sec('Mystery', [['devMy', 'circle', '🌾 New crop circle case'], ['devMy', 'circlesolve', '🌾 Solve the crop circle'], ['devMy', 'bell', '🔔 New bell case']])}
+    ${sec('Mystery', [['devMy', 'circle', '🌾 New harvest wreath case'], ['devMy', 'circlesolve', '🌾 Solve the wreath case'], ['devMy', 'bell', '🔔 New bell case']])}
     ${sec('Mini games', [['devGame', 'bohdan', '🐝 Bees'], ['devGame', 'andriiko', '🐕 Fetch'], ['devGame', 'taras', '🎣 Fishing'], ['devGame', 'bohdan_w', '❄️ Winter hive'], ['devGame', 'andriiko_w', '⛄ Snowman'], ['devGame', 'andriiko_s', '❄️ Snowball fight'], ['devGame', 'taras_w', '🧊 Ice fishing'], ['devGame', 'chop', '🪓 Chopping wood']])}
     ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].en]))}
     ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].en + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
@@ -12212,7 +12234,7 @@ function hitEnt(wx, wy) {
     const s = Math.max(0.75, e.s), cx = e.x, cy = (e.kind === 'pond' ? e.y - 0.2 : e.flat ? e.y : e.y - s * 0.45) - (e.lift || 0);
     let d;
     if (e.kind === 'pond') { if (!inPond(wx, wy)) continue; d = 5; }
-    else if (e.kind === 'cc') { if (Math.hypot(wx - e.x, wy - e.y) > CC.R) continue; d = 4; }
+    else if (e.kind === 'cc') { if (Math.hypot(wx - e.x, wy - (e.y - CC.up)) > CC.R * 0.7) continue; d = 3.5; }
     else { if (e.s > 3 && wy > e.y - 0.25) continue;
       if (e.hitLow && wy < e.y - e.hitLow) continue;   // a low thing in front of a house (Grandma's fence): only its own bottom strip, so the house above gets the tap   // big buildings: the ground just in front of one is for walking on
       const dx = Math.abs(wx - cx) / (s * (e.hitW || (e.s > 3 ? 0.4 : 0.5))),   // hitW: a narrower box for tall thin things (the stork pole)
@@ -12365,7 +12387,7 @@ const A = {
   wear(v) { if (!S.wardrobe[v]) return; S.outfit = v; wearOutfit(v); useWord(v, true); save(); blip(880, 0.06); wardrobeSheet(); if (ward) { ward.view = 0; ward.t0 = nowT; ward.pop = nowT; } say('w_' + v, 'p_harno_vyhliadaiesh'); },
   devPin() { if (devOn) { A.start(); return setTimeout(devMenu, 700); } devCode = ''; devPinDraw(); },   // already unlocked on this device: straight in
   devPlayers() { playersSheet(); },
-  devMy(v) { closeSheet(); if (v === 'circle') { seasonForce = 'osin'; S.mystery = ccNewCase(); S.mystery.endDay = 1e9; save(); myBtnShow(); toast('🌾 A new crop circle case: who ' + MY_NAME[S.mystery.who][0] + ', ' + S.mystery.why + ', ' + S.mystery.how); }
+  devMy(v) { closeSheet(); if (v === 'circle') { seasonForce = 'osin'; S.mystery = ccNewCase(); S.mystery.endDay = 1e9; save(); myBtnShow(); toast('🌾 A new wreath case: who ' + MY_NAME[S.mystery.who][0] + ', ' + S.mystery.why + ', ' + S.mystery.how); }
     else if (v === 'circlesolve' && ccCase()) { const M = ccCase(); M.solved = true; S.decor.snip = 1; save(); myBtnShow(); toast('🌾 Solved (dev)'); }
     else if (v === 'bell') { S.mystery = myNewCase(); S.bellDone = 0; save(); myBtnShow(); toast('🔔 A new bell case'); } },
   devOff() { devOn = false; setTimeout(hud, 50); try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
