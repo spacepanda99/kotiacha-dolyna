@@ -4813,6 +4813,128 @@ function smoke(c, x, y, t, k) {
   for (let i = 0; i < 5; i++) { const f = (t * 0.15 + i / 5) % 1; c.fillStyle = `rgba(255,255,255,${0.55 * (1 - f) * Math.min(1, f * 6)})`; circ(c, x + (Math.sin(f * 5 + i) * 7 + f * 26) * k, y - f * 70 * k, (5 + f * 13) * k); }
 }
 
+// ------------------------------------------------------------------ the garden, growing
+// Each crop is drawn the way it really grows, leaf by leaf, in the bed's own coordinates (the soil runs about
+// x -27..27, y -12..24; the planting rows are at y -2 and 14). g is how far it has grown (0 a seedling, 1 ripe);
+// what you harvest only shows as it ripens, and is drawn a little smaller than before, in its right place: roots
+// just showing at the soil, tomatoes hanging on the vine, a pumpkin on the ground among its big leaves.
+function cropLeaf(c, x, y, a, len, wid, col, o = {}) {   // one leaf from its base along angle a, with a midrib (and veins, a serrated edge)
+  c.save(); c.translate(x, y); c.rotate(a);
+  const tip = len, w = wid, bend = o.bend || 0;
+  c.beginPath(); c.moveTo(0, 0);
+  if (o.serr) { const n = o.serr; for (let i = 1; i <= n; i++) { const u = i / n, ww = Math.sin(u * Math.PI) * w * (1 - u * 0.25); c.lineTo(tip * (u - 0.5 / n), -ww * 1.12 + bend * u * u * tip); c.lineTo(tip * u, -ww * 0.82 + bend * u * u * tip); } for (let i = n; i >= 1; i--) { const u = i / n, ww = Math.sin(u * Math.PI) * w * (1 - u * 0.25); c.lineTo(tip * u, ww * 0.82 + bend * u * u * tip); c.lineTo(tip * (u - 0.5 / n), ww * 1.12 + bend * u * u * tip); } }
+  else { c.quadraticCurveTo(tip * 0.45, -w + bend * tip * 0.2, tip, bend * tip); c.quadraticCurveTo(tip * 0.45, w + bend * tip * 0.2, 0, 0); }
+  c.closePath();
+  const g = c.createLinearGradient(0, -w, 0, w); g.addColorStop(0, o.light || tone2(col, 0.07)); g.addColorStop(1, tone2(col, -0.08)); c.fillStyle = g; c.fill();
+  c.strokeStyle = o.edge || 'rgba(30,60,20,.35)'; c.lineWidth = 0.5; c.stroke();
+  c.strokeStyle = o.rib || 'rgba(210,240,180,.3)'; c.lineWidth = Math.max(0.35, w * 0.1); c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(tip * 0.5, bend * tip * 0.25, tip * 0.92, bend * tip * 0.85); c.stroke();
+  if (o.veins) { c.lineWidth = 0.3; c.strokeStyle = 'rgba(200,235,170,.22)'; for (let i = 1; i < 5; i++) { const u = i / 5, yy = bend * u * u * tip; c.beginPath(); c.moveTo(tip * u, yy); c.lineTo(tip * (u + 0.1), yy - w * 0.6 * Math.sin(u * Math.PI)); c.moveTo(tip * u, yy); c.lineTo(tip * (u + 0.1), yy + w * 0.6 * Math.sin(u * Math.PI)); c.stroke(); } }
+  c.restore();
+}
+function tone2(hex, k) { const n = parseInt(hex.slice(1), 16), f = v => Math.max(0, Math.min(255, Math.round(v + (k > 0 ? (255 - v) * k : v * k)))); return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`; }
+function cropStem(c, x0, y0, x1, y1, col, w) { c.strokeStyle = col; c.lineWidth = w; c.lineCap = 'round'; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0 + x1) / 2 + (y1 - y0) * 0.08, (y0 + y1) / 2, x1, y1); c.stroke(); }
+const CROP_SPOTS = { few: [[-14, 0], [14, -2], [0, 15]], six: [[-18, -2], [0, -3], [18, -2], [-18, 14], [0, 13], [18, 14]], two: [[-12, 4], [13, 10]], one: [[0, 8]] };
+function cropDraw(c, id, g, t, seed) {
+  let sd = 13 + seed * 977; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const ripe = g >= 1, ic = W[id] ? W[id].ic : '🌱', fruit = Math.max(0, (g - 0.55) / 0.45), sway = Math.sin(t * 1.4 + seed) * 0.04;
+  const G = '#4f9a3c', GD = '#3a7d2c', GL = '#6fbf4f';
+  const shadow = (x, y, r) => { c.fillStyle = 'rgba(30,15,5,.28)'; ell(c, x, y + 1, r, r * 0.32); };
+  const sz = (0.35 + 0.65 * Math.min(1, g)) * 1.3;   // seedlings are small; grown plants a bit bigger than life, so they read on a phone
+  // a seedling: two round seed leaves on a little stalk
+  const sprout = (x, y, k) => { cropStem(c, x, y, x, y - 5 * k, GD, 1.1); cropLeaf(c, x, y - 5 * k, -2.5, 4.5 * k, 2.2 * k, GL); cropLeaf(c, x, y - 5 * k, -0.64, 4.5 * k, 2.2 * k, GL); };
+  if (g < 0.18) { for (const [x, y] of CROP_SPOTS.six) sprout(x, y, 0.6 + g * 2); return; }
+  switch (id) {
+    case 'morkva': for (const [x, y] of CROP_SPOTS.six) {   // feathery, finely divided fronds; the orange shoulder at the soil
+      shadow(x, y, 6);
+      if (fruit > 0) { c.save(); c.translate(x, y + 1); c.fillStyle = '#e8741c'; c.beginPath(); c.moveTo(-3.2 * fruit, -1); c.quadraticCurveTo(0, -3 * fruit, 3.2 * fruit, -1); c.lineTo(1.6, 5 * fruit); c.lineTo(-1.6, 5 * fruit); c.closePath(); c.fill(); c.strokeStyle = 'rgba(150,60,10,.5)'; c.lineWidth = 0.4; for (let k = 1; k < 3; k++) { c.beginPath(); c.moveTo(-2.5, k * 1.4); c.lineTo(-0.5, k * 1.4); c.stroke(); } c.restore(); }
+      for (let f = 0; f < 6; f++) { const a = -Math.PI / 2 + (f - 2.5) * 0.28 + sway, L = (16 + rn() * 6) * sz, ex = x + Math.cos(a) * L, ey = y - 1 + Math.sin(a) * L;
+        cropStem(c, x, y - 1, ex, ey, GD, 0.8);
+        for (let k = 1; k <= 6; k++) { const u = k / 7, px = x + (ex - x) * u, py = y - 1 + (ey - y + 1) * u; for (const sdir of [-1, 1]) { c.strokeStyle = k % 2 ? G : GL; c.lineWidth = 1; c.beginPath(); c.moveTo(px, py); c.lineTo(px + Math.cos(a + sdir * 1.1) * 3.4 * (1 - u * 0.5) * sz, py + Math.sin(a + sdir * 1.1) * 3.4 * (1 - u * 0.5) * sz); c.stroke(); } } } }
+      break;
+    case 'buriak': for (const [x, y] of CROP_SPOTS.six) {   // broad glossy leaves on red stalks, red-veined; the dark red root's shoulder
+      shadow(x, y, 7);
+      if (fruit > 0) { c.fillStyle = '#7a1630'; ell(c, x, y + 1, 4.6 * fruit, 3.4 * fruit); c.fillStyle = 'rgba(255,150,170,.35)'; ell(c, x - 1.4, y - 0.4, 1.6 * fruit, 0.9 * fruit); }
+      for (let f = 0; f < 5; f++) { const a = -Math.PI / 2 + (f - 2) * 0.42 + sway + (rn() - 0.5) * 0.15, L = (8 + rn() * 3) * sz, bx = x + Math.cos(a) * L, by = y - 1 + Math.sin(a) * L;
+        cropStem(c, x, y - 1, bx, by, '#b0243e', 1.2); cropLeaf(c, bx, by, a, 10 * sz, 4.2 * sz, '#3f8a3c', { rib: '#c8304a', veins: true, edge: 'rgba(120,20,40,.35)', bend: (rn() - 0.5) * 0.3 }); } }
+      break;
+    case 'tsybulia': case 'chasnyk': for (const [x, y] of CROP_SPOTS.six) {   // onion: hollow round leaves standing up; garlic: flat strap leaves
+      const on = id === 'tsybulia'; shadow(x, y, 5);
+      if (fruit > 0) { c.fillStyle = on ? '#d9a04a' : '#f2ead8'; c.beginPath(); c.ellipse(x, y, 4.4 * fruit, 3.6 * fruit, 0, Math.PI * 1.05, Math.PI * 1.95); c.lineTo(x + 1, y - 3.2 * fruit - 1); c.lineTo(x - 1, y - 3.2 * fruit - 1); c.closePath(); c.fill(); c.strokeStyle = on ? 'rgba(140,80,20,.5)' : 'rgba(160,140,110,.5)'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(x - 2, y - 1); c.quadraticCurveTo(x, y - 3.2 * fruit, x + 0.3, y - 3.4 * fruit); c.stroke(); }
+      for (let f = 0; f < (on ? 5 : 6); f++) { const a = -Math.PI / 2 + (f - 2.5) * 0.17 + sway, L = (17 + rn() * 7) * sz, bend = (f - 2.5) * 0.06;
+        c.save(); c.translate(x, y - 1); c.rotate(a + Math.PI / 2); c.strokeStyle = on ? '#3f8a3c' : '#5c9a4a'; c.lineWidth = on ? 2.2 : 2.6; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(bend * L, -L * 0.6, bend * L * 2.2, -L); c.stroke();
+        c.strokeStyle = 'rgba(220,255,200,.5)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(-0.5, 0); c.quadraticCurveTo(bend * L - 0.5, -L * 0.6, bend * L * 2.2 - 0.5, -L); c.stroke(); c.restore(); }
+      if (!on && ripe) { c.strokeStyle = '#6aa85a'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(x, y - 2); c.bezierCurveTo(x + 3, y - 22, x + 9, y - 26, x + 6, y - 19); c.stroke(); c.fillStyle = '#e8e4d0'; ell(c, x + 6, y - 19, 1.3, 2); }   // garlic's curly scape
+    } break;
+    case 'kartoplia': { for (const [x, y] of CROP_SPOTS.few) {   // a bushy plant with compound leaves of oval leaflets, white flowers; dug potatoes lying on the soil
+      shadow(x, y, 12);
+      for (let b = 0; b < 7; b++) { const a = -Math.PI / 2 + (b - 3) * 0.42 + sway + (rn() - 0.5) * 0.2, L = (10 + rn() * 5) * sz, ex = x + Math.cos(a) * L, ey = y - 2 + Math.sin(a) * L;
+        cropStem(c, x, y - 1, ex, ey, '#4a8a36', 1.1);
+        for (let k = 0; k < 3; k++) { const u = 0.45 + k * 0.25, px = x + (ex - x) * u, py = y - 2 + (ey - y + 2) * u; cropLeaf(c, px, py, a - 0.9, 4.5 * sz, 2.4 * sz, k % 2 ? G : '#5aa244', { veins: true }); cropLeaf(c, px, py, a + 0.9, 4.5 * sz, 2.4 * sz, G, { veins: true }); }
+        cropLeaf(c, ex, ey, a, 5.5 * sz, 2.8 * sz, '#5aa244', { veins: true }); }
+      if (g > 0.6) for (let k = 0; k < 3; k++) { const fx = x + (k - 1) * 4, fy = y - 15 * sz - (k % 2) * 3; c.fillStyle = '#ffffff'; for (let p = 0; p < 5; p++) { const pa = p * 1.2566; circ(c, fx + Math.cos(pa) * 1.3, fy + Math.sin(pa) * 1.3, 1.1); } c.fillStyle = '#f2c230'; circ(c, fx, fy, 0.7); } }
+      if (ripe) for (const [x, y, r] of [[-20, 20, 0], [-6, 22, 1], [9, 21, 2], [21, 19, 3]]) { c.save(); c.translate(x, y); c.rotate(r * 0.6); drawIcon(c, ic, 0, 4, 11); c.restore(); }   // the dug potatoes
+    } break;
+    case 'kapusta': for (const [x, y] of CROP_SPOTS.two) {   // big blue-green leaves cupped round a pale head
+      shadow(x, y, 14);
+      for (let f = 0; f < 9; f++) { const a = (f / 9) * Math.PI * 2 + seed + sway, L = 12 * sz * (0.9 + rn() * 0.2); cropLeaf(c, x, y - 2, a, L, 7 * sz, f % 2 ? '#4f8f70' : '#467f66', { veins: true, rib: 'rgba(220,245,230,.5)', light: '#7ab89a' }); }
+      for (let f = 0; f < 5; f++) { const a = -Math.PI / 2 + (f - 2) * 0.7 + sway, L = 9 * sz; cropLeaf(c, x, y - 3, a, L, 6 * sz, '#5f9f80', { veins: true, rib: 'rgba(230,250,240,.55)', light: '#8cc8aa' }); }
+      if (fruit > 0) { const r = 7.5 * fruit; const gg = c.createRadialGradient(x - r * 0.3, y - 4 - r * 0.3, 1, x, y - 4, r); gg.addColorStop(0, '#e6f6dc'); gg.addColorStop(1, '#a6d48e'); c.fillStyle = gg; circ(c, x, y - 4, r); c.strokeStyle = 'rgba(90,140,80,.55)'; c.lineWidth = 0.5; for (let k = 0; k < 4; k++) { c.beginPath(); c.arc(x, y - 4, r * (0.35 + k * 0.17), Math.PI * (1.1 + k * 0.1), Math.PI * (1.7 + k * 0.1)); c.stroke(); } }
+    } break;
+    case 'pomidor': { for (const [x, y] of [[-13, 10], [13, 10]]) {   // staked vines with toothed compound leaves, yellow flowers and trusses of tomatoes
+      const H = 34 * sz; shadow(x, y, 9); c.fillStyle = '#a07a4a'; c.fillRect(x + 3, y - H - 4, 1.6, H + 5);   // the stake
+      cropStem(c, x, y, x + 1, y - H, '#4a8a36', 1.4);
+      for (let k = 0; k < 7; k++) { const yy = y - 5 - k * (H - 6) / 7, sdir = k % 2 ? 1 : -1, a = sdir > 0 ? -0.5 : Math.PI + 0.5;
+        cropStem(c, x, yy, x + sdir * 7 * sz, yy - 3, '#4a8a36', 0.8);
+        for (let j = 0; j < 3; j++) cropLeaf(c, x + sdir * (3 + j * 2.2) * sz, yy - 1 - j, a + (j - 1) * 0.5 + sway, 5 * sz, 2.3 * sz, j === 1 ? G : '#5aa244', { serr: 4, veins: true }); }
+      if (g > 0.45) for (let k = 0; k < 3; k++) { const fx = x + (k % 2 ? 5 : -5), fy = y - 10 - k * 8; c.fillStyle = '#f2d23a'; for (let p = 0; p < 5; p++) { const pa = p * 1.2566; c.beginPath(); c.ellipse(fx + Math.cos(pa) * 1.2, fy + Math.sin(pa) * 1.2, 1.2, 0.6, pa, 0, 7); c.fill(); } }
+      if (fruit > 0) for (const [dx, dy] of [[-5, -8], [-3, -5], [5, -15], [7, -12], [-6, -21]]) { const r = 3.4 * fruit, fx = x + dx, fy = y + dy; const gg = c.createRadialGradient(fx - r * 0.35, fy - r * 0.35, 0.3, fx, fy, r); gg.addColorStop(0, ripe ? '#ff7a5a' : '#c8e07a'); gg.addColorStop(1, ripe ? '#c8221a' : '#7ab040'); c.fillStyle = gg; circ(c, fx, fy, r); c.fillStyle = '#3f7a2c'; for (let p = 0; p < 5; p++) { const pa = p * 1.2566 - 1.57; c.beginPath(); c.ellipse(fx + Math.cos(pa) * 1, fy - r * 0.8 + Math.sin(pa) * 0.6, 1.1, 0.4, pa, 0, 7); c.fill(); } }
+    } } break;
+    case 'ohirok': { for (const [x, y] of [[-12, 8], [12, 10]]) {   // climbing vines with big lobed, rough leaves, curly tendrils, yellow flowers, cucumbers hanging
+      shadow(x, y, 12); c.strokeStyle = '#a07a4a'; c.lineWidth = 0.8; for (const dx of [-6, 0, 6]) { c.beginPath(); c.moveTo(x + dx, y); c.lineTo(x + dx * 0.4, y - 28 * sz); c.stroke(); }   // a little trellis of sticks
+      cropStem(c, x, y, x - 3, y - 26 * sz, '#4a8a36', 1.2);
+      for (let k = 0; k < 6; k++) { const yy = y - 3 - k * 4 * sz, sdir = k % 2 ? 1 : -1, lx = x + sdir * (5 + rn() * 3) * sz, ly = yy - 2;
+        cropStem(c, x - k * 0.5, yy, lx, ly, '#4a8a36', 0.7); c.save(); c.translate(lx, ly); c.rotate(sdir * 0.3 + sway); const R = 5.5 * sz;   // a lobed leaf: five rounded lobes
+        c.fillStyle = k % 2 ? '#4f9a3c' : '#5aa244'; c.beginPath(); for (let p = 0; p <= 5; p++) { const pa = -Math.PI * 0.95 + p * Math.PI * 0.38; c.lineTo(Math.cos(pa) * R * (p % 2 ? 0.75 : 1), Math.sin(pa) * R * (p % 2 ? 0.75 : 1)); } c.closePath(); c.fill(); c.strokeStyle = 'rgba(220,255,200,.45)'; c.lineWidth = 0.4; for (let p = 0; p < 3; p++) { c.beginPath(); c.moveTo(0, 0); c.lineTo(Math.cos(-Math.PI * 0.8 + p * 0.8) * R * 0.8, Math.sin(-Math.PI * 0.8 + p * 0.8) * R * 0.8); c.stroke(); } c.restore();
+        c.strokeStyle = '#6aa85a'; c.lineWidth = 0.4; c.beginPath(); c.arc(lx + sdir * 3, ly - 3, 1.5, 0, Math.PI * 1.6); c.stroke(); }   // a tendril
+      if (g > 0.45) { c.fillStyle = '#f2c230'; for (const [dx, dy] of [[4, -18], [-5, -12]]) for (let p = 0; p < 5; p++) { const pa = p * 1.2566; circ(c, x + dx + Math.cos(pa) * 1.1, y + dy + Math.sin(pa) * 1.1, 0.9); } }
+      if (fruit > 0) for (const [dx, dy, r] of [[-4, -6, 0.2], [5, -9, -0.3], [-1, -16, 0.1]]) { c.save(); c.translate(x + dx, y + dy); c.rotate(r); const L = 8 * fruit, w = 2 * fruit; const gg = c.createLinearGradient(-w, 0, w, 0); gg.addColorStop(0, '#3f8a2c'); gg.addColorStop(0.5, '#6cb84a'); gg.addColorStop(1, '#2f6f24'); c.fillStyle = gg; rr(c, -w, 0, w * 2, L, w); c.fillStyle = 'rgba(230,255,200,.6)'; for (let k = 1; k < 4; k++) circ(c, (k % 2 ? -0.5 : 0.5) * w, k * L / 4, 0.3); c.restore(); }
+    } } break;
+    case 'harbuz': {   // a sprawling vine with huge round lobed leaves on long stalks; the pumpkin sits on the ground among them
+      const x = 0, y = 10; shadow(x, y, 22);
+      c.strokeStyle = '#4a8a36'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(-26, 18); c.bezierCurveTo(-12, 8, 8, 22, 26, 4); c.stroke();
+      c.strokeStyle = '#6aa85a'; c.lineWidth = 0.5; for (const [tx, ty] of [[-18, 13], [16, 10]]) { c.beginPath(); c.arc(tx, ty - 3, 1.8, 0, Math.PI * 1.7); c.stroke(); }
+      if (fruit > 0) { const r = 10 * fruit; c.save(); c.translate(x + 2, y + 4); for (let k = -2; k <= 2; k++) { const gg = c.createRadialGradient(k * r * 0.3 - r * 0.2, -r * 0.4, 1, k * r * 0.3, 0, r * 0.7); gg.addColorStop(0, ripe ? '#ffb24a' : '#b8d070'); gg.addColorStop(1, ripe ? '#d8661a' : '#6fa040'); c.fillStyle = gg; ell(c, k * r * 0.3, 0, r * 0.42, r * 0.78); } c.fillStyle = '#5a7a2a'; c.fillRect(-1, -r * 0.85, 2.2, 3.5); c.restore(); }
+      for (let f = 0; f < 6; f++) { const lx = -20 + f * 8 + (rn() - 0.5) * 4, ly = (f % 2 ? 2 : 14) + (rn() - 0.5) * 4, R = (8 + rn() * 3) * sz; if (fruit > 0.3 && Math.abs(lx) < 8 && ly > 6) continue;
+        cropStem(c, lx, ly + R * 0.6, lx + (rn() - 0.5) * 3, ly, '#4a8a36', 0.9);
+        c.fillStyle = f % 2 ? '#4f9a3c' : '#5aa244'; c.beginPath(); for (let p = 0; p < 5; p++) { const a0 = Math.PI * 2 * p / 5 + 0.3, a1 = a0 + Math.PI * 2 / 5, am = (a0 + a1) / 2, P0 = [lx + Math.cos(a0) * R * 0.62, ly + Math.sin(a0) * R * 0.62 * 0.75], P1 = [lx + Math.cos(a1) * R * 0.62, ly + Math.sin(a1) * R * 0.62 * 0.75]; if (!p) c.moveTo(P0[0], P0[1]); c.bezierCurveTo(lx + Math.cos(am - 0.35) * R * 1.2, ly + Math.sin(am - 0.35) * R * 0.9, lx + Math.cos(am + 0.35) * R * 1.2, ly + Math.sin(am + 0.35) * R * 0.9, P1[0], P1[1]); } c.closePath(); c.fill(); c.strokeStyle = 'rgba(30,60,20,.3)'; c.lineWidth = 0.5; c.stroke();   // five rounded lobes
+        c.strokeStyle = 'rgba(220,255,200,.45)'; c.lineWidth = 0.5; for (let p = 0; p < 5; p++) { const pa = Math.PI * 2 * p / 5 + 0.3; c.beginPath(); c.moveTo(lx, ly); c.lineTo(lx + Math.cos(pa) * R * 0.85, ly + Math.sin(pa) * R * 0.65); c.stroke(); }
+        c.fillStyle = 'rgba(255,255,255,.14)'; ell(c, lx - R * 0.3, ly - R * 0.25, R * 0.35, R * 0.2); }
+      if (g > 0.45 && !ripe) { c.fillStyle = '#f2a01a'; for (let p = 0; p < 5; p++) { const pa = p * 1.2566; c.beginPath(); c.ellipse(14 + Math.cos(pa) * 1.8, 0 + Math.sin(pa) * 1.8, 1.8, 0.9, pa, 0, 7); c.fill(); } }
+    } break;
+    case 'kukurudza': for (const [x, y] of [[-14, 6], [0, 12], [14, 6]]) {   // tall stalks, long arching strap leaves, a tassel on top, a cob in a husk with silk
+      const H = 44 * sz; shadow(x, y, 7);
+      c.strokeStyle = '#6a9a3a'; c.lineWidth = 1.8; c.lineCap = 'round'; c.beginPath(); c.moveTo(x, y); c.lineTo(x + sway * 30, y - H); c.stroke();
+      for (let k = 0; k < 6; k++) { const yy = y - 4 - k * H / 7, sdir = k % 2 ? 1 : -1, a = sdir > 0 ? -0.6 : Math.PI + 0.6; cropLeaf(c, x + sway * 30 * (k / 7), yy, a + sway, 14 * sz, 1.6 * sz, k % 2 ? '#5f9a3a' : '#6aaa44', { bend: sdir * 0.25 }); }
+      if (g > 0.5) { c.strokeStyle = '#d8c070'; c.lineWidth = 0.6; for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(x + sway * 30, y - H); c.lineTo(x + sway * 30 + k * 2, y - H - 5); c.stroke(); } }   // the tassel
+      if (fruit > 0) { c.save(); c.translate(x + 2, y - H * 0.45); c.rotate(0.35); c.fillStyle = '#7cb04a'; ell(c, 0, 0, 2.4 * fruit, 6 * fruit); c.fillStyle = '#f2cc3a'; ell(c, 0.6, -0.5, 1.6 * fruit, 5 * fruit); c.fillStyle = 'rgba(160,110,20,.5)'; for (let k = -2; k <= 2; k++) circ(c, 0.6, k * 1.8 * fruit, 0.35); c.strokeStyle = '#c89a5a'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(0, -6 * fruit); c.lineTo(1, -9 * fruit); c.moveTo(0, -6 * fruit); c.lineTo(-1, -9 * fruit); c.stroke(); c.restore(); } }
+      break;
+    case 'polunytsia': for (const [x, y] of CROP_SPOTS.six) {   // low clumps of three-part toothed leaves, white flowers, red berries hanging on their stalks
+      shadow(x, y, 7);
+      for (let f = 0; f < 4; f++) { const a = -Math.PI / 2 + (f - 1.5) * 0.7 + sway, L = 6 * sz, ex = x + Math.cos(a) * L, ey = y - 1 + Math.sin(a) * L;
+        cropStem(c, x, y - 1, ex, ey, '#5a8a3a', 0.6);
+        for (let j = -1; j <= 1; j++) cropLeaf(c, ex, ey, a + j * 0.75, 4.2 * sz, 2.4 * sz, j ? '#4f9a3c' : '#3f8a34', { serr: 4, veins: true }); }
+      if (g > 0.45 && !ripe) { c.fillStyle = '#ffffff'; for (let p = 0; p < 5; p++) { const pa = p * 1.2566; circ(c, x + 4 + Math.cos(pa) * 1.1, y - 3 + Math.sin(pa) * 1.1, 0.9); } c.fillStyle = '#f2c230'; circ(c, x + 4, y - 3, 0.6); }
+      if (fruit > 0) for (const [dx, dy] of [[-4, 2], [4, 3]]) { const fx = x + dx, fy = y + dy, r = 2.4 * fruit; c.strokeStyle = '#5a8a3a'; c.lineWidth = 0.4; c.beginPath(); c.moveTo(x, y - 2); c.quadraticCurveTo(fx, fy - 4, fx, fy - r); c.stroke(); c.fillStyle = ripe ? '#e0202a' : '#e8e0a0'; c.beginPath(); c.moveTo(fx - r, fy - r * 0.5); c.quadraticCurveTo(fx, fy - r * 1.2, fx + r, fy - r * 0.5); c.quadraticCurveTo(fx + r * 0.6, fy + r, fx, fy + r * 1.3); c.quadraticCurveTo(fx - r * 0.6, fy + r, fx - r, fy - r * 0.5); c.fill(); c.fillStyle = 'rgba(255,240,160,.85)'; for (let k = 0; k < 5; k++) circ(c, fx + ((k * 0.37) % 1 - 0.5) * r * 1.2, fy + ((k * 0.61) % 1 - 0.3) * r, 0.25); c.fillStyle = '#3f8a34'; for (let p = 0; p < 5; p++) { const pa = p * 1.2566; c.beginPath(); c.ellipse(fx + Math.cos(pa) * 1, fy - r * 0.6 + Math.sin(pa) * 0.4, 1, 0.35, pa, 0, 7); c.fill(); } } }
+      break;
+    case 'soniashnyk': for (const [x, y] of [[-14, 8], [14, 10]]) { c.save(); c.translate(x, y); emojiSprite(c, '🌻', 0, 0, 42 * sz, sway * 2, Math.abs(c.getTransform().a) || 1, seed + x); c.restore(); } break;
+    default: for (const [x, y] of CROP_SPOTS.few) {   // anything else: a leafy plant, and what it gives sitting in its middle
+      shadow(x, y, 9);
+      for (let f = 0; f < 7; f++) { const a = -Math.PI / 2 + (f - 3) * 0.4 + sway, L = 9 * sz; cropLeaf(c, x, y - 1, a, L, 3.6 * sz, f % 2 ? G : GL, { veins: true }); }
+      if (fruit > 0) drawIcon(c, ic, x, y + 2, 14 * fruit);
+    }
+  }
+}
+
 // ------------------------------------------------------------------ picking things, animated
 // When Vicky picks something she really does it: for a flower or a mushroom she kneels, reaches down, plucks it
 // and stands up holding it (and has a sniff of a flower); for berries she crouches to the bush; for an apple she
@@ -4849,8 +4971,43 @@ function pickStart(e) {
   sfxTone(420, 560, 0.18, 0.03, 'triangle');
 }
 const pickHandWorld = (K, q) => [P.x + K.face * q.hand[0] / T, P.y + q.hand[1] / T];
+// Planting and harvesting use the same kneel: for planting she reaches down with a pinch of seed and sows it
+// (seeds and a puff of earth, and the seedling is there); for harvesting she takes hold, tugs, and it comes up out
+// of the ground in a spray of soil and leaves, and flies to the basket.
+function gardenStart(job, i, v) {
+  const pe = ents.find(q => q.k === 'plot' + i); if (!pe || mode !== 'world') return false;
+  const crop = job === 'harvest' ? S.plots[i].c : v;
+  PICK = { e: pe, kind: 'low', t0: nowT, face: pe.x >= P.x ? 1 : -1, ic: job === 'harvest' ? W[crop].ic : null, contact: false, flown: false, job, i, crop };
+  P.path = []; P.goal = null; P.face = PICK.face; P.lookAt = PICK.face > 0 ? Math.PI / 2 : Math.PI * 1.5;
+  sfxTone(380, 480, 0.16, 0.03, 'triangle'); return true;
+}
+function gardenStep(K) {
+  if (mode !== 'world') { PICK = null; return gardenDone(K); }
+  const u = (nowT - K.t0) / (window.__pickSlow || 1), q = pickPose('low', u), p = S.plots[K.i];
+  P.face = K.face; P.path = [];
+  if (!K.contact && u >= 0.45) {
+    K.contact = true; const [hx, hy] = pickHandWorld(K, q), px = K.e.x, py = K.e.y + 0.1;
+    if (K.job === 'plant') { p.c = K.crop; p.wet = false; p.ready = 0;
+      for (let k = 0; k < 9; k++) fxAdd({ k: 'petal', x: hx + rnd(-0.1, 0.1), y: hy, vx: rnd(-0.5, 0.5), vy: rnd(-0.4, 0.3), g: 3.2, life: rnd(0.5, 0.8), s: rnd(2, 3.2), col: pick(['#7a5530', '#a07a4a', '#5a3a20', '#c8a46a']), rot: rnd(0, 6), spin: rnd(-4, 4) });   // the seeds falling
+      for (let k = 0; k < 7; k++) fxAdd({ k: 'petal', x: px + rnd(-0.4, 0.4), y: py, vx: rnd(-0.7, 0.7), vy: rnd(-1.1, -0.4), g: 2.5, life: rnd(0.4, 0.7), s: rnd(2.5, 4), col: pick(['#6e4630', '#86583a', '#5a3824']), rot: rnd(0, 6), spin: rnd(-6, 6), d: 0.15 });   // and earth patted over them
+      fxAdd({ k: 'ring', x: px, y: py, life: 0.45, s: 30 }); sfxHit(500, 0.07, 0.04, 'lowpass', 1);
+    } else { p.c = null;
+      fxPick(hx, hy, 'low', K.crop); JOY.until = nowT + 0.95;
+      for (let k = 0; k < 14; k++) fxAdd({ k: 'petal', x: px + rnd(-0.3, 0.3), y: py, vx: rnd(-1.2, 1.2), vy: rnd(-2, -0.8), g: 3, life: rnd(0.6, 1.0), s: rnd(2.5, 4.5), col: pick(['#6e4630', '#86583a', '#5a3824', '#4f9a3c', '#6fbf4f']), rot: rnd(0, 6), spin: rnd(-8, 8) });   // a spray of soil and leaves
+      sfxHit(900, 0.1, 0.05, 'bandpass', 2);
+    }
+  }
+  if (!K.flown && K.job === 'harvest' && u >= 1.0) { K.flown = true; const hw = pickHandWorld(K, pickPose('low', 0.99)); flyToBag(hw[0], hw[1], K.ic); }
+  if (u >= PICK_T.low) { PICK = null; gardenDone(K); }
+}
+function gardenDone(K) {
+  const p = S.plots[K.i], v = K.crop;
+  if (K.job === 'plant') { if (!K.contact) { p.c = v; p.wet = false; p.ready = 0; } learn(v); learn('nasinnia'); say('w_' + v); blip(600); tutEvent('plant'); save(); }
+  else { if (!K.contact) p.c = null; give(v, 2); toast('+2 ' + W[v].ic + ' ' + W[v].en); tutEvent('harvest'); wordCard(v); save(); }
+}
 function pickStep() {
   const K = PICK; if (!K) return;
+  if (K.job) return gardenStep(K);
   if (mode !== 'world') { if (!K.contact) takeNow(K.e); PICK = null; return; }
   const u = (nowT - K.t0) / (window.__pickSlow || 1), q = pickPose(K.kind, u);   // (__pickSlow: for looking at it frame by frame)
   P.face = K.face; P.path = [];
@@ -4918,7 +5075,8 @@ function drawPickPose(c, x, y, t) {
   // the near arm, reaching
   pickArm(c, L0, shx, shy, q.hand[0], q.hand[1], false);
   // whatever she has just picked, in her hand
-  if (q.hold) { c.save(); c.translate(q.hand[0], q.hand[1]); c.scale(f, 1); c.rotate(Math.sin(t * 9) * 0.06); drawIcon(c, K.ic, 0, 6, 17); c.restore(); }
+  if (q.hold && K.ic) { c.save(); c.translate(q.hand[0], q.hand[1]); c.scale(f, 1); c.rotate(Math.sin(t * 9) * 0.06); drawIcon(c, K.ic, 0, 6, 17); c.restore(); }
+  if (K.job === 'plant' && u < 0.47) { c.fillStyle = '#7a5530'; for (const [dx, dy] of [[-1.2, 2.4], [0.8, 2.9], [0.1, 1.6]]) circ(c, q.hand[0] + dx, q.hand[1] + dy, 0.9); }   // a pinch of seed
   c.restore();
 }
 // her face, drawn finer (Vicky only): eyes with whites, irises, a highlight and lashes; brows; a nose; a mouth
@@ -11665,9 +11823,10 @@ function drawWorld(t) {
       // damp, darker soil while a watered crop grows
       if (p.c && p.wet && now() < p.ready) { c.fillStyle = 'rgba(55,28,12,.32)'; rr(c, -T * 0.46, -T * 0.22, T * 0.92, T * 0.64, T * 0.1); }
       if (p.c) {
-        if (!p.wet) { drawIcon(c, '🌱', 0, T * 0.2, T * 0.5); drawIcon(c, '💧', T * 0.28, -T * 0.15 + Math.sin(t * 4) * 3, T * 0.4); }
-        else if (now() < p.ready) { const g = 1 - (p.ready - now()) / 50e3; drawIcon(c, '🌱', 0, T * 0.25, T * (0.45 + 0.4 * Math.max(0, g))); }
-        else drawIcon(c, W[p.c].ic, 0, T * 0.3 + Math.sin(t * 3 + e.i) * 3, T * 0.85);
+        const g = !p.wet ? 0.04 : now() < p.ready ? Math.max(0.05, 1 - (p.ready - now()) / 50e3) : 1;
+        cropDraw(c, p.c, g, t, e.i);   // the crop as it really grows, leaf by leaf
+        if (!p.wet) drawIcon(c, '💧', T * 0.28, -T * 0.15 + Math.sin(t * 4) * 3, T * 0.4);
+        else if (g >= 1) { const a = 0.5 + 0.5 * Math.sin(t * 3 + e.i); c.globalAlpha = a; drawIcon(c, '✨', T * 0.3, -T * 0.2, T * 0.3); c.globalAlpha = 1; }   // ripe: a twinkle says it's ready
       }
       c.restore();
       continue;
@@ -12533,7 +12692,7 @@ function posterMap(ms) {
     if (!e.flat && e.kind !== 'plot') continue;
     const x = e.x * T, y = e.y * T, s = (e.s || 1) * T;
     try {
-      if (e.kind === 'plot') { c.save(); c.translate(x, y); c.scale(e.s, e.s); drawIcon(c, '@plot', 0, T * 0.5, T); c.restore(); }
+      if (e.kind === 'plot') { c.save(); c.translate(x, y); c.scale(e.s, e.s); drawIcon(c, '@plot', 0, T * 0.5, T); const p = S.plots[e.i]; if (p && p.c) cropDraw(c, p.c, !p.wet ? 0.04 : now() < p.ready ? Math.max(0.05, 1 - (p.ready - now()) / 50e3) : 1, 0, e.i); c.restore(); }
       else if (e.ic) drawIcon(c, e.ic, x, y, s, { t: 0, v: e.x * 0.37 + e.y * 0.61 });
     } catch (err) {}
   }
@@ -12997,9 +13156,9 @@ const A = {
   act(v) { const a = acts[+v]; if (a) a.fn(); },
   next() { const d = dlg; if (!d) return closeSheet(); const st = d.steps[d.i]; dialog(d.npc, d.steps, d.i + 1); if (st.after) st.after(); },
   choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg !== d) return; if (c.fn) { closeSheet(); c.fn(); } else if (c.then) dialog(d.npc, [...d.steps.slice(0, d.i + 1), ...c.then], d.i + 1); else dialog(d.npc, d.steps, d.i + 1); }, 1500); },
-  plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0)) return; S.seeds[v]--; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); closeSheet(); say('w_' + v); blip(600); tutEvent('plant'); save(); },
+  plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0) || PICK) return; S.seeds[v]--; closeSheet(); if (gardenStart('plant', cur.plot, v)) return; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); say('w_' + v); blip(600); tutEvent('plant'); save(); },
   water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; waterFx = { i: cur.plot, t0: nowT }; closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
-  harvest() { const p = S.plots[cur.plot], c = p.c; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].en}`); tutEvent('harvest'); wordCard(c); save(); },
+  harvest() { const p = S.plots[cur.plot], c = p.c; if (!c || PICK) return; closeSheet(); if (gardenStart('harvest', cur.plot)) return; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].en}`); tutEvent('harvest'); wordCard(c); save(); },
   tab(v) { shopTab = v; shopSel = null; shop(); },
   pick(v) { shopSel = owned(v) ? null : v; learn(v); shop(); say('w_' + v); if (owned(v)) toast(`✓ ${D.ui.have[0]}${stage() < 3 ? ' · ' + D.ui.have[1] : ''}`); },
   buy(v) {
