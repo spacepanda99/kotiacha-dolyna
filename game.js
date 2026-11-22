@@ -2337,6 +2337,21 @@ const DRAW = {
     c.fillStyle = '#fff4d0'; c.font = '900 13px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ЛАБІРИНТ', 0, -62); c.font = '700 8px system-ui, sans-serif'; c.fillStyle = '#ffe08a'; c.fillText('CORN MAZE', 0, -50);
     c.fillStyle = '#e8c35a'; for (const sx of [-1, 1]) { c.save(); c.translate(sx * 26, -76); c.rotate(sx * 0.4); ell(c, 0, 0, 2.4, 6); c.restore(); }
   },
+  // A pumpkin plant: big lobed leaves and a curling vine, with the fruit for the season (small and green in summer,
+  // fat, ribbed and orange in autumn).
+  pumpkin(c, o) {
+    const v = (o && o.v) || 0, sea = treeSeason(o), h = k => { const q = Math.sin((v + k) * 91.7) * 43758.5; return q - Math.floor(q); };
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 1, 34, 6);
+    c.strokeStyle = '#4f8f3a'; c.lineWidth = 2.6; c.lineCap = 'round'; c.beginPath(); c.moveTo(-34, -3); c.quadraticCurveTo(-18, -16, -4, -6); c.quadraticCurveTo(10, 3, 22, -9); c.quadraticCurveTo(30, -14, 36, -8); c.stroke();
+    const leaf = (x, y, s2, rot) => { c.save(); c.translate(x, y); c.rotate(rot); c.fillStyle = '#3f8a3a'; c.beginPath(); for (let k = 0; k < 5; k++) { const a = k / 5 * 6.283 - 1.57; c.lineTo(Math.cos(a) * s2 * 1.1, Math.sin(a) * s2 * 0.8); c.lineTo(Math.cos(a + 0.6) * s2 * 0.55, Math.sin(a + 0.6) * s2 * 0.4); } c.closePath(); c.fill(); c.strokeStyle = 'rgba(255,255,255,.25)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -s2 * 0.8); c.moveTo(0, 0); c.lineTo(s2 * 0.8, -s2 * 0.2); c.moveTo(0, 0); c.lineTo(-s2 * 0.8, -s2 * 0.2); c.stroke(); c.restore(); };
+    leaf(-24, -14, 13, -0.3); leaf(24, -16, 14, 0.3); leaf(-4, -22, 12, 0); leaf(-36, -5, 9, -0.6); leaf(38, -4, 9, 0.5);
+    if (sea === 'osin') { const bx = (h(1) - 0.5) * 8, rx = 21, ry = 17; c.fillStyle = '#d2670e'; c.beginPath(); c.ellipse(bx, -ry, rx, ry, 0, 0, 7); c.fill(); c.fillStyle = '#f0861e'; c.beginPath(); c.ellipse(bx, -ry - 0.6, rx - 1.4, ry - 0.8, 0, 0, 7); c.fill();
+      c.strokeStyle = 'rgba(160,70,5,.55)'; c.lineWidth = 1.5; for (const k of [-0.62, -0.3, 0, 0.3, 0.62]) { c.beginPath(); c.moveTo(bx + k * rx * 0.2, -ry * 2 + 1); c.quadraticCurveTo(bx + k * rx * 1.35, -ry, bx + k * rx * 0.35, -1); c.stroke(); }
+      c.fillStyle = 'rgba(255,255,255,.28)'; c.beginPath(); c.ellipse(bx - rx * 0.4, -ry * 1.35, 5, 8, -0.5, 0, 7); c.fill();
+      c.strokeStyle = '#5a7a2a'; c.lineWidth = 3.4; c.beginPath(); c.moveTo(bx, -ry * 2); c.quadraticCurveTo(bx + 3, -ry * 2 - 7, bx + 7, -ry * 2 - 6); c.stroke(); c.strokeStyle = '#7a9a3a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(bx + 7, -ry * 2 - 6); c.quadraticCurveTo(bx + 13, -ry * 2 - 3, bx + 12, -ry * 2 + 3); c.stroke(); }
+    else { const bx = (h(2) - 0.5) * 10; c.fillStyle = '#5f9a3a'; c.beginPath(); c.ellipse(bx, -8, 9, 7.5, 0, 0, 7); c.fill(); c.fillStyle = '#7fb84a'; c.beginPath(); c.ellipse(bx, -8.4, 8, 6.6, 0, 0, 7); c.fill(); c.strokeStyle = 'rgba(40,90,20,.5)'; c.lineWidth = 0.9; for (const k of [-0.5, 0, 0.5]) { c.beginPath(); c.moveTo(bx + k * 3, -15); c.quadraticCurveTo(bx + k * 12, -8, bx + k * 4, -1.5); c.stroke(); } c.strokeStyle = '#4f7a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(bx, -15); c.lineTo(bx + 2, -19); c.stroke();
+      c.fillStyle = '#ffd23f'; for (const [x, y] of [[-14, -22], [18, -22]]) { for (let k = 0; k < 5; k++) { const a = k / 5 * 6.283; circ(c, x + Math.cos(a) * 3, y + Math.sin(a) * 3, 2.2); } c.fillStyle = '#e8a91a'; circ(c, x, y, 1.6); c.fillStyle = '#ffd23f'; } }   // a yellow squash flower or two
+  },
   // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
   // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
   bilyhryb(c) {
@@ -2813,7 +2828,7 @@ function wellPose(a) {
   return { ang: 30, L: 1, full: a < 3.9, tilt: Math.min(1, (a - 3.3) / 0.3) * (a < 4.0 ? 1 : Math.max(0, 1 - (a - 4.0) / 0.3)) };
 }
 // The corn maze (bottom left). The formal gardens that used to be there are kept in the code, switched off.
-const GARDEN_ON = false;
+const GARDEN_ON = false, MAZE_ON = false;   // (both kept, switched off: the field is now an orchard, a pumpkin patch and a cornfield)
 const MAZE = { x0: 1, y0: 31, w: 13, h: 9 };   // in tiles: the maze fills 13 x 9 tiles; cells sit on the odd tiles, corn on the rest
 // true where there is corn. A perfect maze (one way between any two places), laid out the same every time:
 // the way in is a gap in the top row, straight down from the road; the way out is a gap in the bottom row.
@@ -2919,6 +2934,7 @@ function add(e) {
   [[6.15, 34.5], [8.85, 34.5], [6.15, 36.75], [8.85, 36.75]].forEach(([x, y], i) => add({ w: 'lampa', ic: '@lihtar', k: 'glamp' + i, x, y, s: 2.2, quiet: true, street: true }));
   [[2.2, 40.25], [4.6, 40.3], [10.0, 40.3], [12.4, 40.25], [1.5, 36.0]].forEach(([x, y], i) => add({ w: 'yalyna', ic: '@cypress', k: 'gcyp' + i, x, y, s: 2.5, quiet: true, solid: y > 40 }));   // evergreen columns round the back
   }
+  if (MAZE_ON) {
   // the corn maze: a clump of maize on every wall tile (solid, and not tappable), a sign at the mouth, a scarecrow at the way out
   for (let gy = 0; gy < MAZE.h; gy++) for (let gx = 0; gx < MAZE.w; gx++) if (MAZE_WALL[gy][gx]) add({ w: 'kushch', ic: '@corn', k: 'corn' + gx + '_' + gy, x: MAZE.x0 + gx + 0.5, y: MAZE.y0 + gy + 0.92, s: 1.0, solid: true, quiet: true, nohit: true });
   add({ w: 'kushch', ic: '@mazesign', k: 'mazesign', x: 4.4, y: 30.9, s: 1.25, quiet: true });
@@ -2929,6 +2945,18 @@ function add(e) {
     const ends = []; for (let gy = 1; gy < MAZE.h; gy += 2) for (let gx = 1; gx < MAZE.w; gx += 2) { const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => open(gx + dx, gy + dy)).length; if (n === 1) ends.push([gx, gy, dist[gx + ',' + gy] || 0]); }
     ends.sort((a, b) => b[2] - a[2]); for (const [gx, gy] of ends.slice(0, 6)) add({ w: 'harbuz', x: MAZE.x0 + gx + 0.5, y: MAZE.y0 + gy + 0.8, s: 0.8, give: 'harbuz', cd: 150, hide: true, quiet: true });
   }
+  }
+  // the farm in the bottom-left field: an apple orchard (west), a pumpkin patch (east), a cornfield (south), a dirt
+  // path down the middle, and bushes and flowers all round
+  [[2.3, 33.0], [4.1, 33.0], [5.9, 33.0], [3.2, 35.3], [5.0, 35.3]].forEach(([x, y], i) => add({ w: 'yablunia', k: 'farmapple' + i, x, y, s: 2.0, solid: true, give: 'yabluko', cd: 60 }));
+  for (const y of [32.9, 34.1, 35.3]) for (const x of [9.0, 10.3, 11.6, 12.9]) add({ w: 'harbuz', ic: '@pumpkin', x, y, s: 1.2, give: 'harbuz', cd: 150, hide: true, only: ['lito', 'osin'], quiet: true });
+  for (const ty of [37, 39]) for (let tx = 2; tx <= 13; tx++) if (tx !== 7) add({ w: 'kushch', ic: '@corn', k: 'fcorn' + tx + '_' + ty, x: tx + 0.5, y: ty + 0.92, s: 1.05, solid: true, quiet: true, nohit: true });
+  add({ w: 'kushch', ic: '@scarecrow', k: 'fscare', x: 10.5, y: 38.95, s: 1.3, quiet: true });
+  [[6.1, 31.9], [8.25, 31.9], [1.6, 36.3], [13.6, 36.3]].forEach(([x, y], i) => add({ w: 'kushch', ic: '@rhodo', k: 'frhodo' + i, x, y, s: 1.3, solid: true, quiet: true }));
+  [[1.5, 34.0], [13.6, 33.4]].forEach(([x, y]) => add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true }));
+  [[6.3, 32.6], [6.3, 34.2], [6.3, 35.8], [8.15, 32.6], [8.15, 34.2], [8.15, 35.8]].forEach(([x, y], i) => add({ w: 'kvitka', ic: '@lavclump', k: 'flav' + i, x, y, s: 0.8, quiet: true }));
+  [[2.0, 34.4], [4.2, 34.1], [5.7, 36.2], [3.0, 36.1], [8.6, 36.15], [10.0, 36.2], [12.4, 36.15], [13.4, 35.0], [9.2, 31.6], [11.4, 31.6]].forEach(([x, y]) => add({ w: 'kvitka', x, y, s: 0.8, give: 'kvitka', cd: 90, hide: true }));
+  [[1.7, 32.3], [1.7, 35.4]].forEach(([x, y]) => add({ w: 'malva', x, y, s: 1.0 }));
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [26.4, 11.15], [29.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
@@ -3707,6 +3735,7 @@ function mazePaint(sea) {
   return cv;
 }
 function mazeDraw(c) {
+  if (!MAZE_ON) return;
   const vw = cv.width / zoom, vh = cv.height / zoom; if ((MAZE.x0 + MAZE.w) * T < camX || MAZE.x0 * T > camX + vw || (MAZE.y0 + MAZE.h + 1) * T < camY || MAZE.y0 * T > camY + vh) return;
   const sea = season(); c.drawImage(MAZE_CV[sea] || (MAZE_CV[sea] = mazePaint(sea)), MAZE.x0 * T, MAZE.y0 * T);
 }
@@ -3716,6 +3745,43 @@ function mazeReward() {
   if (S.maze.day === day) return toast('🌽 ' + (stage() < 3 ? 'You already found the way out today. Come back tomorrow!' : 'Ти вже знайшла вихід сьогодні. Приходь завтра!'), 3000);
   S.maze.day = day; S.maze.n = (S.maze.n || 0) + 1; S.coins = (S.coins || 0) + 10; hud(); save(); blip(880, 0.1); setTimeout(() => blip(1320, 0.14), 120);
   fxBurst(MAZE_OUT[0] + 0.5, MAZE_OUT[1] + 0.2, '🌽'); toast('🌽 ' + (stage() < 3 ? 'You found the way out of the corn maze! +10 💰' : 'Ти знайшла вихід із кукурудзяного лабіринту! +10 💰'), 4200);
+}
+// ---- the farm (third version of the bottom-left field): an apple orchard, a pumpkin patch and a cornfield. The floor
+// (a dirt path down the middle, the orchard's mown grass, the pumpkin patch's tilled soil, the cornfield's furrows) is
+// painted once per season; everything standing on it is an ordinary picture.
+const FARM = { x0: 1.2, y0: 31.1, x1: 14.0, y1: 41.0 };
+const FARM_CV = {};
+function farmPaint(sea) {
+  const W = Math.ceil((FARM.x1 - FARM.x0) * T), H = Math.ceil((FARM.y1 - FARM.y0) * T), cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d');
+  const X = x => (x - FARM.x0) * T, Y = y => (y - FARM.y0) * T, snow = sea === 'zyma'; let r = 23; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const soil = snow ? '#dfe6e9' : sea === 'osin' ? '#6a4a2a' : '#5e4128', ridge = snow ? '#f4f8f9' : sea === 'osin' ? '#85613a' : '#765233';
+  // the orchard's mown grass, a little greener than the meadow, in soft stripes
+  { const g = snow ? ['#eef3f5', '#e4ecef'] : sea === 'osin' ? ['#9cb55e', '#92ad56'] : sea === 'vesna' ? ['#a4d878', '#98d06c'] : ['#96cf6a', '#8bc860'];
+    c.save(); c.beginPath(); c.moveTo(X(1.5) + 18, Y(31.6)); c.lineTo(X(6.3) - 18, Y(31.6)); c.quadraticCurveTo(X(6.3), Y(31.6), X(6.3), Y(31.6) + 18); c.lineTo(X(6.3), Y(36.5) - 18); c.quadraticCurveTo(X(6.3), Y(36.5), X(6.3) - 18, Y(36.5)); c.lineTo(X(1.5) + 18, Y(36.5)); c.quadraticCurveTo(X(1.5), Y(36.5), X(1.5), Y(36.5) - 18); c.lineTo(X(1.5), Y(31.6) + 18); c.quadraticCurveTo(X(1.5), Y(31.6), X(1.5) + 18, Y(31.6)); c.closePath(); c.clip();
+    c.fillStyle = g[0]; c.fillRect(0, 0, W, H); c.fillStyle = g[1]; for (let k = -H; k < W; k += 48) { c.beginPath(); c.moveTo(k, 0); c.lineTo(k + 24, 0); c.lineTo(k + 24 + H, H); c.lineTo(k + H, H); c.closePath(); c.fill(); }
+    // fallen apples in autumn, blossom petals in spring
+    for (let i = 0; i < 70; i++) { const x = X(1.6 + rnd() * 4.6), y = Y(31.8 + rnd() * 4.5); if (sea === 'osin') { c.fillStyle = ['#d8352a', '#e85a3a', '#c8a02a'][i % 3]; circ(c, x, y, 2.6); c.fillStyle = 'rgba(255,255,255,.4)'; circ(c, x - 0.8, y - 0.9, 0.8); } else if (sea === 'vesna') { c.fillStyle = i % 2 ? '#ffe0ea' : '#fff'; ell(c, x, y, 2.4, 1.5); } }
+    c.restore(); }
+  // the dirt path down the middle, from the road to the cornfield, with stones along its edges
+  { const x0 = X(6.45), x1 = X(8.0); c.fillStyle = snow ? '#f1f4f5' : sea === 'osin' ? '#bfa370' : '#cdb07c'; c.fillRect(x0, 0, x1 - x0, H);
+    for (let i = 0; i < 520; i++) { c.fillStyle = snow ? ['#d6dde0', '#fff'][i % 2] : ['#a8895a', '#e0c898', '#b89a68'][i % 3]; c.fillRect(x0 + rnd() * (x1 - x0), rnd() * H, 2, 1.6); }
+    for (const sx of [x0, x1]) for (let y = 4; y < H; y += 17 + rnd() * 8) { c.fillStyle = ['#9a968c', '#b4afa4', '#827e74'][(rnd() * 3) | 0]; ell(c, sx + (rnd() - 0.5) * 3, y, 4 + rnd() * 3, 3); c.fillStyle = 'rgba(255,255,255,.25)'; ell(c, sx - 1, y - 1, 1.8, 1); } }
+  // the pumpkin patch: tilled soil in long ridges, mulched with straw
+  { const x0 = X(8.25), y0 = Y(31.7), w = X(13.6) - x0, h = Y(36.0) - y0; c.fillStyle = 'rgba(30,20,10,.22)'; rr(c, x0 + 3, y0 + 4, w, h, 12); c.fillStyle = soil; rr(c, x0, y0, w, h, 12);
+    for (let y = y0 + 12; y < y0 + h - 6; y += 22) { c.fillStyle = ridge; rr(c, x0 + 8, y, w - 16, 9, 4); c.fillStyle = 'rgba(0,0,0,.22)'; c.fillRect(x0 + 10, y + 10, w - 20, 3); }
+    if (!snow) for (let i = 0; i < 80; i++) { c.save(); c.translate(x0 + 8 + rnd() * (w - 16), y0 + 8 + rnd() * (h - 16)); c.rotate(rnd() * 6); c.fillStyle = sea === 'osin' ? '#d9bd6a' : '#e6cf82'; c.fillRect(-4, -0.8, 8, 1.6); c.restore(); }
+    if (sea === 'vesna') for (let i = 0; i < 34; i++) { const x = x0 + 14 + rnd() * (w - 28), y = y0 + 12 + rnd() * (h - 24); c.fillStyle = '#6cb84a'; ell(c, x - 2, y, 3, 1.8); ell(c, x + 2, y, 3, 1.8); }
+    c.strokeStyle = '#8a5a2b'; c.lineWidth = 3; rr2f(c, x0 - 2, y0 - 2, w + 4, h + 4, 12); }
+  // the cornfield: dark furrowed earth with the aisles between the rows trodden pale
+  { const x0 = X(1.45), y0 = Y(36.85), w = X(13.9) - x0, h = Y(40.9) - y0; c.fillStyle = 'rgba(30,20,10,.22)'; rr(c, x0 + 3, y0 + 4, w, h, 12); c.fillStyle = soil; rr(c, x0, y0, w, h, 12);
+    for (const ty of [36, 38, 40]) { const ay = Y(ty) + 3; c.fillStyle = snow ? '#eef2f4' : sea === 'osin' ? '#a58558' : '#94754a'; c.fillRect(x0 + 4, ay, w - 8, T - 6); for (let i = 0; i < 90; i++) { c.fillStyle = snow ? '#d6dde0' : ['#7a5e36', '#b89a68'][i % 2]; c.fillRect(x0 + 6 + rnd() * (w - 12), ay + rnd() * (T - 8), 2, 1.5); } }
+    c.strokeStyle = 'rgba(0,0,0,.2)'; c.lineWidth = 2; for (const ty of [37, 39]) for (let y = Y(ty) + 8; y < Y(ty) + T - 4; y += 14) { c.beginPath(); c.moveTo(x0 + 6, y); c.lineTo(x0 + w - 6, y); c.stroke(); } }
+  return cv;
+}
+function rr2f(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r); c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath(); c.stroke(); }
+function farmDraw(c) {
+  const vw = cv.width / zoom, vh = cv.height / zoom; if (FARM.x1 * T < camX || FARM.x0 * T > camX + vw || FARM.y1 * T < camY || FARM.y0 * T > camY + vh) return;
+  const sea = season(); c.drawImage(FARM_CV[sea] || (FARM_CV[sea] = farmPaint(sea)), FARM.x0 * T, FARM.y0 * T);
 }
 const CC = { x: 38.07, y: 5.45, R: 1.5 };
 const ccShown = () => { const M = ccCase(); return !!(M && season() === 'osin'); };
@@ -10747,7 +10813,8 @@ function drawWorld(t) {
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
   c.drawImage(seasonGround(), 0, -GROUND_TOP * T);
   gardenDraw(c);   // the formal gardens (switched off)
-  mazeDraw(c);   // the corn maze's floor, bottom left
+  mazeDraw(c);   // the corn maze's floor (switched off)
+  farmDraw(c);   // the orchard, pumpkin patch and cornfield's floor, bottom left
   if (winter()) { drawIce(c, t); drawPrints(c, t); } else if (GFX.water) drawWater(c, t);
   ccDraw(c);   // the crop circle in the wheat, flat on the ground
   drawFalls(c, t);
