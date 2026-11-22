@@ -15,7 +15,7 @@ window.DATA = {
     { id: "kamin", uk: "камінь", tr: "KA-min", en: "stone", ic: "@stone" },
     { id: "kvitka", uk: "квітка", tr: "KVIT-ka", en: "flower", ic: "@kvitka", acc: "квітку" },
     { id: "soniashnyk", uk: "соняшник", tr: "SO-niash-nyk", en: "sunflower", ic: "🌻", fact: { uk: "Україна вирощує дуже багато соняшників.", en: "Ukraine is one of the world's biggest sunflower growers." } },
-    { id: "hryb", uk: "гриб", tr: "hryb", en: "mushroom", ic: "🍄", fact: { uk: "Восени всі ходять по гриби.", en: "In autumn, going to the forest to pick mushrooms is a favourite pastime." } },
+    { id: "hryb", uk: "гриб", tr: "hryb", en: "mushroom", ic: "@hryb", fact: { uk: "Восени всі ходять по гриби.", en: "In autumn, going to the forest to pick mushrooms is a favourite pastime." } },
     { id: "stavok", uk: "ставок", tr: "sta-VOK", en: "pond", ic: "@pond" },
     { id: "choven", uk: "човен", tr: "CHO-ven", en: "boat", ic: "@canoe" },
     { id: "tserkva", uk: "церква", tr: "TSERK-va", en: "church", ic: "@church", acc: "церкву", fact: { uk: "Старі дерев'яні церкви є в Карпатах.", en: "Old wooden churches in the Carpathian mountains are on UNESCO's World Heritage list." } },

@@ -2394,6 +2394,49 @@ const DRAW = {
     else { const bx = (h(2) - 0.5) * 10; c.fillStyle = '#5f9a3a'; c.beginPath(); c.ellipse(bx, -8, 9, 7.5, 0, 0, 7); c.fill(); c.fillStyle = '#7fb84a'; c.beginPath(); c.ellipse(bx, -8.4, 8, 6.6, 0, 0, 7); c.fill(); c.strokeStyle = 'rgba(40,90,20,.5)'; c.lineWidth = 0.9; for (const k of [-0.5, 0, 0.5]) { c.beginPath(); c.moveTo(bx + k * 3, -15); c.quadraticCurveTo(bx + k * 12, -8, bx + k * 4, -1.5); c.stroke(); } c.strokeStyle = '#4f7a2a'; c.lineWidth = 2; c.beginPath(); c.moveTo(bx, -15); c.lineTo(bx + 2, -19); c.stroke();
       c.fillStyle = '#ffd23f'; for (const [x, y] of [[-14, -22], [18, -22]]) { for (let k = 0; k < 5; k++) { const a = k / 5 * 6.283; circ(c, x + Math.cos(a) * 3, y + Math.sin(a) * 3, 2.2); } c.fillStyle = '#e8a91a'; circ(c, x, y, 1.6); c.fillStyle = '#ffd23f'; } }   // a yellow squash flower or two
   },
+  // A fly agaric (мухомор), the red-and-white mushroom of the storybooks, with a younger one beside it: a white stem
+  // with a hanging skirt and a bulbous foot ringed with scales, a domed scarlet cap shading to orange at the rim with
+  // irregular white warts, the cream gills showing under the edge; moss and a fallen leaf round the foot.
+  hryb(c, o) {
+    const v = (o && o.v) || 0, h = k => { const q = Math.sin((v + k) * 91.7) * 43758.5; return q - Math.floor(q); };
+    c.fillStyle = 'rgba(40,60,20,.24)'; ell(c, 2, -1, 40, 7);
+    const one = (x, sc, lean, cap) => {
+      c.save(); c.translate(x, 0); c.scale(sc, sc); c.rotate(lean);
+      // the stem, slightly curved, with a swollen foot
+      const st = c.createLinearGradient(-14, 0, 14, 0); st.addColorStop(0, '#dcd5c4'); st.addColorStop(0.45, '#fbf8f0'); st.addColorStop(1, '#cfc6b2'); c.fillStyle = st;
+      c.beginPath(); c.moveTo(-8.5, -58); c.quadraticCurveTo(-10, -30, -13, -14); c.bezierCurveTo(-19, -10, -18, 0, 0, 0); c.bezierCurveTo(18, 0, 19, -10, 13, -14); c.quadraticCurveTo(10, -30, 8.5, -58); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(140,125,95,.4)'; c.lineWidth = 0.9; for (let i = 0; i < 3; i++) { c.beginPath(); c.ellipse(0, -4 - i * 3.6, 12 - i * 1.2, 2.2, 0, 0.1, Math.PI - 0.1); c.stroke(); }   // the scaly rings on the foot
+      c.fillStyle = 'rgba(150,130,100,.18)'; ell(c, 4, -30, 3, 14);
+      // the skirt hanging from the upper stem
+      c.fillStyle = '#f4efe2'; c.beginPath(); c.moveTo(-8, -46); c.quadraticCurveTo(-12, -38, -10.5, -35); c.quadraticCurveTo(0, -32, 10.5, -35); c.quadraticCurveTo(12, -38, 8, -46); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(150,135,105,.5)'; c.lineWidth = 0.8; c.stroke(); for (const dx of [-6, -2, 2, 6]) { c.beginPath(); c.moveTo(dx * 0.8, -45); c.lineTo(dx * 1.2, -35.5); c.stroke(); }
+      // the gills under the cap
+      c.fillStyle = '#efe6c8'; c.beginPath(); c.ellipse(0, -57, cap * 0.92, 6.5, 0, 0, Math.PI); c.fill();
+      c.strokeStyle = 'rgba(170,150,105,.55)'; c.lineWidth = 0.6; for (let i = -9; i <= 9; i++) { c.beginPath(); c.moveTo(i * cap * 0.012, -57); c.lineTo(i * cap * 0.095, -52.3 + Math.abs(i) * 0.25); c.stroke(); }
+      // the cap: scarlet at the crown, orange towards the rim, a bit lumpy
+      const cp = c.createRadialGradient(-cap * 0.25, -cap * 0.95 - 57, 2, 0, -60, cap * 1.25); cp.addColorStop(0, '#f2563a'); cp.addColorStop(0.45, '#d4231a'); cp.addColorStop(0.85, '#b8170f'); cp.addColorStop(1, '#e0601f'); c.fillStyle = cp;
+      const top = -57 - cap * 0.78;
+      c.beginPath(); c.moveTo(-cap, -56); c.bezierCurveTo(-cap * 1.04, top + cap * 0.1, -cap * 0.5, top, 0, top); c.bezierCurveTo(cap * 0.5, top, cap * 1.04, top + cap * 0.1, cap, -56); c.quadraticCurveTo(0, -51, -cap, -56); c.closePath(); c.fill();
+      c.strokeStyle = 'rgba(120,10,5,.4)'; c.lineWidth = 0.9; c.stroke();
+      c.strokeStyle = '#e8813a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(-cap * 0.97, -56); c.quadraticCurveTo(0, -51.5, cap * 0.97, -56); c.stroke();   // the paler rim
+      // the white warts: scattered, irregular, smaller toward the rim, each a little raised (lit on top, shaded below)
+      c.save(); c.beginPath(); c.moveTo(-cap, -56); c.bezierCurveTo(-cap * 1.04, top + cap * 0.1, -cap * 0.5, top, 0, top); c.bezierCurveTo(cap * 0.5, top, cap * 1.04, top + cap * 0.1, cap, -56); c.quadraticCurveTo(0, -51, -cap, -56); c.clip();
+      for (let i = 0; i < 36; i++) { const a = h(10 + i + x) * Math.PI - Math.PI, r = Math.sqrt(h(40 + i + x)) * 0.92, wx = Math.cos(a) * cap * r, wy = -57 + Math.sin(a) * (57 + top) * -r * -1 + (1 - r) * 0, ws = (1.1 + h(70 + i + x) * 2.2) * (1.15 - r * 0.6);
+        const yy = -56 - (-56 - top) * Math.sqrt(Math.max(0, 1 - (wx / cap) * (wx / cap))) * (0.25 + h(90 + i + x) * 0.7);
+        c.fillStyle = 'rgba(120,20,10,.35)'; ell(c, wx + 0.4, yy + 0.6, ws * 1.05, ws * 0.7);
+        c.fillStyle = '#fbf6ea'; c.beginPath(); for (let k = 0; k < 6; k++) { const aa = k / 6 * 6.283, rr2 = ws * (0.8 + h(120 + i * 7 + k) * 0.35); c.lineTo(wx + Math.cos(aa) * rr2, yy + Math.sin(aa) * rr2 * 0.68); } c.closePath(); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.9)'; ell(c, wx - ws * 0.2, yy - ws * 0.2, ws * 0.4, ws * 0.22); }
+      c.fillStyle = 'rgba(255,220,200,.3)'; ell(c, -cap * 0.4, top + cap * 0.32, cap * 0.28, cap * 0.12);   // the sheen
+      c.restore();
+      c.restore();
+    };
+    one(14, 0.62, 0.12, 30);   // a young one, its cap still rounder
+    one(-6, 1, -0.05, 40);
+    // moss and grass round the foot, and a fallen birch leaf
+    for (let i = 0; i < 14; i++) { const gx = -34 + i * 5.2 + h(200 + i) * 3, gh = 5 + h(220 + i) * 8; c.strokeStyle = i % 2 ? '#4f8f3a' : '#6aa84a'; c.lineWidth = 1.3; c.lineCap = 'round'; c.beginPath(); c.moveTo(gx, 0); c.quadraticCurveTo(gx + 1.5, -gh * 0.6, gx + (h(240 + i) - 0.5) * 5, -gh); c.stroke(); }
+    c.fillStyle = '#5f8f3a'; for (let i = 0; i < 9; i++) circ(c, -26 + i * 6.5, -1.2 + Math.sin(i * 2.1) * 0.8, 2.4 + h(260 + i) * 1.2);
+    c.save(); c.translate(24, -2); c.rotate(0.5); c.fillStyle = '#e0b030'; c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(5, -4, 10, 0); c.quadraticCurveTo(5, 3.5, 0, 0); c.fill(); c.strokeStyle = 'rgba(140,90,20,.6)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(0, 0); c.lineTo(9, 0); c.stroke(); c.restore();
+  },
   // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
   // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
   bilyhryb(c) {
