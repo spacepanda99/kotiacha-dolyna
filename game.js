@@ -4167,7 +4167,7 @@ function myDialog(id, text, choices) {
   const npc = NPC[id], uk = MY_LANG === 'uk';
   const body = myL(text), long = body.replace(/<[^>]+>/g, '').length > 230;   // a long card (a first hello with the news and the hint) gets smaller type, so it all fits
   const hasP = PORTRAITS.has(npc.id);
-  openSheet('<div class="dlg mydlg">' + (hasP ? portraitHTML : '<img class="face" src="' + faceURL(npcLook(npc.id)) + '" alt=""' + (long ? ' style="width:64px;height:64px"' : '') + '>') + '<div style="flex:1"><div class="who" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">' + (uk ? npc.name : npc.nameEn) + '</span><button class="subt mylang" data-a="myLang" style="font-size:13px;padding:3px 10px">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div><div class="line" style="font-size:' + (long ? 16.5 : 19) + 'px;line-height:1.3">' + body + '</div></div></div>' +
+  openSheet('<div class="dlg mydlg' + (hasP ? ' hasp' : '') + '">' + (hasP ? portraitHTML : '<img class="face" src="' + faceURL(npcLook(npc.id)) + '" alt=""' + (long ? ' style="width:64px;height:64px"' : '') + '>') + '<div style="flex:1"><div class="who" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="flex:1">' + (uk ? npc.name : npc.nameEn) + '</span><button class="subt mylang" data-a="myLang" style="font-size:13px;padding:3px 10px">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button></div><div class="line" style="font-size:' + (long ? 16.5 : 19) + 'px;line-height:1.3">' + body + '</div></div></div>' +
     '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>');
   if (hasP) portraitShow(npc.id);   // (the language button sits up by their name, where it can't scroll out of sight)
 }
@@ -5394,7 +5394,8 @@ function catSheet(e) {
   });
   catPortrait(ct.id);
 }
-function catPortrait(id) { const pid = 'cat_' + id; if (!PORTRAITS.has(pid) || !sheet.classList.contains('show')) return; const card = sheet.querySelector('.card') || sheet.firstElementChild; if (!card) return; card.insertAdjacentHTML('afterbegin', portraitHTML); portraitShow(pid); }
+const CAT_LAT = { rudko: 'Rudko', vuhlyk: 'Vuhlyk', snizhok: 'Snizhok', dymok: 'Dymok', smuhastyk: 'Smuhastyk', murka: 'Murka', bublyk: 'Bublyk', zirka: 'Zirka' };
+function catPortrait(id) { const pid = 'cat_' + id; if (!PORTRAITS.has(pid) || !sheet.classList.contains('show')) return; const card = sheet.querySelector('.card') || sheet.firstElementChild; if (!card) return; const ct = D.cats.find(x => x.id === id); card.insertAdjacentHTML('afterbegin', portraitHTML + (ct ? '<div class="catname">' + ct.name + ' <span>' + (CAT_LAT[id] || '') + '</span></div>' : '')); portraitShow(pid); }
 const catFriends = () => D.cats.filter(ct => S.cats[ct.id]).length;
 
 // ------------------------------------------------------------------ walking
@@ -5709,13 +5710,13 @@ let onClose = null, acts = [], cur = {}, sheetAt = 0;
 // anything else.
 const PORTRAITS = new Set(['me', 'olia', 'taras', 'andriiko', 'bohdan', 'oksana', 'solomiia', 'petro', 'myron', 'yaroslava', 'ostap', 'lesia', 'zakhar', 'halyna', 'cat_rudko', 'cat_vuhlyk', 'cat_snizhok', 'cat_dymok', 'cat_smuhastyk', 'cat_murka', 'cat_bublyk', 'cat_zirka']);
 let portraitOn = null, portraitRaf = 0;
-const PORTRAIT_W = 128, PORTRAIT_H = 160, PORTRAIT_OVER = 0.3;
+const PORTRAIT_W = 192, PORTRAIT_H = 240, PORTRAIT_OVER = 0.3;
 function portraitEl() {
   let im = document.getElementById('talkPortrait');
-  if (!im) { im = document.createElement('img'); im.id = 'talkPortrait'; im.alt = ''; im.style.cssText = 'position:fixed;z-index:11;pointer-events:none;width:' + PORTRAIT_W + 'px;height:' + PORTRAIT_H + 'px;object-fit:cover;border-radius:22px;box-shadow:0 8px 22px rgba(60,30,20,.28);border:3px solid #fffaf0;display:none;background:#f3e6dc'; document.body.appendChild(im); }
+  if (!im) { im = document.createElement('img'); im.id = 'talkPortrait'; im.alt = ''; im.style.cssText = 'position:fixed;z-index:11;pointer-events:none;width:' + PORTRAIT_W + 'px;height:' + PORTRAIT_H + 'px;object-fit:contain;display:none;filter:drop-shadow(0 4px 6px rgba(60,30,20,.18));-webkit-mask-image:linear-gradient(#000 82%,transparent);mask-image:linear-gradient(#000 82%,transparent)'; document.body.appendChild(im); }
   return im;
 }
-const portraitHTML = '<div class="pslot" style="width:' + (PORTRAIT_W - 6) + 'px;height:' + Math.round(PORTRAIT_H * (1 - PORTRAIT_OVER) - 6) + 'px;flex:none;float:left;margin:0 10px 6px 0"></div>';
+const portraitHTML = '<div class="pslot" style="width:' + (PORTRAIT_W - 20) + 'px;height:' + Math.round(PORTRAIT_H * (1 - PORTRAIT_OVER) - 4) + 'px;float:left;margin:0 8px 2px -6px"></div>';
 function portraitShow(id) {
   if (!PORTRAITS.has(id)) return false;
   const im = portraitEl(), src = 'portraits/' + id + '.webp'; if (!im.src.endsWith(src)) im.src = src;
@@ -5724,7 +5725,7 @@ function portraitShow(id) {
     if (!portraitOn || !(sheet.classList.contains('show') || sheet.classList.contains('closing'))) { im.style.display = 'none'; portraitOn = null; return; }
     const slot = sheet.querySelector('.pslot'); if (!slot) { im.style.display = 'none'; portraitOn = null; return; }
     const r = slot.getBoundingClientRect(), sr = sheet.getBoundingClientRect();
-    im.style.left = Math.round(r.left - 3) + 'px'; im.style.top = Math.round(sr.top - PORTRAIT_H * PORTRAIT_OVER) + 'px';
+    im.style.left = Math.round(r.left - 10) + 'px'; im.style.top = Math.round(sr.top - PORTRAIT_H * PORTRAIT_OVER) + 'px';
     portraitRaf = requestAnimationFrame(follow);
   };
   follow(); return true;
@@ -6155,7 +6156,7 @@ function dialog(npc, steps, i = 0) {
   const en = s < 2 ? `<div class="en">${st.en}</div>` : `<button class="peek" data-a="peekLine">👁 ${D.ui.show[0]}${stage() < 3 ? " · " + D.ui.show[1] : ""}</button>`;
   const choices = st.choices ? `<div class="choices">${st.choices.map((c, k) => `<button class="b ghost" data-a="choose" data-v="${k}">${c.uk}<small class="cen"${s < 2 ? '' : ' style="display:none"'}>${c.en}</small></button>`).join('')}</div>` : '';
   const pid = st.me ? 'me' : npc.id, hasP = PORTRAITS.has(pid);
-  openSheet(`<div class="dlg">${hasP ? portraitHTML : `<img class="face" src="${face}" alt="">`}<div style="flex:1"><div class="who">${who}</div>
+  openSheet(`<div class="dlg${hasP ? ' hasp' : ''}">${hasP ? portraitHTML : `<img class="face" src="${face}" alt="">`}<div style="flex:1"><div class="who">${who}</div>
     <div class="line">${st.uk}</div>${s < 2 ? `<div class="tr">${translit(st.uk)}</div>` : ''}<div id="en">${en}</div></div></div>
     ${st.hint ? `<div class="hint">${st.hint}</div>` : ''}${choices}
     <div class="row">${btn('hear', st.clip, '🔊', 'round blue')}${st.choices ? '' : btn('next', '', lab('next'))}</div>`);
