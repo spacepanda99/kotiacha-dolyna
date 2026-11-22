@@ -255,6 +255,21 @@ const poly = (c, pts) => { c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(p[0
 // there's blossom. o.v (from where the tree stands) keeps each tree its own colours; the market icons (no o.v)
 // stay summer green.
 const treeSeason = o => (o && o.v != null && typeof season === 'function') ? season() : 'lito';
+// Every tree and bush is its own: o.v (from where it stands) picks its size, lean, mirror image, shade of green and
+// the details below. Same spot, same tree, every time.
+const vh = (o, k) => { const q = Math.sin((((o && o.v) || 0) + k) * 78.233) * 43758.5; return q - Math.floor(q); };
+const _tc = {};
+function tintHex(h, dl, dh) {   // shift a colour's lightness and hue a little (cached, so it costs nothing per frame)
+  const key = h + '|' + dl + '|' + dh; if (_tc[key]) return _tc[key];
+  const r = parseInt(h.slice(1, 3), 16) / 255, g = parseInt(h.slice(3, 5), 16) / 255, b = parseInt(h.slice(5, 7), 16) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let H = 0, Sa = 0, L = (mx + mn) / 2;
+  if (d) { Sa = L > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); H = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; H *= 60; }
+  H = (H + dh + 360) % 360; L = Math.max(0, Math.min(1, L + dl));
+  const q = L < 0.5 ? L * (1 + Sa) : L + Sa - L * Sa, p = 2 * L - q, f = t => { t = ((t % 1) + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+  const hex = x => ('0' + Math.round(x * 255).toString(16)).slice(-2);
+  return _tc[key] = '#' + hex(f(H / 360 + 1 / 3)) + hex(f(H / 360)) + hex(f(H / 360 - 1 / 3));
+}
+const jit = (P, o) => { if (!o || o.v == null) return P; const dl = Math.round((vh(o, 201) - 0.5) * 0.14 * 30) / 30, dh = Math.round((vh(o, 202) - 0.5) * 8) * 2; return P.map(h => tintHex(h, dl, dh)); };
 const AUTUMN_PALS = [['#a8381f', '#cf5a24', '#ec8a2e', '#ffc35a'], ['#c0721a', '#df9e26', '#f2c43c', '#ffe27a'], ['#8e2a2a', '#bf3e2d', '#e46d37', '#ff9f5a']];
 const KHATA_LOOK = {
   mine:   { wall: '#fffdf5', band: '#4a90d9', band2: '#3d7cc2', roof: ['#d8a23a', '#e6b95a', '#b9842a'], thatch: 1, frame: '#3d7cc2', glass: '#bfe6fb', door: '#8a5a2b', box: ['#e2574c', '#f2c230', '#e2574c'] },
@@ -371,9 +386,15 @@ function autumnSpeckle(c, o) {   // individual leaves catching the light, and on
   for (let i = 0; i < 12; i++) { c.fillStyle = leafCols[(i + 2) % leafCols.length]; ell(c, Math.cos(i * 2.1 + v) * 26, -62 + Math.sin(i * 1.7 + v) * 22, 3, 2); }
   for (let i = 0; i < 2; i++) { const q = ((t * 0.18 + i * 0.5 + v) % 1); c.save(); c.translate(Math.sin(q * 9 + i) * 18 + (i ? 14 : -16), -40 + q * 42); c.rotate(q * 12); c.fillStyle = leafCols[i * 2]; ell(c, 0, 0, 3.4, 1.7); c.restore(); }
 }
-function bareBranches(c, s) {   // winter: the bare crown, with snow lying along the boughs
+function bareBranches(c, s, o) {   // winter: the bare crown, with snow lying along the boughs (every tree grows its own)
   c.strokeStyle = '#6b4422'; c.lineCap = 'round';
-  const B = [[0, -46, -26, -78, 4], [0, -46, 24, -80, 4], [0, -46, 2, -96, 4.5], [-14, -62, -36, -66, 2.5], [12, -64, 34, -62, 2.5], [-20, -72, -16, -92, 2], [18, -74, 14, -94, 2], [1, -76, -8, -100, 2]];
+  let B = [[0, -46, -26, -78, 4], [0, -46, 24, -80, 4], [0, -46, 2, -96, 4.5], [-14, -62, -36, -66, 2.5], [12, -64, 34, -62, 2.5], [-20, -72, -16, -92, 2], [18, -74, 14, -94, 2], [1, -76, -8, -100, 2]];
+  if (o && o.v != null) {
+    const j = (k, r) => (vh(o, k) - 0.5) * r;
+    B = B.map(([x1, y1, x2, y2, lw], i) => [x1 + j(400 + i, 4), y1, x2 + j(410 + i, 18), y2 + j(420 + i, 14), lw]);
+    B = B.filter((b, i) => i < 3 || vh(o, 430 + i) > 0.22);   // a few of the smaller boughs are missing on some trees
+    for (let i = 0; i < 2 + Math.floor(vh(o, 441) * 4); i++) { const x1 = j(450 + i, 40), y1 = -56 - vh(o, 460 + i) * 26, d = x1 < 0 ? -1 : 1; B.push([x1 * 0.5, y1, x1 * 0.5 + d * (10 + vh(o, 470 + i) * 16), y1 - 14 - vh(o, 480 + i) * 18, 1.6]); }   // extra twigs
+  }
   for (const [x1, y1, x2, y2, lw] of B) { c.lineWidth = lw * s; c.beginPath(); c.moveTo(x1 * s, y1); c.lineTo(x2 * s, y2); c.stroke(); }
   c.strokeStyle = '#ffffff'; for (const [x1, y1, x2, y2, lw] of B) { c.lineWidth = lw * 0.7 * s; c.beginPath(); c.moveTo((x1 + (x2 - x1) * 0.35) * s, y1 + (y2 - y1) * 0.35 - lw); c.lineTo(x2 * s, y2 - lw * 0.8); c.stroke(); }
 }
@@ -841,14 +862,14 @@ const DRAW = {
   },
   // Trees and bushes: a trunk, then a crown in three tones that leans a little in the wind (o.sway).
   tree(c, o) {
-    const sea = treeSeason(o), P = treePal(sea, o);
+    const sea = treeSeason(o), P = jit(treePal(sea, o), o);
     if (sea === 'osin') fallenLeaves(c, o, 46);
     c.fillStyle = '#6b4422'; poly(c, [[-14, 0], [-9, -4], [-6, -46], [6, -46], [9, -4], [14, 0]]);   // the trunk, flaring into its roots
     c.fillStyle = '#93602f'; poly(c, [[-6, 0], [-3.5, -46], [2.5, -46], [1.5, 0]]);
     c.strokeStyle = 'rgba(60,35,15,.4)'; c.lineWidth = 0.9; for (const [x0, y0, x1, y1] of [[-4, -6, -3, -18], [3, -12, 2.4, -26], [-2.5, -24, -2, -38], [4, -32, 3, -42]]) { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); }
     c.fillStyle = 'rgba(30,50,20,.35)'; c.fillRect(-6, -46, 12, 7);   // shade under the crown
     c.save(); c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40);
-    if (sea === 'zyma') { bareBranches(c, 1); c.restore(); return; }
+    if (sea === 'zyma') { bareBranches(c, 1, o); c.restore(); return; }
     const v = (o && o.v) || 0, hv = k => { const q = Math.sin((v + k) * 78.233) * 43758.5; return q - Math.floor(q); };
     c.fillStyle = P[0]; circ(c, 0, -62, 33); circ(c, -23, -47, 20); circ(c, 23, -47, 20);
     for (let i = 0; i < 16; i++) { const a = Math.PI * (0.95 + i / 15 * 1.1) + (hv(i) - 0.5) * 0.12, R = 33 + (i % 3) * 2; circ(c, Math.cos(a) * R * 0.95, -60 + Math.sin(a) * R * 0.92, 6 + hv(i + 20) * 3); }   // the leafy edge, in little clusters
@@ -863,30 +884,47 @@ const DRAW = {
     c.restore();
   },
   appletree(c, o) {
-    const sea = treeSeason(o), P = sea === 'lito' ? ['#3d9748', '#4fae55', '#6cc86e', '#8ad888'] : treePal(sea, o);
+    const sea = treeSeason(o), P = jit(sea === 'lito' ? ['#3d9748', '#4fae55', '#6cc86e', '#8ad888'] : treePal(sea, o), o);
     if (sea === 'osin') fallenLeaves(c, o, 48);
-    c.fillStyle = '#7a4e26'; poly(c, [[-10, 0], [-6, -46], [6, -46], [10, 0]]);
-    c.fillStyle = '#93602f'; poly(c, [[-6, 0], [-3.5, -46], [2.5, -46], [1.5, 0]]);
+    { const hv = k => vh(o, k), bw = 8.5 + hv(260) * 3.5, tw = 5 + hv(261) * 2.4, tl = (hv(262) - 0.5) * 5;
+      c.fillStyle = '#7a4e26'; poly(c, [[-bw, 0], [-tw + tl, -46], [tw + tl, -46], [bw, 0]]);
+      c.fillStyle = '#93602f'; poly(c, [[-bw * 0.6, 0], [-tw * 0.55 + tl, -46], [tw * 0.4 + tl, -46], [bw * 0.15, 0]]);
+      c.strokeStyle = 'rgba(60,35,15,.4)'; c.lineWidth = 0.8; for (let i = 0; i < 3; i++) { const y0 = -6 - i * 12 - hv(263 + i) * 4; c.beginPath(); c.moveTo(-2.5 + tl * (-y0 / 46), y0); c.lineTo(-2 + tl * ((-y0 + 8) / 46), y0 - 9); c.stroke(); }
+      if (hv(266) > 0.45) { c.fillStyle = '#3a2410'; ell(c, (hv(267) - 0.5) * tw, -14 - hv(268) * 14, 1.8, 2.6); }   // a knot in the bark
+      if (hv(269) > 0.72) { c.fillStyle = 'rgba(95,140,60,.8)'; ell(c, -tw * 0.5 + tl * 0.3, -26, 2.6, 5); }   // moss on the shady side
+      if (hv(270) > 0.5) { const s2 = hv(271) < 0.5 ? -1 : 1; c.fillStyle = '#7a4e26'; poly(c, [[s2 * 4 + tl * 0.8, -36], [s2 * 15, -50], [s2 * 16.5, -47], [s2 * 6 + tl * 0.8, -31]]); }   // a side branch
+      c.fillStyle = '#5da63e'; for (const dx of [-1, 1]) if (hv(272 + dx) > 0.4) { c.beginPath(); c.moveTo(dx * (bw + 1), 0); c.lineTo(dx * (bw + 3 + hv(275) * 3), -6 - hv(276) * 4); c.lineTo(dx * (bw + 4), 0); c.fill(); } }   // tufts of grass at the foot
     c.save(); c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40);
-    if (sea === 'zyma') { bareBranches(c, 1.05); c.restore(); return; }
-    c.fillStyle = P[0]; circ(c, 0, -61, 35); circ(c, -25, -46, 21); circ(c, 25, -46, 21);
-    c.fillStyle = P[1]; circ(c, 0, -66, 34); circ(c, -24, -51, 20); circ(c, 24, -51, 20);
-    c.fillStyle = P[2]; circ(c, -8, -78, 15); circ(c, 15, -62, 10);
-    c.fillStyle = P[3]; circ(c, -11, -83, 6.5);
+    if (sea === 'zyma') { bareBranches(c, 1.05, o); c.restore(); return; }
+    const hv = k => vh(o, k), ja = k => (hv(k) - 0.5) * 7;
+    c.fillStyle = P[0]; circ(c, ja(231), -61 + ja(232) * 0.5, 34 + hv(233) * 4); circ(c, -25 + ja(234), -46 + ja(235) * 0.4, 20 + hv(236) * 3); circ(c, 25 + ja(237), -46 + ja(238) * 0.4, 20 + hv(239) * 3);
+    if (hv(250) > 0.45) circ(c, (hv(251) < 0.5 ? -1 : 1) * (30 + hv(252) * 6), -60 + hv(253) * 6, 12 + hv(254) * 5);   // some crowns are lopsided
+    c.fillStyle = P[1]; circ(c, ja(231) * 0.8, -66 + ja(232) * 0.5, 33 + hv(233) * 4); circ(c, -24 + ja(234), -51 + ja(235) * 0.4, 19 + hv(236) * 3); circ(c, 24 + ja(237), -51 + ja(238) * 0.4, 19 + hv(239) * 3);
+    c.fillStyle = P[2]; circ(c, -8 + ja(241), -78 + ja(242) * 0.5, 13 + hv(243) * 4); circ(c, 15 + ja(244), -62 + ja(245) * 0.6, 9 + hv(246) * 3);
+    c.fillStyle = P[3]; circ(c, -11 + ja(247), -83 + ja(248) * 0.5, 5.5 + hv(249) * 2);
+    c.fillStyle = 'rgba(20,50,25,.18)'; c.beginPath(); c.ellipse(2, -42, 26, 8, 0, 0, Math.PI); c.fill();
     if (sea === 'osin') autumnSpeckle(c, o); if (sea === 'vesna') { blossom(c, o, 1.1); c.restore(); return; }   // in spring it flowers instead of fruiting
-    if (!o || o.fruit !== false) for (const [x, y] of [[-20, -56], [-4, -70], [14, -80], [22, -54], [2, -48], [-16, -84]]) { c.fillStyle = '#c92a22'; circ(c, x, y + 0.8, 5.2); c.fillStyle = '#e8463b'; circ(c, x, y, 4.8); c.fillStyle = 'rgba(255,255,255,.55)'; circ(c, x - 1.6, y - 1.8, 1.4); }
+    if (!o || o.fruit !== false) {
+      // between 3 and 9 apples, in places that are different on every tree, red, golden or rosy, never all one size
+      const pool = [[-22, -54], [-4, -70], [14, -80], [24, -54], [2, -48], [-16, -84], [-30, -44], [30, -46], [-10, -60], [10, -64], [-24, -68], [26, -68], [4, -88], [-2, -78], [18, -50], [-34, -52]];
+      const order = pool.map((p, i) => [hv(300 + i), p]).sort((a, b) => a[0] - b[0]).map(a => a[1]), n = 3 + Math.floor(hv(240) * 7), kind = hv(241);
+      const cols = kind < 0.55 ? ['#b81f1f', '#e04535'] : kind < 0.8 ? ['#c9a124', '#efd24e'] : ['#c2453f', '#f0866a'];
+      for (let i = 0; i < n; i++) { const [x, y] = order[i], r = 4.2 + hv(320 + i) * 1.8; c.fillStyle = cols[0]; circ(c, x, y + 0.8, r + 0.3); c.fillStyle = cols[1]; circ(c, x - 0.2, y, r); c.fillStyle = 'rgba(255,255,255,.5)'; circ(c, x - r * 0.35, y - r * 0.4, r * 0.28); }
+    }
     c.restore();
   },
   bush(c, o) {
-    const sea = treeSeason(o), P = sea === 'lito' ? ['#3f9a4a', '#57b25d', '#74c773'] : treePal(sea, o).slice(1);
+    const sea = treeSeason(o), P = jit(sea === 'lito' ? ['#3f9a4a', '#57b25d', '#74c773'] : treePal(sea, o).slice(1), o);
     if (sea === 'osin') fallenLeaves(c, o, 30);
     c.save(); c.rotate(((o && o.sway) || 0) * 0.6);
     if (sea === 'zyma') { c.strokeStyle = '#6b4422'; c.lineWidth = 2.4; c.lineCap = 'round'; for (const [x2, y2] of [[-26, -30], [-12, -44], [4, -50], [18, -42], [28, -26], [-2, -36]]) { c.beginPath(); c.moveTo(0, 0); c.quadraticCurveTo(x2 * 0.4, y2 * 0.5, x2, y2); c.stroke(); } c.fillStyle = '#ffffff'; for (const [x2, y2] of [[-26, -31], [-12, -45], [4, -51], [18, -43], [28, -27]]) ell(c, x2, y2, 5, 2.2); ell(c, 0, -2, 30, 5); c.restore(); return; }   // bare twigs with snow on them
-    c.fillStyle = P[0]; circ(c, -18, -16, 20); circ(c, 16, -18, 22); circ(c, 0, -31, 22);
-    c.fillStyle = P[1]; circ(c, -18, -19, 19); circ(c, 16, -21, 21); circ(c, 0, -35, 21);
-    c.fillStyle = P[2]; circ(c, -6, -42, 10); circ(c, -22, -25, 8); circ(c, 19, -28, 8);
-    c.fillStyle = '#e2574c'; circ(c, -12, -26, 3); circ(c, 8, -38, 3); circ(c, 20, -18, 3);
-    c.fillStyle = 'rgba(255,255,255,.5)'; circ(c, -13, -27, 1); circ(c, 7, -39, 1); circ(c, 19, -19, 1);
+    const hv = k => vh(o, k), ja = k => (hv(k) - 0.5) * 6;
+    c.fillStyle = P[0]; circ(c, -18 + ja(1), -16, 19 + hv(2) * 3); circ(c, 16 + ja(3), -18, 21 + hv(4) * 3); circ(c, ja(5), -31 + ja(6) * 0.5, 21 + hv(7) * 3);
+    if (hv(8) > 0.5) circ(c, (hv(9) < 0.5 ? -1 : 1) * (26 + hv(10) * 6), -12, 11 + hv(11) * 4);
+    c.fillStyle = P[1]; circ(c, -18 + ja(1), -19, 18 + hv(2) * 3); circ(c, 16 + ja(3), -21, 20 + hv(4) * 3); circ(c, ja(5), -35 + ja(6) * 0.5, 20 + hv(7) * 3);
+    c.fillStyle = P[2]; circ(c, -6 + ja(12), -42 + ja(13) * 0.5, 9 + hv(14) * 3); circ(c, -22 + ja(15), -25, 7 + hv(16) * 3); circ(c, 19 + ja(17), -28, 7 + hv(18) * 3);
+    { const berry = hv(20) < 0.55 ? ['#e2574c', 'rgba(255,255,255,.5)'] : hv(20) < 0.8 ? ['#3d4fa0', 'rgba(255,255,255,.4)'] : ['#e8789a', 'rgba(255,255,255,.55)'], pool = [[-12, -26], [8, -38], [20, -18], [-24, -14], [-2, -22], [14, -28], [-8, -42], [26, -30], [-20, -32]], n = 2 + Math.floor(hv(21) * 6);
+      pool.map((p, i) => [hv(30 + i), p]).sort((a, b) => a[0] - b[0]).slice(0, n).forEach(([, [x, y]], i) => { const r = 2.4 + hv(50 + i) * 1.4; c.fillStyle = berry[0]; circ(c, x, y, r); c.fillStyle = berry[1]; circ(c, x - 0.8, y - 0.9, r * 0.32); }); }
     c.restore();
   },
   stone(c) { c.fillStyle = '#a9a6a0'; ell(c, 0, -22, 40, 23); c.fillStyle = '#c4c1bb'; ell(c, -8, -30, 20, 9); },
@@ -1094,13 +1132,13 @@ const DRAW = {
   // ---- the forest edge (ліс): oak, birch and spruce, a stump, berries, cones and acorns, and the animals that live there
   // An old oak: a thick, rooted trunk and a broad, low, lumpy crown, darker than the village trees.
   dub(c, o) {
-    const sea = treeSeason(o), P = sea === 'lito' ? ['#28672f', '#337a3a', '#47924a', '#66ad60'] : treePal(sea, o), v = (o && o.v) || 0;
+    const sea = treeSeason(o), P = jit(sea === 'lito' ? ['#28672f', '#337a3a', '#47924a', '#66ad60'] : treePal(sea, o), o), v = (o && o.v) || 0;
     if (sea === 'osin') fallenLeaves(c, o, 54);
     c.fillStyle = '#5e3c1e'; poly(c, [[-15, 0], [-9, -44], [9, -44], [15, 0]]); poly(c, [[-15, 0], [-24, 3], [-10, -6]]); poly(c, [[15, 0], [23, 3], [10, -6]]);
     c.fillStyle = '#7a5129'; poly(c, [[-8, 0], [-5, -44], [3, -44], [3, 0]]);
     c.strokeStyle = 'rgba(40,24,10,.45)'; c.lineWidth = 1.2; for (const [x, y] of [[-6, -10], [4, -20], [-3, -32]]) { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 2, y - 7); c.stroke(); }
     c.save(); c.translate(0, -40); c.rotate((o && o.sway) || 0); c.translate(0, 40);
-    if (sea === 'zyma') { bareBranches(c, 1.25); c.restore(); return; }
+    if (sea === 'zyma') { bareBranches(c, 1.25, o); c.restore(); return; }
     c.fillStyle = P[0]; circ(c, 0, -60, 30); circ(c, -30, -50, 22); circ(c, 30, -50, 22); circ(c, -16, -74, 22); circ(c, 18, -76, 21);
     c.fillStyle = P[1]; circ(c, 0, -66, 27); circ(c, -28, -55, 19); circ(c, 28, -55, 19); circ(c, -15, -79, 19); circ(c, 17, -80, 18);
     c.fillStyle = P[2]; circ(c, -18, -84, 11); circ(c, 10, -86, 10); circ(c, -32, -60, 8); circ(c, 26, -64, 9); circ(c, -2, -72, 9);
@@ -1110,7 +1148,7 @@ const DRAW = {
   },
   // A birch: a slim white trunk with black marks, and a light, airy crown of small leaf clusters (gold in autumn).
   bereza(c, o) {
-    const sea = treeSeason(o), v = (o && o.v) || 0, P = sea === 'osin' ? ['#c9931a', '#e0b02e', '#f0cb4a', '#fbe486'] : sea === 'vesna' ? ['#6fb64e', '#88cb60', '#a5dc7c', '#c6ec9e'] : ['#4f9d43', '#66b552', '#84ca68', '#a6dd88'];
+    const sea = treeSeason(o), v = (o && o.v) || 0, P = jit(sea === 'osin' ? ['#c9931a', '#e0b02e', '#f0cb4a', '#fbe486'] : sea === 'vesna' ? ['#6fb64e', '#88cb60', '#a5dc7c', '#c6ec9e'] : ['#4f9d43', '#66b552', '#84ca68', '#a6dd88'], o);
     if (sea === 'osin') { const L = leafCols; for (let i = 0; i < 18; i++) { c.fillStyle = i % 2 ? '#f0cb4a' : '#e0b02e'; ell(c, Math.cos(i * 2.3 + v) * (8 + (i % 5) * 6), 2 + Math.sin(i * 1.7) * 3, 3, 1.6); } }
     c.save(); c.translate(0, -40); c.rotate(((o && o.sway) || 0) * 1.3); c.translate(0, 40);
     c.fillStyle = '#f4f1ea'; poly(c, [[-5, 0], [-3, -92], [3, -92], [5, 0]]);
@@ -2374,6 +2412,14 @@ const DRAW = {
 };
 
 // Draw an icon (emoji or "@drawn") with its bottom centre at (x, y), about s pixels tall.
+for (const nm of ['tree', 'appletree', 'bush', 'dub', 'bereza', 'yalyna', 'kalyna']) {
+  const f0 = DRAW[nm]; if (!f0) continue;
+  DRAW[nm] = function (c, o) {
+    if (!o || o.v == null) return f0.call(DRAW, c, o);
+    const sx = 0.86 + vh(o, 211) * 0.28, sy = 0.88 + vh(o, 212) * 0.26, lean = (vh(o, 213) - 0.5) * 0.05, fl = vh(o, 214) < 0.5 ? -1 : 1;
+    c.save(); c.rotate(lean); c.scale(sx * fl, sy); f0.call(DRAW, c, o); c.restore();
+  };
+}
 function drawIcon(c, ic, x, y, s, o) {
   if (ic[0] === '@') {
     c.save(); c.translate(x, y); c.scale(s / 100, s / 100); DRAW[ic.slice(1)](c, o); c.restore();
