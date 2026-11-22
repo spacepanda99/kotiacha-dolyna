@@ -212,6 +212,7 @@ window.DATA = {
     { id: "potiah", uk: "потяг", tr: "PO-tiah", en: "train", ic: "🚂" },
     { id: "reiky", uk: "рейки", tr: "REI-ky", en: "rails", ic: "🛤️" },
     { id: "rozklad", uk: "розклад", tr: "ROZ-klad", en: "timetable", ic: "🗓️" },
+    { id: "snip", uk: "сніп", tr: "snip", en: "sheaf of wheat", ic: "@snip", fact: { uk: "На Обжинки зв'язують останній сніп і несуть його в село.", en: "At the harvest festival the last sheaf is tied up and carried into the village." } },
     { id: "kubok", uk: "кубок", tr: "KU-bok", en: "trophy", ic: "@kubok", fact: { uk: "Ти знайшла дзвін для свята!", en: "For finding the missing festival bell." } },
     // --- at the café
     { id: "kavarnia", uk: "кав'ярня", tr: "ka-VIAR-nia", en: "café", ic: "@kavarnia", acc: "кав'ярню", fact: { uk: "Львів називають кавовою столицею України.", en: "Lviv is called Ukraine's coffee capital, and its cafés are famous for coffee brewed on hot sand." } },

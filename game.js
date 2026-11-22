@@ -2179,6 +2179,14 @@ const DRAW = {
     c.strokeStyle = '#8a6a2a'; c.lineWidth = 1.4; for (const y of [-26, -50]) { c.beginPath(); c.moveTo(-30 + (y + 50) * 0.1, y); c.quadraticCurveTo(0, y + 4, 30 - (y + 50) * 0.1, y); c.stroke(); }   // ropes round it
     c.fillStyle = '#d9b25a'; c.beginPath(); c.ellipse(26, -3, 14, 4, 0, 0, 7); c.fill(); c.strokeStyle = '#b8902f'; c.lineWidth = 0.8; for (let k = 0; k < 6; k++) { c.beginPath(); c.moveTo(16 + k * 4, -3); c.lineTo(18 + k * 4, -8); c.stroke(); }   // a pile pulled out for the cows
   },
+  // A sheaf of wheat (сніп), tied with a red ribbon: the trophy for the crop circle mystery.
+  snip(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, -1, 26, 5);
+    for (let i = -8; i <= 8; i++) { c.save(); c.translate(i * 1.6, -3); c.rotate(i * 0.075); c.fillStyle = i % 2 ? '#d9a64a' : '#c99a3a'; c.fillRect(-1.1, -66, 2.2, 66);
+      c.fillStyle = i % 2 ? '#f0cf6a' : '#e6bf52'; for (let k = 0; k < 5; k++) { c.beginPath(); c.ellipse(-2.2, -68 - k * 4.4, 2.1, 3.6, -0.5, 0, 7); c.fill(); c.beginPath(); c.ellipse(2.2, -70 - k * 4.4, 2.1, 3.6, 0.5, 0, 7); c.fill(); } c.restore(); }
+    c.fillStyle = '#b8322b'; rr(c, -15, -34, 30, 5.5, 2); c.fillStyle = '#d94a40'; c.fillRect(-15, -34, 30, 1.6);
+    c.fillStyle = '#b8322b'; poly(c, [[0, -31], [-10, -22], [-6, -20]]); poly(c, [[0, -31], [10, -22], [6, -20]]);
+  },
   // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
   // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
   bilyhryb(c) {
@@ -2739,6 +2747,7 @@ function add(e) {
   add({ w: 'pysanka', x: STALL.x + 0.8, y: STALL.y + 0.1, s: 0.6 });   // a basket of pysanky on the ground in front of the stall, by the right-hand crate
   for (const [x, y] of [[10.6, 24.1], [11.4, 24.8], [10.9, 25.5], [12.1, 24.4], [11.7, 25.6], [12.5, 25.1]]) add({ w: 'mak', x, y, s: 0.8, give: 'mak', cd: 150, hide: true });           // poppies beside the sunflowers
   for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) add({ w: 'pshenytsia', x: 33.35 + k * 0.72, y: 21.7 + r * 0.75, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 34.1 });   // a square little field of wheat by the pond
+  add({ w: 'pshenytsia', k: 'cc_field', ic: '@pshenytsia', x: 38.07, y: 5.45, s: 1, kind: 'cc', flat: true, quiet: true });   // the crop circle (when there is one): tap it to look
   for (let r = 0; r < 6; r++) for (let k = 0; k < 8; k++) add({ w: 'pshenytsia', x: 35.4 + k * 0.72 + (r % 2) * 0.3, y: 3.75 + r * 0.72, s: 1.0, give: 'pshenytsia', cd: 150, hide: true, quiet: r + k > 0, labelX: 38.1 });   // and a wheat field beside the church
   for (const [x, y] of [[4.5, 11.5], [24.1, 11.7], [27.2, 11.35], [16.3, 19.7]]) add({ w: 'chornobryvtsi', x, y, s: 0.8 });   // marigolds by the doors
   for (let i = 0; i < 2; i++) add({ w: 'tyn', x: 27.5 + i, y: 10.95, s: 1, solid: true, quiet: i !== 0, labelX: 28, hitLow: 0.4 });   // Grandma's wattle fence
@@ -3239,12 +3248,301 @@ function myNewCase() {
   [['with', MY_TRACE.with[what]], ['where', MY_TRACE.where[where]], ['who', whoTrace]].forEach(([k, ln], i) => { traces[witnesses[i]] = { k, txt: [ln[0], mySex(ln[1], MY_SEX[witnesses[i]])], said: false }; });
   return { v: 2, day: S.clock.day, who, where, what, hands, traces, met: {}, notes: {}, heard: [], acc: 0, solved: false };
 }
+// =====================================================================================================
+// THE CROP CIRCLE (autumn). Someone trampled a pattern into the wheat field behind the church yesterday evening.
+// Who (one of the six visitors), why (a motive that suits them) and how (a tool borrowed from somewhere in the
+// village) are chosen at random, and every statement is then GENERATED FROM THAT TRUTH, so nothing can contradict:
+//
+//   The village that evening, after Oksana shut the stall and before the last train. Everybody has a fixed place:
+//     Myron on the station platform (he can see the mill yard, and down the road the fountain's lantern)
+//     Lesia at the fountain, painting by the lantern (she can see the platform lantern and the log by the fountain)
+//     Yaroslava and Halyna in the café, at the window table and the counter (they can see the pickle barrel on the terrace)
+//     Zakhar and Ostap on the lake shore, side by side (they can see the plank footbridge by the reeds)
+//   So each person can vouch for one other: Myron and Lesia (the lanterns), Yaroslava and Halyna (the café), Zakhar and
+//   Ostap (the shore). The culprit slipped away from their place while the light went. Their partner saw them go (and
+//   can't clear them), and every other pair vouches for each other.
+//   The tool was borrowed in the afternoon from one of four places: whoever watches that place says it was gone when
+//   they sat down and came back crooked and covered in chaff; whoever watches a place whose tool never moved says so.
+//   The pattern itself shows the motive (and Yaroslava's morning poem describes how the wheat was pressed).
+// =====================================================================================================
+const CC_PARTNER = { myron: 'lesia', lesia: 'myron', yaroslava: 'halyna', halyna: 'yaroslava', zakhar: 'ostap', ostap: 'zakhar' };
+const CC_WATCH = { myron: 'roller', lesia: 'log', yaroslava: 'barrel', halyna: 'barrel', zakhar: 'plank', ostap: 'plank' };
+const CC_MOTIVE = { myron: ['arrow', 'smiley'], yaroslava: ['spiral', 'sun'], ostap: ['smiley', 'arrow'], lesia: ['sun', 'spiral'], zakhar: ['carp', 'smiley'], halyna: ['sun', 'arrow'] };
+// why: English (lower case), Ukrainian (lower case), and the shape drawn in the field
+const CC_WHY = {
+  sun: ['to surprise the village for the harvest festival', 'щоб здивувати село до свята врожаю'],
+  smiley: ['for a joke, to make the village laugh', 'для жарту, щоб розсмішити село'],
+  spiral: ['to write a poem right across the field', 'щоб написати вірш через усе поле'],
+  arrow: ['to show visitors the way to the village', 'щоб показати гостям дорогу до села'],
+  carp: ['to prove a fish story', 'щоб довести рибацьку байку'],
+};
+// how: English name, Ukrainian name, Ukrainian "with it"
+const CC_HOW = {
+  plank: ['a plank on a rope', 'дошка на мотузці', 'дошкою на мотузці'],
+  roller: ['the garden roller', 'садовий каток', 'садовим катком'],
+  barrel: ['a barrel', 'бочка', 'бочкою'],
+  log: ['a heavy log', 'важка колода', 'важкою колодою'],
+};
+const CC_LOOK = {   // what Vicky sees when she looks at the pattern
+  sun: ['A great golden sun, trampled flat into the wheat, with rays reaching out all round it.', 'Величезне золоте сонце, витоптане в пшениці, з променями на всі боки.'],
+  smiley: ['A giant smiling face: two round eyes and a wide grin, pressed flat in the wheat.', 'Велетенське усміхнене обличчя: два круглі очі й широка посмішка, притоптані в пшениці.'],
+  spiral: ['One long line, winding round and round from the middle, as if someone wrote a single endless sentence.', 'Одна довга лінія, що звивається від середини, наче хтось написав одне нескінченне речення.'],
+  arrow: ['A huge arrow, pointing straight down the hill toward the village.', 'Величезна стрілка, що вказує просто вниз із пагорба до села.'],
+  carp: ['An enormous fish! A body, a tail, a fin and a round eye, all pressed into the wheat.', 'Величезна риба! Тулуб, хвіст, плавець і кругле око, усе притоптане в пшениці.'],
+};
+const CC_SPOT = {
+  myron: ['I stood on the station platform all evening with my pocket watch, timing the last trains. The evening one was a minute late. A minute!', 'Я весь вечір стояв на пероні з кишеньковим годинником і засікав останні потяги. Вечірній спізнився на хвилину. На цілу хвилину!'],
+  lesia: ['I was at the fountain, painting it by lantern light. Water and lamplight: the hardest thing in the world to paint.', 'Я була біля фонтана й малювала його при ліхтарі. Вода й світло лампи: найважче, що можна намалювати.'],
+  yaroslava: ['I sat at my window table in the café with my notebook until Solomiia began washing the cups.', 'Я сиділа за своїм столиком біля вікна в кав\'ярні з зошитом, аж доки Соломія не взялася мити чашки.'],
+  halyna: ['When Oksana shut the stall I went to the café for tea and cake, and sat at the counter with Solomiia, putting the village to rights.', 'Коли Оксана зачинила ринок, я пішла до кав\'ярні на чай і торт та сиділа за прилавком із Соломією, наводячи в селі лад.'],
+  zakhar: ['On the lake shore, with my rod. The big carp wasn\'t biting.', 'На березі озера з вудкою. Великий короп не клював.'],
+  ostap: ['Down on the lake shore too, beside Zakhar, with my flute. The frogs loved it.', 'Теж на березі озера, поруч із Захаром, зі своєю сопілкою. Жабам подобалося.'],
+};
+const CC_SPOT_C = {   // true, but evasive
+  myron: ['At the station, mostly. A man may stretch his legs, may he not? Why do you ask?', 'На вокзалі, здебільшого. Людина може розім\'яти ноги, чи не так? А чому ти питаєш?'],
+  lesia: ['At the fountain, mostly! Painting. The light moves about, and so did I. Why do you ask?', 'Біля фонтана, здебільшого! Малювала. Світло мандрує, ну й я теж. А чому ти питаєш?'],
+  yaroslava: ['In the café, mostly, with my notebook. A poet needs a little air now and then. Why do you ask, my dear?', 'У кав\'ярні, здебільшого, з зошитом. Поетові іноді потрібне свіже повітря. А чому ти питаєш, люба?'],
+  halyna: ['At the café, mostly, sonechko, having tea and cake! A girl must stretch her legs, mustn\'t she? Why do you ask?', 'У кав\'ярні, здебільшого, сонечко, пила чай і їла торт! Дівчині треба розім\'яти ноги, правда ж? А чому ти питаєш?'],
+  zakhar: ['By the lake, mostly. Fishing. Why?', 'Біля озера, здебільшого. Ловив рибу. А що?'],
+  ostap: ['By the lake, mostly, with my flute! A fellow can wander a little, can\'t he? Why do you ask?', 'Біля озера, здебільшого, з сопілкою! Хлопець може трохи побродити, чи не так? А чому ти питаєш?'],
+};
+// the one person each can vouch for (who is cleared by it)
+const CC_CLEAR = {
+  myron: ['Lesia\'s easel stood in the lantern light at the other end of the road all evening. I could see it from the platform the whole time.', 'Мольберт Лесі стояв у світлі ліхтаря на іншому кінці дороги цілий вечір. З перону я бачив його весь час.'],
+  lesia: ['Mr. Myron was under the station lantern with his watch all evening. I could see him at the end of the road, small as a toy soldier.', 'Пан Мирон увесь вечір стояв під вокзальним ліхтарем із годинником. Я бачила його в кінці дороги, малого, як олов\'яного солдатика.'],
+  yaroslava: ['Halyna sat at the counter, talking, until the cups were being washed. I couldn\'t write a line for her chatter.', 'Галина сиділа за прилавком і розмовляла, доки не почали мити чашки. Я не могла написати ні рядка через її балаканину.'],
+  halyna: ['Yaroslava never left her window table. I said hello twice and got two nods.', 'Ярослава ні разу не відійшла від свого столика біля вікна. Я двічі привіталася й двічі отримала кивок.'],
+  zakhar: ['Ostap was on the bank beside me the whole time, playing that flute. I\'d have paid him to stop.', 'Остап увесь час сидів на березі поруч зі мною й грав на сопілці. Я б заплатив, щоб він перестав.'],
+  ostap: ['Zakhar didn\'t move from his spot. Not even when something big splashed. I\'d have noticed: I was watching him instead of the frogs!', 'Захар не зрушив зі свого місця. Навіть коли щось велике сплеснуло. Я б помітив: я дивився на нього, а не на жаб!'],
+};
+// ...and what they say when that person is the one who slipped away (it doesn't clear them)
+const CC_OUT = {
+  myron: ['The easel stood alone in the lantern light for a good while at dusk, nobody painting. Then she was back, as if nothing had happened.', 'Мольберт довго стояв сам у світлі ліхтаря в сутінках, ніхто не малював. Потім вона повернулася, ніби нічого не сталося.'],
+  lesia: ['Mr. Myron\'s end of the road went dark for a while at dusk: the lantern, and no man under it. Then he was back, a little out of breath.', 'У сутінках кінець дороги, де стояв пан Мирон, на деякий час потемнів: ліхтар є, а під ним нікого. Потім він повернувся, трохи засапаний.'],
+  yaroslava: ['Halyna\'s tea went cold on the counter. She slipped out for a breath of air as the sun went down, and came back with straw on her shawl.', 'Чай Галини холонув на прилавку. Вона вислизнула на свіже повітря, коли сонце сідало, і повернулася з соломою на хустці.'],
+  halyna: ['Yaroslava\'s window seat sat empty for a good while, her pen still lying on the page. Then she was back with a very pleased face and straw on her skirt.', 'Місце Ярослави біля вікна довго стояло порожнє, а ручка так і лежала на сторінці. Потім вона повернулася дуже задоволена, з соломою на спідниці.'],
+  zakhar: ['The flute stopped. Lovely and quiet, I\'ll admit. He turned up later with wheat chaff in his hair.', 'Сопілка замовкла. Чудова тиша, визнаю. Потім він з\'явився з половою від пшениці у волоссі.'],
+  ostap: ['Zakhar\'s rod stood in the mud with the line just floating, and he was gone. He came back later, wet to the knees and smelling of wheat.', 'Вудка Захара стояла в багнюці, а волосінь просто пливла, а його самого не було. Потім він повернувся мокрий по коліна й пахнув пшеницею.'],
+};
+const CC_SEES_C = {   // what the one who slipped away says about the other (true, and clears nobody)
+  myron: ['Lesia? Her easel was at the fountain when I last looked. I wasn\'t counting minutes. For once.', 'Леся? Її мольберт стояв біля фонтана, коли я востаннє дивився. Хвилин я не рахував. Уперше в житті.'],
+  lesia: ['Mr. Myron? Under his station lantern, last I looked. Timing something, surely.', 'Пан Мирон? Під вокзальним ліхтарем, коли я востаннє дивилася. Щось хронометрував, певна річ.'],
+  yaroslava: ['Halyna? At the counter, talking, when I last looked up. She\'s always talking.', 'Галина? За прилавком, розмовляла, коли я востаннє підводила очі. Вона завжди розмовляє.'],
+  halyna: ['Yaroslava? At her window table when I looked. Writing something, I should think.', 'Ярослава? За столиком біля вікна, коли я дивилася. Щось писала, гадаю.'],
+  zakhar: ['Ostap? Playing the flute, last I heard. You can hear him a long way off.', 'Остап? Грав на сопілці, коли я востаннє чув. Його чути здалеку.'],
+  ostap: ['Zakhar? Fishing, last time I looked. He never moves, that man.', 'Захар? Ловив рибу, коли я востаннє дивився. Він ніколи не рухається, ця людина.'],
+};
+// the four tools: where each belongs, and what the people who can see that place say about it
+const CC_TOOLSAY = {
+  plank: { stay: [['The plank footbridge by the reeds hasn\'t moved all evening. I rest my boots on it. I\'d notice.', 'Дощана кладка біля очерету не рухалася весь вечір. Я кладу на неї чоботи. Я б помітив.'], ['The plank by the reeds lay right where it always does, with frogs sunning themselves on it.', 'Дошка біля очерету лежала там, де завжди, і на ній грілися жаби.']],
+    gone: [['When I sat down at the lake the plank footbridge by the reeds was already gone. This morning it\'s back, but crooked, with wheat chaff stuck to it.', 'Коли я сів біля озера, дощаної кладки біля очерету вже не було. Сьогодні вранці вона на місці, але криво й уся в полові від пшениці.'], ['The plank by the reeds was gone when we got to the shore. This morning it\'s back, but crooked, and covered in wheat chaff.', 'Дошки біля очерету не було, коли ми прийшли на берег. Сьогодні вранці вона знову там, але криво й уся в полові від пшениці.']] },
+  roller: { stay: [['The mill\'s stone roller sat in the yard all evening. I can see it from the platform, and it didn\'t go anywhere. Rollers don\'t.', 'Кам\'яний каток біля млина стояв на подвір\'ї весь вечір. Я бачу його з перону, і він нікуди не ділся. Котки не діляться.'], ['The roller in the mill yard never moved.', 'Каток на подвір\'ї млина не рухався.']],
+    gone: [['The mill\'s stone roller wasn\'t in the yard when I took my place on the platform. This morning it\'s back, but crooked, with wheat chaff all over it.', 'Кам\'яного котка на подвір\'ї млина не було, коли я став на пероні. Сьогодні вранці він на місці, але криво й увесь у полові від пшениці.'], ['The mill roller was gone all evening, and back this morning, crooked, with chaff on it.', 'Котка біля млина не було весь вечір, а вранці він повернувся, кривий, у полові.']] },
+  barrel: { stay: [['The pickle barrel on the café terrace never moved. I looked at it through the window every time I couldn\'t find a rhyme.', 'Бочка з огірками на терасі кав\'ярні не рухалася. Я дивилася на неї крізь вікно щоразу, коли не могла дібрати риму.'], ['That big pickle barrel stood on the terrace all evening. Solomiia would have shrieked if anybody had touched it.', 'Та велика бочка з огірками стояла на терасі весь вечір. Соломія б закричала, якби хтось її торкнувся.']],
+    gone: [['The pickle barrel was gone from the terrace when we sat down. This morning it\'s back, but on its side, with wheat chaff stuck to it.', 'Бочки з огірками на терасі не було, коли ми сіли. Сьогодні вранці вона на місці, але лежить на боці й уся в полові від пшениці.'], ['The terrace barrel was missing all evening. It\'s back this morning, rolled crooked, with chaff on it. Solomiia is furious.', 'Бочки на терасі не було весь вечір. Сьогодні вранці вона повернулася, закочена криво, у полові. Соломія в люті.']] },
+  log: { stay: [['The old log by the fountain, where the children sit, was right there all evening. I painted it into the corner of my picture.', 'Стара колода біля фонтана, де сидять діти, була на місці весь вечір. Я намалювала її в кутку своєї картини.']],
+    gone: [['The old log by the fountain was already gone when I set up my easel. This morning it\'s back, but turned round, with wheat chaff on it.', 'Старої колоди біля фонтана вже не було, коли я поставила мольберт. Сьогодні вранці вона на місці, але повернута, у полові від пшениці.']] },
+};
+const CC_POEM = {   // Yaroslava wrote this at breakfast: it describes how the wheat was pressed
+  plank: ['I wrote this at breakfast: \'Someone ironed the wheat in broad, straight bands, as if the field were a bedsheet.\' Is it a clue? Who knows, I\'m only a poet.', 'Я записала це за сніданком: «Хтось випрасував пшеницю широкими прямими смугами, ніби поле — простирадло». Це підказка? Хто знає, я лише поетеса.'],
+  roller: ['I wrote this at breakfast: \'The wheat lies ridged, line after line, like corduroy.\' Does it help? I\'m only a poet.', 'Я записала це за сніданком: «Пшениця лежить рубцями, рядок за рядком, мов вельвет». Це допоможе? Я ж лише поетеса.'],
+  barrel: ['I wrote this at breakfast: \'Round dents press the wheat, like the footprints of a giant sleepy bear.\' A clue? I\'m only a poet.', 'Я записала це за сніданком: «Круглі вм\'ятини на пшениці, мов сліди велетенського сонного ведмедя». Підказка? Я лише поетеса.'],
+  log: ['I wrote this at breakfast: \'One thick stripe, round and round, like a ribbon on a loaf.\' Does it mean anything? I\'m only a poet.', 'Я записала це за сніданком: «Одна товста смуга, раз по раз по колу, мов стрічка на короваї». Чи щось це означає? Я лише поетеса.'],
+};
+// things that are just things people noticed (they clear nothing)
+const CC_EXTRA = {
+  myron: [{ notC: 1, line: ['Late in the evening, from the platform, I saw a lantern bobbing about up behind the church, where the wheat is. I thought: poachers! Of wheat. Is that a thing?', 'Пізно ввечері з перону я бачив ліхтар, що погойдувався за церквою, там, де пшениця. Я подумав: браконьєри! Пшеничні. Чи це бува?']}],
+  halyna: [{ line: ['Sonechko, it was aliens! They float, you see, so they leave no footprints. Oksana agrees with me, and she isn\'t even here.', 'Сонечко, це були інопланетяни! Вони, бачиш, пливуть над землею, тож слідів не лишають. Оксана зі мною згодна, а її тут навіть нема.']}, { line: ['And did you see that boy\'s dog tearing through the wheat at lunchtime? Brovko! I said to Solomiia: mark my words.', 'А ти бачила, як той хлопчиків пес гасав пшеницею в обід? Бровко! Я сказала Соломії: запам\'ятай мої слова.']}],
+};
+const CC_NEWS = {   // how each of them greets the news the first time (written to say nothing that isn\'t true for any of them)
+  myron: ['Have you seen the wheat field behind the church? A great big picture trampled into it! Forty years on the railways and I never saw the like.', 'Ти бачила пшеничне поле за церквою? У ньому витоптана величезна картина! Сорок років на залізниці, а такого не бачив.'],
+  yaroslava: ['My dear, the wheat has been written upon! A picture in the field behind the church. I composed three lines before breakfast.', 'Люба, на пшениці щось написали! Картина в полі за церквою. Я склала три рядки ще до сніданку.'],
+  ostap: ['A picture in the wheat! Come on, we must look! It\'s like a map from a treasure hunt!', 'Картина на пшениці! Ходімо, треба глянути! Наче карта зі скарбами!'],
+  lesia: ['Did you see the field behind the church? From the steps it looks like... well. I won\'t say. Go and see!', 'Ти бачила поле за церквою? Зі сходів воно виглядає як... ну. Не скажу. Піди й подивись!'],
+  zakhar: ['Field behind the church. Something in the wheat. A pattern. Don\'t know. The carp is more interesting.', 'Поле за церквою. Щось у пшениці. Візерунок. Не знаю. Короп цікавіший.'],
+  halyna: ['Sonechko! Have you seen the wheat?! Someone has trampled a great picture into it overnight! Everyone is talking about it, and I mean everyone!', 'Сонечко! Ти бачила пшеницю?! Хтось за ніч витоптав у ній велику картину! Усі про це говорять, геть усі!'],
+};
+const CC_HINT = ['🔍 A mystery! Someone has trampled a pattern into the wheat behind the church. Ask the visitors what they saw. When you know <b>who</b> did it, <b>why</b> and <b>how</b>, tell Officer Petro by the fountain. Tap the pattern in the field to look at it. Your notes are in the 📖 book, under 🔍 The mystery.', '🔍 Загадка! Хтось витоптав візерунок у пшениці за церквою. Розпитай гостей, що вони бачили. Коли дізнаєшся, <b>хто</b> це зробив, <b>чому</b> і <b>як</b>, розкажи офіцеру Петру біля фонтана. Торкнися візерунка в полі, щоб його роздивитися. Твої нотатки в 📖 книзі, у розділі 🔍 Загадка.'];
+// the confession, by who and why: %w = how (English), %u = how (Ukrainian "with it")
+const CC_WHYTXT = {
+  myron: { arrow: ['I wanted a great arrow pointing the way to our station! Visitors step off the train and walk straight past the village. Now they\'ll see it from the carriage window! I used %w, and I was back before the next train.', 'Я хотів величезну стрілку, що вказує дорогу до нашого вокзалу! Гості виходять із потяга й проходять повз село. Тепер вони побачать її з вікна вагона! Я використав %w і повернувся до наступного потяга.'],
+    smiley: ['A joke, that\'s all! Forty years on the railways and not once did I make a whole station laugh. I used %w. Forgive an old man his fun.', 'Жарт, і все! Сорок років на залізниці, а жодного разу не розсмішив цілий вокзал. Я використав %w. Пробачте старому його розвагу.'] },
+  yaroslava: { spiral: ['The poem was too big for paper, my dear. So I wrote it in the wheat: one long line, round and round. I used %w. Forgive an old woman her adventure.', 'Вірш був завеликий для паперу, люба. Тож я написала його в пшениці: одна довга лінія, раз по раз по колу. Я використала %w. Пробачте старій жінці її пригоду.'],
+    sun: ['The harvest festival needed a sun, my dear, a great golden one. I drew it the only way I could, with %w. Surprise!', 'Святу врожаю потрібне було сонце, люба, велике золоте. Я намалювала його єдиним способом, що знала: %w. Сюрприз!'] },
+  ostap: { smiley: ['I only wanted to make someone smile! A giant face in the wheat, to cheer up the whole village. I used %w and a great deal of running about.', 'Я лише хотів когось розсмішити! Велетенське обличчя в пшениці, щоб розвеселити все село. Я використав %w і дуже багато бігав.'],
+    arrow: ['Hikers! A trail marker! I wanted an arrow big enough to see from the mountains. I used %w. Is that so wrong?', 'Мандрівники! Покажчик стежки! Я хотів стрілку, достатньо велику, щоб її видно було з гір. Я використав %w. Це так погано?'] },
+  lesia: { sun: ['A sun for the festival! I saw the wheat from the church steps and thought: what a canvas! I used %w. I wanted it to be a surprise. Isn\'t it beautiful?', 'Сонце для свята! Я побачила пшеницю зі сходів церкви й подумала: яке полотно! Я використала %w. Я хотіла, щоб це був сюрприз. Правда, гарно?'],
+    spiral: ['I wanted to paint one line that never ends, a picture only the birds can see! I used %w. Do you like it?', 'Я хотіла намалювати одну лінію, що не закінчується, картину, яку бачать лише птахи! Я використала %w. Тобі подобається?'] },
+  zakhar: { carp: ['Nobody believes me about the carp. So I drew it: exactly this size, in the wheat. I used %w. Now they\'ll believe me.', 'Ніхто не вірить мені про коропа. Тож я намалював його: саме такого розміру, в пшениці. Я використав %w. Тепер повірять.'],
+    smiley: ['A joke. The carp laughs at me every morning, so I thought the village could laugh too. I used %w. Sorry.', 'Жарт. Короп сміється з мене щоранку, тож я подумав, нехай і село посміється. Я використав %w. Вибачте.'] },
+  halyna: { sun: ['I was going to surprise the whole village with a great golden sun for the festival! Oh sonechko, you\'ve spoiled my surprise. I used %w, and Solomiia kept my cake warm.', 'Я збиралася здивувати все село великим золотим сонцем до свята! Ой, сонечко, ти зіпсувала мені сюрприз. Я використала %w, а Соломія тримала мій торт теплим.'],
+    arrow: ['I wanted people to come to the village, and to the café! Everyone hurries past. An arrow points straight at us. I used %w. It\'s business, sonechko!', 'Я хотіла, щоб люди приходили в село й до кав\'ярні! Усі пробігають повз. Стрілка вказує просто на нас. Я використала %w. Це бізнес, сонечко!'] },
+};
+Object.assign(MY_VAR, {
+  cc_spot: [['Where were you yesterday evening?', 'Де ви були вчора ввечері?'], ['And last night, where did you spend it?', 'А де ви провели вчорашній вечір?'], ['What were you doing yesterday at dusk?', 'Що ви робили вчора в сутінках?'], ['Tell me where you were as the light went.', 'Розкажіть, де ви були, коли смеркалося.']],
+  cc_sees: [['Did you see anyone yesterday evening?', 'Ви бачили когось учора ввечері?'], ['Who was near you last night?', 'Хто був поруч із вами вчора ввечері?'], ['Was there anyone about when it got dark?', 'Хтось був поруч, коли смеркалося?'], ['Did you notice anybody else?', 'Ви помітили когось іще?']],
+  cc_tool: [['Did you notice anything odd nearby?', 'Ви помітили поруч щось дивне?'], ['Was anything out of place?', 'Щось було не на своєму місці?'], ['Did anything strike you as strange?', 'Вам щось здалося дивним?'], ['What could you see from where you sat?', 'Що ви бачили з того місця, де сиділи?']],
+});
+Object.assign(MY_VAR, { cc_why: [['And why did they do it?', 'А чому вони це зробили?']], cc_how: [['And how did they do it?', 'А як вони це зробили?']] });
+
+// ---- the case, built from the truth
+const ccYear = () => Math.floor(((S.clock.day || 1) - 1) / (SEASON_DAYS * 4));
+function ccNewCase() {
+  const who = myPick(MY_WHO), why = myPick(CC_MOTIVE[who]), how = myPick(Object.keys(CC_HOW)), hands = Object.fromEntries(MY_WHO.map(id => [id, []]));
+  const add = (id, o) => { const ln = o.line; hands[id].push(Object.assign({ said: false }, o, { line: [ln[0], mySex(ln[1], MY_SEX[id])] })); };
+  const stayN = {}, goneN = {};
+  for (const id of MY_WHO) {
+    const P = CC_PARTNER[id];
+    add(id, { t: 'spot', line: id === who ? CC_SPOT_C[id] : CC_SPOT[id] });
+    if (id === who) add(id, { t: 'sees', line: CC_SEES_C[id] });
+    else if (P === who) add(id, { t: 'sees', line: CC_OUT[id] });
+    else add(id, { t: 'sees', card: { k: 'who', v: P }, line: CC_CLEAR[id] });
+    const T = CC_WATCH[id];
+    if (T && id !== who) { if (T === how) { const L = CC_TOOLSAY[T].gone; goneN[T] = (goneN[T] || 0) + 1; add(id, { t: 'tool', line: L[(goneN[T] - 1) % L.length] }); } else { const L = CC_TOOLSAY[T].stay; stayN[T] = (stayN[T] || 0) + 1; add(id, { t: 'tool', card: { k: 'how', v: T }, line: L[(stayN[T] - 1) % L.length] }); } }
+    for (const ex of CC_EXTRA[id] || []) if (!(ex.notC && id === who)) add(id, { t: 'extra', line: ex.line });
+  }
+  add('yaroslava', { t: 'extra', line: CC_POEM[how] });
+  S.ccYear = ccYear();
+  return { v: 3, t: 'circle', started: 1, day: S.clock.day || 1, endDay: Math.floor(((S.clock.day || 1) - 1) / (SEASON_DAYS * 4)) * SEASON_DAYS * 4 + SEASON_DAYS * 2, who, where: why, what: how, why, how, hands, met: {}, notes: {}, heard: [], acc: 0, solved: false, examined: false };
+}
+// ---- when it's on
+const ccCase = () => S.mystery && S.mystery.t === 'circle' ? S.mystery : null;
+const ccExpired = () => { const M = ccCase(); return !!(M && !M.solved && !seasonForce && (S.clock.day || 1) > M.endDay); };
+const myOpen = () => S.mystery && !S.mystery.solved && !(S.mystery.t && ccExpired());
+const ccWanted = () => season() === 'osin' && S.ccYear !== ccYear();
+function ccKick() { if (ccWanted() && !myOpen()) { S.mystery = ccNewCase(); save(); myBtnShow(); setGuide(); toast('🌾 ' + (stage() < 3 ? 'A strange pattern has appeared in the wheat field behind the church!' : 'Дивний візерунок у пшеничному полі за церквою!'), 4200); } }
 function myMaybeStart() {
-  if (S.mystery && !S.mystery.solved && S.mystery.v === 2) return;
-  if (S.mystery && S.mystery.solved && (S.clock.day || 1) - S.mystery.solvedDay < 3) return;
+  if (myOpen()) return;
+  if (ccWanted()) return ccKick();
+  const M = S.mystery;
+  if (S.bellDone || (M && M.solved && !M.t)) { S.bellDone = 1; return; }   // the bell mystery is told once; the other seasons have their own
   S.mystery = myNewCase(); save();   // (an older case, from before the dialogue was rewritten, starts afresh)
 }
-const myOpen = () => S.mystery && !S.mystery.solved;
+// ---- the pattern in the field
+const CC = { x: 38.07, y: 5.45, R: 1.5 };
+const ccShown = () => { const M = ccCase(); return !!(M && season() === 'osin'); };
+const ccSpriteCache = {};
+function ccSprite(shape, how) {
+  const key = shape + '/' + how; if (ccSpriteCache[key]) return ccSpriteCache[key];
+  const N = 380, R = 170, cv = document.createElement('canvas'); cv.width = cv.height = N; const c = cv.getContext('2d'); c.translate(N / 2, N / 2);
+  let r = 13; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  // 1. the trampled disc, ragged at the edge
+  c.save(); c.beginPath(); for (let i = 0; i <= 90; i++) { const a = i / 90 * Math.PI * 2, rr = R * (0.965 + rnd() * 0.05); i ? c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.closePath(); c.clip();
+  let g = c.createRadialGradient(0, 0, 0, 0, 0, R); g.addColorStop(0, '#d8b45a'); g.addColorStop(1, '#bf9638'); c.fillStyle = g; c.fillRect(-R, -R, 2 * R, 2 * R);
+  c.lineCap = 'round'; for (let i = 0; i < 1100; i++) { const a = rnd() * 7, rr = Math.sqrt(rnd()) * R, x = Math.cos(a) * rr, y = Math.sin(a) * rr, ang = a + Math.PI / 2 + 0.3, len = 9 + rnd() * 10; c.strokeStyle = ['#e2c26a', '#b48b34', '#cfa94a', '#a67f2c'][i % 4]; c.globalAlpha = 0.55; c.lineWidth = 1.6 + rnd() * 1.4; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len); c.stroke(); }
+  c.globalAlpha = 1;
+  // 2. the pattern: the same stalks laid the other way, paler, on a mask of the shape
+  const M = document.createElement('canvas'); M.width = M.height = N; const m = M.getContext('2d'); m.translate(N / 2, N / 2); m.fillStyle = m.strokeStyle = '#fff'; m.lineCap = m.lineJoin = 'round';
+  if (shape === 'sun') { m.beginPath(); m.arc(0, 0, 0.36 * R, 0, 7); m.fill(); for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2; m.beginPath(); m.moveTo(Math.cos(a - 0.17) * 0.5 * R, Math.sin(a - 0.17) * 0.5 * R); m.lineTo(Math.cos(a) * 0.9 * R, Math.sin(a) * 0.9 * R); m.lineTo(Math.cos(a + 0.17) * 0.5 * R, Math.sin(a + 0.17) * 0.5 * R); m.closePath(); m.fill(); } }
+  else if (shape === 'smiley') { m.lineWidth = 0.13 * R; m.beginPath(); m.arc(0, 0, 0.8 * R, 0, 7); m.stroke(); m.beginPath(); m.arc(-0.28 * R, -0.22 * R, 0.1 * R, 0, 7); m.fill(); m.beginPath(); m.arc(0.28 * R, -0.22 * R, 0.1 * R, 0, 7); m.fill(); m.lineWidth = 0.11 * R; m.beginPath(); m.arc(0, 0.02 * R, 0.46 * R, 0.18 * Math.PI, 0.82 * Math.PI); m.stroke(); }
+  else if (shape === 'spiral') { m.lineWidth = 0.1 * R; m.beginPath(); for (let a = 0; a < Math.PI * 7.2; a += 0.08) { const rr = (0.06 + a / (Math.PI * 7.2) * 0.84) * R; a ? m.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : m.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } m.stroke(); }
+  else if (shape === 'arrow') { m.beginPath(); m.rect(-0.17 * R, -0.78 * R, 0.34 * R, 0.9 * R); m.fill(); m.beginPath(); m.moveTo(-0.56 * R, 0.05 * R); m.lineTo(0.56 * R, 0.05 * R); m.lineTo(0, 0.86 * R); m.closePath(); m.fill(); }
+  else { m.beginPath(); m.ellipse(0.08 * R, 0, 0.6 * R, 0.3 * R, 0, 0, 7); m.fill(); m.beginPath(); m.moveTo(-0.5 * R, 0); m.lineTo(-0.92 * R, -0.34 * R); m.lineTo(-0.92 * R, 0.34 * R); m.closePath(); m.fill(); m.beginPath(); m.moveTo(-0.1 * R, -0.26 * R); m.lineTo(0.18 * R, -0.58 * R); m.lineTo(0.34 * R, -0.24 * R); m.closePath(); m.fill(); m.beginPath(); m.moveTo(-0.05 * R, 0.26 * R); m.lineTo(0.12 * R, 0.5 * R); m.lineTo(0.28 * R, 0.26 * R); m.closePath(); m.fill(); }
+  const P = document.createElement('canvas'); P.width = P.height = N; const p = P.getContext('2d'); p.translate(N / 2, N / 2); p.fillStyle = '#f0dc92'; p.fillRect(-R, -R, 2 * R, 2 * R); p.lineCap = 'round';
+  for (let i = 0; i < 1300; i++) { const a = rnd() * 7, rr = Math.sqrt(rnd()) * R, x = Math.cos(a) * rr, y = Math.sin(a) * rr, ang = a - Math.PI / 2 - 0.35, len = 8 + rnd() * 9; p.strokeStyle = ['#fbefb4', '#e6cf78', '#f5e49a', '#d9bf62'][i % 4]; p.globalAlpha = 0.6; p.lineWidth = 1.6 + rnd() * 1.2; p.beginPath(); p.moveTo(x, y); p.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len); p.stroke(); }
+  p.globalAlpha = 1; p.globalCompositeOperation = 'destination-in'; p.setTransform(1, 0, 0, 1, 0, 0); p.drawImage(M, 0, 0);
+  c.save(); c.globalAlpha = 0.5; c.filter = 'blur(2px)'; const D = document.createElement('canvas'); D.width = D.height = N; const d = D.getContext('2d'); d.drawImage(M, 0, 0); d.globalCompositeOperation = 'source-in'; d.fillStyle = '#7a5a1c'; d.fillRect(0, 0, N, N); c.drawImage(D, -N / 2 + 2.5, -N / 2 + 3.5); c.restore();   // a soft shadow along the pattern's edge
+  c.drawImage(P, -N / 2, -N / 2);
+  if (shape === 'carp') { c.fillStyle = '#b08430'; c.beginPath(); c.arc(0.4 * R, -0.06 * R, 0.065 * R, 0, 7); c.fill(); }   // the carp's eye
+  // 3. what the tool did to the stalks (the poem describes this)
+  c.strokeStyle = 'rgba(110,80,25,.4)'; c.lineWidth = 1.2;
+  if (how === 'plank') { for (const q of [0.2, 0.38, 0.56, 0.74, 0.92]) { c.beginPath(); c.arc(0, 0, q * R, 0, 7); c.stroke(); } c.fillStyle = 'rgba(80,55,15,.6)'; c.beginPath(); c.arc(0, 0, 5, 0, 7); c.fill(); }
+  else if (how === 'roller') { for (let x = -R; x < R; x += 11) { c.beginPath(); c.moveTo(x, -R); c.lineTo(x, R); c.stroke(); } }
+  else if (how === 'barrel') { for (let i = 0; i < 46; i++) { const a = rnd() * 7, rr = Math.sqrt(rnd()) * R * 0.88; c.beginPath(); c.arc(Math.cos(a) * rr, Math.sin(a) * rr, 13, 0, 7); c.stroke(); } }
+  else { c.lineWidth = 6; c.strokeStyle = 'rgba(110,80,25,.32)'; c.beginPath(); for (let a = 0; a < Math.PI * 9; a += 0.1) { const rr = a / (Math.PI * 9) * R * 0.96; a ? c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr) : c.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.stroke(); }
+  c.restore();
+  return (ccSpriteCache[key] = cv);
+}
+function ccDraw(c) {
+  if (!ccShown()) return; const M = ccCase(), s = ccSprite(M.why, M.how), W = CC.R * 2 * T * (380 / 340);
+  c.drawImage(s, CC.x * T - W / 2, CC.y * T - W / 2, W, W);
+}
+function ccExamine() {
+  const M = ccCase(); if (!M) return;
+  const first = !M.examined; M.examined = true;
+  if (first) { for (const k of Object.keys(CC_WHY)) if (k !== M.why) { const key = 'where:' + k; if (!M.notes[key] || M.notes[key] === '?') M.notes[key] = 'x:field'; } M.heard.push({ id: 'field', txt: CC_LOOK[M.why] }); save(); }
+  const uk = MY_LANG === 'uk', st = stage();
+  openSheet(`<div class="card" style="text-align:center"><div class="tag">🌾 ${uk ? 'Витоптане коло' : 'The pattern in the wheat'}</div>
+    <img src="${ccSprite(M.why, M.how).toDataURL()}" alt="" style="width:78%;max-width:300px;margin:6px auto;display:block;border-radius:50%">
+    <div class="word" style="font-size:19px;line-height:1.3">${CC_LOOK[M.why][1]}</div>${st < 3 ? `<div class="en" style="font-size:15px">${CC_LOOK[M.why][0]}</div>` : ''}
+    ${first ? `<div class="hint" style="margin-top:8px;font-size:14px">${uk ? '📖 Мотив записано в нотатки.' : '📖 That tells you why. It is in your notes.'}</div>` : ''}
+    <div class="row" style="margin-top:10px">${btn('close', '', lab('close'), 'ghost')}</div></div>`);
+}
+// ---- talking to a visitor
+function ccTalk(id) {
+  const M = ccCase(), n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hello = [L.en, L.uk];
+  n0.met = true; say('v_' + id + '_' + (first ? 'intro' : 'again'));
+  const rs = rainSay(id), wetHi = rs ? [rs[0] + '<br><br>', rs[1] + '<br><br>'] : ['', ''];
+  if (!M.met[id]) { M.met[id] = 1; save(); return myDialog(id, myCat(wetHi, hello, '<br><br>', CC_NEWS[id], Object.keys(M.met).length === 1 ? myCat('<div class="hint" style="margin-top:8px">', CC_HINT, '</div>') : ''), [{ label: myV('tell'), fn: () => ccMenu(id) }, { label: myV('bye'), fn: closeSheet }]); }
+  save(); ccMenu(id, myCat(wetHi, hello));
+}
+function ccMenu(id, said) {
+  const M = ccCase(), hand = M.hands[id], v = MY_VOICE[id], ch = [];
+  const say1 = c => () => { c.said = true; if (c.card) myNote({ k: c.card.k === 'how' ? 'with' : c.card.k, v: c.card.v }, id); M.heard.push({ id, txt: c.line }); save(); ccMenu(id, myCat(myPick(v.open), ' ', c.line)); };
+  for (const t of ['spot', 'sees', 'tool']) { const c = hand.find(c => c.t === t && !c.said); if (c) ch.push({ label: myV('cc_' + t), fn: say1(c) }); }
+  if (hand.filter(c => c.t !== 'extra').every(c => c.said)) { const c = hand.find(c => c.t === 'extra' && !c.said); if (c) ch.push({ label: myV('more'), fn: say1(c) }); }
+  ch.push({ label: myV('theory'), fn: () => ccSuggest(id) });
+  ch.push({ label: myV('bye'), fn: closeSheet });
+  const left = hand.some(c => !c.said);
+  myDialog(id, said || (left ? myPick(MY_T.menu) : v.none), ch);
+}
+function ccCards(k) { return k === 'who' ? MY_WHO.map(x => [x, myName(x)]) : k === 'why' ? Object.keys(CC_WHY).map(x => [x, [cap(CC_WHY[x][0]), cap(CC_WHY[x][1])]]) : Object.keys(CC_HOW).map(x => [x, [cap(CC_HOW[x][0]), cap(CC_HOW[x][1])]]); }
+const ccTheory = p => ['<i>"' + NPC[p.who].nameEn + ', ' + CC_WHY[p.why][0] + ', with ' + CC_HOW[p.how][0] + '."</i><br>', '<i>«' + MY_NAME[p.who][1] + ', ' + CC_WHY[p.why][1] + ', ' + CC_HOW[p.how][2] + '.»</i><br>'];
+function ccSuggest(id, pick = {}) {
+  if (!pick.who) return myDialog(id, MY_T.whoQ, ccCards('who').map(([x, l]) => ({ label: l, fn: () => ccSuggest(id, { who: x }) })).concat([{ label: myV('never'), fn: () => ccMenu(id) }]));
+  if (!pick.why) return myDialog(id, MY_VAR.cc_why[0], ccCards('why').map(([x, l]) => ({ label: l, fn: () => ccSuggest(id, Object.assign(pick, { why: x })) })));
+  if (!pick.how) return myDialog(id, MY_VAR.cc_how[0], ccCards('how').map(([x, l]) => ({ label: l, fn: () => ccSuggest(id, Object.assign(pick, { how: x })) })));
+  const M = ccCase(), hand = M.hands[id], hits = hand.filter(c => c.card && ((c.card.k === 'who' && c.card.v === pick.who) || (c.card.k === 'how' && c.card.v === pick.how)));
+  if (!hits.length) return myDialog(id, myCat(ccTheory(pick), MY_VOICE[id].hmm), [{ label: myV('thanks'), fn: () => ccMenu(id) }]);
+  const c = hits.find(c => !c.said) || hits[0]; c.said = true; myNote({ k: c.card.k === 'how' ? 'with' : c.card.k, v: c.card.v }, id); M.heard.push({ id, txt: c.line }); save();
+  const nm = c.card.k === 'who' ? myName(c.card.v) : [CC_HOW[c.card.v][0], CC_HOW[c.card.v][1]];
+  myDialog(id, myCat(ccTheory(pick), [MY_T.notIt[0].replace('%s', nm[0]), MY_T.notIt[1].replace('%s', nm[1])], ' ', c.line), [{ label: myV('isee'), fn: () => ccMenu(id) }]);
+}
+// ---- the notebook
+function ccNotebook() {
+  const M = ccCase(); if (!M) return toast('🔍 No mystery right now.', 2000);
+  const uk = MY_LANG === 'uk';
+  const key = (k, v) => (k === 'how' ? 'with' : k === 'why' ? 'where' : k) + ':' + v;
+  const row = (k, v, name) => { const n = M.notes[key(k, v)] || '', out = n.startsWith('x:'), srcId = out ? n.slice(2) : '', src = out ? (srcId === 'field' ? (uk ? 'поле' : 'the field') : MY_NAME[srcId][uk ? 1 : 0]) : '';
+    return '<button class="mynb' + (out ? ' out' : n === '?' ? ' hunch' : '') + '" data-a="myMark" data-v="' + key(k, v) + '"><span>' + (out ? '✗' : n === '?' ? '★' : '·') + '</span><b>' + name + '</b>' + (src ? '<small>' + src + '</small>' : '') + '</button>'; };
+  const sec = (title, k) => '<div class="mysec"><div class="mysech">' + title + '</div>' + ccCards(k).map(([v, nm]) => row(k, v, k === 'who' ? (uk ? NPC[v].name : NPC[v].nameEn) : nm[uk ? 1 : 0])).join('') + '</div>';
+  const heard = M.heard.slice().reverse().map(h => '<div class="myheard"><b>' + (h.id === 'field' ? (uk ? 'Поле' : 'The field') : MY_NAME[h.id][uk ? 1 : 0]) + ':</b> ' + myL(h.txt) + '</div>').join('') || '<div class="myheard">' + (uk ? 'Поки нічого. Поговори з гостями й подивися на поле.' : 'Nothing yet. Talk to the visitors and look at the field.') + '</div>';
+  openSheet(bookTabs('my') + '<div class="card" style="text-align:left"><div class="tag">🔍 ' + (uk ? 'Детективний блокнот' : 'Detective notebook') + '</div><div class="word" style="font-size:22px">' + (uk ? 'Коло на пшеничному полі' : 'The crop circle') + '</div><div class="en" style="font-size:14px">' + (uk ? '✗ виключено (і хто сказав) · торкнися рядка, щоб позначити здогадку ★' : '✗ ruled out (and who said so) · tap a line to mark a hunch ★') + '</div>' +
+    '<div class="mygrid">' + sec(uk ? 'Хто?' : 'Who?', 'who') + sec(uk ? 'Чому?' : 'Why?', 'why') + sec(uk ? 'Як?' : 'How?', 'how') + '</div>' +
+    '<details class="myclues"><summary>' + (uk ? 'Усе, що ти чула' : 'Everything you\'ve heard') + ' (' + M.heard.length + ')</summary>' + heard + '</details>' +
+    '<div class="row"><button class="subt mylang" data-a="myLangNb">' + (uk ? '🇬🇧 English' : '🇺🇦 Українською') + '</button>' + btn('close', '', lab('close'), 'ghost') + '</div></div>');
+}
+// ---- Officer Petro
+const CC_PETRO = {
+  ask: ['Ah, the pattern in the church field. A queer business! Have you worked out who did it, and why, and how, detective?', 'А, візерунок на полі за церквою. Дивна справа! Ти вже з\'ясувала, хто це зробив, чому й як, детективко?'],
+  solved: ['That pattern is the talk of the valley, thanks to you. I\'ll see you at the harvest festival, detective!', 'Про той візерунок говорить уся долина, і все завдяки тобі. До зустрічі на святі врожаю, детективко!'],
+  pWho: ['Who made it?', 'Хто його зробив?'], pWhy: ['And why did they do it?', 'А чому вони це зробили?'], pHow: ['And how did they do it?', 'А як вони це зробили?'],
+  right: ['Hmm. Hmm! Ah, I have a hunch you\'re right, young lady. I\'ll go and have a word.', 'Гм. Гм! А, маю передчуття, що ти маєш рацію, панночко. Піду поговорю.'],
+  toast: ['🌾 The pattern will be shown off at the harvest festival! A golden sheaf is waiting on your bookshelf at home.', '🌾 Візерунок покажуть на святі врожаю! На твоїй книжковій полиці вдома чекає золотий сніп.'],
+};
+function ccPetroTalk() {
+  const M = ccCase(), id = 'petro';
+  const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], rs = rainSay(id), hi = [(rs ? rs[0] + '<br><br>' : '') + L.en + '<br><br>', (rs ? rs[1] + '<br><br>' : '') + L.uk + '<br><br>'];
+  n0.met = true; save(); say('v_petro_' + (first ? 'intro' : 'again'));
+  if (!myOpen() && !M.solved) return myDialog(id, myCat(hi, myPick(MY_T.quiet)), [{ label: MY_T.goodday, fn: closeSheet }]);
+  if (M.solved) return myDialog(id, myCat(hi, CC_PETRO.solved), [{ label: MY_T.thanksO, fn: closeSheet }]);
+  if (M.acc === (S.clock.day || 1)) return myDialog(id, myCat(hi, MY_T.already), [{ label: MY_T.allright, fn: closeSheet }]);
+  myDialog(id, myCat(hi, CC_PETRO.ask), [{ label: MY_T.know, fn: () => ccAccuse({}) }, { label: MY_T.notyet, fn: closeSheet }]);
+}
+function ccAccuse(pick) {
+  const id = 'petro';
+  if (!pick.who) return myDialog(id, CC_PETRO.pWho, ccCards('who').map(([x, l]) => ({ label: l, fn: () => ccAccuse({ who: x }) })).concat([{ label: MY_T.notyet2, fn: closeSheet }]));
+  if (!pick.why) return myDialog(id, CC_PETRO.pWhy, ccCards('why').map(([x, l]) => ({ label: l, fn: () => ccAccuse(Object.assign(pick, { why: x })) })));
+  if (!pick.how) return myDialog(id, CC_PETRO.pHow, ccCards('how').map(([x, l]) => ({ label: l, fn: () => ccAccuse(Object.assign(pick, { how: x })) })));
+  const M = ccCase(), sum = ccTheory(pick);
+  if (pick.who === M.who && pick.why === M.why && pick.how === M.how) {
+    M.solved = true; M.solvedDay = S.clock.day || 1; S.decor.snip = 1; save(); myBtnShow(); blip(880, 0.1); setTimeout(() => blip(1320, 0.14), 120);
+    const conf = CC_WHYTXT[M.who][M.why], H = CC_HOW[M.how], sub = (t, i) => t.replace('%w', i ? H[2] : H[0]);
+    return myDialog(id, myCat(sum, CC_PETRO.right), [{ label: MY_T.goOn, fn: () => myDialog(M.who, [mySex(sub(conf[0], 0), MY_SEX[M.who]), mySex(sub(conf[1], 1), MY_SEX[M.who])], [{ label: ['Wonderful!', 'Чудово!'], fn: () => { closeSheet(); toast(MY_LANG === 'uk' ? CC_PETRO.toast[1] : CC_PETRO.toast[0], 5200); } }]) }]);
+  }
+  M.acc = S.clock.day || 1; save();
+  myDialog(id, myCat(sum, MY_T.wrong), [{ label: MY_T.keep, fn: closeSheet }]);
+}
 function myNote(c, src) { const M = S.mystery, key = c.k + ':' + c.v; if (!M.notes[key] || M.notes[key] === '?') M.notes[key] = 'x:' + src; }
 // A conversation card: a face, a name, what they say (in English or Ukrainian), Vicky's choices, and a button to
 // switch the language (the same card comes back in the other one).
@@ -3257,6 +3555,7 @@ function myDialog(id, text, choices) {
     '<div class="choices">' + choices.map((c, i) => '<button class="b ghost mych" data-a="myChoose" data-v="' + i + '">' + myL(c.label) + '</button>').join('') + '</div>');   // (the language button sits up by their name, where it can't scroll out of sight)
 }
 function myTalk(id) {
+  if (S.mystery && S.mystery.t === 'circle') return ccTalk(id);
   // every conversation opens with their spoken hello: their name the first time, nice to see you again after
   const M = S.mystery, n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], hello = [L.en, L.uk];
   n0.met = true; say('v_' + id + '_' + (first ? 'intro' : 'again'));
@@ -3285,6 +3584,7 @@ function mySuggest(id, pick = {}) {
   myDialog(id, myCat(myTheory(pick), [MY_T.notIt[0].replace('%s', nm[0]), MY_T.notIt[1].replace('%s', nm[1])], ' ', c.line), [{ label: myV('isee'), fn: () => myMenu(id) }]);
 }
 function myNotebook() {
+  if (S.mystery && S.mystery.t === 'circle') return ccNotebook();
   const M = S.mystery; if (!M) return toast('🔍 No mystery right now.', 2000);
   const uk = MY_LANG === 'uk';
   const row = (k, v, name) => { const n = M.notes[k + ':' + v] || '', out = n.startsWith('x:'), src = out ? MY_NAME[n.slice(2)][uk ? 1 : 0] : '';
@@ -3298,6 +3598,7 @@ function myNotebook() {
 }
 function myMark(key) { const M = S.mystery; if (!M) return; const n = M.notes[key] || ''; if (n.startsWith('x:')) return; M.notes[key] = n === '?' ? '' : '?'; save(); myNotebook(); }
 function petroTalk() {
+  if (S.mystery && S.mystery.t === 'circle') return ccPetroTalk();
   const M = S.mystery, id = 'petro';
   // his spoken hello first: who he is the first time, how are you after that
   const n0 = S.npc[id] || (S.npc[id] = { met: false, q: null, k: 0 }), first = !n0.met, L = NPC[id].lines[first ? 'intro' : 'again'], rs = rainSay(id), hi = [(rs ? rs[0] + '<br><br>' : '') + L.en + '<br><br>', (rs ? rs[1] + '<br><br>' : '') + L.uk + '<br><br>'];
@@ -3648,7 +3949,7 @@ function seasonGround() { const s = season(); if (s !== 'zyma') groundW = null; 
 const WINTER_GONE = new Set(['kvitka', 'soniashnyk', 'mak', 'pshenytsia', 'hryb', 'bilyhryb', 'malva', 'chornobryvtsi', 'metelyk', 'bdzhola', 'ryba', 'zhaba', 'kachka', 'lastivka']);
 // Some things only appear in some seasons: e.only lists them (the hedgehog's winter leaf pile, the bird feeder).
 const hrsNow = ([a, b]) => { const t = S.clock.t; return a < b ? t >= a && t < b : t >= a || t < b; };
-const goneNow = e => e.asleep || (e.hrs && !hrsNow(e.hrs)) || (NIGHT_GONE.has(e.w) && nightNow()) || (e.only && !e.only.includes(season())) || (winter() && (WINTER_GONE.has(e.w) || e.water));
+const goneNow = e => e.asleep || (e.kind === 'cc' && !ccShown()) || (e.w === 'pshenytsia' && e.kind !== 'cc' && e.x > 35 && e.y < 8 && ccShown() && Math.hypot(e.x - CC.x, e.y - CC.y) < CC.R + 0.2) || (e.hrs && !hrsNow(e.hrs)) || (NIGHT_GONE.has(e.w) && nightNow()) || (e.only && !e.only.includes(season())) || (winter() && (WINTER_GONE.has(e.w) || e.water));
 function drawIce(c, t) {
   const x = POND.x * T, y = POND.y * T, rx = POND.rx * T, ry = POND.ry * T;
   c.fillStyle = 'rgba(214,234,248,.92)'; ell(c, x, y, rx * 1.02, ry * 1.02);
@@ -4760,6 +5061,7 @@ function drawFishing(c, t) {
   }
 }
 function interact(e) {
+  if (e.kind === 'cc') return ccExamine();
   if (e.w === 'ryba' || e.kind === 'pond') return fishCard(e);
   if (e.cat) return catSheet(e);
   talkNpc = e.kind === 'npc' ? e.npc : e.kind === 'shop' ? 'oksana' : null;
@@ -4770,7 +5072,7 @@ function interact(e) {
   if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
-  if (e.k === 'bellpost') { if (myOpen()) return toast('🔔 The festival bell\'s post. The hook is bare, and the rope has been cut.', 3400); learn('dzvonyk'); return toast('🔔 The festival bell, back on its post where it belongs.', 3000); }
+  if (e.k === 'bellpost') { if (myOpen() && !S.mystery.t) return toast('🔔 The festival bell\'s post. The hook is bare, and the rope has been cut.', 3400); learn('dzvonyk'); return toast('🔔 The festival bell, back on its post where it belongs.', 3000); }
   if (e.w === 'vokzal') { learn('prapor'); return wordCard('vokzal', { note: '🚂 ' + xl('Dolyna station. The train comes every morning, at midday, in the evening and at night, from the east to the west.') + '<br>🇺🇦 <b>' + W.prapor.uk + '</b>' + xl(' · the flag flies from the clock tower') + ' <button class="subt" data-a="hear" data-v="w_prapor">🔊</button>' }); }
   if (e.w === 'kavarnia') return wordCard('kavarnia', { note: '☕ ' + xl('Solomiia\'s café. Go in for a coffee, a cake and a warm welcome.'), acts: [{ k: 'enter', fn: enterCafe }] });
   if (e.w === 'shkola') return wordCard('shkola', { note: '🏫 ' + xl('The village school. Go in and have a look round the classroom.'), acts: [{ k: 'enter', fn: enterSchool }] });
@@ -7104,6 +7406,7 @@ function talk(npc) {
     const L = n.last; n.last = null;
     if (L && L.k === 'gift' && W[L.item]) steps.push({ uk: D.thankLine.uk.replace('%s', W[L.item].acc || W[L.item].uk), en: D.thankLine.en.replace('%s', 'the ' + W[L.item].en), clip: `tq_${npc.id}_${L.item}` });
     else if (L && L.k === 'game' && npc.lines['again_' + L.g]) steps.push(line(npc, 'again_' + L.g));
+    else if (npc.id === 'andriiko' && ccCase() && myOpen() && !n.ccSaid) { n.ccSaid = 1; steps.push({ en: 'It wasn\'t me or Brovko! We only chased a hare through the wheat at lunchtime, honest. Somebody made the picture later, in the evening!', uk: 'Це не я й не Бровко! Ми лише ганяли зайця пшеницею в обід, чесно. Картину хтось зробив пізніше, ввечері!' }); }
     // small talk about the day, the season, the weather or the family, never the same twice running
     else if (n.met && Math.random() < 0.7) {
       const pool = ['chat_1', 'chat_2', 'chat_3', 'chat_' + season(), wet(S.wx) ? 'chat_rain' : null].filter(key => key && npc.lines[key] && key !== n.chat);
@@ -7221,7 +7524,7 @@ function hud() {
     if (!first) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); }   // the counter hops when it changes
   }
 }
-function myBtnShow() { const b = $('#myBtn'); if (b) b.style.display = S.mystery && S.mystery.started && !S.mystery.solved ? '' : 'none'; }
+function myBtnShow() { const b = $('#myBtn'); if (b) b.style.display = S.mystery && S.mystery.started && myOpen() ? '' : 'none'; }
 function bumpWater() { const w = $('#water'); if (!w) return; w.classList.remove('bump'); void w.offsetWidth; w.classList.add('bump'); }
 
 // ------------------------------------------------------------------ bag and word book
@@ -7270,7 +7573,7 @@ const DECOR = {
   kihtetochka: { x: 0.725, y: 0.58, s: 0.52, z: 1, hw: 0.9 },
   lizhko: { x: 0.905, y: 0.585, s: 0.58, z: 1, hw: 1.0 },
   // on the bookshelf: books on the middle shelf, a small plant on the top shelf, the mantel clock on top
-  knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 }, kubok: { shelf: 0.66, dx: -0.06, s: 0.15, z: 3 },   // the golden bell trophy, for solving the mystery
+  knyha: { shelf: 0.36, dx: -0.03, s: 0.21, z: 3 }, vazon: { shelf: 0.66, dx: 0.04, s: 0.2, z: 3 }, hodynnyk: { shelf: 0.96, dx: 0, s: 0.13, z: 3 }, kubok: { shelf: 0.66, dx: -0.06, s: 0.15, z: 3 }, snip: { shelf: 0.36, dx: 0.08, s: 0.17, z: 3 },   // the golden bell trophy, for solving the mystery
   // middle of the room: rug, table, and the chair tucked in behind it
   kylym: { x: 0.82, y: 0.625, s: 1.25, z: 0, hw: 0.98, flat: true },
   stilets: { x: 0.41, y: 0.775, s: 0.29, z: 1.5, hw: 0.7 }, stil: { x: 0.44, y: 0.81, s: 0.4, z: 2, hw: 1.0 },
@@ -9876,7 +10179,7 @@ function newDay() {
   if (S.wx === 'snow' || seasonIx() !== was) { prints.length = 0; printLast = null; for (const e of ents) e.pl = null; }   // fresh snow covers the tracks
   if (seasonIx() !== was && bed) bed.season = season();   // a new season starts this morning
   if (seasonIx() !== was && winter()) { S.wx = 'snow'; S.firstSnow = S.clock.day; }   // the first morning of winter: the first snow
-  learn('ranok'); learn(WX[S.wx].w); learn(season()); homeList = null; setGuide(); save();
+  learn('ranok'); learn(WX[S.wx].w); learn(season()); homeList = null; setGuide(); save(); ccKick();
 }
 // Footprints in the snow. Hers (boots), the cats' and the dog's (paws), the cow's, horse's, goat's and pig's
 // (cloven hooves), the hens' and ducks' (three toes), and the villagers' as they walk home. They stay all day:
@@ -10145,6 +10448,7 @@ function drawWorld(t) {
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
   c.drawImage(seasonGround(), 0, -GROUND_TOP * T);
   if (winter()) { drawIce(c, t); drawPrints(c, t); } else if (GFX.water) drawWater(c, t);
+  ccDraw(c);   // the crop circle in the wheat, flat on the ground
   drawFalls(c, t);
   drawTrain(c, t);   // the train runs behind everything standing in the village
   const vw = cv.width / zoom, vh = cv.height / zoom;
@@ -10192,7 +10496,7 @@ function drawWorld(t) {
       if (a >= 0.5) personSide(c, 0, 0, Lt, tt, false, 1); else person(c, 0, 0, Lt, tt, false, 1, undefined, { side: a * 2 });
       c.restore(); continue;
     }
-    if (e.kind === 'pond') continue;
+    if (e.kind === 'pond' || e.kind === 'cc') continue;
     if (e.kind === 'plot') {
       // Everything in a bed is drawn at bed scale, so bigger beds get bigger crops too.
       c.save(); c.translate(x, y); c.scale(e.s, e.s);
@@ -10541,6 +10845,8 @@ function festScenery(c, w, h, u, t, F, layer, pulse) {
     }
   } else if (F.id === 'obzhynky') {
     if (layer === 'back') {
+      // the pattern from the mystery, shown off across the field (if the case was solved)
+      { const M2 = ccCase(); if (M2 && M2.solved) { const sp = ccSprite(M2.why, M2.how), pw = w * 0.8; c.save(); c.globalAlpha = 0.97; c.drawImage(sp, w * 0.5 - pw / 2, h * 0.72, pw, pw * 0.42); c.restore(); } }
       // the reaped field: golden stubble rows and stooks of sheaves
       c.strokeStyle = 'rgba(200,150,60,.5)'; c.lineWidth = 1.2 * k; for (let r = 0; r < 6; r++) { const y = h * (0.5 + r * 0.025); c.beginPath(); c.moveTo(0, y); c.lineTo(w, y + 2 * k); c.stroke(); }
       for (const [x, y, s] of [[0.06, 0.58, 1], [0.2, 0.54, 0.8], [0.8, 0.54, 0.8], [0.94, 0.58, 1]]) { const X = x * w, Y = y * h, S = s * k;
@@ -10810,6 +11116,7 @@ function devMenu() {
   const ic = id => (W[id].ic[0] === '@' ? '' : W[id].ic + ' ');
   openSheet(`<div class="card" style="text-align:left"><h3><span>🛠️ Developer</span><small>${SEASON_IC[season()]} ${W[season()].en}${seasonForce ? ' (set here)' : ''} · ${['day', 'evening', 'night'][S.clock.t >= 0.86 ? 2 : S.clock.t >= 0.78 ? 1 : 0]}</small></h3>
     ${sec('Players', [['devPlayers', '', '👥 Who has played']])}
+    ${sec('Mystery', [['devMy', 'circle', '🌾 New crop circle case'], ['devMy', 'circlesolve', '🌾 Solve the crop circle'], ['devMy', 'bell', '🔔 New bell case']])}
     ${sec('Mini games', [['devGame', 'bohdan', '🐝 Bees'], ['devGame', 'andriiko', '🐕 Fetch'], ['devGame', 'taras', '🎣 Fishing'], ['devGame', 'bohdan_w', '❄️ Winter hive'], ['devGame', 'andriiko_w', '⛄ Snowman'], ['devGame', 'andriiko_s', '❄️ Snowball fight'], ['devGame', 'taras_w', '🧊 Ice fishing'], ['devGame', 'chop', '🪓 Chopping wood']])}
     ${sec("Grandma's cooking", D.recipes.map(r => ['devCook', r.id, ic(r.dish) + W[r.dish].en]))}
     ${sec('Seasons', [...SEASONS.map(x => ['devSeason', x, SEASON_IC[x] + ' ' + W[x].en + (season() === x ? ' ✓' : '')]), ['devSeason', 'real', '↩︎ Real season']])}
@@ -11154,6 +11461,7 @@ function hitEnt(wx, wy) {
     const s = Math.max(0.75, e.s), cx = e.x, cy = (e.kind === 'pond' ? e.y - 0.2 : e.flat ? e.y : e.y - s * 0.45) - (e.lift || 0);
     let d;
     if (e.kind === 'pond') { if (!inPond(wx, wy)) continue; d = 5; }
+    else if (e.kind === 'cc') { if (Math.hypot(wx - e.x, wy - e.y) > CC.R) continue; d = 4; }
     else { if (e.s > 3 && wy > e.y - 0.25) continue;
       if (e.hitLow && wy < e.y - e.hitLow) continue;   // a low thing in front of a house (Grandma's fence): only its own bottom strip, so the house above gets the tap   // big buildings: the ground just in front of one is for walking on
       const dx = Math.abs(wx - cx) / (s * (e.hitW || (e.s > 3 ? 0.4 : 0.5))),   // hitW: a narrower box for tall thin things (the stork pole)
@@ -11257,7 +11565,7 @@ const A = {
       const inApp = matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches;
       if (req && !inApp && !(document.fullscreenElement || document.webkitFullscreenElement)) { const p = req.call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => {}); }
     } catch (e) {}
-    $('#start').style.display = 'none'; running = true; playStart(); setTimeout(() => { try { bellRender(110); bellRender(147); } catch (e) {} }, 4000); hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
+    $('#start').style.display = 'none'; running = true; playStart(); setTimeout(ccKick, 2500); setTimeout(() => { try { bellRender(110); bellRender(147); } catch (e) {} }, 4000); hud(); setGuide(); musicBtn(); startMusic(); say('p_pryvit', guideClip);
     if (S.refunded && !S.refundTold) { S.refundTold = 1; save(); setTimeout(() => toast(`🛏️ Меблі вже в хаті! +${S.refunded} ₴`), 1500); } },
   music() {
     musicOn = !musicOn; try { localStorage.setItem('kd-music', musicOn ? 'on' : 'off'); } catch (e) {}
@@ -11305,6 +11613,9 @@ const A = {
   wear(v) { if (!S.wardrobe[v]) return; S.outfit = v; wearOutfit(v); useWord(v, true); save(); blip(880, 0.06); wardrobeSheet(); if (ward) { ward.view = 0; ward.t0 = nowT; ward.pop = nowT; } say('w_' + v, 'p_harno_vyhliadaiesh'); },
   devPin() { if (devOn) { A.start(); return setTimeout(devMenu, 700); } devCode = ''; devPinDraw(); },   // already unlocked on this device: straight in
   devPlayers() { playersSheet(); },
+  devMy(v) { closeSheet(); if (v === 'circle') { seasonForce = 'osin'; S.mystery = ccNewCase(); S.mystery.endDay = 1e9; save(); myBtnShow(); toast('🌾 A new crop circle case: who ' + MY_NAME[S.mystery.who][0] + ', ' + S.mystery.why + ', ' + S.mystery.how); }
+    else if (v === 'circlesolve' && ccCase()) { const M = ccCase(); M.solved = true; S.decor.snip = 1; save(); myBtnShow(); toast('🌾 Solved (dev)'); }
+    else if (v === 'bell') { S.mystery = myNewCase(); S.bellDone = 0; save(); myBtnShow(); toast('🔔 A new bell case'); } },
   devOff() { devOn = false; setTimeout(hud, 50); try { localStorage.removeItem('kd-dev'); } catch (e) {} $('#devBtn').style.display = 'none'; seasonForce = null; homeList = null; closeSheet(); setGuide(); toast('🔒 Developer mode off'); },
   devPinX() { $('#devpin').classList.remove('on'); },
   devKey(v) {
