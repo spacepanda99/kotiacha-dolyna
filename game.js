@@ -2283,6 +2283,60 @@ const DRAW = {
     c.strokeStyle = 'rgba(10,50,20,.35)'; c.lineWidth = 1.1; for (let i = 0; i < 18; i++) { const y = -14 - i * 6.2, w2 = 14 * Math.sin(Math.min(1, (-y) / 130) * 2.6 + 0.3); c.beginPath(); c.moveTo(-w2 * 0.8, y); c.quadraticCurveTo(0, y - 3, w2 * 0.8, y); c.stroke(); }
     c.fillStyle = 'rgba(160,230,130,.25)'; c.beginPath(); c.ellipse(-5, -70, 3.5, 40, -0.05, 0, 7); c.fill();
   },
+  // ---- the corn maze ---------------------------------------------------------------------------------
+  // A clump of tall maize, drawn once per season and variant into its own picture: slender stalks with long arching
+  // leaves, a cob in its husk with golden silk, a feathery tassel at the top; green in summer, golden in autumn,
+  // pale and frosted in winter, young and short in spring.
+  corn(c, o) {
+    const sea = treeSeason(o), n = Math.abs(Math.floor(((o && o.v) || 0) * 997)) % 6, key = sea + n;
+    DRAW._cornCv = DRAW._cornCv || {};
+    if (!DRAW._cornCv[key]) {
+      const K = 2, CW = 150, CH = 150, cv = document.createElement('canvas'); cv.width = CW * K; cv.height = CH * K; const g = cv.getContext('2d'); g.scale(K, K); g.translate(CW / 2, CH - 8);
+      const P = { vesna: { stem: '#6cb84a', l1: '#7cc450', l2: '#5aa83c', husk: '#a6d878', sil: '#d9c98a', tas: '#cfe29a', ht: 0.74 }, lito: { stem: '#5da23a', l1: '#4f9a34', l2: '#6cb848', husk: '#8fc860', sil: '#e6c75a', tas: '#e8d68a', ht: 1 }, osin: { stem: '#b89a4a', l1: '#c9a84e', l2: '#a98a3a', husk: '#d9c07a', sil: '#8a5a2a', tas: '#c9a85a', ht: 0.95 }, zyma: { stem: '#c9b783', l1: '#d9cfa8', l2: '#bfae7a', husk: '#d6c692', sil: '#9a7a4a', tas: '#e6dcc0', ht: 0.92 } }[sea] || { stem: '#5da23a', l1: '#4f9a34', l2: '#6cb848', husk: '#8fc860', sil: '#e6c75a', tas: '#e8d68a', ht: 1 };
+      let r = 11 + n * 37; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+      const stalk = (x, by, hgt, lean) => {
+        const top = by - hgt;
+        g.strokeStyle = P.stem; g.lineWidth = 2.8; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, by); g.quadraticCurveTo(x + lean * 0.4, by - hgt * 0.5, x + lean, top); g.stroke();
+        g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(x - 1, by - 6, 2, 6);
+        for (let k = 0; k < 6; k++) { const q = 0.14 + k * 0.13, y = by - hgt * q, sx = x + lean * q * 0.9, side = (k + (rnd() < 0.3 ? 1 : 0)) % 2 ? 1 : -1, L = 26 + rnd() * 10 - k * 1.2, droop = 7 + k * 1.6;
+          g.fillStyle = k % 2 ? P.l1 : P.l2; g.beginPath(); g.moveTo(sx, y); g.quadraticCurveTo(sx + side * L * 0.55, y - 12 - k, sx + side * L, y + droop); g.quadraticCurveTo(sx + side * L * 0.5, y - 4, sx, y + 2.5); g.closePath(); g.fill();
+          g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(sx, y); g.quadraticCurveTo(sx + side * L * 0.5, y - 9 - k, sx + side * L * 0.92, y + droop - 1); g.stroke();
+          if (sea === 'zyma') { g.fillStyle = 'rgba(255,255,255,.75)'; g.beginPath(); g.ellipse(sx + side * L * 0.55, y - 5, 6, 1.8, side * -0.2, 0, 7); g.fill(); } }
+        if (P.ht > 0.8) { const cy = by - hgt * 0.5, cxx = x + lean * 0.5 + 3, sd = (rnd() < 0.5 ? 1 : -1); g.save(); g.translate(cxx, cy); g.rotate(sd * 0.3);
+          g.fillStyle = P.husk; g.beginPath(); g.moveTo(0, 8); g.quadraticCurveTo(-7, -2, -3, -19); g.quadraticCurveTo(0, -25, 3, -19); g.quadraticCurveTo(7, -2, 0, 8); g.fill();
+          g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(0, 8); g.lineTo(0, -21); g.moveTo(-3, 4); g.quadraticCurveTo(-4, -8, -2, -18); g.stroke();
+          if (sea === 'osin' || sea === 'zyma') { g.fillStyle = '#f2c230'; g.beginPath(); g.ellipse(0, -21, 2.6, 4, 0, 0, 7); g.fill(); g.fillStyle = '#d9a020'; g.fillRect(-1.6, -24, 1, 3); g.fillRect(0.6, -24, 1, 3); }
+          g.strokeStyle = P.sil; g.lineWidth = 1.2; for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(k * 0.8, -23); g.quadraticCurveTo(k * 2.6 + 1, -29, k * 3.2, -31); g.stroke(); } g.restore(); }
+        g.strokeStyle = P.tas; g.lineWidth = 1.5; for (let k = -4; k <= 4; k++) { g.beginPath(); g.moveTo(x + lean, top + 2); g.quadraticCurveTo(x + lean + k * 2.2, top - 8, x + lean + k * 4.4, top - 14 + Math.abs(k) * 1.8); g.stroke(); }
+        g.strokeStyle = P.stem; g.lineWidth = 2; g.beginPath(); g.moveTo(x + lean, top + 4); g.lineTo(x + lean, top - 12); g.stroke(); };
+      const back = [[-44, 8], [-20, 5], [6, 7], [30, 5], [50, 8]], front = [[-34, 0], [-10, 2], [14, 0], [38, 2]];
+      for (const [x, o2] of back) stalk(x + (rnd() - 0.5) * 6, -8 + o2 - 8, (84 + rnd() * 16) * P.ht, (rnd() - 0.5) * 12);
+      for (const [x, o2] of front) stalk(x + (rnd() - 0.5) * 6, 2 + o2, (96 + rnd() * 18) * P.ht, (rnd() - 0.5) * 12);
+      DRAW._cornCv[key] = cv;
+    }
+    c.drawImage(DRAW._cornCv[key], -75, -142, 150, 150);
+  },
+  // A scarecrow at the way out: a pole and crossbar in a patched shirt, straw sleeves, a sack face with stitched
+  // smile, and a battered straw hat; a crow on one arm.
+  scarecrow(c, o) {
+    const t = (o && o.t) || 0;
+    c.fillStyle = 'rgba(0,0,0,.16)'; ell(c, 0, 1, 22, 5);
+    c.fillStyle = '#7a4e26'; c.fillRect(-2.5, -78, 5, 78); c.fillRect(-36, -58, 72, 5);
+    c.fillStyle = '#d9c07a'; for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) { c.fillRect(sx * (34 + k * 0.4) - 1.5, -58 + (k - 3) * 1.6, 3, 8); }
+    c.fillStyle = '#c8553a'; rr(c, -17, -58, 34, 34, 4); c.fillStyle = '#4f7ab8'; c.fillRect(-9, -50, 12, 11); c.strokeStyle = '#f0e6c8'; c.lineWidth = 1; c.setLineDash([2, 2]); c.strokeRect(-9, -50, 12, 11); c.setLineDash([]);
+    c.fillStyle = '#e0b060'; c.fillRect(-14, -24, 28, 7); c.fillStyle = '#d9c07a'; for (let k = 0; k < 8; k++) c.fillRect(-13 + k * 3.7, -18, 2, 9 + (k % 3));
+    c.fillStyle = '#d9b97a'; c.beginPath(); c.arc(0, -72, 14, 0, 7); c.fill(); c.fillStyle = 'rgba(0,0,0,.12)'; c.beginPath(); c.arc(4, -70, 12, 0, 7); c.fill();
+    c.fillStyle = '#2d1f14'; circ(c, -5, -74, 1.8); circ(c, 5, -74, 1.8); c.strokeStyle = '#2d1f14'; c.lineWidth = 1.2; c.beginPath(); c.arc(0, -70, 6.5, 0.2, Math.PI - 0.2); c.stroke(); for (let k = -3; k <= 3; k++) { c.beginPath(); c.moveTo(k * 2, -66.6 + Math.abs(k) * 0.4); c.lineTo(k * 2, -64.6 + Math.abs(k) * 0.4); c.stroke(); }
+    c.fillStyle = '#c9a050'; ell(c, 0, -83, 22, 5); c.fillStyle = '#d9b560'; rr(c, -12, -97, 24, 15, 5); c.fillStyle = '#8a3a2a'; c.fillRect(-12, -88, 24, 3);
+    c.fillStyle = '#1d1d22'; const b = Math.sin(t * 2.4) * 0.8; ell(c, 32, -66 + b, 6, 4.4); c.beginPath(); c.moveTo(36, -68 + b); c.lineTo(42, -66 + b); c.lineTo(36, -64.5 + b); c.fill(); circ(c, 29, -69 + b, 3); c.fillStyle = '#e8e8f0'; circ(c, 28.4, -69.4 + b, 0.9);
+  },
+  // A hand-painted wooden sign at the maze's mouth.
+  mazesign(c) {
+    c.fillStyle = 'rgba(0,0,0,.14)'; ell(c, 0, 1, 20, 4); c.fillStyle = '#6b4422'; c.fillRect(-14, -48, 4, 48); c.fillRect(10, -48, 4, 48);
+    c.fillStyle = '#9b6b3c'; rr(c, -30, -74, 60, 30, 4); c.fillStyle = '#b8864c'; rr(c, -29, -73, 58, 5, 3); c.strokeStyle = '#5a381b'; c.lineWidth = 1.4; c.strokeRect(-28, -72, 56, 28);
+    c.fillStyle = '#fff4d0'; c.font = '900 13px system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('ЛАБІРИНТ', 0, -62); c.font = '700 8px system-ui, sans-serif'; c.fillStyle = '#ffe08a'; c.fillText('CORN MAZE', 0, -50);
+    c.fillStyle = '#e8c35a'; for (const sx of [-1, 1]) { c.save(); c.translate(sx * 26, -76); c.rotate(sx * 0.4); ell(c, 0, 0, 2.4, 6); c.restore(); }
+  },
   // A white mushroom (porcini, boletus edulis): a fat pale stem, swollen at the foot and netted near the top,
   // under a domed chestnut-brown cap with a paler rim and the cream sponge (pores, not gills) showing beneath.
   bilyhryb(c) {
@@ -2758,6 +2812,22 @@ function wellPose(a) {
   if (a < 3.3) { const q = ease((a - 1.3) / 2); return { ang: 8 + q * 22, L: 40 - q * 39, tilt: 0, full: true }; }   // wound up, three and a half turns
   return { ang: 30, L: 1, full: a < 3.9, tilt: Math.min(1, (a - 3.3) / 0.3) * (a < 4.0 ? 1 : Math.max(0, 1 - (a - 4.0) / 0.3)) };
 }
+// The corn maze (bottom left). The formal gardens that used to be there are kept in the code, switched off.
+const GARDEN_ON = false;
+const MAZE = { x0: 1, y0: 31, w: 13, h: 9 };   // in tiles: the maze fills 13 x 9 tiles; cells sit on the odd tiles, corn on the rest
+// true where there is corn. A perfect maze (one way between any two places), laid out the same every time:
+// the way in is a gap in the top row, straight down from the road; the way out is a gap in the bottom row.
+const MAZE_WALL = (() => {
+  const w = MAZE.w, h = MAZE.h, cols = (w - 1) / 2, rows = (h - 1) / 2; let r = 31; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const wall = Array.from({ length: h }, () => Array(w).fill(1)), seen = Array.from({ length: rows }, () => Array(cols).fill(false));
+  wall[1][1] = 0; seen[0][0] = true; const stack = [[0, 0]];
+  while (stack.length) { const [cx, cy] = stack[stack.length - 1], nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => cx + dx >= 0 && cx + dx < cols && cy + dy >= 0 && cy + dy < rows && !seen[cy + dy][cx + dx]);
+    if (!nb.length) { stack.pop(); continue; } const [dx, dy] = nb[Math.floor(rnd() * nb.length)]; wall[2 * cy + 1 + dy][2 * cx + 1 + dx] = 0; seen[cy + dy][cx + dx] = true; wall[2 * (cy + dy) + 1][2 * (cx + dx) + 1] = 0; stack.push([cx + dx, cy + dy]); }
+  wall[0][5] = 0;       // in
+  wall[h - 1][9] = 0;   // out
+  return wall;
+})();
+const MAZE_IN = [MAZE.x0 + 5, MAZE.y0 - 1], MAZE_OUT = [MAZE.x0 + 9, MAZE.y0 + MAZE.h];   // the tiles just outside each gap
 function add(e) {
   e.k = e.k || (e.w + ents.length);
   e.s = e.s || 1; e.ic = e.ic || W[e.w].ic;
@@ -2837,7 +2907,7 @@ function add(e) {
   add({ w: 'kurka', x: 30.6, y: 38.3, kind: 'animal', r: 1.0, give: 'yaitse', cd: 90 });
   add({ w: 'kurka', x: 32.9, y: 38.6, kind: 'animal', r: 1.0, give: 'yaitse', cd: 90 });
   add({ w: 'piven', x: 31.7, y: 39.0, kind: 'animal', r: 1.1 });
-  // the formal gardens, bottom left (the lawn, paths, beds and walls are painted by gardenPaint)
+  if (GARDEN_ON) {   // the formal gardens, bottom left (the lawn, paths, beds and walls are painted by gardenPaint)
   rect(2, 32, 5, 33); rect(9, 32, 12, 33); rect(2, 37, 5, 38); rect(9, 37, 12, 38);   // the four beds can't be walked on
   add({ w: 'kushch', ic: '@rosearch', k: 'garch1', x: 7.5, y: 31.95, s: 2.2, quiet: true });   // the rose-and-wisteria arch at the entrance
   add({ w: 'kushch', ic: '@rosearch', k: 'garch2', x: 7.5, y: 39.55, s: 2.0, quiet: true });   // and another at the far end
@@ -2848,6 +2918,17 @@ function add(e) {
   [[6.4, 32.6], [6.4, 33.7], [8.6, 32.6], [8.6, 33.7], [6.4, 37.5], [6.4, 38.6], [8.6, 37.5], [8.6, 38.6]].forEach(([x, y], i) => add({ w: 'kvitka', ic: '@lavclump', k: 'glav' + i, x, y, s: 0.8, quiet: true }));
   [[6.15, 34.5], [8.85, 34.5], [6.15, 36.75], [8.85, 36.75]].forEach(([x, y], i) => add({ w: 'lampa', ic: '@lihtar', k: 'glamp' + i, x, y, s: 2.2, quiet: true, street: true }));
   [[2.2, 40.25], [4.6, 40.3], [10.0, 40.3], [12.4, 40.25], [1.5, 36.0]].forEach(([x, y], i) => add({ w: 'yalyna', ic: '@cypress', k: 'gcyp' + i, x, y, s: 2.5, quiet: true, solid: y > 40 }));   // evergreen columns round the back
+  }
+  // the corn maze: a clump of maize on every wall tile (solid, and not tappable), a sign at the mouth, a scarecrow at the way out
+  for (let gy = 0; gy < MAZE.h; gy++) for (let gx = 0; gx < MAZE.w; gx++) if (MAZE_WALL[gy][gx]) add({ w: 'kushch', ic: '@corn', k: 'corn' + gx + '_' + gy, x: MAZE.x0 + gx + 0.5, y: MAZE.y0 + gy + 0.92, s: 1.0, solid: true, quiet: true, nohit: true });
+  add({ w: 'kushch', ic: '@mazesign', k: 'mazesign', x: 4.4, y: 30.9, s: 1.25, quiet: true });
+  add({ w: 'kushch', ic: '@scarecrow', k: 'scarecrow', x: MAZE_OUT[0] + 0.5, y: MAZE_OUT[1] + 0.85, s: 1.5, quiet: true });
+  { // pumpkins to pick in the dead ends furthest from the way in
+    const open = (gx, gy) => gx >= 0 && gx < MAZE.w && gy >= 0 && gy < MAZE.h && MAZE_WALL[gy][gx] === 0, dist = {}, q = [[5, 0]]; dist['5,0'] = 0;
+    while (q.length) { const [x, y] = q.shift(); for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (open(nx, ny) && dist[nx + ',' + ny] == null) { dist[nx + ',' + ny] = dist[x + ',' + y] + 1; q.push([nx, ny]); } } }
+    const ends = []; for (let gy = 1; gy < MAZE.h; gy += 2) for (let gx = 1; gx < MAZE.w; gx += 2) { const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => open(gx + dx, gy + dy)).length; if (n === 1) ends.push([gx, gy, dist[gx + ',' + gy] || 0]); }
+    ends.sort((a, b) => b[2] - a[2]); for (const [gx, gy] of ends.slice(0, 6)) add({ w: 'harbuz', x: MAZE.x0 + gx + 0.5, y: MAZE.y0 + gy + 0.8, s: 0.8, give: 'harbuz', cd: 150, hide: true, quiet: true });
+  }
   // Ukrainian touches: hollyhocks by the cottages, kalyna bushes, a pysanka basket and a bandura at the market.
   for (const [x, y] of [[5.4, 11.15], [8.6, 11.15], [26.4, 11.15], [29.6, 11.15], [8.8, 19.2]]) add({ w: 'malva', x, y, s: 1.15 });
   for (const [x, y] of [[3.6, 15.4], [31.4, 17.4]]) add({ w: 'kalyna', x, y, s: 1.2, solid: true, give: 'kalyna', cd: 150, hide: true });
@@ -3607,8 +3688,34 @@ function gardenPaint(sea) {
 // a rounded rectangle as a stroked path
 function rr2(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r); c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h); c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r); c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y); c.closePath(); c.stroke(); }
 function gardenDraw(c) {
+  if (!GARDEN_ON) return;
   const vw = cv.width / zoom, vh = cv.height / zoom; if (GARDEN.x1 * T < camX || GARDEN.x0 * T > camX + vw || GARDEN.y1 * T < camY || GARDEN.y0 * T > camY + vh) return;
   const sea = season(); c.drawImage(GARDEN_CV[sea] || (GARDEN_CV[sea] = gardenPaint(sea)), GARDEN.x0 * T, GARDEN.y0 * T);
+}
+// ---- the maze's floor: earth under the corn, and the trampled paths between the rows
+const MAZE_CV = {};
+function mazePaint(sea) {
+  const W = MAZE.w * T, H = (MAZE.h + 1) * T, cv = document.createElement('canvas'); cv.width = W; cv.height = H; const c = cv.getContext('2d'); let r = 21; const rnd = () => (r = (r * 16807) % 2147483647) / 2147483647;
+  const snow = sea === 'zyma', earth = snow ? '#c9d2d6' : sea === 'osin' ? '#6a4c2c' : '#5e442a', path = snow ? '#eef2f4' : sea === 'osin' ? '#bfa664' : sea === 'vesna' ? '#8fcb68' : '#86c25e';
+  c.fillStyle = earth; c.fillRect(0, 0, W, MAZE.h * T);
+  c.strokeStyle = 'rgba(0,0,0,.18)'; c.lineWidth = 2; for (let y = 8; y < MAZE.h * T; y += 16) { c.beginPath(); c.moveTo(0, y); c.lineTo(W, y); c.stroke(); }   // the furrows
+  const open = (gx, gy) => gy >= MAZE.h || (gx >= 0 && gx < MAZE.w && gy >= 0 && gy < MAZE.h && MAZE_WALL[gy][gx] === 0);
+  for (let gy = 0; gy <= MAZE.h; gy++) for (let gx = 0; gx < MAZE.w; gx++) if (open(gx, gy)) { c.fillStyle = path; c.fillRect(gx * T - 1, gy * T - 1, T + 2, T + 2); }
+  for (let i = 0; i < 1800; i++) { const gx = (rnd() * MAZE.w) | 0, gy = (rnd() * (MAZE.h + 1)) | 0; if (!open(gx, gy)) continue; c.fillStyle = snow ? ['#d6dde0', '#fff', '#c6d0d4'][i % 3] : sea === 'osin' ? ['#a68c50', '#d9c27a', '#8a7440'][i % 3] : ['#6fae4c', '#9ad874', '#5e9a42'][i % 3]; c.fillRect(gx * T + rnd() * T, gy * T + rnd() * T, 2, 1.5); }
+  if (!snow && sea !== 'osin') for (let i = 0; i < 90; i++) { const gx = (rnd() * MAZE.w) | 0, gy = (rnd() * (MAZE.h + 1)) | 0; if (!open(gx, gy)) continue; c.fillStyle = ['#fff', '#ffe36e', '#ff9ec0'][i % 3]; circ(c, gx * T + rnd() * T, gy * T + rnd() * T, 1.8); }
+  if (sea === 'osin') for (let i = 0; i < 70; i++) { const gx = (rnd() * MAZE.w) | 0, gy = (rnd() * (MAZE.h + 1)) | 0; if (!open(gx, gy)) continue; c.fillStyle = ['#c9702a', '#e0a030', '#9a4a1a'][i % 3]; c.save(); c.translate(gx * T + rnd() * T, gy * T + rnd() * T); c.rotate(rnd() * 6); ell(c, 0, 0, 3, 1.6); c.restore(); }
+  return cv;
+}
+function mazeDraw(c) {
+  const vw = cv.width / zoom, vh = cv.height / zoom; if ((MAZE.x0 + MAZE.w) * T < camX || MAZE.x0 * T > camX + vw || (MAZE.y0 + MAZE.h + 1) * T < camY || MAZE.y0 * T > camY + vh) return;
+  const sea = season(); c.drawImage(MAZE_CV[sea] || (MAZE_CV[sea] = mazePaint(sea)), MAZE.x0 * T, MAZE.y0 * T);
+}
+// finding the way out: the scarecrow pays once a day
+function mazeReward() {
+  S.maze = S.maze || {}; const day = S.clock.day || 1;
+  if (S.maze.day === day) return toast('🌽 ' + (stage() < 3 ? 'You already found the way out today. Come back tomorrow!' : 'Ти вже знайшла вихід сьогодні. Приходь завтра!'), 3000);
+  S.maze.day = day; S.maze.n = (S.maze.n || 0) + 1; S.coins = (S.coins || 0) + 10; hud(); save(); blip(880, 0.1); setTimeout(() => blip(1320, 0.14), 120);
+  fxBurst(MAZE_OUT[0] + 0.5, MAZE_OUT[1] + 0.2, '🌽'); toast('🌽 ' + (stage() < 3 ? 'You found the way out of the corn maze! +10 💰' : 'Ти знайшла вихід із кукурудзяного лабіринту! +10 💰'), 4200);
 }
 const CC = { x: 38.07, y: 5.45, R: 1.5 };
 const ccShown = () => { const M = ccCase(); return !!(M && season() === 'osin'); };
@@ -5252,6 +5359,7 @@ function drawFishing(c, t) {
   }
 }
 function interact(e) {
+  if (e.k === 'scarecrow') return mazeReward();
   if (e.kind === 'cc') return ccExamine();
   if (e.w === 'ryba' || e.kind === 'pond') return fishCard(e);
   if (e.cat) return catSheet(e);
@@ -10638,7 +10746,8 @@ function drawWorld(t) {
   c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#8fd169'; c.fillRect(0, 0, cv.width, cv.height);   // never leave an old frame showing
   c.setTransform(zoom, 0, 0, zoom, -camX * zoom, -camY * zoom);
   c.drawImage(seasonGround(), 0, -GROUND_TOP * T);
-  gardenDraw(c);   // the formal gardens, bottom left
+  gardenDraw(c);   // the formal gardens (switched off)
+  mazeDraw(c);   // the corn maze's floor, bottom left
   if (winter()) { drawIce(c, t); drawPrints(c, t); } else if (GFX.water) drawWater(c, t);
   ccDraw(c);   // the crop circle in the wheat, flat on the ground
   drawFalls(c, t);
@@ -11648,7 +11757,7 @@ function hitEnt(wx, wy) {
   let best = null, bd = 1e9;
   const onTrail = trailDist(wx, wy) < 0.42;   // the forest path: a tap there means walk
   for (const e of ents) {
-    if ((e.hide && !ready(e)) || goneNow(e)) continue;
+    if ((e.hide && !ready(e)) || goneNow(e) || e.nohit) continue;
     if (onTrail && !e.an && e.kind !== 'crawl' && e.kind !== 'npc') continue;
     const s = Math.max(0.75, e.s), cx = e.x, cy = (e.kind === 'pond' ? e.y - 0.2 : e.flat ? e.y : e.y - s * 0.45) - (e.lift || 0);
     let d;
