@@ -2653,7 +2653,7 @@ function add(e) {
   // Street lamps: one behind each bench in the square, one by the road between her cottage and the market,
   // one between the market and Grandma Olia's, one each side of the crossroads on the back road (towards the
   // windmill and towards the church), one on each half of the bottom road, and one halfway down the road from the square to it. (Tapping one says «лампа».)
-  for (const [lx, ly, fl] of [[22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [23.45, 33.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
+  for (const [lx, ly, fl] of [[22.05, 17.7, 1], [12.6, 13.5], [25.2, 13.5], [14.8, 5.55], [24.4, 5.55], [11.6, 29.5], [24.6, 29.5], [17.35, 25.3], [34.85, 12.95], [14.35, 31.6], [23.65, 31.6, 1]]) add({ w: 'lampa', ic: '@lihtar', k: 'lamp' + lx + '_' + ly, x: lx, y: ly, s: 2.2, quiet: true, street: true, flipX: !!fl });   // the right-hand ones face in, towards the fountain
   add({ w: 'lavka', ic: '@benchside', x: 16.45, y: 17.9, s: 1.25, solid: true });                 // a bench on the left, facing it
   add({ w: 'lavka', ic: '@benchside', x: 21.55, y: 17.9, s: 1.25, solid: true, flipX: true });   // and one on the right, facing it too
   add({ w: 'lavka', ic: '@bench', x: 28.5, y: 17.15, s: 1.25, solid: true });   // above the lake, looking out over it   // beside the school, facing its porch
@@ -2677,9 +2677,9 @@ function add(e) {
   // (Grandma's animals are her hens, rooster and pig; the cows, horse and goats belong to the family at the bottom right)
   // the family's farmyard, in the big field below their cottage: a stable for the horse, a trough, a haystack,
   // one cow, three goats, and their own hens and rooster by their coop
-  rect(24, 32, 25, 32); add({ w: 'stainia', x: 24.6, y: 33.6, s: 2.8, solid: true });
-  add({ w: 'koryto', x: 27.6, y: 34.9, s: 1.4, solid: true });
-  add({ w: 'sino', x: 30.9, y: 33.9, s: 2.2, solid: true });
+  rect(24, 33, 25, 33); add({ w: 'stainia', x: 24.8, y: 34.5, s: 2.8, solid: true });
+  add({ w: 'koryto', x: 27.8, y: 35.6, s: 1.4, solid: true });
+  add({ w: 'sino', x: 31.1, y: 34.2, s: 2.2, solid: true });
   add({ w: 'kurnyk', x: 32.0, y: 37.4, s: 2.5, solid: true });
   add({ w: 'kin', x: 26.3, y: 35.6, s: 1.5, kind: 'animal', r: 1.4 });
   add({ w: 'korova', x: 28.4, y: 36.8, s: 1.4, kind: 'animal', r: 1.6, give: 'moloko', cd: 120 });
