@@ -215,14 +215,18 @@ const tuneBad = {};
 let curTune = 'theme', themePos = 0, seekTo = 0;
 // The market has its own tune while its card is open (it's a card over the village, not a room).
 const shopOpen = () => mode === 'world' && sheetOpen() && !!sheet.querySelector('[data-shop]');
-const wantTune = () => { const n = shopOpen() ? 'room-market-v2' : ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
+// Talking to someone or reading Grandma's letter has a calm tune of its own, and the cats a more playful one, so
+// the same music doesn't run on for too long. Each tune picks up where it left off.
+const cardTune = () => { if (document.getElementById('story') && document.getElementById('story').classList.contains('show')) return 'room-talk'; if (!sheetOpen() || !portraitOn) return null; return portraitOn.startsWith('cat_') ? 'room-cats' : 'room-talk'; };
+const wantTune = () => { const n = mode === 'fest' ? null : shopOpen() ? 'room-market-v2' : cardTune() || ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
+const tunePos = {};
 music.addEventListener('error', () => { if (curTune !== 'theme') tuneBad[curTune] = true; });
 music.addEventListener('loadedmetadata', () => { if (seekTo) { try { music.currentTime = seekTo; } catch (e) {} seekTo = 0; } });
 function musicTick(dt) {
   const want = wantTune(), switching = want !== curTune;
   if (switching && (musicVol < 0.03 || music.paused)) {
-    if (curTune === 'theme') themePos = music.currentTime || 0;
-    curTune = want; seekTo = want === 'theme' ? themePos : 0;
+    if (curTune === 'theme') themePos = music.currentTime || 0; else if (/^room-(talk|cats)$/.test(curTune)) tunePos[curTune] = music.currentTime || 0;
+    curTune = want; seekTo = want === 'theme' ? themePos : tunePos[want] || 0;
     music.src = 'music/' + want + '.mp3'; if (musicOn && !document.hidden && mode !== 'fest') music.play().catch(() => {});
   }
   const wolves = mode === 'world' && S.clock && S.clock.t >= 0.86 && S.clock.ev && S.clock.ev.wolf1;   // once the wolves howl the music stops: just the night, the crickets and the wolves
@@ -2834,7 +2838,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   c.fillStyle = L.skin; circ(c, 0, -63 + bob, 14);
   c.fillStyle = L.hair; c.beginPath(); c.arc(0, -65 + bob, 14.6, Math.PI, 0); c.fill();
   if (L.detail && back < 0.5) hairShine(c, 0, -65 + bob, 14.6);
-  if (L.long) { rr(c, -15.5, -66 + bob, 5, 20, 2.5); rr(c, 10.5, -66 + bob, 5, 20, 2.5); c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
+  if (L.long) { rr(c, -15.5, -66 + bob, 5, 20, 2.5); rr(c, 10.5, -66 + bob, 5, 20, 2.5); } if (L.long && !L.noBand) { c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
   c.save(); c.translate(fx, 0);   // the face slides toward the way she is looking
   if (L.detail) faceDetail(c, L, bob, blink, side); else {
   c.fillStyle = '#3b2f2a'; if (blink) { c.fillRect(-7, -62.6 + bob, 4, 1.3); c.fillRect(3, -62.6 + bob, 4, 1.3); } else { circ(c, -5, -62 + bob, 1.8); circ(c, 5, -62 + bob, 1.8); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, -4.4, -62.7 + bob, 0.6); circ(c, 5.6, -62.7 + bob, 0.6); c.fillStyle = '#3b2f2a'; }
@@ -2902,7 +2906,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
 }
 const OLIA_FACE = { detail: true, eye: '#6b4426', brow: '#cfcfcf', eyeK: 0.82, age: 1, lashes: false };   // Grandma indoors: kind eyes, smile lines
 const SOLOMIIA_FACE = { detail: true, eye: '#5a3418', brow: '#3a2416', eyeK: 0.86 };   // Mrs. Solomiia in her café
-const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, dress: true, detail: true, eye: '#8a5426', brow: '#c08a3a' };
+const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#8a5426', brow: '#c08a3a' };   // (no headband: the user's choice)
 // Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
 // shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
 // apronTrim), vest (+ vestTrim), coat (+ fur), boots, beads, a hat (scarf, wreath) and ribbons on the wreath.
@@ -3024,7 +3028,7 @@ function personSide(c, x, y, L, t, moving, sc, ph) {
   if (L.detail) hairShine(c, -1, hy - 1, 14);
   c.fillStyle = L.skin; circ(c, 13.6, hy + 1.2, 1.7);                          // nose, just breaking the outline
   if (L.long) { c.fillStyle = L.hair; rr(c, -15, hy - 2, 8, 24, 4); }         // the long hair falling behind
-  if (L.long) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.lineCap = 'butt'; c.beginPath(); c.arc(0, hy, 14.2, Math.PI * 1.08, Math.PI * 1.72); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10.5, hy - 9.5, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -7, hy - 12.5, 2.6); }
+  if (L.long && !L.noBand) { c.strokeStyle = L.band || '#d43a3a'; c.lineWidth = 3; c.lineCap = 'butt'; c.beginPath(); c.arc(0, hy, 14.2, Math.PI * 1.08, Math.PI * 1.72); c.stroke(); c.fillStyle = '#ffd23f'; circ(c, -10.5, hy - 9.5, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -7, hy - 12.5, 2.6); }
   if (L.detail) sideFaceDetail(c, L, hy, blink); else {
   c.fillStyle = '#3b2f2a'; if (blink) c.fillRect(6.5, hy + 0.6, 4, 1.3); else { ell(c, 8.5, hy + 1, 1.7, 2.1); c.fillStyle = 'rgba(255,255,255,.85)'; circ(c, 9.1, hy + 0.2, 0.6); }
   c.fillStyle = 'rgba(240,120,120,.45)'; circ(c, 7, hy + 6, 2.6);
@@ -12609,13 +12613,13 @@ function posterBackground(W, H) {
     hill([[W, H * 0.44], [W * 0.9, H * 0.45], [W * 0.82, H * 0.48], [W * 0.78, H * 0.53], [W * 0.84, H * 0.58], [ex - W * 0.02, ey - H * 0.03], [ex, ey + H * 0.01], [ex + W * 0.03, ey + H * 0.08], [W * 0.94, H * 0.8], [W, H * 0.84], [W, H * 0.6], [W, H * 0.44], [W, H * 0.44]], -1, 7);
     for (let i = 0; i < 12; i++) { const k = i / 11, x = W * (0.99 - k * 0.2), y = H * (0.445 + k * k * 0.085) + S * 0.01; (i % 4 === 1 ? round : fir)(x, y, S * (0.048 + k * 0.015)); }
     for (let i = 0; i < 14; i++) { const k = i / 13, x = W * (0.9 + (i % 3) * 0.035) + k * W * 0.02, y = H * (0.5 + k * 0.28); if (Math.abs(y - (ey - H * 0.05)) < H * 0.03) continue; (i % 2 ? fir : round)(x, y, S * (0.05 + k * 0.03)); }
-    // the stream, from a spring near the top of the right-hand hill down to the village, with little falls
-    const sp = [[W * 1.02, H * 0.465], [W * 0.97, H * 0.49], [W * 0.955, H * 0.52], [W * 0.935, H * 0.555], [W * 0.95, H * 0.585], [ex - W * 0.01, ey - H * 0.02], [E[0], E[1]]];
+    // the stream carries on from where it leaves the village, a short way right and a little up, out of the picture
+    const SP2 = STREAM.map(p => proj(p[0] * T, p[1] * T)).reverse(), i0 = Math.max(1, SP2.findIndex(p => p[0] > W * 0.86));   // the village's stream, from the pond outwards
+    const j0 = SP2[i0 - 1], sp = [[j0[0], j0[1]], [Math.min(W * 0.93, j0[0] + W * 0.05), j0[1] - H * 0.004], [W * 1.05, j0[1] - H * 0.02]];
     c.lineCap = 'round'; c.lineJoin = 'round';
     for (const [col, wk] of [[sea === 'zyma' ? '#c9d8ea' : '#2f6f9a', 1.4], [sea === 'zyma' ? '#e8f0fa' : '#4aa3dc', 1], [sea === 'zyma' ? '#ffffff' : 'rgba(210,240,255,.95)', 0.35]])
       for (let i = 0; i < sp.length - 1; i++) { const m0 = i ? [(sp[i - 1][0] + sp[i][0]) / 2, (sp[i - 1][1] + sp[i][1]) / 2] : sp[0], m1 = i < sp.length - 2 ? [(sp[i][0] + sp[i + 1][0]) / 2, (sp[i][1] + sp[i + 1][1]) / 2] : sp[i + 1];   // a smooth winding line through the points
-        c.strokeStyle = col; c.lineWidth = S * 0.011 * wk * (0.5 + i / sp.length * 0.7); c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(sp[i][0], sp[i][1], m1[0], m1[1]); c.stroke(); }
-    if (sea !== 'zyma') for (let i = 1; i < sp.length - 1; i++) { c.fillStyle = 'rgba(255,255,255,.9)'; ell(c, sp[i][0], sp[i][1], S * 0.012, S * 0.005); }
+        c.strokeStyle = col; c.lineWidth = S * 0.011 * wk * (1 - i * 0.12); c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(sp[i][0], sp[i][1], m1[0], m1[1]); c.stroke(); }
   }
   // the hill she stands on: a grassy crest across the bottom, rim-lit by the low sun
   const crest = x => H * (land ? 0.84 : 0.86) - Math.sin(x / W * 2.6 + 0.4) * H * 0.04 - (1 - x / W) * H * (land ? 0.02 : 0.05);
@@ -12669,8 +12673,9 @@ function drawTitle(t) {
     fancyText(c, "Vickie's Valley", cx, top + rib * 1.9 + big * 0.85, W * 0.62, big, t);
   } else {
     const big = Math.min(W * 0.2, H * 0.1), rib = big * 0.34;
-    ribbon(c, 'Долина Вікі', W / 2, top + rib * 0.8, rib);
-    const y1 = top + rib * 1.9 + big * 0.85, s1 = fancyText(c, "Vickie's", W / 2, y1, W * 0.84, big, t);
+    const top2 = Math.max(top, B.hor - H * 0.025 - (rib * 1.9 + big * 1.95));   // the logo sits just above the hills
+    ribbon(c, 'Долина Вікі', W / 2, top2 + rib * 0.8, rib);
+    const y1 = top2 + rib * 1.9 + big * 0.85, s1 = fancyText(c, "Vickie's", W / 2, y1, W * 0.84, big, t);
     fancyText(c, 'Valley', W / 2, y1 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
   }
 }
