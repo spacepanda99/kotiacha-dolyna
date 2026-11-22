@@ -9836,7 +9836,7 @@ function newDay() {
 }
 // Footprints in the snow. Hers (boots), the cats' and the dog's (paws), the cow's, horse's, goat's and pig's
 // (cloven hooves), the hens' and ducks' (three toes), and the villagers' as they walk home. They stay all day:
-// only a fresh fall of snow overnight covers them up (newDay). Kept to 1500, and only those on screen are drawn.
+// only a fresh fall of snow overnight covers them up (newDay). Kept to 2400, and only those on screen are drawn.
 const prints = []; let printLast = null, printSide = 1;
 const PRINT_OF = { cat: ['paw', 0.17, 0.8], dog: ['paw', 0.24, 1.15], cow: ['hoof', 0.34, 1.35], horse: ['hoof', 0.36, 1.4], goat: ['hoof', 0.24, 0.85], pig: ['hoof', 0.22, 0.85], hen: ['bird', 0.13, 0.8], rooster: ['bird', 0.15, 0.95], duck: ['bird', 0.16, 1] };
 function addPrint(o, x, y, kind, gap, sc) {
@@ -9847,7 +9847,7 @@ function addPrint(o, x, y, kind, gap, sc) {
   const ang = Math.atan2(dy, dx); o.pl.side = -o.pl.side;
   const off = kind === 'boot' ? 0.09 : 0.05 * sc;
   prints.push({ x: x - Math.sin(ang) * off * o.pl.side, y: y + Math.cos(ang) * off * o.pl.side, a: ang, k: kind, s: sc, t: nowT });
-  if (prints.length > 1500) { const i = prints.findIndex(q => q.k !== 'boot'); prints.splice(i >= 0 ? i : 0, 1); }   // animals' tracks give way first; hers stay longest
+  if (prints.length > 2400) { const i = prints.findIndex(q => q.k !== 'boot'); prints.splice(i >= 0 ? i : 0, 1); }   // animals' tracks give way first; hers stay longest
   o.pl.x = x; o.pl.y = y;
 }
 function stepPrints() {
@@ -9855,7 +9855,7 @@ function stepPrints() {
   printLast = printLast || {}; addPrint(printLast, P.x, P.y, 'boot', 0.3, 1);
   for (const e of ents) {
     if (goneNow(e) || e.water) continue;
-    if (e.kind === 'npc') { if (e.route2) addPrint(e, e.x, e.y, 'boot', 0.3, 1); continue; }
+    if (e.kind === 'npc') { if (!e.asleep && !e.inside && !e.door && !e.sit) addPrint(e, e.x, e.y, 'boot', 0.3, 1); continue; }   // every villager and visitor leaves boot prints wherever they walk (none while standing, sitting or indoors)
     const pk = e.kind === 'animal' && PRINT_OF[e.an]; if (!pk) continue;
     addPrint(e, e.x, e.y, pk[0], pk[1], pk[2]);
   }
