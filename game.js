@@ -3044,6 +3044,7 @@ function wellPose(a) {
   return { ang: 30, L: 1, full: a < 3.9, tilt: Math.min(1, (a - 3.3) / 0.3) * (a < 4.0 ? 1 : Math.max(0, 1 - (a - 4.0) / 0.3)) };
 }
 // The corn maze (bottom left). The formal gardens that used to be there are kept in the code, switched off.
+const OAK_ON = false;   // the great oak and its swing, bottom left (taken out for now)
 const GARDEN_ON = false, MAZE_ON = false, FARM_ON = false;   // (both kept, switched off: the field is now an orchard, a pumpkin patch and a cornfield)
 const MAZE = { x0: 1, y0: 31, w: 13, h: 9 };   // in tiles: the maze fills 13 x 9 tiles; cells sit on the odd tiles, corn on the rest
 // true where there is corn. A perfect maze (one way between any two places), laid out the same every time:
@@ -3177,9 +3178,12 @@ function add(e) {
   }
   // the great oak, bottom left: the biggest tree in the game, with a rope swing hanging from its low limb, and a
   // meadow of flowers all round it (the orchard, pumpkin patch and cornfield that were here are switched off above)
-  add({ w: 'dub', ic: '@giantoak', k: 'giantoak', x: 7.6, y: 38.6, s: 5.6, solid: true, quiet: true });
-  rect(7, 38, 8, 38);
-  add({ w: 'kushch', ic: '@swing', k: 'swing', x: 4.7, y: 38.95, s: 4.2, quiet: true });
+  // OAK_ON: the oak and swing are taken out for now (something else is going there); their spot is left as grass
+  if (OAK_ON) {
+    add({ w: 'dub', ic: '@giantoak', k: 'giantoak', x: 7.6, y: 38.6, s: 5.6, solid: true, quiet: true });
+    rect(7, 38, 8, 38);
+    add({ w: 'kushch', ic: '@swing', k: 'swing', x: 4.7, y: 38.95, s: 4.2, quiet: true });
+  }
   { let sd = 77; const rn = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
     for (let c0 = 0; c0 < 13; c0++) { const cx = 2 + rn() * 11.5, cy = 32.3 + rn() * 8.2, n = 3 + Math.floor(rn() * 5);
       for (let i = 0; i < n; i++) { const x = cx + (rn() - 0.5) * 2.2, y = cy + (rn() - 0.5) * 1.6;
