@@ -2686,12 +2686,42 @@ function drawIcon(c, ic, x, y, s, o) {
 // An emoji painted once into its own little canvas, so it can be turned and drawn every frame cheaply
 // (turning text itself makes the phone redraw the glyph each time).
 const emojiSpr = {};
-function emojiSprite(c, ic, x, y, s, rot, scale) {
-  const px = Math.ceil(s * scale / 8) * 8, key = ic + px;
+function emojiSprite(c, ic, x, y, s, rot, scale, v = 0) {
+  const sun = ic === '🌻', px = Math.ceil(s * scale / 8) * 8, key = ic + px + (sun ? '|' + (v % 5) : '');
   let sp = emojiSpr[key];
+  if (!sp && sun) { sp = emojiSpr[key] = document.createElement('canvas'); sp.width = sp.height = Math.ceil(px * 1.2); sunflowerArt(sp.getContext('2d'), sp.width, v % 5); }
   if (!sp) { sp = emojiSpr[key] = document.createElement('canvas'); sp.width = sp.height = Math.ceil(px * 1.2); const k = sp.getContext('2d'); k.font = `${Math.round(px * 0.86)}px ${EMOJI}`; k.textAlign = 'center'; k.textBaseline = 'alphabetic'; k.fillText(ic, sp.width / 2, sp.height * 0.85); }
   const B = s * 1.2;
   c.save(); c.translate(x, y); c.rotate(rot); c.drawImage(sp, -B / 2, -s * 0.1 - B * 0.85, B, B); c.restore();
+}
+// A sunflower drawn petal by petal (instead of the emoji), in a square of side n with its foot at 93% down.
+// v (0-4) varies it: how many petals, their shade, how far the head turns, the leaves.
+function sunflowerArt(k, n, v) {
+  let sd = 7 + v * 31; const rn = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const bx = n * 0.5, by = n * 0.93, hx = n * (0.5 + (v - 2) * 0.025), hy = n * 0.31, R = n * (0.2 + (v % 3) * 0.012);
+  k.lineCap = 'round';
+  // the stem, a little hairy, and two big leaves
+  k.strokeStyle = '#3f7d34'; k.lineWidth = n * 0.045; k.beginPath(); k.moveTo(bx, by); k.quadraticCurveTo(bx + n * 0.03, n * 0.62, hx, hy + R * 0.6); k.stroke();
+  k.strokeStyle = '#5fa04a'; k.lineWidth = n * 0.014; k.beginPath(); k.moveTo(bx - n * 0.008, by); k.quadraticCurveTo(bx + n * 0.02, n * 0.62, hx - n * 0.008, hy + R * 0.6); k.stroke();
+  for (const [ly, dir, sz] of [[0.7, -1, 1], [0.58, 1, 0.85 + (v % 2) * 0.15]]) { k.save(); k.translate(bx + n * 0.012, n * ly); k.rotate(dir * (0.55 + v * 0.05)); const L = n * 0.2 * sz;
+    const g = k.createLinearGradient(0, 0, dir * L, 0); g.addColorStop(0, '#3f8a34'); g.addColorStop(1, '#6cb84f'); k.fillStyle = g; k.beginPath(); k.moveTo(0, 0); k.quadraticCurveTo(dir * L * 0.5, -L * 0.42, dir * L, -L * 0.05); k.quadraticCurveTo(dir * L * 0.5, L * 0.28, 0, 0); k.fill();
+    k.strokeStyle = 'rgba(30,70,20,.55)'; k.lineWidth = n * 0.006; k.beginPath(); k.moveTo(0, 0); k.quadraticCurveTo(dir * L * 0.5, -L * 0.06, dir * L * 0.92, -L * 0.05); k.stroke(); k.restore(); }
+  // the head, turned a touch, with two rings of petals, each one its own shape and shade
+  k.save(); k.translate(hx, hy); k.rotate((v - 2) * 0.08); k.scale(1, 0.92 + (v % 2) * 0.05);
+  const N = 17 + v;
+  for (const [ring, len, wid, dark] of [[0, 1.0, 0.2, 1], [1, 0.86, 0.17, 0]]) for (let i = 0; i < N; i++) {
+    const a = (i + ring * 0.5) / N * Math.PI * 2 + v * 0.3, l = R * len * (0.9 + rn() * 0.2), w = R * wid * (0.85 + rn() * 0.3), cx = Math.cos(a) * (R * 0.42 + l * 0.5), cy = Math.sin(a) * (R * 0.42 + l * 0.5);
+    k.save(); k.translate(cx, cy); k.rotate(a + Math.PI / 2 + (rn() - 0.5) * 0.2);
+    const g = k.createLinearGradient(0, l * 0.5, 0, -l * 0.5); g.addColorStop(0, dark ? '#d9830f' : '#e8960f'); g.addColorStop(0.55, dark ? '#f5b51a' : '#fcc828'); g.addColorStop(1, dark ? '#ffd54a' : '#ffe27a');
+    k.fillStyle = g; k.beginPath(); k.moveTo(0, l * 0.5); k.quadraticCurveTo(w, l * 0.1, w * 0.25, -l * 0.5); k.quadraticCurveTo(0, -l * 0.56, -w * 0.25, -l * 0.5); k.quadraticCurveTo(-w, l * 0.1, 0, l * 0.5); k.fill();
+    k.strokeStyle = 'rgba(160,90,10,.45)'; k.lineWidth = Math.max(0.6, n * 0.004); k.stroke();
+    k.strokeStyle = 'rgba(190,110,10,.35)'; k.beginPath(); k.moveTo(0, l * 0.4); k.lineTo(0, -l * 0.35); k.stroke();
+    k.restore(); }
+  // the seed disc: dark brown, lighter in the middle, seeds set in a spiral
+  const g = k.createRadialGradient(-R * 0.1, -R * 0.1, 0, 0, 0, R * 0.5); g.addColorStop(0, '#7a4a1e'); g.addColorStop(0.6, '#4a2a12'); g.addColorStop(1, '#2e180a'); k.fillStyle = g; circ(k, 0, 0, R * 0.5);
+  for (let i = 0; i < 70; i++) { const r = Math.sqrt(i / 70) * R * 0.46, a = i * 2.39996; k.fillStyle = i % 3 ? 'rgba(20,10,4,.7)' : 'rgba(160,110,50,.6)'; circ(k, Math.cos(a) * r, Math.sin(a) * r, Math.max(0.5, R * 0.028)); }
+  k.fillStyle = 'rgba(255,240,200,.18)'; ell(k, -R * 0.16, -R * 0.18, R * 0.2, R * 0.12);
+  k.restore();
 }
 const iconCache = {};
 // A large picture of something (the outfit cards in the market are big).
@@ -2838,7 +2868,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
   c.fillStyle = L.skin; circ(c, 0, -63 + bob, 14);
   c.fillStyle = L.hair; c.beginPath(); c.arc(0, -65 + bob, 14.6, Math.PI, 0); c.fill();
   if (L.detail && back < 0.5) hairShine(c, 0, -65 + bob, 14.6);
-  if (L.long) { rr(c, -15.5, -66 + bob, 5, 20, 2.5); rr(c, 10.5, -66 + bob, 5, 20, 2.5); } if (L.long && !L.noBand) { c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
+  if (L.long) { const lh = L.hairLen || 20; rr(c, -15.5, -66 + bob, 5, lh, 2.5); rr(c, 10.5, -66 + bob, 5, lh, 2.5); } if (L.long && !L.noBand) { c.fillStyle = L.band || '#d43a3a'; c.fillRect(-13.5, -73 + bob, 27, 3); c.fillStyle = '#ffd23f'; circ(c, -9, -74 + bob, 2.6); c.fillStyle = '#ff7aa8'; circ(c, -4, -76 + bob, 2.6); }
   c.save(); c.translate(fx, 0);   // the face slides toward the way she is looking
   if (L.detail) faceDetail(c, L, bob, blink, side); else {
   c.fillStyle = '#3b2f2a'; if (blink) { c.fillRect(-7, -62.6 + bob, 4, 1.3); c.fillRect(3, -62.6 + bob, 4, 1.3); } else { circ(c, -5, -62 + bob, 1.8); circ(c, 5, -62 + bob, 1.8); c.fillStyle = 'rgba(255,255,255,.8)'; circ(c, -4.4, -62.7 + bob, 0.6); circ(c, 5.6, -62.7 + bob, 0.6); c.fillStyle = '#3b2f2a'; }
@@ -2862,7 +2892,14 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
     if (L.ribbons) L.ribbons.forEach((col, i) => { c.fillStyle = col; const sw2 = Math.sin(t * 3 + i) * 2; c.fillRect(-9 + i * 3.8 + sw2 * 0.3, -70 + bob, 3, 46 + (i % 2) * 6); });   // ribbons streaming from the crown
     c.globalAlpha = 1;
   }
-  if (L.hat === 'scarf') {
+  if (L.hat === 'scarf' && L.scarfFine && back < 0.5) {   // indoors, as in Grandma's portrait: the khustka frames her face and is knotted under her chin
+    c.fillStyle = L.hatCol; c.beginPath(); c.ellipse(0, -64 + bob, 17.2, 18.6, 0, 0, Math.PI * 2); c.ellipse(fx * 0.3, -59.6 + bob, 12.2, 11.9, 0, 0, Math.PI * 2); c.fill('evenodd');
+    c.fillStyle = 'rgba(0,0,0,.14)'; c.beginPath(); c.ellipse(fx * 0.3, -59.6 + bob, 13.4, 13.1, 0, Math.PI * 1.05, Math.PI * 1.95); c.ellipse(fx * 0.3, -59.6 + bob, 12.2, 11.9, 0, Math.PI * 1.95, Math.PI * 1.05, true); c.fill();   // the fold round her face
+    c.fillStyle = L.skin; c.beginPath(); c.ellipse(fx * 0.3, -59.6 + bob, 12.2, 11.9, 0, Math.PI, 0); c.fill(); c.fillStyle = L.hair; c.beginPath(); c.ellipse(fx * 0.3, -71.2 + bob, 8, 2.6, 0, 0, Math.PI); c.fill();   // her forehead, with just a little grey hair showing at the front
+    c.fillStyle = L.hatCol; circ(c, 0, -46 + bob, 3.4); poly(c, [[-1, -46 + bob], [-7, -38 + bob], [-3, -37 + bob]]); poly(c, [[1, -46 + bob], [7, -39 + bob], [3.5, -37.5 + bob]]);   // the knot and its two ends
+    c.fillStyle = 'rgba(0,0,0,.18)'; circ(c, 0.8, -45.2 + bob, 1.6);
+    c.fillStyle = '#fffdf5'; for (const [dx, dy] of [[-12, -72], [-6, -78], [0, -80], [6, -78], [12, -72], [-15, -63], [15, -63], [-14, -54], [14, -54], [-9, -79.5], [9, -79.5], [-3, -75.5], [3, -75.5], [-5, -39], [5, -40]]) circ(c, dx, dy + bob, 1.05);
+  } else if (L.hat === 'scarf') {
     c.fillStyle = L.hatCol; c.beginPath(); c.arc(0, -64 + bob, 15.8, Math.PI * 0.98, Math.PI * 0.02); c.fill();
     poly(c, [[-14, -62 + bob], [-10, -50 + bob], [-16, -52 + bob]]); poly(c, [[14, -62 + bob], [10, -50 + bob], [16, -52 + bob]]);
     c.fillStyle = '#fffdf5'; for (let i = -2; i <= 2; i++) circ(c, i * 5, -75 + Math.abs(i) * 1.6 + bob, 1.3);
@@ -2898,14 +2935,21 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
     if (back < 0.5) { c.ellipse(0, -60 + bob, 12, 13.5, 0, 0, Math.PI * 2); c.fill('evenodd'); if (L.hoodFur) { c.strokeStyle = L.fur || '#fff'; c.lineWidth = 4; c.beginPath(); c.ellipse(0, -60 + bob, 13.5, 15, 0, 0, Math.PI * 2); c.stroke(); } }
     else c.fill();
     c.fillStyle = 'rgba(0,0,0,.1)'; c.fillRect(-1, -80 + bob, 2, 14);
+  } else if (L.hat === 'wreath' && L.wreathFine) {   // indoors, as in her portrait: a ring of small yellow and white flowers with leaves, and ribbons hanging at the sides
+    const W2 = L.wreathFine;
+    if (back < 0.5) W2.ribbons.forEach((col, i) => { for (const sd of [-1, 1]) { const sw2 = Math.sin(t * 2.2 + i + sd) * 1.2; c.fillStyle = col; rr(c, sd * (14.5 + i * 2.6) - 1.3 + sw2, -66 + bob, 2.6, 30 + i * 4, 1.2); } });
+    for (let i = 0; i < 11; i++) { const a = Math.PI * (1.04 + i * 0.092), fxx = Math.cos(a) * 14.8, fyy = -65 + Math.sin(a) * 14.8 + bob;
+      c.fillStyle = '#4f9a48'; c.save(); c.translate(fxx, fyy); c.rotate(a + 1.2); ell(c, 2.6, 0, 2.4, 1.1); c.restore();
+      const col = W2.flowers[i % W2.flowers.length]; c.fillStyle = col; for (let p = 0; p < 5; p++) { const pa = p * 1.2566 + i; circ(c, fxx + Math.cos(pa) * 1.5, fyy + Math.sin(pa) * 1.5, 1.35); }
+      c.fillStyle = col === '#ffffff' ? '#f2c230' : '#c97a10'; circ(c, fxx, fyy, 0.9); }
   } else if (L.hat === 'wreath') {
     const cols = [L.hatCol, '#f2c230', '#ffffff', '#e2574c', '#5aa9e6'];
     for (let i = 0; i < 7; i++) { const a = Math.PI * (1.08 + i * 0.14); c.fillStyle = cols[i % 5]; circ(c, Math.cos(a) * 14.5, -65 + Math.sin(a) * 14.5 + bob, 3.6); }
   }
   c.restore();
 }
-const OLIA_FACE = { detail: true, eye: '#6b4426', brow: '#cfcfcf', eyeK: 0.82, age: 1, lashes: false };   // Grandma indoors: kind eyes, smile lines
-const SOLOMIIA_FACE = { detail: true, eye: '#5a3418', brow: '#3a2416', eyeK: 0.86 };   // Mrs. Solomiia in her café
+const OLIA_FACE = { detail: true, eye: '#6b4426', brow: '#cfcfcf', eyeK: 0.82, age: 1, lashes: false, scarfFine: true };   // Grandma indoors: kind eyes, smile lines
+const SOLOMIIA_FACE = { detail: true, eye: '#5a3418', brow: '#3a2416', eyeK: 0.86, noBand: true, hairLen: 34, wreathFine: { flowers: ['#f5b800', '#ffffff', '#ffd23f'], ribbons: ['#f2c230', '#c0392b'] } };   // Mrs. Solomiia in her café
 const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#8a5426', brow: '#c08a3a' };   // (no headband: the user's choice)
 // Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
 // shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
@@ -11648,8 +11692,9 @@ function drawWorld(t) {
     else if (e.swoop) { c.save(); c.translate(x, y); turnDepth(c, e); c.scale(turnX(e), 1); c.rotate(Math.cos(t * 1.6 + e.ph) * 0.25); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }
     else if (e.w === 'metelyk') drawIcon(c, e.ic, x, y - hop, s, { t: t + e.ph });   // each butterfly flaps on its own beat
     else if (e.lean) { c.save(); c.translate(x, y); c.rotate(e.lean); drawIcon(c, e.ic, 0, 0, s, { t }); c.restore(); }   // propped against something
+    else if (e.w === 'soniashnyk' && e.ic === '🌻') { c.save(); c.translate(x, y); if (e.face === -1) c.scale(-1, 1); emojiSprite(c, e.ic, 0, 0, s, (e.tilt || 0) + (GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0), zoom, Math.floor(e.x * 7 + e.y * 3)); c.restore(); }   // the sunflowers, drawn petal by petal
     else if (e.face === -1 && e.ic[0] !== '@') { c.save(); c.translate(x, 0); c.scale(-1, 1); drawIcon(c, e.ic, 0, y - hop, s); c.restore(); }
-    else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, (e.tilt || 0) + (GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0), zoom);   // flowers nod in the breeze
+    else if ((e.w === 'kvitka' || e.w === 'soniashnyk') && e.ic[0] !== '@') emojiSprite(c, e.ic, x, y, s, (e.tilt || 0) + (GFX.sway ? Math.sin(t * 1.5 + e.x * 2.3 + e.y) * 0.06 : 0), zoom, Math.floor(e.x * 7 + e.y * 3));   // flowers nod in the breeze
     else if (e.w === 'krynytsia') drawIcon(c, e.ic, x, y, s, { t, fx: WELLFX && WELLFX.phase === 'draw' ? t - WELLFX.t0 : null });
     else { const sway = GFX.sway ? Math.sin(t * 1.1 + e.x * 1.7) * 0.028 + Math.sin(t * 2.6 + e.y) * 0.009 : 0; if (hop || e.ic[0] !== '@' || !cachedIcon(c, e, x, y, s, sway)) drawIcon(c, e.ic, x, y - hop, s, { t, v: e.x * 0.37 + e.y * 0.61, fruit: e.give === 'yabluko' ? ready(e) : true, sway }); }
     if (e.w === 'khata' && GFX.smoke) smoke(c, x + s * 0.27, y - s * 1.0, t, s / 220);
@@ -12567,7 +12612,7 @@ function posterBackground(W, H) {
     for (const e of stand) { const ey = e.y * T; if (ey < my || ey >= my + T) continue; const [x, y, s] = proj(e.x * T, ey); if (x < -200 || x > W + 200) continue;
       v.save(); v.translate(x, y); v.scale(s, s); const sz = (e.s || 1) * T;
       try { if (e.ic && e.ic[0] === '@') { v.fillStyle = 'rgba(30,40,10,.2)'; ell(v, 0, 0, sz * 0.36, sz * 0.09); }
-        if (e.an) drawAnimal0(v, 0, 0, e, 0); else if (e.flipX) { v.scale(-1, 1); drawIcon(v, e.ic, 0, 0, sz, { t: 0 }); } else if (e.sleep) drawIcon(v, '@kupka', 0, 0, sz * 1.2, { t: 0 }); else if (e.lift) drawIcon(v, e.ic, 0, -e.lift * T, sz, { t: 0 }); else if (e.ic) drawIcon(v, e.ic, 0, 0, sz, { t: 0, v: e.x * 0.37 + e.y * 0.61 }); } catch (err) {}
+        if (e.an) drawAnimal0(v, 0, 0, e, 0); else if (e.flipX) { v.scale(-1, 1); drawIcon(v, e.ic, 0, 0, sz, { t: 0 }); } else if (e.sleep) drawIcon(v, '@kupka', 0, 0, sz * 1.2, { t: 0 }); else if (e.lift) drawIcon(v, e.ic, 0, -e.lift * T, sz, { t: 0 }); else if (e.ic === '🌻') emojiSprite(v, e.ic, 0, 0, sz, e.tilt || 0, s, Math.floor(e.x * 7 + e.y * 3)); else if (e.ic) drawIcon(v, e.ic, 0, 0, sz, { t: 0, v: e.x * 0.37 + e.y * 0.61 }); } catch (err) {}
       v.restore(); }
     // trees on the slopes, in clumps with clearings, and none on the stream
     for (let mx = x0; mx < x1; mx += T * 0.62) {
@@ -12676,7 +12721,7 @@ function drawTitle(t) {
     fancyText(c, "Vickie's Valley", cx, top + rib * 1.9 + big * 0.85, W * 0.62, big, t);
   } else {
     const big = Math.min(W * 0.19, H * 0.095), rib = big * 0.34, gap = rib * 2.25;
-    const top2 = Math.max(56 * (W / innerWidth), B.hor - H * 0.12 - (gap + big * 1.88));   // the logo is up in the sky, the bottom of «Valley» just above the hilltops
+    const top2 = Math.max(56 * (W / innerWidth), B.hor - H * 0.105 - (gap + big * 1.88));   // the logo is up in the sky, the bottom of «Valley» just above the hilltops
     ribbon(c, 'Долина Вікі', W / 2, top2 + rib * 0.8, rib);
     const y1 = top2 + gap + big * 0.85, s1 = fancyText(c, "Vickie's", W / 2, y1, W * 0.84, big, t);
     fancyText(c, 'Valley', W / 2, y1 + s1 * 0.98, W * 0.84, s1, t, { shift: 3 });
