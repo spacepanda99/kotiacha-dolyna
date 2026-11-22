@@ -3555,16 +3555,16 @@ const MY_CLEAR = {
   who: {
     myron: [["Mr. Myron? He spent the whole of yesterday evening on the vokzal platform, timing the trains with that pocket watch of his. He didn't look up once.", "Пан Мирон? Він увесь учорашній вечір простояв на пероні, засікаючи потяги своїм кишеньковим годинником. Ні разу не підвів очей."],
       ["Myron spent yesterday evening arguing with the vokzal clock. Two minutes slow, he said. Two! He wouldn't leave until it was put right.", "Мирон учора ввечері сперечався з вокзальним годинником. Каже, відстає на дві хвилини. На дві! Не пішов, доки його не підкрутили."]],
-    yaroslava: [["Pani Yaroslava sat in the café all yesterday evening, reading poems to the café cat. The cat never left her lap, so neither did she.", "Пані Ярослава весь учорашній вечір сиділа в кав'ярні й читала вірші кав'ярняному котові. Кіт не злазив із її колін, тож і вона не вставала."],
-      ["Yaroslava? She was writing at the café table by the window right up to the last train. Her candle had burned down to the saucer.", "Ярослава? Вона писала за столиком біля вікна в кав'ярні аж до останнього потяга. Її свічка догоріла до самого блюдця."]],
-    ostap: [["Ostap was up on the hill yesterday evening, playing his flute to nobody in particular. Half the valley heard him. The other half wished they hadn't.", "Остап учора ввечері сидів на пагорбі й грав на сопілці невідомо для кого. Пів долини його чуло. Друга половина воліла б не чути."],
-      ["Ostap was down by the lake with me yesterday evening, splashing about and frightening every fish in the water.", "Остап учора ввечері був зі мною біля озера: хлюпався й розлякав усю рибу."]],
-    lesia: [["Lesia was painting the sunset by the fountain yesterday. She still has a streak of pink on her nose from it.", "Леся вчора малювала захід сонця біля фонтана. У неї досі рожева смужка на носі."],
+    yaroslava: [["Pani Yaroslava sat in the kavyarnia all yesterday evening, reading poems to the café cat. The cat never left her lap, so neither did she.", "Пані Ярослава весь учорашній вечір сиділа в кав'ярні й читала вірші кав'ярняному котові. Кіт не злазив із її колін, тож і вона не вставала."],
+      ["Yaroslava? She was writing at the kavyarnia table by the window right up to the last train. Her candle had burned down to the saucer.", "Ярослава? Вона писала за столиком біля вікна в кав'ярні аж до останнього потяга. Її свічка догоріла до самого блюдця."]],
+    ostap: [["Ostap was up on the pahorb yesterday evening, playing his flute to nobody in particular. Half the valley heard him. The other half wished they hadn't.", "Остап учора ввечері сидів на пагорбі й грав на сопілці невідомо для кого. Пів долини його чуло. Друга половина воліла б не чути."],
+      ["Ostap was down by the ozero with me yesterday evening, splashing about and frightening every fish in the water.", "Остап учора ввечері був зі мною біля озера: хлюпався й розлякав усю рибу."]],
+    lesia: [["Lesia was painting the sunset by the fontan yesterday. She still has a streak of pink on her nose from it.", "Леся вчора малювала захід сонця біля фонтана. У неї досі рожева смужка на носі."],
       ["Lesia sat sketching the tserkva roof all yesterday evening. Her sky's only half finished, if you want proof.", "Леся весь учорашній вечір замальовувала дах церкви. Небо в неї ще не домальоване, якщо треба доказ."]],
-    zakhar: [["Zakhar was out on the lake all yesterday evening. He came back with three carp and not a single word.", "Захар увесь учорашній вечір був на озері. Повернувся з трьома коропами й без жодного слова."],
-      ["Zakhar? He was first in line at Oksana's stall for her last loaves yesterday evening, as always. You could set your watch by his stomach.", "Захар? Він учора ввечері, як завжди, першим стояв біля прилавка Оксани по останній хліб. За його шлунком можна звіряти годинник."]],
-    halyna: [["Pani Halyna was at the market all yesterday evening, telling Oksana everyone's news. Loudly. For hours.", "Пані Галина весь учорашній вечір провела на ринку, переказуючи Оксані всі новини. Голосно. Годинами."],
-      ["Halyna never left the market stall yesterday evening. I could hear her laughing from the other end of the village.", "Галина вчора ввечері не відходила від ринкового прилавка. Її сміх було чути з іншого кінця села."]],
+    zakhar: [["Zakhar was out on the ozero all yesterday evening. He came back with three carp and not a single word.", "Захар увесь учорашній вечір був на озері. Повернувся з трьома коропами й без жодного слова."],
+      ["Zakhar? He was first in line at Oksana's stall for the last of her khlib yesterday evening, as always. You could set your watch by his stomach.", "Захар? Він учора ввечері, як завжди, першим стояв біля прилавка Оксани по останній хліб. За його шлунком можна звіряти годинник."]],
+    halyna: [["Pani Halyna was at the rynok all yesterday evening, telling Oksana everyone's news. Loudly. For hours.", "Пані Галина весь учорашній вечір провела на ринку, переказуючи Оксані всі новини. Голосно. Годинами."],
+      ["Halyna never left the rynok stall yesterday evening. I could hear her laughing from the other end of the village.", "Галина вчора ввечері не відходила від ринкового прилавка. Її сміх було чути з іншого кінця села."]],
   },
   where: {
     mill: [["I went up to the mlyn yesterday evening. Flour dust on every step, smooth as fresh snow, and the only footprints in it were mine.", "Учора ввечері я {заходив|заходила} до млина. На кожній сходинці борошняний пил, рівний, як свіжий сніг, і в ньому тільки мої сліди."],
@@ -3598,25 +3598,25 @@ const MY_CLEAR = {
 // Traces of the real answer, noticed this morning on the way from the train. They point; Vicky has to see where.
 const MY_TRACE = {
   with: {
-    wheelbarrow: ["When I got off the train this morning, there was a single narrow wheel track in the mud by the road, pressed deep, as if it had carried something heavy.", "Коли я {зійшов|зійшла} з потяга сьогодні вранці, біля дороги в багнюці був один вузький слід колеса, глибокий, ніби везли щось важке."],
+    wheelbarrow: ["When I got off the train this morning, there was the track of a single narrow koleso in the mud by the road, pressed deep, as if it had carried something heavy.", "Коли я {зійшов|зійшла} з потяга сьогодні вранці, біля дороги в багнюці був один вузький слід колеса, глибокий, ніби везли щось важке."],
     cart: ["Two wheel ruts and horseshoe prints in the mud this morning, and fresh ones. Somebody had a kin out late last night.", "Сьогодні вранці в багнюці були дві колії від коліс і сліди підків, зовсім свіжі. Хтось пізно ввечері виводив коня."],
-    mule: ["Small, neat hoof prints going down the lane this morning. Too small for a kin, too tidy for a cow.", "Сьогодні вранці провулком тягнулися маленькі акуратні сліди копит. Замалі для коня, заохайні для корови."],
-    sled: ["Two long, straight scrape marks along the road this morning, side by side, as if something had been dragged on runners.", "Сьогодні вранці вздовж дороги тяглися дві довгі рівні подряпини, поруч одна з одною, ніби щось тягли на полозах."],
-    ox: ["Deep, split hoof prints in the mud this morning. Big ones, far bigger than any cow's, and the ground all churned up.", "Сьогодні вранці в багнюці були глибокі роздвоєні сліди копит. Великі, набагато більші за коров'ячі, і земля вся перекопана."],
+    mule: ["Small, neat prints of kopyta going down the lane this morning. Too small for a kin, too tidy for a cow.", "Сьогодні вранці провулком тягнулися маленькі акуратні сліди копит. Замалі для коня, заохайні для корови."],
+    sled: ["Two long, straight scrape marks along the road this morning, side by side, as if something had been dragged on polozy.", "Сьогодні вранці вздовж дороги тяглися дві довгі рівні подряпини, поруч одна з одною, ніби щось тягли на полозах."],
+    ox: ["Deep prints of split kopyta in the mud this morning. Big ones, far bigger than any cow's, and the ground all churned up.", "Сьогодні вранці в багнюці були глибокі роздвоєні сліди копит. Великі, набагато більші за коров'ячі, і земля вся перекопана."],
     haywagon: ["There was sino scattered all along the road this morning. And nobody's been making sino this week.", "Сьогодні вранці вздовж усієї дороги було розсипане сіно. А цього тижня ніхто не косив."],
   },
   where: {
     mill: ["The mlyn's door was standing open this morning, and there were drag marks in the flour on the step.", "Сьогодні вранці двері млина стояли відчинені, а на сходинці в борошні були сліди, ніби щось тягли."],
-    station: ["Something heavy is sitting under a tarpaulin at the far end of the platform. Luggage, I suppose. Odd shape for luggage.", "У кінці перону під брезентом стоїть щось важке. Мабуть, багаж. Дивної форми багаж."],
+    station: ["Something heavy is sitting under a tarpaulin at the far end of the vokzal platform. Luggage, I suppose. Odd shape for luggage.", "У кінці перону під брезентом стоїть щось важке. Мабуть, багаж. Дивної форми багаж."],
     church: ["The tserkva door was open a crack this morning. It's never open that early.", "Сьогодні вранці двері церкви були трохи прочинені. Так рано вони ніколи не відчинені."],
     reeds: ["There was a flash of gold among the ocheret when the sun came up. A fish, probably. A very large, very still fish.", "Коли зійшло сонце, в очереті щось блиснуло золотом. Мабуть, риба. Дуже велика й дуже нерухома риба."],
     wheat: ["The crows were all circling one spot in the middle of the pshenytsia this morning, cawing at something.", "Сьогодні вранці ворони кружляли над одним місцем посеред пшеничного поля й на щось каркали."],
     bridge: ["The frogs pid mostom have gone quiet. They only go quiet when something's bothering them.", "Жаби під мостом замовкли. Вони замовкають, тільки коли їх щось турбує."],
   },
   who: [   // %s: their name; %g: their name, Ukrainian "of" form; {a|b}: the culprit's forms
-    ["%s yawned all the way here on the train this morning, like somebody who'd been up half the night.", "%s сьогодні вранці всю дорогу в потязі {позіхав|позіхала}, ніби півночі не {спав|спала}."],
-    ["%s had rope burns on both hands this morning, and laughed it off when I asked.", "У %g сьогодні вранці на обох долонях були сліди від мотузки, а на запитання {він|вона} лише {засміявся|засміялася}."],
-    ["%s was humming the festival song this morning, a little too cheerfully, and wouldn't say why.", "%s сьогодні вранці {наспівував|наспівувала} святкову пісню, трохи надто весело, і не {казав|казала} чому."],
+    ["%s yawned all the way here on the potiah this morning, like somebody who'd been up half the night.", "%s сьогодні вранці всю дорогу в потязі {позіхав|позіхала}, ніби півночі не {спав|спала}."],
+    ["%s had burns from a motuzka on both hands this morning, and laughed it off when I asked.", "У %g сьогодні вранці на обох долонях були сліди від мотузки, а на запитання {він|вона} лише {засміявся|засміялася}."],
+    ["%s was humming the festival pisnia this morning, a little too cheerfully, and wouldn't say why.", "%s сьогодні вранці {наспівував|наспівувала} святкову пісню, трохи надто весело, і не {казав|казала} чому."],
   ],
 };
 const MY_VOICE = {
@@ -3744,46 +3744,46 @@ const CC_LOOK = {   // what Vicky sees when she looks at the wreath
   zholud: ['A round harvest wreath, plaited from golden ears of wheat, with clusters of zholud tied in all the way round and long ribbons hanging down. A little card is tied to it: «Для Долини».', 'Круглий обжинковий вінок, сплетений із золотих пшеничних колосків, увесь прикрашений гронами жолудів, з довгими стрічками. До нього прив\'язана картка: «Для Долини».'],
 };
 const CC_SPOT = {
-  myron: ['I stood on the station platform all evening with my pocket watch, timing the last trains. The evening one was a minute late. A minute!', 'Я весь вечір стояв на пероні з кишеньковим годинником і засікав останні потяги. Вечірній спізнився на хвилину. На цілу хвилину!'],
+  myron: ['I stood on the vokzal platform all evening with my pocket watch, timing the last trains. The evening one was a minute late. A minute!', 'Я весь вечір стояв на пероні з кишеньковим годинником і засікав останні потяги. Вечірній спізнився на хвилину. На цілу хвилину!'],
   lesia: ['I was at the fountain, painting the tserkva by lantern light. Windows at dusk: the hardest thing in the world to paint.', 'Я була біля фонтана й малювала церкву при ліхтарі. Вікна в сутінках: найважче, що можна намалювати.'],
-  yaroslava: ['I sat at my window table in the café with my notebook until Solomiia began washing the cups.', 'Я сиділа за своїм столиком біля вікна в кав\'ярні з зошитом, аж доки Соломія не взялася мити чашки.'],
-  halyna: ['When Oksana shut the stall I went to the café for tea and cake, and sat at the counter with Solomiia, putting the village to rights.', 'Коли Оксана зачинила ринок, я пішла до кав\'ярні на чай і торт та сиділа за прилавком із Соломією, наводячи в селі лад.'],
-  zakhar: ['On the lake shore, with my rod. The big carp wasn\'t biting.', 'На березі озера з вудкою. Великий короп не клював.'],
-  ostap: ['Down on the lake shore too, beside Zakhar, with my flute. The frogs loved it.', 'Теж на березі озера, поруч із Захаром, зі своєю сопілкою. Жабам подобалося.'],
+  yaroslava: ['I sat at my window table in the kavyarnia with my notebook until Solomiia began washing the cups.', 'Я сиділа за своїм столиком біля вікна в кав\'ярні з зошитом, аж доки Соломія не взялася мити чашки.'],
+  halyna: ['When Oksana shut the stall I went to the kavyarnia for tea and cake, and sat at the counter with Solomiia, putting the village to rights.', 'Коли Оксана зачинила ринок, я пішла до кав\'ярні на чай і торт та сиділа за прилавком із Соломією, наводячи в селі лад.'],
+  zakhar: ['On the ozero shore, with my rod. The big carp wasn\'t biting.', 'На березі озера з вудкою. Великий короп не клював.'],
+  ostap: ['Down on the ozero shore too, beside Zakhar, with my flute. The frogs loved it.', 'Теж на березі озера, поруч із Захаром, зі своєю сопілкою. Жабам подобалося.'],
 };
 const CC_SPOT_C = {   // true, but evasive
-  myron: ['At the station, mostly. A man may stretch his legs, may he not? Why do you ask?', 'На вокзалі, здебільшого. Людина може розім\'яти ноги, чи не так? А чому ти питаєш?'],
-  lesia: ['At the fountain, mostly! Painting. The light moves about, and so did I. Why do you ask?', 'Біля фонтана, здебільшого! Малювала. Світло мандрує, ну й я теж. А чому ти питаєш?'],
-  yaroslava: ['In the café, mostly, with my notebook. A poet needs a little air now and then. Why do you ask, my dear?', 'У кав\'ярні, здебільшого, з зошитом. Поетові іноді потрібне свіже повітря. А чому ти питаєш, люба?'],
-  halyna: ['At the café, mostly, sonechko, having tea and cake! A girl must stretch her legs, mustn\'t she? Why do you ask?', 'У кав\'ярні, здебільшого, сонечко, пила чай і їла торт! Дівчині треба розім\'яти ноги, правда ж? А чому ти питаєш?'],
-  zakhar: ['By the lake, mostly. Fishing. Why?', 'Біля озера, здебільшого. Ловив рибу. А що?'],
-  ostap: ['By the lake, mostly, with my flute! A fellow can wander a little, can\'t he? Why do you ask?', 'Біля озера, здебільшого, з сопілкою! Хлопець може трохи побродити, чи не так? А чому ти питаєш?'],
+  myron: ['At the vokzal, mostly. A man may stretch his legs, may he not? Why do you ask?', 'На вокзалі, здебільшого. Людина може розім\'яти ноги, чи не так? А чому ти питаєш?'],
+  lesia: ['At the fontan, mostly! Painting. The light moves about, and so did I. Why do you ask?', 'Біля фонтана, здебільшого! Малювала. Світло мандрує, ну й я теж. А чому ти питаєш?'],
+  yaroslava: ['In the kavyarnia, mostly, with my notebook. A poet needs a little air now and then. Why do you ask, my dear?', 'У кав\'ярні, здебільшого, з зошитом. Поетові іноді потрібне свіже повітря. А чому ти питаєш, люба?'],
+  halyna: ['At the kavyarnia, mostly, sonechko, having tea and cake! A girl must stretch her legs, mustn\'t she? Why do you ask?', 'У кав\'ярні, здебільшого, сонечко, пила чай і їла торт! Дівчині треба розім\'яти ноги, правда ж? А чому ти питаєш?'],
+  zakhar: ['By the ozero, mostly. Fishing. Why?', 'Біля озера, здебільшого. Ловив рибу. А що?'],
+  ostap: ['By the ozero, mostly, with my flute! A fellow can wander a little, can\'t he? Why do you ask?', 'Біля озера, здебільшого, з сопілкою! Хлопець може трохи побродити, чи не так? А чому ти питаєш?'],
 };
 // the one person each can vouch for (who is cleared by it)
 const CC_CLEAR = {
-  myron: ['Lesia\'s easel stood in the lantern light at the other end of the road all evening. I could see it from the platform the whole time.', 'Мольберт Лесі стояв у світлі ліхтаря на іншому кінці дороги цілий вечір. З перону я бачив його весь час.'],
-  lesia: ['Mr. Myron was under the station lantern with his watch all evening. I could see him at the end of the road, small as a toy soldier.', 'Пан Мирон увесь вечір стояв під вокзальним ліхтарем із годинником. Я бачила його в кінці дороги, малого, як олов\'яного солдатика.'],
-  yaroslava: ['Halyna sat at the counter, talking, until the cups were being washed. I couldn\'t write a line for her chatter.', 'Галина сиділа за прилавком і розмовляла, доки не почали мити чашки. Я не могла написати ні рядка через її балаканину.'],
-  halyna: ['Yaroslava never left her window table. I said hello twice and got two nods.', 'Ярослава ні разу не відійшла від свого столика біля вікна. Я двічі привіталася й двічі отримала кивок.'],
-  zakhar: ['Ostap was on the bank beside me the whole time, playing that flute. I\'d have paid him to stop.', 'Остап увесь час сидів на березі поруч зі мною й грав на сопілці. Я б заплатив, щоб він перестав.'],
-  ostap: ['Zakhar didn\'t move from his spot. Not even when something big splashed. I\'d have noticed: I was watching him instead of the frogs!', 'Захар не зрушив зі свого місця. Навіть коли щось велике сплеснуло. Я б помітив: я дивився на нього, а не на жаб!'],
+  myron: ['Lesia\'s molbert stood in the lantern light at the other end of the road all evening. I could see it from the platform the whole time.', 'Мольберт Лесі стояв у світлі ліхтаря на іншому кінці дороги цілий вечір. З перону я бачив його весь час.'],
+  lesia: ['Mr. Myron was under the vokzal lantern with his watch all evening. I could see him at the end of the road, small as a toy soldier.', 'Пан Мирон увесь вечір стояв під вокзальним ліхтарем із годинником. Я бачила його в кінці дороги, малого, як олов\'яного солдатика.'],
+  yaroslava: ['Halyna sat at the counter, talking, until the chashky were being washed. I couldn\'t write a line for her chatter.', 'Галина сиділа за прилавком і розмовляла, доки не почали мити чашки. Я не могла написати ні рядка через її балаканину.'],
+  halyna: ['Yaroslava never left her table by the vikno. I said hello twice and got two nods.', 'Ярослава ні разу не відійшла від свого столика біля вікна. Я двічі привіталася й двічі отримала кивок.'],
+  zakhar: ['Ostap was on the bank beside me the whole time, playing that sopilka. I\'d have paid him to stop.', 'Остап увесь час сидів на березі поруч зі мною й грав на сопілці. Я б заплатив, щоб він перестав.'],
+  ostap: ['Zakhar didn\'t move from his spot. Not even when something big splashed. I\'d have noticed: I was watching him instead of the zhaby!', 'Захар не зрушив зі свого місця. Навіть коли щось велике сплеснуло. Я б помітив: я дивився на нього, а не на жаб!'],
 };
 // ...and what they say when that person is the one who slipped away (it doesn't clear them)
 const CC_OUT = {
-  myron: ['The easel stood alone in the lantern light for a good while at dusk, nobody painting. Then she was back, as if nothing had happened, picking straw off her sleeves.', 'Мольберт довго стояв сам у світлі ліхтаря в сутінках, ніхто не малював. Потім вона повернулася, ніби нічого не сталося, і знімала солому з рукавів.'],
-  lesia: ['Mr. Myron\'s end of the road went dark for a while at dusk: the lantern, and no man under it. Then he was back, a little out of breath, with straw on his coat.', 'У сутінках кінець дороги, де стояв пан Мирон, на деякий час потемнів: ліхтар є, а під ним нікого. Потім він повернувся, трохи засапаний, із соломою на куртці.'],
-  yaroslava: ['Halyna\'s tea went cold on the counter. She slipped out for a breath of air as the sun went down, and came back with straw on her shawl.', 'Чай Галини холонув на прилавку. Вона вислизнула на свіже повітря, коли сонце сідало, і повернулася з соломою на хустці.'],
-  halyna: ['Yaroslava\'s window seat sat empty for a good while, her pen still lying on the page. Then she was back with a very pleased face and straw on her skirt.', 'Місце Ярослави біля вікна довго стояло порожнє, а ручка так і лежала на сторінці. Потім вона повернулася дуже задоволена, з соломою на спідниці.'],
-  zakhar: ['The flute stopped. Lovely and quiet, I\'ll admit. He turned up later with straw in his hair.', 'Сопілка замовкла. Чудова тиша, визнаю. Потім він з\'явився з соломою у волоссі.'],
-  ostap: ['Zakhar\'s rod stood in the mud with the line just floating, and he was gone. He came back later with straw all down his jumper, and wouldn\'t say a word.', 'Вудка Захара стояла в багнюці, а волосінь просто пливла, а його самого не було. Потім він повернувся з соломою на светрі й не сказав ні слова.'],
+  myron: ['The easel stood alone in the lantern light for a good while at dusk, nobody painting. Then she was back, as if nothing had happened, picking soloma off her sleeves.', 'Мольберт довго стояв сам у світлі ліхтаря в сутінках, ніхто не малював. Потім вона повернулася, ніби нічого не сталося, і знімала солому з рукавів.'],
+  lesia: ['Mr. Myron\'s end of the road went dark for a while at dusk: the lantern, and no man under it. Then he was back, a little out of breath, with soloma on his coat.', 'У сутінках кінець дороги, де стояв пан Мирон, на деякий час потемнів: ліхтар є, а під ним нікого. Потім він повернувся, трохи засапаний, із соломою на куртці.'],
+  yaroslava: ['Halyna\'s tea went cold on the counter. She slipped out for a breath of air as the sun went down, and came back with soloma on her shawl.', 'Чай Галини холонув на прилавку. Вона вислизнула на свіже повітря, коли сонце сідало, і повернулася з соломою на хустці.'],
+  halyna: ['Yaroslava\'s window seat sat empty for a good while, her pen still lying on the page. Then she was back with a very pleased face and soloma on her skirt.', 'Місце Ярослави біля вікна довго стояло порожнє, а ручка так і лежала на сторінці. Потім вона повернулася дуже задоволена, з соломою на спідниці.'],
+  zakhar: ['The flute stopped. Lovely and quiet, I\'ll admit. He turned up later with soloma in his hair.', 'Сопілка замовкла. Чудова тиша, визнаю. Потім він з\'явився з соломою у волоссі.'],
+  ostap: ['Zakhar\'s rod stood in the mud with the line just floating, and he was gone. He came back later with soloma all down his jumper, and wouldn\'t say a word.', 'Вудка Захара стояла в багнюці, а волосінь просто пливла, а його самого не було. Потім він повернувся з соломою на светрі й не сказав ні слова.'],
 };
 const CC_SEES_C = {   // what the one who slipped away says about the other (true, and clears nobody)
-  myron: ['Lesia? Her easel was at the fountain when I last looked. I wasn\'t counting minutes. For once.', 'Леся? Її мольберт стояв біля фонтана, коли я востаннє дивився. Хвилин я не рахував. Уперше в житті.'],
-  lesia: ['Mr. Myron? Under his station lantern, last I looked. Timing something, surely.', 'Пан Мирон? Під вокзальним ліхтарем, коли я востаннє дивилася. Щось хронометрував, певна річ.'],
-  yaroslava: ['Halyna? At the counter, talking, when I last looked up. She\'s always talking.', 'Галина? За прилавком, розмовляла, коли я востаннє підводила очі. Вона завжди розмовляє.'],
-  halyna: ['Yaroslava? At her window table when I looked. Writing something, I should think.', 'Ярослава? За столиком біля вікна, коли я дивилася. Щось писала, гадаю.'],
-  zakhar: ['Ostap? Playing the flute, last I heard. You can hear him a long way off.', 'Остап? Грав на сопілці, коли я востаннє чув. Його чути здалеку.'],
-  ostap: ['Zakhar? Fishing, last time I looked. He never moves, that man.', 'Захар? Ловив рибу, коли я востаннє дивився. Він ніколи не рухається, ця людина.'],
+  myron: ['Lesia? Her easel was at the fontan when I last looked. I wasn\'t counting minutes. For once.', 'Леся? Її мольберт стояв біля фонтана, коли я востаннє дивився. Хвилин я не рахував. Уперше в житті.'],
+  lesia: ['Mr. Myron? Under his vokzal lantern, last I looked. Timing something, surely.', 'Пан Мирон? Під вокзальним ліхтарем, коли я востаннє дивилася. Щось хронометрував, певна річ.'],
+  yaroslava: ['Halyna? At the kavyarnia counter, talking, when I last looked up. She\'s always talking.', 'Галина? За прилавком, розмовляла, коли я востаннє підводила очі. Вона завжди розмовляє.'],
+  halyna: ['Yaroslava? At her table by the vikno when I looked. Writing something, I should think.', 'Ярослава? За столиком біля вікна, коли я дивилася. Щось писала, гадаю.'],
+  zakhar: ['Ostap? Playing the sopilka, last I heard. You can hear him a long way off.', 'Остап? Грав на сопілці, коли я востаннє чув. Його чути здалеку.'],
+  ostap: ['Zakhar? Fishing with his vudka, last time I looked. He never moves, that man.', 'Захар? Ловив рибу, коли я востаннє дивився. Він ніколи не рухається, ця людина.'],
 };
 // the four places: what the people who can see each one say about it ("dark": it stayed empty; "lit": someone was there)
 const CC_TOOLSAY = {
@@ -3804,8 +3804,8 @@ const CC_POEM = {   // Yaroslava wrote this at breakfast: it hints where the wre
 };
 // things people noticed that clear nobody (and a couple of red herrings)
 const CC_EXTRA = {
-  myron: [{ notC: 1, line: ['Long after the last train I heard footsteps going down to the fountain, quick and light, as if someone didn\'t want to be heard. Make of it what you will.', 'Довго після останнього потяга я чув кроки до фонтана, швидкі й легкі, ніби хтось не хотів, щоб його почули. Думай що хочеш.'] }],
-  halyna: [{ line: ['Sonechko, it was the domovyk! The house spirit! They do little kindnesses at night and never let you see them. Oksana agrees with me, and she isn\'t even here.', 'Сонечко, це домовик! Вони роблять маленькі добрі справи вночі й ніколи не показуються. Оксана зі мною згодна, а її тут навіть нема.'] }, { line: ['And did you see that boy\'s dog trotting about with a mouthful of wheat at lunchtime? Brovko! I said to Solomiia: mark my words.', 'А ти бачила, як той хлопчиків пес бігав у обід із повним ротом пшениці? Бровко! Я сказала Соломії: запам\'ятай мої слова.'] }],
+  myron: [{ notC: 1, line: ['Long after the last train I heard footsteps going down to the fontan, quick and light, as if someone didn\'t want to be heard. Make of it what you will.', 'Довго після останнього потяга я чув кроки до фонтана, швидкі й легкі, ніби хтось не хотів, щоб його почули. Думай що хочеш.'] }],
+  halyna: [{ line: ['Sonechko, it was the domovyk! The house spirit! They do little kindnesses at night and never let you see them. Oksana agrees with me, and she isn\'t even here.', 'Сонечко, це домовик! Вони роблять маленькі добрі справи вночі й ніколи не показуються. Оксана зі мною згодна, а її тут навіть нема.'] }, { line: ['And did you see that boy\'s dog trotting about with a mouthful of pshenytsia at lunchtime? Brovko! I said to Solomiia: mark my words.', 'А ти бачила, як той хлопчиків пес бігав у обід із повним ротом пшениці? Бровко! Я сказала Соломії: запам\'ятай мої слова.'] }],
 };
 const CC_NEWS = {   // how each of them greets the news the first time (true for any of them)
   myron: ['Have you seen the festival post by the fountain? Somebody hung a harvest wreath on it in the night! Forty years on the railways and I never saw one finer. And no name on it!', 'Ти бачила святковий стовп біля фонтана? Хтось уночі повісив на нього обжинковий вінок! Сорок років на залізниці, а кращого не бачив. І жодного імені!'],
