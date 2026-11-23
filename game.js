@@ -212,21 +212,26 @@ addEventListener('load', () => { musicBtn(); startMusic(); });
 // is missing (not made yet) just keeps the village theme.
 const ROOM_TUNES = { home: 'room-home3', olia: 'room-olia', mill: 'room-mill2', church: 'room-church', school: 'room-school', cafe: 'room-cafe' };
 const tuneBad = {};
-let curTune = 'theme', themePos = 0, seekTo = 0;
+let curTune = 'theme', themeOf = 'theme', themePos = 0, seekTo = 0;
 // The market has its own tune while its card is open (it's a card over the village, not a room).
 const shopOpen = () => mode === 'world' && sheetOpen() && !!sheet.querySelector('[data-shop]');
 // Talking to someone or reading Grandma's letter has a calm tune of its own, and the cats a more playful one, so
 // the same music doesn't run on for too long. Each tune picks up where it left off.
 const cardTune = () => { if (document.getElementById('story') && document.getElementById('story').classList.contains('show')) return 'room-talk'; if (!sheetOpen() || !portraitOn) return null; return portraitOn.startsWith('cat_') ? 'room-cats' : 'room-talk'; };
-const wantTune = () => { const n = mode === 'fest' ? null : shopOpen() ? 'room-market-v2' : cardTune() || ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : 'theme'; };
+// The village theme changes with the season: summer keeps the original, the others are sister tunes (same
+// instruments and tempo, a new melody). Before a game is loaded it's the summer one.
+const SEASON_THEMES = { lito: 'theme', osin: 'theme-osin', zyma: 'theme-zyma', vesna: 'theme-vesna' };
+const villageTheme = () => { let t = 'theme'; try { if (S && S.clock) t = SEASON_THEMES[season()] || 'theme'; } catch (e) {} return tuneBad[t] ? 'theme' : t; };
+const isTheme = n => /^theme/.test(n);
+const wantTune = () => { const n = mode === 'fest' ? null : shopOpen() ? 'room-market-v2' : cardTune() || ROOM_TUNES[mode]; return n && !tuneBad[n] ? n : villageTheme(); };
 const tunePos = {};
-music.addEventListener('error', () => { if (curTune !== 'theme') tuneBad[curTune] = true; });
+music.addEventListener('error', () => { if (curTune !== 'theme') tuneBad[curTune] = true; });   // a missing season theme falls back to the summer one
 music.addEventListener('loadedmetadata', () => { if (seekTo) { try { music.currentTime = seekTo; } catch (e) {} seekTo = 0; } });
 function musicTick(dt) {
   const want = wantTune(), switching = want !== curTune;
   if (switching && (musicVol < 0.03 || music.paused)) {
-    if (curTune === 'theme') themePos = music.currentTime || 0; else if (/^room-(talk|cats)$/.test(curTune)) tunePos[curTune] = music.currentTime || 0;
-    curTune = want; seekTo = want === 'theme' ? themePos : tunePos[want] || 0;
+    if (isTheme(curTune)) { themePos = music.currentTime || 0; themeOf = curTune; } else if (/^room-(talk|cats)$/.test(curTune)) tunePos[curTune] = music.currentTime || 0;
+    curTune = want; seekTo = isTheme(want) ? (want === themeOf ? themePos : 0) : tunePos[want] || 0;   // a new season's theme starts from the top
     music.src = 'music/' + want + '.mp3'; if (musicOn && !document.hidden && mode !== 'fest') music.play().catch(() => {});
   }
   const wolves = mode === 'world' && S.clock && S.clock.t >= 0.86 && S.clock.ev && S.clock.ev.wolf1;   // once the wolves howl the music stops: just the night, the crickets and the wolves
@@ -13340,5 +13345,5 @@ if ('serviceWorker' in navigator) {
 addEventListener('load', checkVersion);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) { checkVersion(); if (swReg) swReg.update().catch(() => {}); } });
 // For automated checks.
-window.__game = { give: (k,n) => give(k,n), homeCats: () => homeCats().map((h, i) => h.ct.id + ":" + catSpot(i).kind), catSpot, FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
+window.__game = { give: (k,n) => give(k,n), homeCats: () => homeCats().map((h, i) => h.ct.id + ":" + catSpot(i).kind), catSpot, FETCH, OKS, solid: () => solid, iconURL, enterOliaNow, oliaHits: () => oliaHits, pan: x => { roomX = x; tour = null; }, mode: () => mode, speakRound, groundOk, ground, S: () => S, P, ents, A, walkTo, interact, stage, clips: textOf, room: () => ({ roomX, RW: roomW(), w: cv.width, h: cv.height, bed: decorRect('lizhko') }), rect: id => decorRect(id), take: e => take(e), fishing: () => !!fishFx, cam: () => ({ camX: Math.round(camX), camY: Math.round(camY), peekX: Math.round(peekX), peekY: Math.round(peekY) }), homeTap, musicState: () => curTune + ' ' + (music.paused ? 'paused' : 'PLAYING') + ' at ' + music.currentTime.toFixed(1) + 's' };
 })();
