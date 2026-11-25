@@ -22,6 +22,9 @@ const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-seri
 
 // ------------------------------------------------------------------ save
 const SAVE = 'kotiacha-dolyna-v1';
+// First ever launch on this device (no save, letter never shown): Grandma Olia's letter opens by itself.
+let FIRST_LETTER = false;
+try { FIRST_LETTER = !localStorage.getItem(SAVE) && !localStorage.getItem('kd-letter-seen'); } catch (e) {}
 const fresh = () => ({
   coins: 10, hearts: 0, words: {}, bag: { voda: 3 }, waterInit: 1, seeds: { morkva: 3 }, home: { vazon: 1 }, placed: {},   // a potted plant to start with: something to decorate with on day one
   plots: Array.from({ length: 6 }, () => ({ c: null, ready: 0, wet: false })),
@@ -13318,6 +13321,7 @@ document.addEventListener('contextmenu', ev => ev.preventDefault());
 farmEnts();   // your own hens, cow and churn
 hud(); setGuide();
 { const b = document.querySelector('[data-a=bag]'); if (b) b.innerHTML = `<img src="${iconURL('koshyk')}" alt="" style="width:1.5em;height:1.5em;margin:-0.1em;display:block;pointer-events:none">`; }   // the drawn basket, not the emoji
+if (FIRST_LETTER) { try { localStorage.setItem('kd-letter-seen', '1'); } catch (e) {} setTimeout(() => { try { storyShow(0); } catch (e) {} }, 600); }
 requestAnimationFrame(frame);
 // ------------------------------------------------------------------ staying up to date
 // Every time the game opens or comes back to the front, it asks the server which version is current.
