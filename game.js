@@ -5157,6 +5157,7 @@ function faceDetail(c, L, bob, blink, side) {
   if (hers) herMouth(c, 0, my + 0.2, joy); else
   if (joy) { c.fillStyle = '#8a2e32'; c.beginPath(); c.moveTo(-3, my); c.quadraticCurveTo(0, my + 4.6, 3, my); c.closePath(); c.fill(); c.fillStyle = '#ef8a92'; ell(c, 0, my + 2.3, 1.5, 0.9); c.strokeStyle = '#6e2428'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-3.2, my - 0.2); c.quadraticCurveTo(0, my + 0.5, 3.2, my - 0.2); c.stroke(); }
   else { c.strokeStyle = '#7a3a34'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-2.7, my); c.quadraticCurveTo(0, my + 2.3, 2.7, my); c.stroke(); c.fillStyle = 'rgba(230,110,120,.35)'; ell(c, 0, my + 1.7, 1.4, 0.6); }
+  if (hers) return;   // no rosy cheeks on her: the user's choice
   c.fillStyle = 'rgba(245,120,125,.42)'; ell(c, -8.6, y + 4.2, 2.9 * (1 - side * 0.6), 1.8); ell(c, 8.6, y + 4.2, 2.9, 1.8);
   c.strokeStyle = 'rgba(230,90,100,.5)'; c.lineWidth = 0.6; for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(s * 8.6 - 1.6 + i * 1.3, y + 5.2); c.lineTo(s * 8.6 - 0.9 + i * 1.3, y + 3.3); c.stroke(); }
 }
@@ -5177,7 +5178,7 @@ function sideFaceDetail(c, L, hy, blink) {
   if (L.hers) herMouth(c, 11.5, hy + 7.4, joy, 0.8); else
   if (joy) { c.fillStyle = '#8a2e32'; c.beginPath(); c.moveTo(9.4, hy + 7); c.quadraticCurveTo(11.6, hy + 10.2, 13.3, hy + 7.4); c.closePath(); c.fill(); }
   else { c.strokeStyle = '#7a3a34'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(10, hy + 7.4); c.quadraticCurveTo(11.6, hy + 8.7, 13, hy + 7.2); c.stroke(); }
-  c.fillStyle = 'rgba(245,120,125,.42)'; ell(c, 6.6, hy + 5.8, 2.7, 1.7);
+  if (!L.hers) c.fillStyle = 'rgba(245,120,125,.42)'; if (!L.hers) ell(c, 6.6, hy + 5.8, 2.7, 1.7);
 }
 function hairShine(c, cx, cy, r) {   // a soft shine across the top of her hair, and a few darker strands
   c.save(); c.lineCap = 'round';
