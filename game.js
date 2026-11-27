@@ -6421,12 +6421,22 @@ function plotSheet(i) {
       (have ? `<div class="row">${btn('water', '', `💧 ${lab('water')}`, 'blue')}</div><div class="muted" style="padding:8px 0 0">💧 ${have} / ${WATER_MAX}</div>`
         : `<div class="hint"><b>${PH.no_water.uk}</b>${stage() < 3 ? `<br>${PH.no_water.en}` : ''}</div><div class="row">${btn('goWell', '', '🪣 ' + lab('towell'), 'blue')}</div>`) + `</div>`;
   } else if (now() < p.ready) {
-    body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">🌱 ${D.ui.growing[0]}${stage() < 3 ? ' · ' + D.ui.growing[1] : ''} (${Math.ceil((p.ready - now()) / 1000)} s)</div></div>`;
+    body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">🌱 ${D.ui.growing[0]}${stage() < 3 ? ' · ' + D.ui.growing[1] : ''} (<span id="growS">${Math.ceil((p.ready - now()) / 1000)}</span> s)</div></div>`;
   } else {
     body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="row">${btn('harvest', '', lab('harvest'))}</div></div>`;
   }
   openSheet(head + body);
   if (fresh1) say('w_horod'); else if (noWater) say('p_no_water');
+  // the countdown counts down while the card is open, and the card turns into «Зібрати» the moment the crop is ripe
+  // (it used to show a frozen number, so a ripe vegetable looked as if it never became ready)
+  const cnt = document.getElementById('growS');
+  if (cnt) {
+    const tick = setInterval(() => {
+      if (!cnt.isConnected || !sheet.classList.contains('show') || sheet.classList.contains('closing')) return clearInterval(tick);
+      const left = Math.ceil((p.ready - now()) / 1000);
+      if (left > 0) cnt.textContent = left; else { clearInterval(tick); plotSheet(i); }
+    }, 250);
+  }
 }
 
 // ------------------------------------------------------------------ market
