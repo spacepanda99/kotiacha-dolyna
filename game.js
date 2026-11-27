@@ -3001,7 +3001,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
 }
 const OLIA_FACE = { detail: true, eye: '#6b4426', brow: '#cfcfcf', eyeK: 0.82, age: 1, lashes: false, scarfFine: true };   // Grandma indoors: kind eyes, smile lines
 const SOLOMIIA_FACE = { detail: true, eye: '#5a3418', brow: '#3a2416', eyeK: 0.86, noBand: true, hairLen: 34, wreathFine: { flowers: ['#f5b800', '#ffffff', '#ffd23f'], ribbons: ['#f2c230', '#c0392b'] } };   // Mrs. Solomiia in her café
-const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#6b4a2a', brow: '#c08a3a' };   // (no headband: the user's choice)
+const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#a0662f', brow: '#c08a3a', hers: true };   // (no headband: the user's choice)
 // Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
 // shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
 // apronTrim), vest (+ vestTrim), coat (+ fur), boots, beads, a hat (scarf, wreath) and ribbons on the wreath.
@@ -5133,7 +5133,7 @@ function drawPickPose(c, x, y, t) {
 // her face, drawn finer (Vicky only): eyes with whites, irises, a highlight and lashes; brows; a nose; a mouth
 // that smiles, and opens when she's delighted; blush
 function faceDetail(c, L, bob, blink, side) {
-  const y = -62 + bob, joy = L.joy || (L === ME || L.me) && nowT < JOY.until, eye = L.eye || '#6b4a2a', lash = '#2a1c14', k = L.eyeK || 1;
+  const y = -62 + bob, joy = L.joy || (L === ME || L.me) && nowT < JOY.until, eye = L.eye || '#6b4a2a', hers = !!L.hers, lash = hers ? '#5a3620' : '#2a1c14', k = L.eyeK || 1;
   c.strokeStyle = L.brow || '#b07a3a'; c.lineWidth = 1.2; c.lineCap = 'round';
   for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 2.6, y - 5.6); c.quadraticCurveTo(s * 5, y - 7.4 - (joy ? 0.7 : 0), s * 7.6, y - 6); c.stroke(); }
   if (joy) { c.strokeStyle = lash; c.lineWidth = 1.5; for (const s of [-1, 1]) { c.beginPath(); c.arc(s * 5, y + 1.4, 2.5, Math.PI * 1.12, Math.PI * 1.88); c.stroke(); } }
@@ -5144,19 +5144,28 @@ function faceDetail(c, L, bob, blink, side) {
     c.fillStyle = '#fffaf6'; ell(c, 0, 0, 2.5, 2.9 * (L.age ? 0.8 : 1));
     c.fillStyle = eye; ell(c, s * 0.15, 0.35, 1.95, 2.45 * (L.age ? 0.8 : 1));
     c.fillStyle = 'rgba(255,230,180,.4)'; ell(c, s * 0.15, 1.5, 1.3, 0.85);
-    c.fillStyle = '#1a120c'; ell(c, s * 0.15, 0.45, 1.0, 1.35 * (L.age ? 0.8 : 1));
+    if (hers) { c.strokeStyle = '#6a3d1c'; c.lineWidth = 0.4; c.beginPath(); c.ellipse(s * 0.15, 0.35, 1.9, 2.4, 0, 0, 7); c.stroke(); }
+    c.fillStyle = hers ? '#4a2810' : '#1a120c'; ell(c, s * 0.15, 0.45, hers ? 0.8 : 1.0, (hers ? 1.05 : 1.35) * (L.age ? 0.8 : 1));
     c.fillStyle = '#fff'; circ(c, -0.7, -0.75, 0.72); circ(c, 0.75, 1.3, 0.34);
-    c.strokeStyle = lash; c.lineWidth = 1.05 / k; c.beginPath(); c.moveTo(-2.7, -0.1); c.quadraticCurveTo(0, -3.9 * (L.age ? 0.75 : 1), 2.7, -0.1); c.stroke();
+    c.strokeStyle = lash; c.lineWidth = (hers ? 0.8 : 1.05) / k; c.beginPath(); c.moveTo(-2.7, -0.1); c.quadraticCurveTo(0, -3.9 * (L.age ? 0.75 : 1), 2.7, -0.1); c.stroke();
     if (L.lashes !== false) { c.beginPath(); c.moveTo(s * 2.5, -0.9); c.lineTo(s * 3.7, -2.3); c.stroke(); }
     c.restore();
   }
   c.fillStyle = 'rgba(205,120,100,.45)'; ell(c, 0.4, y + 3.6, 0.9, 0.55);
   if (L.age) { c.strokeStyle = 'rgba(160,100,80,.45)'; c.lineWidth = 0.7; for (const s2 of [-1, 1]) { for (let i = 0; i < 2; i++) { c.beginPath(); c.moveTo(s2 * (8 + i * 0.6), y - 0.8 + i * 1.6); c.lineTo(s2 * (9.6 + i * 0.6), y - 1.6 + i * 2.2); c.stroke(); } c.beginPath(); c.moveTo(s2 * 3.6, y + 4.4); c.quadraticCurveTo(s2 * 4.6, y + 6.4, s2 * 4, y + 7.6); c.stroke(); } }
   const my = y + 5.8;
+  if (hers) herMouth(c, 0, my + 0.2, joy); else
   if (joy) { c.fillStyle = '#8a2e32'; c.beginPath(); c.moveTo(-3, my); c.quadraticCurveTo(0, my + 4.6, 3, my); c.closePath(); c.fill(); c.fillStyle = '#ef8a92'; ell(c, 0, my + 2.3, 1.5, 0.9); c.strokeStyle = '#6e2428'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(-3.2, my - 0.2); c.quadraticCurveTo(0, my + 0.5, 3.2, my - 0.2); c.stroke(); }
   else { c.strokeStyle = '#7a3a34'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(-2.7, my); c.quadraticCurveTo(0, my + 2.3, 2.7, my); c.stroke(); c.fillStyle = 'rgba(230,110,120,.35)'; ell(c, 0, my + 1.7, 1.4, 0.6); }
   c.fillStyle = 'rgba(245,120,125,.42)'; ell(c, -8.6, y + 4.2, 2.9 * (1 - side * 0.6), 1.8); ell(c, 8.6, y + 4.2, 2.9, 1.8);
   c.strokeStyle = 'rgba(230,90,100,.5)'; c.lineWidth = 0.6; for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(s * 8.6 - 1.6 + i * 1.3, y + 5.2); c.lineTo(s * 8.6 - 0.9 + i * 1.3, y + 3.3); c.stroke(); }
+}
+// her mouth: small pink lips, opening into a little smile when she's delighted
+function herMouth(c, x, y, joy, w = 1) {
+  c.save(); c.translate(x, y); c.scale(w, 1);
+  if (joy) { c.fillStyle = '#c4526c'; c.beginPath(); c.moveTo(-2, 0); c.quadraticCurveTo(0, 3.4, 2, 0); c.closePath(); c.fill(); c.fillStyle = '#f59aae'; ell(c, 0, 1.2, 0.9, 0.5); }
+  else { c.fillStyle = '#e8728c'; c.beginPath(); c.moveTo(-1.8, 0.1); c.quadraticCurveTo(-0.8, -0.8, 0, -0.1); c.quadraticCurveTo(0.8, -0.8, 1.8, 0.1); c.quadraticCurveTo(0, 2.3, -1.8, 0.1); c.closePath(); c.fill(); c.strokeStyle = '#c4526c'; c.lineWidth = 0.35; c.beginPath(); c.moveTo(-1.8, 0.1); c.quadraticCurveTo(0, 0.7, 1.8, 0.1); c.stroke(); }
+  c.restore();
 }
 function sideFaceDetail(c, L, hy, blink) {
   const joy = L.joy || nowT < JOY.until, eye = L.eye || '#6b4a2a', lash = '#2a1c14';
@@ -5165,6 +5174,7 @@ function sideFaceDetail(c, L, hy, blink) {
   else if (blink) { c.strokeStyle = lash; c.lineWidth = 1.2; c.beginPath(); c.moveTo(6.6, hy + 1); c.quadraticCurveTo(8.8, hy + 2.2, 11, hy + 1); c.stroke(); }
   else { c.fillStyle = '#fffaf6'; ell(c, 8.8, hy + 1, 2.1, 2.6); c.fillStyle = eye; ell(c, 9.4, hy + 1.3, 1.6, 2.2); c.fillStyle = '#1a120c'; ell(c, 9.7, hy + 1.4, 0.85, 1.25); c.fillStyle = '#fff'; circ(c, 9.0, hy + 0.3, 0.62);
     c.strokeStyle = lash; c.lineWidth = 1; c.beginPath(); c.moveTo(6.6, hy + 0.6); c.quadraticCurveTo(8.8, hy - 2.4, 11.2, hy + 0.4); c.stroke(); c.beginPath(); c.moveTo(6.8, hy + 0.2); c.lineTo(5.6, hy - 1.0); c.stroke(); }
+  if (L.hers) herMouth(c, 11.5, hy + 7.4, joy, 0.8); else
   if (joy) { c.fillStyle = '#8a2e32'; c.beginPath(); c.moveTo(9.4, hy + 7); c.quadraticCurveTo(11.6, hy + 10.2, 13.3, hy + 7.4); c.closePath(); c.fill(); }
   else { c.strokeStyle = '#7a3a34'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(10, hy + 7.4); c.quadraticCurveTo(11.6, hy + 8.7, 13, hy + 7.2); c.stroke(); }
   c.fillStyle = 'rgba(245,120,125,.42)'; ell(c, 6.6, hy + 5.8, 2.7, 1.7);
