@@ -3,8 +3,8 @@
 // the saved copy is only used when there's no connection.
 // Voice clips, music and icons: saved after first use. The whole cache is renamed each release
 // (tools/release.mjs), so a new version starts clean.
-const CACHE = 'kotiacha-dolyna-325';
-const CORE = ['./', 'index.html', 'game.js', 'data.js', 'manifest.webmanifest', 'version.json', 'icons/icon-192.png?v=3', 'icons/icon-512.png?v=3', 'icons/apple-touch-icon.png?v=3'];
+const CACHE = 'kotiacha-dolyna-326';
+const CORE = ['./', 'index.html', 'game.js', 'data.js', 'manifest.webmanifest', 'version.json', 'icons/icon-192.png?v=4', 'icons/icon-512.png?v=4', 'icons/apple-touch-icon.png?v=4'];
 
 self.addEventListener('install', e => {
   // put() rather than addAll(): addAll fails outright if a second install is filling the same cache.

@@ -3001,7 +3001,7 @@ function person(c, x, y, L, t, moving, sc, ph, view) {
 }
 const OLIA_FACE = { detail: true, eye: '#6b4426', brow: '#cfcfcf', eyeK: 0.82, age: 1, lashes: false, scarfFine: true };   // Grandma indoors: kind eyes, smile lines
 const SOLOMIIA_FACE = { detail: true, eye: '#5a3418', brow: '#3a2416', eyeK: 0.86, noBand: true, hairLen: 34, wreathFine: { flowers: ['#f5b800', '#ffffff', '#ffd23f'], ribbons: ['#f2c230', '#c0392b'] } };   // Mrs. Solomiia in her café
-const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#5f8a3c', brow: '#c08a3a' };   // (no headband: the user's choice)
+const ME = { skin: '#f7d6b8', shirt: '#ffffff', trim: '#d43a3a', skirt: '#c0392b', hair: '#f4d35e', hat: 'none', long: true, noBand: true, dress: true, detail: true, eye: '#6b4a2a', brow: '#c08a3a' };   // (no headband: the user's choice)
 // Her outfits. Each sets the whole look; the drawing (front, side, back, walking) comes from these fields:
 // shirt/trim/skirt colours, sleeve (if not the shirt), a skirt pattern (check, with skirt2), belt, apron (+
 // apronTrim), vest (+ vestTrim), coat (+ fur), boots, beads, a hat (scarf, wreath) and ribbons on the wreath.
@@ -6367,7 +6367,12 @@ function interact(e) {
   if (e.kind === 'npc' && e.route2 && !nightNow()) return toast('🌧️ ' + W.doshch.uk + '!' + (stage() < 3 ? (e.gone === 'cafe' ? ' · Off to the café, out of the rain.' : ' · Off home, out of the rain.') : ''), 2400);
   if (e.kind === 'npc' && e.route2) return toast('🌙 ' + PH.dobranich.uk + '!' + (stage() < 3 ? ' · Everyone is heading home for the night.' : ''), 2400);
   if (e.kind === 'npc') return talk(NPC[e.npc]);
-  if (e.kind === 'plot') return plotSheet(e.i);
+  if (e.kind === 'plot') {
+    // a thirsty bed (the one with the 💧) is watered straight away, no card; an empty can still gets the card that sends her to the well
+    const p = S.plots[e.i];
+    if (p.c && !p.wet && S.bag.voda > 0) { cur = { plot: e.i }; learn('horod'); return A.water(); }
+    return plotSheet(e.i);
+  }
   if (e.kind === 'shop' && nightNow()) return toast('🌙 Зачинено' + (stage() < 3 ? ' · The market is closed for the night. Come back in the morning.' : ''), 3000);
   if (e.kind === 'shop') { if (learn('rynok')) say('w_rynok'); else reviewed('rynok'); return shop(); }
   if (e.k === 'oliaHome') return wordCard('khata', { owner: '🏠 Хата баби Олі', note: xl("Grandma Olia's cottage. She is inside, cooking."), acts: [{ k: 'enter', fn: enterOlia }] });
