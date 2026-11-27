@@ -5054,7 +5054,7 @@ function gardenStep(K) {
 function gardenDone(K) {
   const p = S.plots[K.i], v = K.crop;
   if (K.job === 'plant') { if (!K.contact) { p.c = v; p.wet = false; p.ready = 0; } learn(v); learn('nasinnia'); say('w_' + v); blip(600); tutEvent('plant'); save(); }
-  else { if (!K.contact) p.c = null; give(v, 2); toast('+2 ' + W[v].ic + ' ' + W[v].en); tutEvent('harvest'); wordCard(v); save(); }
+  else { if (!K.contact) p.c = null; give(v, 2); toast('+2 ' + W[v].ic + ' ' + W[v].en); tutEvent('harvest'); learn(v); reviewed(v); say('w_' + v); save(); }
 }
 function pickStep() {
   const K = PICK; if (!K) return;
@@ -6421,6 +6421,8 @@ function plotSheet(i) {
   const p = S.plots[i];
   const fresh1 = learn('horod');
   cur = { plot: i };
+  // a ripe bed is picked straight away, no card; picking says the vegetable's name
+  if (p.c && p.wet && now() >= p.ready) return A.harvest();
   const head = `<h3><span><span class="uk">${W.horod.uk}</span> ${stage() < 2 ? `<small>${W.horod.en}</small>` : ''}</span>${btn('hear', 'w_horod', '🔊', 'round blue')}</h3>`;
   let body;
   if (!p.c && winter()) {
@@ -6436,14 +6438,12 @@ function plotSheet(i) {
     body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">💧 ${D.ui.thirsty[0]}${stage() < 3 ? ' · ' + D.ui.thirsty[1] : ''}</div>` +
       (have ? `<div class="row">${btn('water', '', `💧 ${lab('water')}`, 'blue')}</div><div class="muted" style="padding:8px 0 0">💧 ${have} / ${WATER_MAX}</div>`
         : `<div class="hint"><b>${PH.no_water.uk}</b>${stage() < 3 ? `<br>${PH.no_water.en}` : ''}</div><div class="row">${btn('goWell', '', '🪣 ' + lab('towell'), 'blue')}</div>`) + `</div>`;
-  } else if (now() < p.ready) {
-    body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">🌱 ${D.ui.growing[0]}${stage() < 3 ? ' · ' + D.ui.growing[1] : ''} (<span id="growS">${Math.ceil((p.ready - now()) / 1000)}</span> s)</div></div>`;
   } else {
-    body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="row">${btn('harvest', '', lab('harvest'))}</div></div>`;
+    body = `<div class="card"><img class="big" src="${iconURL(p.c)}" alt=""><div class="word">${W[p.c].uk}</div><div class="en">🌱 ${D.ui.growing[0]}${stage() < 3 ? ' · ' + D.ui.growing[1] : ''} (<span id="growS">${Math.ceil((p.ready - now()) / 1000)}</span> s)</div></div>`;
   }
   openSheet(head + body);
   if (fresh1) say('w_horod'); else if (noWater) say('p_no_water');
-  // the countdown counts down while the card is open, and the card turns into «Зібрати» the moment the crop is ripe
+  // the countdown counts down while the card is open, and the crop is picked the moment it is ripe
   // (it used to show a frozen number, so a ripe vegetable looked as if it never became ready)
   const cnt = document.getElementById('growS');
   if (cnt) {
@@ -13291,7 +13291,7 @@ const A = {
   choose(v) { const d = dlg; if (!d) return; const c = d.steps[d.i].choices[+v]; say(c.clip); setTimeout(() => { if (dlg !== d) return; if (c.fn) { closeSheet(); c.fn(); } else if (c.then) dialog(d.npc, [...d.steps.slice(0, d.i + 1), ...c.then], d.i + 1); else dialog(d.npc, d.steps, d.i + 1); }, 1500); },
   plant(v) { const p = S.plots[cur.plot]; if (!(S.seeds[v] > 0) || PICK) return; S.seeds[v]--; closeSheet(); if (gardenStart('plant', cur.plot, v)) return; p.c = v; p.wet = false; p.ready = 0; learn(v); learn('nasinnia'); say('w_' + v); blip(600); tutEvent('plant'); save(); },
   water() { const p = S.plots[cur.plot]; if (!(S.bag.voda > 0)) return plotSheet(cur.plot); S.bag.voda--; hud(); bumpWater(); p.wet = true; p.ready = now() + 50e3; { const pe = ents.find(q => q.k === 'plot' + cur.plot); waterFx = { i: cur.plot, t0: nowT, me: mode === 'world' && !!pe, face: pe && pe.x < P.x ? -1 : 1 }; P.path = []; P.goal = null; if (pe) P.face = waterFx.face; } closeSheet(); learn('voda'); say('w_voda'); blip(760); tutEvent('water'); save(); },
-  harvest() { const p = S.plots[cur.plot], c = p.c; if (!c || PICK) return; closeSheet(); if (gardenStart('harvest', cur.plot)) return; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].en}`); tutEvent('harvest'); wordCard(c); save(); },
+  harvest() { const p = S.plots[cur.plot], c = p.c; if (!c || PICK) return; closeSheet(); if (gardenStart('harvest', cur.plot)) return; p.c = null; give(c, 2); toast(`+2 ${W[c].ic} ${W[c].en}`); tutEvent('harvest'); learn(c); reviewed(c); say('w_' + c); save(); },
   tab(v) { shopTab = v; shopSel = null; shop(); },
   pick(v) { shopSel = owned(v) ? null : v; learn(v); shop(); say('w_' + v); if (owned(v)) toast(`✓ ${D.ui.have[0]}${stage() < 3 ? ' · ' + D.ui.have[1] : ''}`); },
   buy(v) {
